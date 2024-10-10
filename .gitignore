@@ -1,0 +1,6 @@
+config.toml
+logs/
+tmp/
+data/
+downloads/
+cache/

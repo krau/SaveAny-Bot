@@ -1,0 +1,66 @@
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npx changelogithub
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+  build-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from Git Ref
+        id: extract_version
+        run: |
+          VERSION=$(echo "${{ github.ref }}" | sed 's/refs\/tags\/v//')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Release Go Binary
+        uses: wangyoucao577/go-release-action@v1
+        with:
+          pre_command: export
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_files: |
+            LICENSE
+            README.md
+          ldflags: >-
+            -s -w
+            -X "github.com/krau/SaveAny-Bot/common.Version=${{ env.VERSION }}"
+            -X "github.com/krau/SaveAny-Bot/common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
+            -X "github.com/krau/SaveAny-Bot/common.GitCommit=${{ github.sha }}"
+          binary_name: saveany-bot
+        env:
+          VERSION: ${{ env.VERSION }}
