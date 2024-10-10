@@ -22,3 +22,10 @@ token_exp = 86400
 [storage.local]
 enable = true
 base_path = "downloads/"
+
+[storage.webdav]
+enable = true
+base_path = "/telegram"
+username = "admin"
+password = "password"
+url = "https://alist.com"

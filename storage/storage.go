@@ -9,6 +9,7 @@ import (
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage/alist"
 	"github.com/krau/SaveAny-Bot/storage/local"
+	"github.com/krau/SaveAny-Bot/storage/webdav"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -28,6 +29,10 @@ func Init() {
 	if config.Cfg.Storage.Local.Enable {
 		Storages[types.Local] = new(local.Local)
 		Storages[types.Local].Init()
+	}
+	if config.Cfg.Storage.Webdav.Enable {
+		Storages[types.Webdav] = new(webdav.Webdav)
+		Storages[types.Webdav].Init()
 	}
 
 	logger.L.Debug("Storage initialized")

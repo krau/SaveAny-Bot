@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 )
@@ -20,15 +20,18 @@ func ReplyMessage(replyTo telego.Message, format string, args ...any) (*telego.M
 		}))
 }
 
+var StorageDisplayNames = map[string]string{
+	"all":    "全部",
+	"local":  "服务器磁盘",
+	"alist":  "Alist",
+	"webdav": "WebDAV",
+}
+
 func AddTaskReplyMarkup(messageID int) *telego.InlineKeyboardMarkup {
 	storageButtons := make([]telego.InlineKeyboardButton, 0)
-	if config.Cfg.Storage.Local.Enable {
-		storageButtons = append(storageButtons, telegoutil.InlineKeyboardButton("服务器磁盘").
-			WithCallbackData(fmt.Sprintf("add %d local", messageID)))
-	}
-	if config.Cfg.Storage.Alist.Enable {
-		storageButtons = append(storageButtons, telegoutil.InlineKeyboardButton("Alist").
-			WithCallbackData(fmt.Sprintf("add %d alist", messageID)))
+	for name := range storage.Storages {
+		storageButtons = append(storageButtons, telegoutil.InlineKeyboardButton(StorageDisplayNames[string(name)]).
+			WithCallbackData(fmt.Sprintf("add %d %s", messageID, name)))
 	}
 
 	if len(storageButtons) > 1 {

@@ -37,8 +37,9 @@ type telegramConfig struct {
 }
 
 type storageConfig struct {
-	Alist alistConfig `toml:"alist" mapstructure:"alist"`
-	Local localConfig `toml:"local" mapstructure:"local"`
+	Alist  alistConfig  `toml:"alist" mapstructure:"alist"`
+	Local  localConfig  `toml:"local" mapstructure:"local"`
+	Webdav webdavConfig `toml:"webdav" mapstructure:"webdav"`
 }
 
 type alistConfig struct {
@@ -52,6 +53,14 @@ type alistConfig struct {
 
 type localConfig struct {
 	Enable   bool   `toml:"enable" mapstructure:"enable"`
+	BasePath string `toml:"base_path" mapstructure:"base_path"`
+}
+
+type webdavConfig struct {
+	Enable   bool   `toml:"enable" mapstructure:"enable"`
+	URL      string `toml:"url" mapstructure:"url"`
+	Username string `toml:"username" mapstructure:"username"`
+	Password string `toml:"password" mapstructure:"password"`
 	BasePath string `toml:"base_path" mapstructure:"base_path"`
 }
 
