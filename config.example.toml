@@ -28,4 +28,4 @@ enable = true
 base_path = "/telegram"
 username = "admin"
 password = "password"
-url = "https://alist.com"
+url = "https://alist.com/dav"
