@@ -1,0 +1,23 @@
+[telegram]
+token = ""
+admins = []
+
+[log]
+level = "DEBUG"
+
+[temp]
+base_path = "cache/"
+cache_ttl = 30
+
+[storage]
+[storage.alist]
+enable = true
+base_path = "/telegram"
+username = "admin"
+password = "password"
+url = "https://alist.com"
+token_exp = 86400
+
+[storage.local]
+enable = true
+base_path = "downloads/"
