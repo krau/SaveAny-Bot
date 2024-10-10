@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -151,7 +152,8 @@ func HandleFileMessage(ctx context.Context, bot *telego.Bot, message telego.Mess
 		fileName = message.Audio.FileName
 	}
 
-	if fileID == "" || fileName == "" {
+	if fileID == "" {
+		logger.L.Error("File ID is empty")
 		ReplyMessage(message, "文件信息获取失败")
 		return
 	}
@@ -181,6 +183,9 @@ func HandleFileMessage(ctx context.Context, bot *telego.Bot, message telego.Mess
 			})
 			return
 		}
+	}
+	if fileName == "" {
+		fileName = filepath.Base(file.FilePath)
 	}
 
 	err = dao.AddReceivedFile(&model.ReceivedFile{
