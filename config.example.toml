@@ -1,6 +1,7 @@
 [telegram]
 token = ""
 admins = []
+api = "https://api.telegram.org"
 
 [log]
 level = "DEBUG"
