@@ -28,7 +28,7 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 
 func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	helpText := `
-AnySave Bot - 转存你的 Telegram 文件
+SaveAny Bot - 转存你的 Telegram 文件
 命令:
 /start - 开始使用
 /help - 显示帮助

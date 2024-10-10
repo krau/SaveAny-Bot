@@ -76,7 +76,7 @@ func registerHandlers(hg *telegohandler.HandlerGroup) {
 	msgGroup := hg.Group(telegohandler.AnyMessage())
 	msgGroup.Use(func(bot *telego.Bot, update telego.Update, next telegohandler.Handler) {
 		if !slice.Contain(config.Cfg.Telegram.Admins, update.Message.From.ID) {
-			bot.SendMessage(telegoutil.Message(update.Message.Chat.ChatID(), "抱歉, 该 Bot 为个人使用设计, 您可以部署自己的 AnySaveBot 实例: https://github.com/krau/SaveAny-Bot"))
+			bot.SendMessage(telegoutil.Message(update.Message.Chat.ChatID(), "抱歉, 该 Bot 为个人使用设计, 您可以部署自己的 SaveAnyBot 实例: https://github.com/krau/SaveAny-Bot"))
 			return
 		}
 		next(bot, update)

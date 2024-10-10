@@ -66,10 +66,10 @@ func Init() {
 	viper.SetDefault("temp.cache_ttl", 3600)
 
 	viper.SetDefault("log.level", "INFO")
-	viper.SetDefault("log.file", "logs/anysave.log")
+	viper.SetDefault("log.file", "logs/saveany.log")
 	viper.SetDefault("log.backup_count", 7)
 
-	viper.SetDefault("db.path", "data/anysave.db")
+	viper.SetDefault("db.path", "data/saveany.db")
 
 	viper.SetDefault("telegram.api", "https://api.telegram.org")
 
