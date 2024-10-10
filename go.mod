@@ -10,6 +10,7 @@ require (
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
+	github.com/studio-b12/gowebdav v0.9.0
 )
 
 require (
@@ -33,7 +34,6 @@ require (
 	github.com/quic-go/quic-go v0.47.0 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/studio-b12/gowebdav v0.9.0 // indirect
 	github.com/tcnksm/go-gitconfig v0.1.2 // indirect
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	go.uber.org/mock v0.4.0 // indirect
