@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
@@ -27,6 +28,7 @@ func (w *Webdav) Init() {
 		logger.L.Fatalf("Failed to connect to webdav server: %v", err)
 		os.Exit(1)
 	}
+	Client.SetTimeout(24 * time.Hour)
 }
 
 func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {

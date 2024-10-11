@@ -71,7 +71,7 @@ func refreshToken(client *req.Client) {
 func (a *Alist) Init() {
 	basePath = config.Cfg.Storage.Alist.BasePath
 	baseUrl = config.Cfg.Storage.Alist.URL
-	reqClient = req.C().SetTLSHandshakeTimeout(time.Second * 10).SetBaseURL(baseUrl)
+	reqClient = req.C().SetTLSHandshakeTimeout(time.Second * 10).SetBaseURL(baseUrl).SetTimeout(time.Hour * 24)
 	loginReq = &loginRequset{
 		Username: config.Cfg.Storage.Alist.Username,
 		Password: config.Cfg.Storage.Alist.Password,
