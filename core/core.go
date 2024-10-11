@@ -29,7 +29,7 @@ func processPendingTask(task types.Task) error {
 		return err
 	}
 
-	_, err = common.ReqClient.R().SetContext(task.Ctx).SetOutputFile(task.FileName).SetDownloadCallbackWithInterval(func(info req.DownloadInfo) {
+	_, err = common.ReqClient.R().SetOutputFile(task.FileName).SetDownloadCallbackWithInterval(func(info req.DownloadInfo) {
 		if info.Response == nil || info.Response.Response == nil || info.Response.Response.StatusCode != 200 {
 			return
 		}
