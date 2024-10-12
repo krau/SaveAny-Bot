@@ -21,6 +21,7 @@ func processPendingTask(task types.Task) error {
 		return err
 	}
 	logger.L.Debugf("Start downloading file: %s", task.FileName)
+	bot.Client.EditMessage(task.ChatID, task.ReplyMessageID, "正在下载文件...")
 	dest, err := message.Download(&telegram.DownloadOptions{
 		FileName: common.GetCacheFilePath(task.FileName),
 		// ProgressCallback: func(totalBytes, downloadedBytes int64) {},
@@ -42,9 +43,11 @@ func processPendingTask(task types.Task) error {
 		task.StoragePath = task.FileName
 	}
 
+	bot.Client.EditMessage(task.ChatID, task.ReplyMessageID, "下载完成, 正在转存文件...")
 	if err := storage.Save(task.Storage, task.Ctx, dest, task.StoragePath); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -71,8 +74,10 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 			queue.AddTask(task)
 		case types.Succeeded:
 			logger.L.Infof("Task succeeded: %s", task.String())
+			bot.Client.EditMessage(task.ChatID, task.ReplyMessageID, "文件保存成功")
 		case types.Failed:
 			logger.L.Errorf("Task failed: %s", task.String())
+			bot.Client.EditMessage(task.ChatID, task.ReplyMessageID, "文件保存失败")
 		case types.Canceled:
 			logger.L.Infof("Task canceled: %s", task.String())
 		default:
