@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	Threads int `toml:"threads" mapstructure:"threads"`
-	Workers int `toml:"workers" mapstructure:"workers"`
+	Threads   int   `toml:"threads" mapstructure:"threads"`
+	Workers   int   `toml:"workers" mapstructure:"workers"`
+	ChunkSize int32 `toml:"chunk_size" mapstructure:"chunk_size"`
 
 	Temp     tempConfig     `toml:"temp" mapstructure:"temp"`
 	Log      logConfig      `toml:"log" mapstructure:"log"`
@@ -77,6 +78,7 @@ func Init() {
 
 	viper.SetDefault("threads", 3)
 	viper.SetDefault("workers", 3)
+	viper.SetDefault("chunk_size", 50*1024*1024)
 
 	viper.SetDefault("temp.base_path", "cache/")
 	viper.SetDefault("temp.cache_ttl", 3600)

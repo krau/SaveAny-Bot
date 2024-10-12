@@ -26,8 +26,9 @@ func processPendingTask(task types.Task) error {
 	logger.L.Debugf("Start downloading file: %s", task.FileName)
 	bot.Client.EditMessage(task.ChatID, task.ReplyMessageID, "正在下载文件...")
 	dest, err := message.Download(&telegram.DownloadOptions{
-		FileName: common.GetCacheFilePath(task.FileName),
-		Threads:  config.Cfg.Threads,
+		FileName:  common.GetCacheFilePath(task.FileName),
+		Threads:   config.Cfg.Threads,
+		ChunkSize: config.Cfg.ChunkSize,
 		// ProgressCallback: func(totalBytes, downloadedBytes int64) {},
 	})
 	if err != nil {
