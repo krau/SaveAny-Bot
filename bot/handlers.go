@@ -35,7 +35,6 @@ SaveAny Bot - 转存你的 Telegram 文件
 /silent - 静默模式
 /storage - 设置默认存储位置
 /save - 保存文件
-/clean - 清除文件记录
 
 静默模式: 开启后 Bot 直接保存到收到的文件到默认位置, 不再询问
 	`
@@ -112,7 +111,69 @@ func SaveCmd(message *telegram.NewMessage) error {
 		message.Reply("回复的消息不包含文件")
 		return nil
 	}
-	logger.L.Warn("TODO: HandleFileMessage")
+
+	msg, err := targetMessage.Reply("正在获取文件信息...")
+	if err != nil {
+		logger.L.Error(err)
+		message.Reply("获取文件信息失败")
+		return err
+	}
+
+	_, _, _, fileName, err := telegram.GetFileLocation(targetMessage.Media())
+	if err != nil {
+		logger.L.Error(err)
+		targetMessage.Reply("获取文件信息失败")
+		return err
+	}
+	if fileName == "" {
+		logger.L.Error("Empty file name")
+		targetMessage.Reply("文件名为空")
+		return nil
+	}
+
+	if err := dao.AddReceivedFile(&model.ReceivedFile{
+		Processing:     false,
+		FileName:       fileName,
+		ChatID:         targetMessage.ChatID(),
+		MessageID:      targetMessage.Message.ID,
+		ReplyMessageID: msg.ID,
+	}); err != nil {
+		logger.L.Error(err)
+		msg.Edit("保存文件信息失败")
+		return err
+	}
+
+	user, err := dao.GetUserByUserID(message.ChatID())
+	if err != nil {
+		logger.L.Error(err)
+		msg.Edit("获取用户信息失败")
+		return err
+	}
+
+	if !user.Silent {
+		msg.Edit("请选择要保存的位置:", telegram.SendOptions{
+			ReplyMarkup: AddTaskReplyMarkup(targetMessage.Message.ID),
+		})
+		return nil
+	}
+
+	if user.DefaultStorage == "" {
+		msg.Edit("请先使用 /storage 命令设置默认存储位置, 或者关闭静默模式")
+		return nil
+	}
+
+	queue.AddTask(types.Task{
+		Ctx:            context.TODO(),
+		Status:         types.Pending,
+		FileName:       fileName,
+		Storage:        types.StorageType(user.DefaultStorage),
+		ChatID:         targetMessage.ChatID(),
+		MessageID:      targetMessage.Message.ID,
+		ReplyMessageID: msg.ID,
+	})
+
+	msg.Edit(fmt.Sprintf("已添加到队列: %s\n当前排队任务数: %d", fileName, queue.Len()))
+
 	return nil
 }
 
