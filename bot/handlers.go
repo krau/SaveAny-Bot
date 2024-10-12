@@ -3,10 +3,10 @@ package bot
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/amarnathcjd/gogram/telegram"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gookit/goutil/maputil"
 	"github.com/krau/SaveAny-Bot/dao"
@@ -15,19 +15,18 @@ import (
 	"github.com/krau/SaveAny-Bot/queue"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
-	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if err := dao.CreateUser(message.From.ID); err != nil {
+func Start(message *telegram.NewMessage) error {
+	if err := dao.CreateUser(message.ChatID()); err != nil {
 		logger.L.Errorf("Failed to create user: %s", err)
-		return
+		return err
 	}
-	Help(ctx, bot, message)
+	return Help(message)
 }
 
-func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func Help(message *telegram.NewMessage) error {
 	helpText := `
 SaveAny Bot - 转存你的 Telegram 文件
 命令:
@@ -40,226 +39,172 @@ SaveAny Bot - 转存你的 Telegram 文件
 
 静默模式: 开启后 Bot 直接保存到收到的文件到默认位置, 不再询问
 	`
-	ReplyMessage(message, helpText)
+	if _, err := message.Reply(helpText); err != nil {
+		logger.L.Errorf("Failed to send help message: %s", err)
+		return err
+	}
+	return nil
 }
 
-func ChangeSilentMode(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	user, err := dao.GetUserByUserID(message.From.ID)
+func ChangeSilentMode(message *telegram.NewMessage) error {
+	user, err := dao.GetUserByUserID(message.ChatID())
 	if err != nil {
 		logger.L.Error(err)
-		return
+		return err
 	}
 	user.Silent = !user.Silent
 	err = dao.UpdateUser(user)
 	if err != nil {
 		logger.L.Error(err)
-		return
+		return err
 	}
-	ReplyMessage(message, fmt.Sprintf("已%s静默模式", map[bool]string{true: "开启", false: "关闭"}[user.Silent]))
+	if _, err := message.Reply(fmt.Sprintf("已%s静默模式", map[bool]string{true: "开启", false: "关闭"}[user.Silent])); err != nil {
+		return err
+	}
+	return nil
 }
 
-func SetDefaultStorage(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func SetDefaultStorage(message *telegram.NewMessage) error {
 	if len(storage.Storages) == 0 {
-		ReplyMessage(message, "当前无可用存储端, 请检查配置.")
-		return
+		message.Reply("当前无可用存储端, 请检查配置.")
+		return nil
 	}
-	_, _, args := telegoutil.ParseCommand(message.Text)
+	_, _, args := telegoutil.ParseCommand(message.Text())
 	availableStorages := maputil.Keys(storage.Storages)
 	if len(args) == 0 {
-		text := EscapeMarkdown("请提供存储位置名称, 可用项:")
+		text := "请提供存储位置名称, 可用项:"
 		for _, name := range availableStorages {
 			text += fmt.Sprintf("\n`%s`", name)
 		}
 		text += fmt.Sprintf("\n`all`")
-		bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).WithParseMode(telego.ModeMarkdownV2))
-		return
+		message.Reply(text, telegram.SendOptions{ParseMode: telegram.MarkDown})
+		return nil
 	}
 	storageName := args[0]
 	if !slice.Contain(availableStorages, storageName) {
-		ReplyMessage(message, "参数错误")
-		return
+		message.Reply("参数错误")
+		return nil
 	}
-	user, err := dao.GetUserByUserID(message.From.ID)
+	user, err := dao.GetUserByUserID(message.ChatID())
 	if err != nil {
 		logger.L.Error(err)
-		return
+		return err
 	}
 	user.DefaultStorage = storageName
 	err = dao.UpdateUser(user)
 	if err != nil {
 		logger.L.Error(err)
-		return
+		return err
 	}
-	ReplyMessage(message, fmt.Sprintf("已设置默认存储位置为: %s", storageName))
+	if _, err := message.Reply(fmt.Sprintf("已设置默认存储位置为: %s", storageName)); err != nil {
+		return err
+	}
+	return nil
 }
 
-func SaveFile(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	targetMessage := message.ReplyToMessage
-	if targetMessage == nil {
-		ReplyMessage(message, "请回复要保存的文件")
-		return
+func SaveCmd(message *telegram.NewMessage) error {
+	targetMessage, err := message.GetReplyMessage()
+	if err != nil {
+		message.Reply("请回复要保存的文件")
+		return nil
 	}
-	if targetMessage.Document == nil && targetMessage.Video == nil && targetMessage.Audio == nil {
-		ReplyMessage(message, "回复的消息不包含文件")
-		return
+	if !targetMessage.IsMedia() {
+		message.Reply("回复的消息不包含文件")
+		return nil
 	}
-	ctx = context.WithValue(ctx, "force", true)
-	HandleFileMessage(ctx, bot, *targetMessage)
+	logger.L.Warn("TODO: HandleFileMessage")
+	return nil
 }
 
-func CleanReceivedFile(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	targetMessage := message.ReplyToMessage
-	if targetMessage == nil {
-		ReplyMessage(message, "请回复要清除记录的文件")
-		return
-	}
-	if targetMessage.Document == nil && targetMessage.Video == nil && targetMessage.Audio == nil {
-		ReplyMessage(message, "回复的消息不包含文件")
-		return
-	}
-	var fileUniqueID string
-	if targetMessage.Document != nil {
-		fileUniqueID = targetMessage.Document.FileUniqueID
-	} else if targetMessage.Video != nil {
-		fileUniqueID = targetMessage.Video.FileUniqueID
-	} else if targetMessage.Audio != nil {
-		fileUniqueID = targetMessage.Audio.FileUniqueID
+func HandleFileMessage(message *telegram.NewMessage) error {
+	if !message.IsMedia() {
+		return nil
 	}
 
-	if fileUniqueID == "" {
-		ReplyMessage(message, "文件信息获取失败")
-		return
-	}
-
-	if err := dao.DeleteReceivedFileByFileUniqueID(fileUniqueID); err != nil {
-		logger.L.Error(err)
-		ReplyMessage(message, "删除记录失败")
-		return
-	}
-	ReplyMessage(message, "记录已删除")
-}
-
-func HandleFileMessage(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	var fileID, fileName string
-	if message.Document != nil {
-		fileID = message.Document.FileID
-		fileName = message.Document.FileName
-	} else if message.Video != nil {
-		fileID = message.Video.FileID
-		fileName = message.Video.FileName
-	} else if message.Audio != nil {
-		fileID = message.Audio.FileID
-		fileName = message.Audio.FileName
-	}
-
-	if fileID == "" {
-		logger.L.Error("File ID is empty")
-		ReplyMessage(message, "文件信息获取失败")
-		return
-	}
-	user, err := dao.GetUserByUserID(message.From.ID)
+	user, err := dao.GetUserByUserID(message.ChatID())
 	if err != nil {
 		logger.L.Error(err)
-		return
+		return nil
 	}
-	msg, err := ReplyMessage(message, "正在获取文件信息")
+
+	msg, err := message.Reply("正在获取文件信息...")
 	if err != nil {
 		logger.L.Error(err)
-		return
+		return err
 	}
-	file, err := bot.GetFile(&telego.GetFileParams{FileID: fileID})
+
+	_, _, _, fileName, err := telegram.GetFileLocation(message.Media())
 	if err != nil {
 		logger.L.Error(err)
-		ReplyMessage(message, "获取文件信息失败")
-		return
-	}
-	if ctx.Value("force") == nil {
-		receivedFile, _ := dao.GetReceivedFileByFileID(file.FileID)
-		if receivedFile != nil && receivedFile.Processing {
-			bot.EditMessageText(&telego.EditMessageTextParams{
-				ChatID:    message.Chat.ChatID(),
-				MessageID: msg.MessageID,
-				Text:      "该文件或许正在处理中, 使用 /save 命令回复此文件以强制加入队列\n使用 /clean 命令回复此文件以清除对应的记录",
-			})
-			return
-		}
+		message.Reply("获取文件信息失败")
+		return err
 	}
 	if fileName == "" {
-		fileName = filepath.Base(file.FilePath)
+		logger.L.Error("Empty file name")
+		message.Reply("文件名为空")
+		return nil
 	}
 
-	err = dao.AddReceivedFile(&model.ReceivedFile{
-		FileUniqueID:   file.FileUniqueID,
-		FileID:         file.FileID,
+	if err := dao.AddReceivedFile(&model.ReceivedFile{
 		Processing:     false,
 		FileName:       fileName,
-		FilePath:       file.FilePath,
-		FileSize:       file.FileSize,
-		MediaGroupID:   message.MediaGroupID,
-		ChatID:         message.Chat.ChatID().ID,
-		MessageID:      message.MessageID,
-		ReplyMessageID: msg.MessageID,
-	})
-
-	if err != nil {
+		ChatID:         message.ChatID(),
+		MessageID:      message.Message.ID,
+		ReplyMessageID: msg.ID,
+	}); err != nil {
 		logger.L.Error(err)
-		ReplyMessage(message, "创建任务失败")
-		return
+		msg.Edit("保存文件信息失败")
+		return err
 	}
 
 	if !user.Silent {
-		bot.EditMessageText(&telego.EditMessageTextParams{
-			ChatID:      message.Chat.ChatID(),
-			MessageID:   msg.MessageID,
-			Text:        "选择要保存的位置",
-			ReplyMarkup: AddTaskReplyMarkup(message.MessageID),
+		msg.Edit("请选择要保存的位置:", telegram.SendOptions{
+			ReplyMarkup: AddTaskReplyMarkup(message.Message.ID),
 		})
-		return
+		return nil
 	}
 
 	if user.DefaultStorage == "" {
-		bot.EditMessageText(&telego.EditMessageTextParams{
-			ChatID:    message.Chat.ChatID(),
-			MessageID: msg.MessageID,
-			Text:      "请先使用 /storage 命令设置默认存储位置, 或者关闭静默模式",
-		})
-		return
+		msg.Edit("请先使用 /storage 命令设置默认存储位置, 或者关闭静默模式")
+		return nil
 	}
 
 	queue.AddTask(types.Task{
 		Ctx:            context.TODO(),
-		FileID:         file.FileID,
 		Status:         types.Pending,
 		FileName:       fileName,
-		FilePath:       file.FilePath,
 		Storage:        types.StorageType(user.DefaultStorage),
-		ChatID:         message.Chat.ChatID().ID,
-		ReplyMessageID: msg.MessageID,
+		ChatID:         message.ChatID(),
+		MessageID:      message.Message.ID,
+		ReplyMessageID: msg.ID,
 	})
+
+	msg.Edit(fmt.Sprintf("已添加到队列: %s\n当前排队任务数: %d", fileName, queue.Len()))
+	return nil
 }
 
-func AddToQueue(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
-	args := strings.Split(query.Data, " ")
+func AddToQueue(query *telegram.CallbackQuery) error {
+	args := strings.Split(query.DataString(), " ")
 	messageID, _ := strconv.Atoi(args[1])
-	receivedFile, err := dao.GetReceivedFileByChatAndMessageID(query.Message.GetChat().ID, messageID)
+	logger.L.Debug(query.ChatID, messageID)
+	receivedFile, err := dao.GetReceivedFileByChatAndMessageID(query.ChatID, int32(messageID))
 	if err != nil {
 		logger.L.Error(err)
-		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithShowAlert().WithText("获取文件信息失败").WithCacheTime(5))
-		return
+		query.Answer("获取文件信息失败", &telegram.CallbackOptions{
+			Alert:     true,
+			CacheTime: 5,
+		})
+		return err
 	}
 	queue.AddTask(types.Task{
 		Ctx:            context.TODO(),
-		FileID:         receivedFile.FileID,
 		Status:         types.Pending,
 		FileName:       receivedFile.FileName,
-		FilePath:       receivedFile.FilePath,
 		Storage:        types.StorageType(args[2]),
 		ChatID:         receivedFile.ChatID,
+		MessageID:      receivedFile.MessageID,
 		ReplyMessageID: receivedFile.ReplyMessageID,
 	})
-	bot.EditMessageText(&telego.EditMessageTextParams{
-		Text:      fmt.Sprintf("已添加到队列, 当前排队中的任务数: %d", queue.Len()),
-		MessageID: query.Message.GetMessageID(),
-		ChatID:    telegoutil.ID(receivedFile.ChatID),
-	})
+	query.Edit(fmt.Sprintf("已添加到队列: %s\n当前排队任务数: %d", receivedFile.FileName, queue.Len()))
+	return nil
 }

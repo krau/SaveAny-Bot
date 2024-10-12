@@ -24,17 +24,15 @@ var StorageTypes = []StorageType{Local, Alist, Webdav, StorageAll}
 
 type Task struct {
 	Ctx         context.Context
-	FileID      string
 	Error       error
 	Status      TaskStatus
-	FilePath    string // telegram File object's FilePath
 	FileName    string
 	Storage     StorageType
 	StoragePath string
 
-	// For track progress
+	MessageID      int32
 	ChatID         int64
-	ReplyMessageID int
+	ReplyMessageID int32
 }
 
 func (t *Task) String() string {

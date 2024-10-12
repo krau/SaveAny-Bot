@@ -14,6 +14,6 @@ func initClient() {
 	ReqClient = req.NewClient().SetOutputDirectory(config.Cfg.Temp.BasePath).SetTimeout(86400 * time.Second)
 }
 
-func GetDownloadedFilePath(filename string) string {
+func GetCacheFilePath(filename string) string {
 	return filepath.Join(config.Cfg.Temp.BasePath, filename)
 }

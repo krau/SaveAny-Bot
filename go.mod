@@ -3,6 +3,7 @@ module github.com/krau/SaveAny-Bot
 go 1.23.2
 
 require (
+	github.com/amarnathcjd/gogram v0.0.0-20241008120348-4ce400474c46
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/gookit/slog v0.5.6
 	github.com/imroc/req/v3 v3.46.1
@@ -30,6 +31,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/onsi/ginkgo/v2 v2.20.2 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.47.0 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect

@@ -3,108 +3,53 @@ package bot
 import (
 	"os"
 
-	"github.com/duke-git/lancet/v2/slice"
+	"github.com/amarnathcjd/gogram/telegram"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
-	"github.com/mymmrac/telego"
-	"github.com/mymmrac/telego/telegohandler"
-	"github.com/mymmrac/telego/telegoutil"
 )
 
 var (
-	Bot *telego.Bot
+	Client *telegram.Client
 )
 
 func Init() {
 	logger.L.Debug("Initializing bot...")
 	var err error
-	Bot, err = telego.NewBot(
-		config.Cfg.Telegram.Token,
-		telego.WithDefaultLogger(false, true),
-		telego.WithAPIServer(config.Cfg.Telegram.API),
-	)
+	Client, err = telegram.NewClient(telegram.ClientConfig{
+		AppID:    config.Cfg.Telegram.AppID,
+		AppHash:  config.Cfg.Telegram.AppHash,
+		LogLevel: telegram.LogInfo,
+	})
 	if err != nil {
-		logger.L.Fatal("Failed to create bot: ", err)
+		logger.L.Fatal("Failed to create telegram client: ", err)
 		os.Exit(1)
 	}
-	Bot.SetMyCommands(&telego.SetMyCommandsParams{
-		Commands: []telego.BotCommand{
-			{Command: "start", Description: "开始使用"},
-			{Command: "help", Description: "显示帮助"},
-			{Command: "silent", Description: "静默模式"},
-			{Command: "storage", Description: "设置默认存储位置"},
-			{Command: "save", Description: "保存文件"},
-			{Command: "clean", Description: "清除文件记录"},
-		},
+	if err := Client.LoginBot(config.Cfg.Telegram.Token); err != nil {
+		logger.L.Fatal("Failed to login bot: ", err)
+		os.Exit(1)
+	}
+	logger.L.Info("Bot logged in")
+	_, err = Client.BotsSetBotCommands(&telegram.BotCommandScopeDefault{}, "", []*telegram.BotCommand{
+		{Command: "start", Description: "开始使用"},
 	})
-	logger.L.Debug("Bot initialized")
+	if err != nil {
+		logger.L.Errorf("Failed to set bot commands: ", err)
+	}
+	logger.L.Info("Bot initialized")
 }
 
 func Run() {
-	if Bot == nil {
+	if Client == nil {
 		Init()
 	}
-	logger.L.Info("Start polling...")
-	updates, err := Bot.UpdatesViaLongPolling(&telego.GetUpdatesParams{
-		Offset: -1,
-		AllowedUpdates: []string{
-			telego.MessageUpdates,
-			telego.CallbackQueryUpdates,
-		},
-	})
-	if err != nil {
-		logger.L.Fatal("Failed to start polling: ", err)
-		os.Exit(1)
-	}
-	botHandler, err := telegohandler.NewBotHandler(Bot, updates)
-	if err != nil {
-		logger.L.Fatal("Failed to create bot handler: ", err)
-		os.Exit(1)
-	}
-	defer botHandler.Stop()
-	defer Bot.StopLongPolling()
 
-	botHandler.Use(telegohandler.PanicRecovery())
-	baseGroup := botHandler.BaseGroup()
+	Client.On("command:start", Start, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
+	Client.On("command:help", Help, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
+	Client.On("command:silent", ChangeSilentMode, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
+	Client.On("command:storage", SetDefaultStorage, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
+	Client.On("command:save", SaveCmd, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
+	Client.On(telegram.OnMessage, HandleFileMessage, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...), telegram.FilterMedia)
+	Client.On("callback:add", AddToQueue)
 
-	registerHandlers(baseGroup)
-
-	botHandler.Start()
-}
-
-func registerHandlers(hg *telegohandler.HandlerGroup) {
-	msgGroup := hg.Group(telegohandler.AnyMessage())
-	msgGroup.Use(func(bot *telego.Bot, update telego.Update, next telegohandler.Handler) {
-		if !slice.Contain(config.Cfg.Telegram.Admins, update.Message.From.ID) {
-			bot.SendMessage(telegoutil.Message(update.Message.Chat.ChatID(), "抱歉, 该 Bot 为个人使用设计, 您可以部署自己的 SaveAnyBot 实例: https://github.com/krau/SaveAny-Bot"))
-			return
-		}
-		next(bot, update)
-	})
-
-	msgGroup.HandleMessageCtx(Start, telegohandler.CommandEqual("start"))
-	msgGroup.HandleMessageCtx(Help, telegohandler.CommandEqual("help"))
-	msgGroup.HandleMessageCtx(ChangeSilentMode, telegohandler.CommandEqual("silent"))
-	msgGroup.HandleMessageCtx(SetDefaultStorage, telegohandler.CommandEqual("storage"))
-	msgGroup.HandleMessageCtx(SaveFile, telegohandler.CommandEqual("save"))
-	msgGroup.HandleMessageCtx(CleanReceivedFile, telegohandler.CommandEqual("clean"))
-
-	msgGroup.HandleMessageCtx(HandleFileMessage, func(update telego.Update) bool {
-		return update.Message.Document != nil || update.Message.Video != nil || update.Message.Audio != nil
-	})
-
-	callbackGroup := hg.Group(telegohandler.AnyCallbackQueryWithMessage())
-	callbackGroup.Use(func(bot *telego.Bot, update telego.Update, next telegohandler.Handler) {
-		if !slice.Contain(config.Cfg.Telegram.Admins, update.CallbackQuery.From.ID) {
-			bot.AnswerCallbackQuery(telegoutil.
-				CallbackQuery(update.CallbackQuery.ID).
-				WithText("抱歉, 该 Bot 为个人使用设计, 您可以部署自己的 SaveAnyBot 实例: https://github.com/krau/SaveAny-Bot").
-				WithShowAlert().
-				WithCacheTime(60))
-			return
-		}
-		next(bot, update)
-	})
-
-	callbackGroup.HandleCallbackQueryCtx(AddToQueue, telegohandler.CallbackDataPrefix("add"))
+	Client.Idle()
 }
