@@ -31,6 +31,10 @@ func Init() {
 	logger.L.Info("Bot logged in")
 	_, err = Client.BotsSetBotCommands(&telegram.BotCommandScopeDefault{}, "", []*telegram.BotCommand{
 		{Command: "start", Description: "开始使用"},
+		{Command: "help", Description: "显示帮助"},
+		{Command: "silent", Description: "静默模式"},
+		{Command: "storage", Description: "设置默认存储位置"},
+		{Command: "save", Description: "保存所回复文件"},
 	})
 	if err != nil {
 		logger.L.Errorf("Failed to set bot commands: ", err)
