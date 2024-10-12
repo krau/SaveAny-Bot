@@ -24,6 +24,7 @@ func processPendingTask(task types.Task) error {
 	bot.Client.EditMessage(task.ChatID, task.ReplyMessageID, "正在下载文件...")
 	dest, err := message.Download(&telegram.DownloadOptions{
 		FileName: common.GetCacheFilePath(task.FileName),
+		Threads:  config.Cfg.Threads,
 		// ProgressCallback: func(totalBytes, downloadedBytes int64) {},
 	})
 	if err != nil {
@@ -90,8 +91,8 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 
 func Run() {
 	logger.L.Info("Start processing tasks...")
-	semaphore := make(chan struct{}, 3)
-	for i := 0; i < 3; i++ {
+	semaphore := make(chan struct{}, config.Cfg.Workers)
+	for i := 0; i < config.Cfg.Workers; i++ {
 		go worker(queue.Queue, semaphore)
 	}
 }

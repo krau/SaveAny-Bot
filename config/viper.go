@@ -8,6 +8,9 @@ import (
 )
 
 type Config struct {
+	Threads int `toml:"threads" mapstructure:"threads"`
+	Workers int `toml:"workers" mapstructure:"workers"`
+
 	Temp     tempConfig     `toml:"temp" mapstructure:"temp"`
 	Log      logConfig      `toml:"log" mapstructure:"log"`
 	DB       dbConfig       `toml:"db" mapstructure:"db"`
@@ -71,6 +74,9 @@ func Init() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.SetConfigType("toml")
+
+	viper.SetDefault("threads", 3)
+	viper.SetDefault("workers", 3)
 
 	viper.SetDefault("temp.base_path", "cache/")
 	viper.SetDefault("temp.cache_ttl", 3600)
