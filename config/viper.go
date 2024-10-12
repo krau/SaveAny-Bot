@@ -78,7 +78,7 @@ func Init() {
 
 	viper.SetDefault("threads", 3)
 	viper.SetDefault("workers", 3)
-	viper.SetDefault("chunk_size", 50*1024*1024)
+	viper.SetDefault("chunk_size", 1024*1024)
 
 	viper.SetDefault("temp.base_path", "cache/")
 	viper.SetDefault("temp.cache_ttl", 3600)

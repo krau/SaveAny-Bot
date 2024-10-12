@@ -1,6 +1,5 @@
 threads = 4          # 下载线程数
 workers = 4          # 同时下载文件数
-
 [telegram]
 token = ""                                    # Bot Token
 admins = [777000]                             # 你的 user_id
