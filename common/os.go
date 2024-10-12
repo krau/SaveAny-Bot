@@ -33,6 +33,18 @@ func PurgeFile(path string) error {
 	return RemoveEmptyDirectories(filepath.Dir(path))
 }
 
+func RmFileAfter(path string, td time.Duration) {
+	_, err := os.Stat(path)
+	if err != nil {
+		logger.L.Errorf("Failed to create timer for %s: %s", path, err)
+		return
+	}
+	logger.L.Debugf("Remove file after %s: %s", td, path)
+	time.AfterFunc(td, func() {
+		PurgeFile(path)
+	})
+}
+
 // 递归删除空目录
 func RemoveEmptyDirectories(dirPath string) error {
 	entries, err := os.ReadDir(dirPath)

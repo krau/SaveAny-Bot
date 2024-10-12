@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"os"
 	"time"
 
 	"github.com/amarnathcjd/gogram/telegram"
@@ -16,6 +17,8 @@ import (
 )
 
 func processPendingTask(task types.Task) error {
+	os.MkdirAll(config.Cfg.Temp.BasePath, os.ModePerm)
+
 	message, err := bot.Client.GetMessageByID(task.ChatID, task.MessageID)
 	if err != nil {
 		return err
@@ -33,9 +36,9 @@ func processPendingTask(task types.Task) error {
 
 	defer func() {
 		if config.Cfg.Temp.CacheTTL > 0 {
-			common.PurgeFileAfter(dest, time.Duration(config.Cfg.Temp.CacheTTL)*time.Second)
+			common.RmFileAfter(dest, time.Duration(config.Cfg.Temp.CacheTTL)*time.Second)
 		} else {
-			if err := common.PurgeFile(dest); err != nil {
+			if err := os.Remove(dest); err != nil {
 				logger.L.Errorf("Failed to purge file: %s", err)
 			}
 		}
