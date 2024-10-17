@@ -1,3 +1,5 @@
+我真的服了😇, 目前没有什么好的 telegram mtproto sdk, 因此这个项目在运行时会产生很多因上游依赖的 bug 的终止, 能跑就是赢.
+
 # Save Any Bot
 
 把 Telegram 的文件保存到各类存储端.
