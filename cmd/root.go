@@ -9,9 +9,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "saveany-bot",
 	Short: "saveany-bot",
-	Run: func(cmd *cobra.Command, args []string) {
-		Run()
-	},
+	Run:   Run,
 }
 
 func Execute() {

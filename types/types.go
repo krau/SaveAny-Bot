@@ -1,6 +1,10 @@
 package types
 
-import "context"
+import (
+	"context"
+
+	"github.com/gotd/td/tg"
+)
 
 type TaskStatus string
 
@@ -30,11 +34,19 @@ type Task struct {
 	Storage     StorageType
 	StoragePath string
 
-	MessageID      int32
+	MessageID      int
 	ChatID         int64
-	ReplyMessageID int32
+	ReplyMessageID int
 }
 
-func (t *Task) String() string {
+func (t Task) String() string {
 	return t.FileName
+}
+
+type File struct {
+	Location *tg.InputDocumentFileLocation
+	FileSize int64
+	FileName string
+	MimeType string
+	ID       int64
 }

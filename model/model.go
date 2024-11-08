@@ -9,8 +9,8 @@ type ReceivedFile struct {
 	Processing     bool
 	FileName       string
 	ChatID         int64
-	MessageID      int32
-	ReplyMessageID int32
+	MessageID      int
+	ReplyMessageID int
 }
 
 type User struct {

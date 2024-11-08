@@ -6,7 +6,7 @@ func AddReceivedFile(receivedFile *model.ReceivedFile) error {
 	return db.Create(receivedFile).Error
 }
 
-func GetReceivedFileByChatAndMessageID(chatID int64, messageID int32) (*model.ReceivedFile, error) {
+func GetReceivedFileByChatAndMessageID(chatID int64, messageID int) (*model.ReceivedFile, error) {
 	var receivedFile model.ReceivedFile
 	err := db.Where("chat_id = ? AND message_id = ?", chatID, messageID).First(&receivedFile).Error
 	if err != nil {

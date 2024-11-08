@@ -1,59 +1,54 @@
 package bot
 
 import (
+	"context"
 	"os"
+	"time"
 
-	"github.com/amarnathcjd/gogram/telegram"
+	"github.com/celestix/gotgproto"
+	"github.com/celestix/gotgproto/sessionMaker"
+	"github.com/glebarez/sqlite"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
 )
 
-var (
-	Client *telegram.Client
-)
+var Client *gotgproto.Client
 
 func Init() {
-	logger.L.Debug("Initializing bot...")
-	var err error
-	Client, err = telegram.NewClient(telegram.ClientConfig{
-		AppID:    config.Cfg.Telegram.AppID,
-		AppHash:  config.Cfg.Telegram.AppHash,
-		LogLevel: telegram.LogInfo,
+	logger.L.Info("Initializing client...")
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	resultChan := make(chan struct {
+		client *gotgproto.Client
+		err    error
 	})
-	if err != nil {
-		logger.L.Fatal("Failed to create telegram client: ", err)
+
+	go func() {
+		client, err := gotgproto.NewClient(int(config.Cfg.Telegram.AppID), config.Cfg.Telegram.AppHash, gotgproto.ClientTypeBot(config.Cfg.Telegram.Token),
+			&gotgproto.ClientOpts{
+				Session:          sessionMaker.SqlSession(sqlite.Open("data/session.db")),
+				DisableCopyright: true,
+				Middlewares:      FloodWaitMiddleware(),
+			},
+		)
+		resultChan <- struct {
+			client *gotgproto.Client
+			err    error
+		}{client, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		logger.L.Fatal("Failed to initialize client")
 		os.Exit(1)
+	case result := <-resultChan:
+		if result.err != nil {
+			logger.L.Fatalf("Failed to initialize client: %s", result.err)
+			os.Exit(1)
+		}
+		Client = result.client
+		RegisterHandlers(Client.Dispatcher)
+		logger.L.Info("Client initialized")
 	}
-	if err := Client.LoginBot(config.Cfg.Telegram.Token); err != nil {
-		logger.L.Fatal("Failed to login bot: ", err)
-		os.Exit(1)
-	}
-	logger.L.Info("Bot logged in")
-	_, err = Client.BotsSetBotCommands(&telegram.BotCommandScopeDefault{}, "", []*telegram.BotCommand{
-		{Command: "start", Description: "开始使用"},
-		{Command: "help", Description: "显示帮助"},
-		{Command: "silent", Description: "静默模式"},
-		{Command: "storage", Description: "设置默认存储位置"},
-		{Command: "save", Description: "保存所回复文件"},
-	})
-	if err != nil {
-		logger.L.Errorf("Failed to set bot commands: ", err)
-	}
-	logger.L.Info("Bot initialized")
-}
-
-func Run() {
-	if Client == nil {
-		Init()
-	}
-
-	Client.On("command:start", Start, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
-	Client.On("command:help", Help, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
-	Client.On("command:silent", ChangeSilentMode, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
-	Client.On("command:storage", SetDefaultStorage, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
-	Client.On("command:save", SaveCmd, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...))
-	Client.On(telegram.OnMessage, HandleFileMessage, telegram.FilterPrivate, telegram.FilterChats(config.Cfg.Telegram.Admins...), telegram.FilterMedia)
-	Client.On("callback:add", AddToQueue)
-
-	Client.Idle()
 }

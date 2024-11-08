@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage/alist"
@@ -19,6 +20,7 @@ type Storage interface {
 }
 
 var Storages = make(map[types.StorageType]Storage)
+var StorageKeys = make([]types.StorageType, 0)
 
 func Init() {
 	logger.L.Debug("Initializing storage...")
@@ -34,6 +36,12 @@ func Init() {
 		Storages[types.Webdav] = new(webdav.Webdav)
 		Storages[types.Webdav].Init()
 	}
+
+	for k := range Storages {
+		StorageKeys = append(StorageKeys, k)
+	}
+
+	slice.Sort(StorageKeys)
 
 	logger.L.Debug("Storage initialized")
 }
