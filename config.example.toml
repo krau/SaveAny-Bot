@@ -1,5 +1,5 @@
-threads = 4          # 下载线程数
 workers = 4          # 同时下载文件数
+
 [telegram]
 token = ""                                    # Bot Token
 admins = [777000]                             # 你的 user_id
@@ -10,7 +10,7 @@ api_hash = "0123456789abcdef0123456789abcdef" # Telegram API Hash
 level = "DEBUG" # 日志等级
 
 [temp]
-base_path = "cache/" # 临时目录, 请不要在此目录下存放任何其他文件
+base_path = "cache/" # 下载文件临时目录, 请不要在此目录下存放任何其他文件
 cache_ttl = 30       # 临时文件保存时间, 单位: 秒
 
 [db]

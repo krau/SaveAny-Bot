@@ -1,5 +1,3 @@
-我真的服了😇, 目前没有什么好的 telegram mtproto sdk, 因此这个项目在运行时会产生很多因上游依赖的 bug 的终止, 能跑就是赢.
-
 # Save Any Bot
 
 把 Telegram 的文件保存到各类存储端.
@@ -35,3 +33,12 @@ api = "http://localhost:8081"
 ```
 
 参考: [telegram-bot-api-compose](https://github.com/krau/telegram-bot-api-compose)
+
+---
+
+## Thanks
+
+- [gotd](https://github.com/gotd/td)
+- [TG-FileStreamBot](https://github.com/EverythingSuckz/TG-FileStreamBot)
+- [gotgproto](https://github.com/celestix/gotgproto)
+- All the dependencies
