@@ -23,7 +23,7 @@ import (
 )
 
 func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
-	dispatcher.AddHandler(handlers.NewAnyUpdate(checkPermission))
+	dispatcher.AddHandler(handlers.NewMessage(filters.Message.All, checkPermission))
 	dispatcher.AddHandler(handlers.NewCommand("start", start))
 	dispatcher.AddHandler(handlers.NewCommand("help", help))
 	dispatcher.AddHandler(handlers.NewCommand("silent", silent))
@@ -325,6 +325,15 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 }
 
 func AddToQueue(ctx *ext.Context, update *ext.Update) error {
+	if !slice.Contain(config.Cfg.Telegram.Admins, update.CallbackQuery.UserID) {
+		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+			QueryID:   update.CallbackQuery.QueryID,
+			Alert:     true,
+			Message:   "你没有权限",
+			CacheTime: 5,
+		})
+		return dispatcher.EndGroups
+	}
 	args := strings.Split(string(update.CallbackQuery.Data), " ")
 	messageID, _ := strconv.Atoi(args[1])
 	logger.L.Tracef("Got add to queue: chatID: %d, messageID: %d, storage: %s", update.EffectiveChat().GetID(), messageID, args[2])
