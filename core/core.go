@@ -21,17 +21,50 @@ import (
 
 func processPendingTask(task *types.Task) error {
 	logger.L.Debugf("Start processing task: %s", task.String())
-
 	os.MkdirAll(config.Cfg.Temp.BasePath, os.ModePerm)
-
-	logger.L.Debugf("Start downloading file: %s", task.String())
-
 	task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-		Message: "开始下载文件...",
+		Message: "正在下载文件...",
 		ID:      task.ReplyMessageID,
 	})
 
-	readCloser, err := NewTelegramReader(task.Ctx, bot.Client, task.File.Location, 0, task.File.FileSize-1, task.File.FileSize)
+	barTotalCount := 5
+	if task.File.FileSize > 1024*1024*200 {
+		barTotalCount = 10
+	} else if task.File.FileSize > 1024*1024*500 {
+		barTotalCount = 20
+	} else if task.File.FileSize > 1024*1024*1000 {
+		barTotalCount = 50
+	}
+
+	readCloser, err := NewTelegramReader(task.Ctx, bot.Client, task.File.Location, 0, task.File.FileSize-1, task.File.FileSize, func(bytesRead, contentLength int64) {
+		progress := float64(bytesRead) / float64(contentLength) * 100
+		logger.L.Tracef("Downloading %s: %.2f%%", task.String(), progress)
+		if task.File.FileSize < 1024*1024*50 {
+			return
+		}
+
+		barSize := 100 / barTotalCount
+		if int(progress)%barSize != 0 {
+			return
+		}
+
+		text := fmt.Sprintf("正在下载文件\n[%s] %.2f%%", func() string {
+			bar := ""
+			for i := 0; i < barTotalCount; i++ {
+				if int(progress)/barSize > i {
+					bar += "█"
+				} else {
+					bar += "░"
+				}
+			}
+			return bar
+		}(), progress)
+		task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+			Message: text,
+			ID:      task.ReplyMessageID,
+		})
+	}, task.File.FileSize/100)
+
 	if err != nil {
 		return fmt.Errorf("Failed to create reader: %w", err)
 	}
@@ -41,18 +74,18 @@ func processPendingTask(task *types.Task) error {
 	if err != nil {
 		return fmt.Errorf("Failed to create file: %w", err)
 	}
-	logger.L.Debug("Created file: ", dest.Name())
 	defer dest.Close()
 
 	if _, err := io.CopyN(dest, readCloser, task.File.FileSize); err != nil {
 		return fmt.Errorf("Failed to download file: %w", err)
 	}
+	destName := dest.Name()
 
 	defer func() {
 		if config.Cfg.Temp.CacheTTL > 0 {
-			common.RmFileAfter(dest.Name(), time.Duration(config.Cfg.Temp.CacheTTL)*time.Second)
+			common.RmFileAfter(destName, time.Duration(config.Cfg.Temp.CacheTTL)*time.Second)
 		} else {
-			if err := os.Remove(dest.Name()); err != nil {
+			if err := os.Remove(destName); err != nil {
 				logger.L.Errorf("Failed to purge file: %s", err)
 			}
 		}
