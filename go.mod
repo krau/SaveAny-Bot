@@ -19,6 +19,7 @@ require (
 require (
 	github.com/AnimeKaizoku/cacher v1.0.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/glebarez/go-sqlite v1.22.0 // indirect
@@ -69,6 +70,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/coocood/freecache v1.2.4
 	github.com/duke-git/lancet/v2 v2.3.3
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/glebarez/sqlite v1.11.0

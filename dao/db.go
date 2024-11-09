@@ -7,7 +7,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
-	"github.com/krau/SaveAny-Bot/model"
+	"github.com/krau/SaveAny-Bot/types"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +25,7 @@ func Init() {
 		os.Exit(1)
 	}
 	logger.L.Debug("Database connected")
-	db.AutoMigrate(&model.ReceivedFile{}, &model.User{})
+	db.AutoMigrate(&types.ReceivedFile{}, &types.User{})
 
 	for _, admin := range config.Cfg.Telegram.Admins {
 		CreateUser(int64(admin))

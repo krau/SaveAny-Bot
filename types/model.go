@@ -1,4 +1,4 @@
-package model
+package types
 
 import (
 	"gorm.io/gorm"
@@ -7,10 +7,10 @@ import (
 type ReceivedFile struct {
 	gorm.Model
 	Processing     bool
-	FileName       string
 	ChatID         int64
 	MessageID      int
 	ReplyMessageID int
+	FileName       string
 }
 
 type User struct {

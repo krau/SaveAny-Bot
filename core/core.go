@@ -3,57 +3,73 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"os"
 	"time"
 
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/bot"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/queue"
+	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
-func processPendingTask(task types.Task) error {
-	logger.L.Debugf("Start processing task: %s", task.FileName)
-	time.Sleep(10 * time.Second)
-	logger.L.Debugf("Task done: %s", task.FileName)
+func processPendingTask(task *types.Task) error {
+	logger.L.Debugf("Start processing task: %s", task.String())
 
-	// os.MkdirAll(config.Cfg.Temp.BasePath, os.ModePerm)
+	os.MkdirAll(config.Cfg.Temp.BasePath, os.ModePerm)
 
-	// message, err := bot.Client.GetMessageByID(task.ChatID, task.MessageID)
-	// if err != nil {
-	// 	return err
-	// }
-	// logger.L.Debugf("Start downloading file: %s", task.FileName)
-	// bot.Client.EditMessage(task.ChatID, task.ReplyMessageID, "正在下载文件...")
-	// dest, err := message.Download(&telegram.DownloadOptions{
-	// 	FileName:  common.GetCacheFilePath(task.FileName),
-	// 	Threads:   config.Cfg.Threads,
-	// 	ChunkSize: config.Cfg.ChunkSize,
-	// 	// ProgressCallback: func(totalBytes, downloadedBytes int64) {},
-	// })
-	// if err != nil {
-	// 	return err
-	// }
+	logger.L.Debugf("Start downloading file: %s", task.String())
 
-	// defer func() {
-	// 	if config.Cfg.Temp.CacheTTL > 0 {
-	// 		common.RmFileAfter(dest, time.Duration(config.Cfg.Temp.CacheTTL)*time.Second)
-	// 	} else {
-	// 		if err := os.Remove(dest); err != nil {
-	// 			logger.L.Errorf("Failed to purge file: %s", err)
-	// 		}
-	// 	}
-	// }()
-	// if task.StoragePath == "" {
-	// 	task.StoragePath = task.FileName
-	// }
+	task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+		Message: "开始下载文件...",
+		ID:      task.ReplyMessageID,
+	})
 
-	// bot.Client.EditMessage(task.ChatID, task.ReplyMessageID, "下载完成, 正在转存文件...")
-	// if err := storage.Save(task.Storage, task.Ctx, dest, task.StoragePath); err != nil {
-	// 	return err
-	// }
+	readCloser, err := NewTelegramReader(task.Ctx, bot.Client, task.File.Location, 0, task.File.FileSize-1, task.File.FileSize)
+	if err != nil {
+		return fmt.Errorf("Failed to create reader: %w", err)
+	}
+	defer readCloser.Close()
 
+	dest, err := os.Create(common.GetCacheFilePath(task.FileName()))
+	if err != nil {
+		return fmt.Errorf("Failed to create file: %w", err)
+	}
+	logger.L.Debug("Created file: ", dest.Name())
+	defer dest.Close()
+
+	if _, err := io.CopyN(dest, readCloser, task.File.FileSize); err != nil {
+		return fmt.Errorf("Failed to download file: %w", err)
+	}
+
+	defer func() {
+		if config.Cfg.Temp.CacheTTL > 0 {
+			common.RmFileAfter(dest.Name(), time.Duration(config.Cfg.Temp.CacheTTL)*time.Second)
+		} else {
+			if err := os.Remove(dest.Name()); err != nil {
+				logger.L.Errorf("Failed to purge file: %s", err)
+			}
+		}
+	}()
+
+	if task.StoragePath == "" {
+		task.StoragePath = task.File.FileName
+	}
+
+	task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+		Message: "下载完成, 正在转存文件...",
+		ID:      task.ReplyMessageID,
+	})
+
+	if err := storage.Save(task.Storage, task.Ctx, dest.Name(), task.StoragePath); err != nil {
+		return fmt.Errorf("Failed to save file: %w", err)
+	}
 	return nil
 }
 
@@ -61,12 +77,12 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 	for {
 		semaphore <- struct{}{}
 		task := queue.GetTask()
-		logger.L.Debugf("Got task: %s", task.FileName)
+		logger.L.Debugf("Got task: %s", task.String())
 
 		switch task.Status {
 		case types.Pending:
 			logger.L.Infof("Processing task: %s", task.String())
-			if err := processPendingTask(task); err != nil {
+			if err := processPendingTask(&task); err != nil {
 				logger.L.Errorf("Failed to do task: %s", err)
 				task.Error = err
 				if errors.Is(err, context.Canceled) {
@@ -97,7 +113,7 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 			logger.L.Errorf("Unknown task status: %s", task.Status)
 		}
 		<-semaphore
-		logger.L.Debugf("Task done: %s", task.FileName)
+		logger.L.Debugf("Task done: %s", task.String())
 	}
 }
 

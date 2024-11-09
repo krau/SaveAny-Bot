@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gotd/td/tg"
 )
@@ -30,7 +31,7 @@ type Task struct {
 	Ctx         context.Context
 	Error       error
 	Status      TaskStatus
-	FileName    string
+	File        *File
 	Storage     StorageType
 	StoragePath string
 
@@ -40,7 +41,11 @@ type Task struct {
 }
 
 func (t Task) String() string {
-	return t.FileName
+	return fmt.Sprintf("[%d:%d]:%s", t.ChatID, t.MessageID, t.File.FileName)
+}
+
+func (t Task) FileName() string {
+	return t.File.FileName
 }
 
 type File struct {
