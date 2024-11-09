@@ -6,7 +6,6 @@ import (
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher"
-	tgTypes "github.com/celestix/gotgproto/types"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/logger"
@@ -14,7 +13,7 @@ import (
 	"github.com/krau/SaveAny-Bot/types"
 )
 
-func supportedMediaFilter(m *tgTypes.Message) (bool, error) {
+func supportedMediaFilter(m *tg.Message) (bool, error) {
 	if not := m.Media == nil; not {
 		return false, dispatcher.EndGroups
 	}
