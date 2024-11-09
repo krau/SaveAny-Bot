@@ -23,10 +23,6 @@ func initCache() {
 	Cache = &CommonCache{cache: freecache.NewCache(10 * 1024 * 1024)}
 }
 
-func GetCache() *CommonCache {
-	return Cache
-}
-
 func (c *CommonCache) Get(key string, value *types.File) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

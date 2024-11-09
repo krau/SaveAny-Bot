@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/celestix/gotgproto/ext"
@@ -70,7 +71,7 @@ func processPendingTask(task *types.Task) error {
 	}
 	defer readCloser.Close()
 
-	dest, err := os.Create(common.GetCacheFilePath(task.FileName()))
+	dest, err := os.Create(filepath.Join(config.Cfg.Temp.BasePath, task.File.FileName))
 	if err != nil {
 		return fmt.Errorf("Failed to create file: %w", err)
 	}

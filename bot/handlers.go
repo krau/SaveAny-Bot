@@ -135,7 +135,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 }
 
 func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
-	logger.L.Debug("Got media: ", update.EffectiveMessage.Media.TypeName())
+	logger.L.Trace("Got media: ", update.EffectiveMessage.Media.TypeName())
 	supported, err := supportedMediaFilter(update.EffectiveMessage)
 	if err != nil {
 		return err
@@ -226,7 +226,7 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 	args := strings.Split(string(update.CallbackQuery.Data), " ")
 	messageID, _ := strconv.Atoi(args[1])
-	logger.L.Debugf("Got add to queue: chatID: %d, messageID: %d, storage: %s", update.EffectiveChat().GetID(), messageID, args[2])
+	logger.L.Trace("Got add to queue: chatID: %d, messageID: %d, storage: %s", update.EffectiveChat().GetID(), messageID, args[2])
 	record, err := dao.GetReceivedFileByChatAndMessageID(update.EffectiveChat().GetID(), messageID)
 	if err != nil {
 		logger.L.Errorf("Failed to get received file: %s", err)

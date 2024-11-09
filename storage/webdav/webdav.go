@@ -32,7 +32,7 @@ func (w *Webdav) Init() {
 }
 
 func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {
-	storagePath = filepath.Join(basePath, storagePath)
+	storagePath = basePath + "/" + storagePath
 	if err := Client.MkdirAll(filepath.Dir(storagePath), os.ModePerm); err != nil {
 		logger.L.Errorf("Failed to create directory %s: %v", filepath.Dir(storagePath), err)
 		return errors.New("webdav: failed to create directory")
