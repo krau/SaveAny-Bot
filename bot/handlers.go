@@ -339,6 +339,13 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		})
 		return dispatcher.EndGroups
 	}
+	if update.CallbackQuery.MsgID != record.ReplyMessageID {
+		record.ReplyMessageID = update.CallbackQuery.MsgID
+		if err := dao.UpdateReceivedFile(record); err != nil {
+			logger.L.Errorf("Failed to update received file: %s", err)
+		}
+	}
+
 	file, err := FileFromMessage(ctx, Client, record.ChatID, record.MessageID)
 	if err != nil {
 		logger.L.Errorf("Failed to get file from message: %s", err)
