@@ -1,8 +1,14 @@
-# Save Any Bot
+<div align="center">
+
+# <img src="docs/logo.jpg" width="45" align="center"> Save Any Bot
 
 把 Telegram 的文件保存到各类存储端.
 
 > _就像 PikPak Bot 一样_
+
+<video src="docs/demo.mp4" width="100%" controls></video>
+
+</div>
 
 ## 部署
 
@@ -20,6 +26,8 @@ chmod +x saveany-bot
 ## 使用
 
 向 Bot 发送(转发)文件, 按照提示操作.
+
+---
 
 ## Bot API 版本 (v0.3.0 前)
 
