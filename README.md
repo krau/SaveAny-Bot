@@ -6,9 +6,9 @@
 
 > _就像 PikPak Bot 一样_
 
-<video src="docs/demo.mp4" width="100%" controls></video>
+<video src=">https://raw.githubusercontent.com/krau/SaveAny-Bot/refs/heads/main/docs/demo.mp4" width="100%" controls></video>
 
-</div>
+</div
 
 ## 部署
 
