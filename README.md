@@ -8,6 +8,14 @@
 
 </div
 
+Demo Video:
+
+<div align="center">
+
+[![Demo](https://img.youtube.com/vi/dy7ujMuKi_s/0.jpg)](https://youtu.be/dy7ujMuKi_s)
+
+</div>
+
 ## 部署
 
 在 [Release](https://github.com/krau/SaveAny-Bot/releases) 页面下载对应平台的二进制文件.
