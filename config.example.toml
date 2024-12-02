@@ -3,8 +3,8 @@ workers = 4          # 同时下载文件数
 [telegram]
 token = ""                                    # Bot Token
 admins = [777000]                             # 你的 user_id
-api_id = 123456                               # Telegram API ID
-api_hash = "0123456789abcdef0123456789abcdef" # Telegram API Hash
+app_id = 123456                               # Telegram API ID
+app_hash = "0123456789abcdef0123456789abcdef" # Telegram API Hash
 
 [log]
 level = "DEBUG" # 日志等级
