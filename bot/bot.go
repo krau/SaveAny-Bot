@@ -40,7 +40,7 @@ func Init() {
 
 	select {
 	case <-ctx.Done():
-		logger.L.Fatal("Failed to initialize client")
+		logger.L.Fatal("Failed to initialize client: timeout")
 		os.Exit(1)
 	case result := <-resultChan:
 		if result.err != nil {

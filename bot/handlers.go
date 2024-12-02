@@ -41,7 +41,7 @@ const noPermissionText string = `
 func checkPermission(ctx *ext.Context, update *ext.Update) error {
 	userID := update.GetUserChat().GetID()
 	if !slice.Contain(config.Cfg.Telegram.Admins, userID) {
-		ctx.Reply(update, noPermissionText, nil)
+		ctx.Reply(update, ext.ReplyTextString(noPermissionText), nil)
 		return dispatcher.EndGroups
 	}
 	return dispatcher.ContinueGroups
@@ -68,7 +68,7 @@ SaveAny Bot - 转存你的 Telegram 文件
 `
 
 func help(ctx *ext.Context, update *ext.Update) error {
-	ctx.Reply(update, helpText, nil)
+	ctx.Reply(update, ext.ReplyTextString(helpText), nil)
 	return dispatcher.EndGroups
 }
 
@@ -83,18 +83,18 @@ func silent(ctx *ext.Context, update *ext.Update) error {
 		logger.L.Errorf("Failed to update user: %s", err)
 		return dispatcher.EndGroups
 	}
-	ctx.Reply(update, fmt.Sprintf("已%s静默模式", func() string {
+	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("已%s静默模式", func() string {
 		if user.Silent {
 			return "开启"
 		}
 		return "关闭"
-	}()), nil)
+	}())), nil)
 	return dispatcher.EndGroups
 }
 
 func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 	if len(storage.Storages) == 0 {
-		ctx.Reply(update, "未配置存储", nil)
+		ctx.Reply(update, ext.ReplyTextString("未配置存储"), nil)
 		return dispatcher.EndGroups
 	}
 	args := strings.Split(update.EffectiveMessage.Text, " ")
@@ -107,12 +107,12 @@ func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 			text = append(text, styling.Plain("\n"))
 			text = append(text, styling.Code(name))
 		}
-		ctx.Reply(update, text, nil)
+		ctx.Reply(update, ext.ReplyTextStyledTextArray(text), nil)
 		return dispatcher.EndGroups
 	}
 	storageName := args[1]
 	if !slice.Contain(avaliableStorages, storageName) {
-		ctx.Reply(update, "存储位置不存在", nil)
+		ctx.Reply(update, ext.ReplyTextString("存储位置不存在"), nil)
 		return dispatcher.EndGroups
 	}
 	user, err := dao.GetUserByUserID(update.GetUserChat().GetID())
@@ -125,31 +125,31 @@ func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 		logger.L.Errorf("Failed to update user: %s", err)
 		return dispatcher.EndGroups
 	}
-	ctx.Reply(update, fmt.Sprintf("已设置默认存储位置为 %s", storageName), nil)
+	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("已设置默认存储位置为 %s", storageName)), nil)
 	return dispatcher.EndGroups
 }
 
 func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	res, ok := update.EffectiveMessage.GetReplyTo()
 	if !ok || res == nil {
-		ctx.Reply(update, "请回复要保存的文件", nil)
+		ctx.Reply(update, ext.ReplyTextString("请回复要保存的文件"), nil)
 		return dispatcher.EndGroups
 	}
 	replyHeader, ok := res.(*tg.MessageReplyHeader)
 	if !ok {
-		ctx.Reply(update, "请回复要保存的文件", nil)
+		ctx.Reply(update, ext.ReplyTextString("请回复要保存的文件"), nil)
 		return dispatcher.EndGroups
 	}
 	replyToMsgID, ok := replyHeader.GetReplyToMsgID()
 	if !ok {
-		ctx.Reply(update, "请回复要保存的文件", nil)
+		ctx.Reply(update, ext.ReplyTextString("请回复要保存的文件"), nil)
 		return dispatcher.EndGroups
 	}
 	msg, err := GetTGMessage(ctx, Client, replyToMsgID)
 
 	supported, _ := supportedMediaFilter(msg)
 	if !supported {
-		ctx.Reply(update, "不支持的消息类型或消息中没有文件", nil)
+		ctx.Reply(update, ext.ReplyTextString("不支持的消息类型或消息中没有文件"), nil)
 		return dispatcher.EndGroups
 	}
 
@@ -159,7 +159,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	replied, err := ctx.Reply(update, "正在获取文件信息...", nil)
+	replied, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)
 	if err != nil {
 		logger.L.Errorf("Failed to reply: %s", err)
 		return dispatcher.EndGroups
@@ -213,7 +213,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	if user.DefaultStorage == "" {
-		ctx.Reply(update, "请先使用 /storage 设置默认存储位置", nil)
+		ctx.Reply(update, ext.ReplyTextString("请先使用 /storage 设置默认存储位置"), nil)
 		return dispatcher.EndGroups
 	}
 	queue.AddTask(types.Task{
@@ -251,7 +251,7 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	msg, err := ctx.Reply(update, "正在获取文件信息...", nil)
+	msg, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)
 	if err != nil {
 		logger.L.Errorf("Failed to reply: %s", err)
 		return dispatcher.EndGroups
@@ -260,11 +260,11 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 	file, err := FileFromMedia(media)
 	if err != nil {
 		logger.L.Errorf("Failed to get file from media: %s", err)
-		ctx.Reply(update, "无法获取文件", nil)
+		ctx.Reply(update, ext.ReplyTextString("无法获取文件"), nil)
 		return dispatcher.EndGroups
 	}
 	if file.FileName == "" {
-		ctx.Reply(update, "无法获取文件名", nil)
+		ctx.Reply(update, ext.ReplyTextString("无法获取文件名"), nil)
 		return dispatcher.EndGroups
 	}
 
