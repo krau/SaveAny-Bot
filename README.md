@@ -35,21 +35,6 @@ chmod +x saveany-bot
 
 ---
 
-## Bot API 版本 (v0.3.0 前)
-
-> Bot API 版本自身不需要 API_ID 和 API_HASH, 但是部署 Telegram Bot API 服务器仍然需要.
-
-由于 Telegram 官方 Bot API 的限制, Bot 无法下载大于 20MB 的文件. 你需要部署一个本地的 Telegram Bot API 来解决这个问题, 然后在配置文件改为你自己的 api 地址
-
-```toml
-[telegram]
-api = "http://localhost:8081"
-```
-
-参考: [telegram-bot-api-compose](https://github.com/krau/telegram-bot-api-compose)
-
----
-
 ## Thanks
 
 - [gotd](https://github.com/gotd/td)
