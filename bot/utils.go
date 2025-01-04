@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 
 	"github.com/celestix/gotgproto"
@@ -84,9 +85,13 @@ func FileFromMedia(media tg.MessageMediaClass) (*types.File, error) {
 		var fileName string
 		for _, attribute := range document.Attributes {
 			if name, ok := attribute.(*tg.DocumentAttributeFilename); ok {
-				fileName = name.FileName
+				fileName = name.GetFileName()
 				break
 			}
+		}
+		if fileName == "" {
+			fileName = fmt.Sprintf("%x", md5.Sum(document.GetFileReference()))
+			logger.L.Warnf("File name is empty, using hash: %s", fileName)
 		}
 		return &types.File{
 			Location: document.AsInputDocumentFileLocation(),
