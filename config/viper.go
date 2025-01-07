@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Workers int `toml:"workers" mapstructure:"workers"`
+	Retry   int `toml:"retry" mapstructure:"retry"` // Retry times for failed tasks
 
 	Temp     tempConfig     `toml:"temp" mapstructure:"temp"`
 	Log      logConfig      `toml:"log" mapstructure:"log"`

@@ -100,9 +100,21 @@ func processPendingTask(task *types.Task) error {
 		Message: "下载完成, 正在转存文件...",
 		ID:      task.ReplyMessageID,
 	})
-
-	if err := storage.Save(task.Storage, task.Ctx, dest.Name(), task.StoragePath); err != nil {
-		return fmt.Errorf("Failed to save file: %w", err)
+	if config.Cfg.Retry <= 0 {
+		if err := storage.Save(task.Storage, task.Ctx, dest.Name(), task.StoragePath); err != nil {
+			return fmt.Errorf("Failed to save file: %w", err)
+		}
+	} else {
+		for i := 0; i < config.Cfg.Retry; i++ {
+			if err := storage.Save(task.Storage, task.Ctx, dest.Name(), task.StoragePath); err != nil {
+				logger.L.Errorf("Failed to save file: %s, retrying...", err)
+				if i == config.Cfg.Retry-1 {
+					return fmt.Errorf("Failed to save file: %w", err)
+				}
+			} else {
+				break
+			}
+		}
 	}
 	return nil
 }
