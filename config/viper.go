@@ -33,10 +33,16 @@ type dbConfig struct {
 }
 
 type telegramConfig struct {
-	Token   string  `toml:"token" mapstructure:"token"`
-	AppID   int32   `toml:"app_id" mapstructure:"app_id"`
-	AppHash string  `toml:"app_hash" mapstructure:"app_hash"`
-	Admins  []int64 `toml:"admins" mapstructure:"admins"`
+	Token   string      `toml:"token" mapstructure:"token"`
+	AppID   int         `toml:"app_id" mapstructure:"app_id"`
+	AppHash string      `toml:"app_hash" mapstructure:"app_hash"`
+	Admins  []int64     `toml:"admins" mapstructure:"admins"`
+	Proxy   proxyConfig `toml:"proxy" mapstructure:"proxy"`
+}
+
+type proxyConfig struct {
+	Enable bool   `toml:"enable" mapstructure:"enable"`
+	URL    string `toml:"url" mapstructure:"url"`
 }
 
 type storageConfig struct {
