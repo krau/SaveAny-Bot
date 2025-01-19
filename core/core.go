@@ -24,7 +24,7 @@ func processPendingTask(task *types.Task) error {
 	logger.L.Debugf("Start processing task: %s", task.String())
 	os.MkdirAll(config.Cfg.Temp.BasePath, os.ModePerm)
 	task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-		Message: "正在下载文件...",
+		Message: "正在下载: " + task.String(),
 		ID:      task.ReplyMessageID,
 	})
 
@@ -49,7 +49,7 @@ func processPendingTask(task *types.Task) error {
 			return
 		}
 
-		text := fmt.Sprintf("正在下载文件\n[%s] %.2f%%", func() string {
+		text := fmt.Sprintf("正在下载: %s\n[%s] %.2f%%", task.String(), func() string {
 			bar := ""
 			for i := 0; i < barTotalCount; i++ {
 				if int(progress)/barSize > i {
@@ -96,8 +96,9 @@ func processPendingTask(task *types.Task) error {
 		task.StoragePath = task.File.FileName
 	}
 
+	logger.L.Infof("Downloaded file: %s", dest.Name())
 	task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-		Message: "下载完成, 正在转存文件...",
+		Message: fmt.Sprintf("下载完成: %s\n正在转存文件...", task.FileName()),
 		ID:      task.ReplyMessageID,
 	})
 	if config.Cfg.Retry <= 0 {
@@ -144,13 +145,13 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 		case types.Succeeded:
 			logger.L.Infof("Task succeeded: %s", task.String())
 			task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-				Message: "文件保存成功",
+				Message: "保存成功\n" + task.FileName(),
 				ID:      task.ReplyMessageID,
 			})
 		case types.Failed:
 			logger.L.Errorf("Task failed: %s", task.String())
 			task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-				Message: "文件保存失败",
+				Message: "文件保存失败\n" + task.Error.Error(),
 				ID:      task.ReplyMessageID,
 			})
 		case types.Canceled:
