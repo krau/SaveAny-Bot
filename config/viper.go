@@ -82,6 +82,7 @@ func Init() {
 	viper.SetConfigType("toml")
 
 	viper.SetDefault("workers", 3)
+	viper.SetDefault("retry", 3)
 
 	viper.SetDefault("temp.base_path", "cache/")
 	viper.SetDefault("temp.cache_ttl", 3600)
@@ -91,8 +92,6 @@ func Init() {
 	viper.SetDefault("log.backup_count", 7)
 
 	viper.SetDefault("db.path", "data/saveany.db")
-
-	viper.SetDefault("telegram.api", "https://api.telegram.org")
 
 	viper.SetDefault("storage.alist.base_path", "/")
 	viper.SetDefault("storage.alist.token_exp", 3600)
@@ -105,6 +104,10 @@ func Init() {
 	Cfg = &Config{}
 	if err := viper.Unmarshal(Cfg); err != nil {
 		fmt.Println("Error unmarshalling config file, ", err)
+		os.Exit(1)
+	}
+	if Cfg.Workers < 1 || Cfg.Retry < 1 {
+		fmt.Println("Invalid workers or retry value")
 		os.Exit(1)
 	}
 }

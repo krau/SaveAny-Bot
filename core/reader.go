@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/celestix/gotgproto"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/config"
 )
 
 type telegramReader struct {
@@ -90,25 +92,29 @@ func NewTelegramReader(
 }
 
 func (r *telegramReader) chunk(offset int64, limit int64) ([]byte, error) {
-
-	req := &tg.UploadGetFileRequest{
-		Offset:   offset,
-		Limit:    int(limit),
-		Location: r.location,
+	var lastError error
+	for i := 0; i < config.Cfg.Retry; i++ {
+		req := &tg.UploadGetFileRequest{
+			Offset:   offset,
+			Limit:    int(limit),
+			Location: r.location,
+		}
+		res, err := r.client.API().UploadGetFile(r.ctx, req)
+		if err != nil {
+			if strings.Contains(err.Error(), tg.ErrTimeout) {
+				lastError = err
+				continue
+			}
+			return nil, err
+		}
+		switch result := res.(type) {
+		case *tg.UploadFile:
+			return result.Bytes, nil
+		default:
+			return nil, fmt.Errorf("unexpected type %T", r)
+		}
 	}
-
-	res, err := r.client.API().UploadGetFile(r.ctx, req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	switch result := res.(type) {
-	case *tg.UploadFile:
-		return result.Bytes, nil
-	default:
-		return nil, fmt.Errorf("unexpected type %T", r)
-	}
+	return nil, lastError
 }
 
 func (r *telegramReader) partStream() func() ([]byte, error) {
