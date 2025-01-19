@@ -49,7 +49,7 @@ jobs:
       - name: Release Go Binary
         uses: wangyoucao577/go-release-action@v1
         with:
-          pre_command: export
+          pre_command: export CGO_ENABLED=0
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
