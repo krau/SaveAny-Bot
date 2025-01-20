@@ -29,6 +29,14 @@ chmod +x saveany-bot
 ./saveany-bot
 ```
 
+## 更新
+
+使用 `upgrade` 或 `up` 升级到最新版
+
+```bash
+./saveany-bot upgrade
+```
+
 ## 使用
 
 向 Bot 发送(转发)文件, 按照提示操作.
