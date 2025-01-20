@@ -55,10 +55,6 @@ func processPendingTask(task *types.Task) error {
 		defer cleanCacheFile(destPath)
 
 		logger.L.Infof("Downloaded file: %s", destPath)
-		ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-			Message: fmt.Sprintf("下载完成: %s\n正在转存文件...", task.FileName()),
-			ID:      task.ReplyMessageID,
-		})
 
 		return saveFileWithRetry(task, destPath)
 	}
