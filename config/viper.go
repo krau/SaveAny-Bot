@@ -3,13 +3,14 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
 	Workers int `toml:"workers" mapstructure:"workers"`
-	Retry   int `toml:"retry" mapstructure:"retry"` // Retry times for failed tasks
+	Retry   int `toml:"retry" mapstructure:"retry"`
 
 	Temp     tempConfig     `toml:"temp" mapstructure:"temp"`
 	Log      logConfig      `toml:"log" mapstructure:"log"`
@@ -79,7 +80,12 @@ var Cfg *Config
 func Init() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("/etc/saveany/")
 	viper.SetConfigType("toml")
+	viper.SetEnvPrefix("SAVEANY")
+	viper.AutomaticEnv()
+	replacer := strings.NewReplacer(".", "_")
+	viper.SetEnvKeyReplacer(replacer)
 
 	viper.SetDefault("workers", 3)
 	viper.SetDefault("retry", 3)
