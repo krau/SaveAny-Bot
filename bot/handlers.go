@@ -107,6 +107,7 @@ func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 			text = append(text, styling.Plain("\n"))
 			text = append(text, styling.Code(name))
 		}
+		text = append(text, styling.Plain("\n示例: /storage local"))
 		ctx.Reply(update, ext.ReplyTextStyledTextArray(text), nil)
 		return dispatcher.EndGroups
 	}
