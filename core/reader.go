@@ -13,7 +13,7 @@ import (
 
 type telegramReader struct {
 	client           *gotgproto.Client
-	location         *tg.InputDocumentFileLocation
+	location         *tg.InputFileLocationClass
 	bytesread        int64
 	chunkSize        int64
 	i                int64
@@ -67,7 +67,7 @@ func (r *telegramReader) Read(p []byte) (n int, err error) {
 func NewTelegramReader(
 	ctx context.Context,
 	client *gotgproto.Client,
-	location *tg.InputDocumentFileLocation,
+	location *tg.InputFileLocationClass,
 	start int64,
 	end int64,
 	contentLength int64,
@@ -97,7 +97,7 @@ func (r *telegramReader) chunk(offset int64, limit int64) ([]byte, error) {
 		req := &tg.UploadGetFileRequest{
 			Offset:   offset,
 			Limit:    int(limit),
-			Location: r.location,
+			Location: *r.location,
 		}
 		res, err := r.client.API().UploadGetFile(r.ctx, req)
 		if err != nil {

@@ -9,6 +9,15 @@ import (
 	"github.com/krau/SaveAny-Bot/logger"
 )
 
+// 创建文件, 自动创建目录
+func MkFile(path string, data []byte) error {
+	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, os.ModePerm)
+}
+
 // 删除文件, 并清理空目录. 如果文件不存在则返回 nil
 func PurgeFile(path string) error {
 	if err := os.Remove(path); err != nil {

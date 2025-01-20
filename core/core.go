@@ -28,6 +28,70 @@ func processPendingTask(task *types.Task) error {
 		ID:      task.ReplyMessageID,
 	})
 
+	if task.File.FileSize == 0 {
+		res, err := bot.Client.API().UploadGetFile(task.Ctx, &tg.UploadGetFileRequest{
+			Location: task.File.Location,
+			Offset:   0,
+			Limit:    1024 * 1024,
+		})
+		if err != nil {
+			return fmt.Errorf("Failed to get file: %w", err)
+		}
+		switch result := res.(type) {
+		case *tg.UploadFile:
+			dest, err := os.Create(filepath.Join(config.Cfg.Temp.BasePath, task.File.FileName))
+			if err != nil {
+				return fmt.Errorf("Failed to create file: %w", err)
+			}
+			defer dest.Close()
+			destName := dest.Name()
+
+			if err := os.WriteFile(destName, result.Bytes, os.ModePerm); err != nil {
+				return fmt.Errorf("Failed to write file: %w", err)
+			}
+
+			defer func() {
+				if config.Cfg.Temp.CacheTTL > 0 {
+					common.RmFileAfter(destName, time.Duration(config.Cfg.Temp.CacheTTL)*time.Second)
+				} else {
+					if err := os.Remove(destName); err != nil {
+						logger.L.Errorf("Failed to purge file: %s", err)
+					}
+				}
+			}()
+
+			if task.StoragePath == "" {
+				task.StoragePath = task.File.FileName
+			}
+
+			logger.L.Infof("Downloaded file: %s", dest.Name())
+			task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+				Message: fmt.Sprintf("下载完成: %s\n正在转存文件...", task.FileName()),
+				ID:      task.ReplyMessageID,
+			})
+			if config.Cfg.Retry <= 0 {
+				if err := storage.Save(task.Storage, task.Ctx, dest.Name(), task.StoragePath); err != nil {
+					return fmt.Errorf("Failed to save file: %w", err)
+				}
+			} else {
+				for i := 0; i < config.Cfg.Retry; i++ {
+					if err := storage.Save(task.Storage, task.Ctx, dest.Name(), task.StoragePath); err != nil {
+						logger.L.Errorf("Failed to save file: %s, retrying...", err)
+						if i == config.Cfg.Retry-1 {
+							return fmt.Errorf("Failed to save file: %w", err)
+						}
+					} else {
+						break
+					}
+				}
+			}
+			return nil
+
+		default:
+			return fmt.Errorf("unexpected type %T", res)
+		}
+	}
+
 	barTotalCount := 5
 	if task.File.FileSize > 1024*1024*200 {
 		barTotalCount = 10
@@ -37,7 +101,7 @@ func processPendingTask(task *types.Task) error {
 		barTotalCount = 50
 	}
 
-	readCloser, err := NewTelegramReader(task.Ctx, bot.Client, task.File.Location, 0, task.File.FileSize-1, task.File.FileSize, func(bytesRead, contentLength int64) {
+	readCloser, err := NewTelegramReader(task.Ctx, bot.Client, &task.File.Location, 0, task.File.FileSize-1, task.File.FileSize, func(bytesRead, contentLength int64) {
 		progress := float64(bytesRead) / float64(contentLength) * 100
 		logger.L.Tracef("Downloading %s: %.2f%%", task.String(), progress)
 		if task.File.FileSize < 1024*1024*50 {

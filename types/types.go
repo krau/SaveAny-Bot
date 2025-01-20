@@ -49,9 +49,7 @@ func (t Task) FileName() string {
 }
 
 type File struct {
-	Location *tg.InputDocumentFileLocation
+	Location tg.InputFileLocationClass
 	FileSize int64
 	FileName string
-	MimeType string
-	ID       int64
 }

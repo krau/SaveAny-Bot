@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"time"
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher"
@@ -21,10 +22,8 @@ func supportedMediaFilter(m *tg.Message) (bool, error) {
 	switch m.Media.(type) {
 	case *tg.MessageMediaDocument:
 		return true, nil
-	case *tg.MessageMediaWebPage:
-		return false, dispatcher.EndGroups
-	case tg.MessageMediaClass:
-		return false, dispatcher.EndGroups
+	case *tg.MessageMediaPhoto:
+		return true, nil
 	default:
 		return false, nil
 	}
@@ -80,7 +79,7 @@ func FileFromMedia(media tg.MessageMediaClass) (*types.File, error) {
 	case *tg.MessageMediaDocument:
 		document, ok := media.Document.AsNotEmpty()
 		if !ok {
-			return nil, fmt.Errorf("unexpected type %T", media)
+			return nil, fmt.Errorf("document is empty")
 		}
 		var fileName string
 		for _, attribute := range document.Attributes {
@@ -97,9 +96,32 @@ func FileFromMedia(media tg.MessageMediaClass) (*types.File, error) {
 			Location: document.AsInputDocumentFileLocation(),
 			FileSize: document.Size,
 			FileName: fileName,
-			MimeType: document.MimeType,
-			ID:       document.ID,
 		}, nil
+	case *tg.MessageMediaPhoto:
+		photo, ok := media.Photo.AsNotEmpty()
+		if !ok {
+			return nil, fmt.Errorf("photo is empty")
+		}
+		sizes := photo.Sizes
+		if len(sizes) == 0 {
+			return nil, fmt.Errorf("photo sizes is empty")
+		}
+		photoSize := sizes[len(sizes)-1]
+		size, ok := photoSize.AsNotEmpty()
+		if !ok {
+			return nil, fmt.Errorf("photo size is empty")
+		}
+		location := new(tg.InputPhotoFileLocation)
+		location.ID = photo.GetID()
+		location.AccessHash = photo.GetAccessHash()
+		location.FileReference = photo.GetFileReference()
+		location.ThumbSize = size.GetType()
+		return &types.File{
+			Location: location,
+			FileSize: 0,
+			FileName: fmt.Sprintf("photo_%s_%d.jpg", time.Now().Format("2006-01-02_15-04-05"), photo.GetID()),
+		}, nil
+
 	}
 	return nil, fmt.Errorf("unexpected type %T", media)
 }
