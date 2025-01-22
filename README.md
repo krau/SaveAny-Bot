@@ -29,6 +29,31 @@ chmod +x saveany-bot
 ./saveany-bot
 ```
 
+### 添加为 systemd 服务
+
+创建文件 `/etc/systemd/system/saveany-bot.service` 并写入以下内容:
+
+```
+[Unit]
+Description=SaveAnyBot
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+WorkingDirectory=/yourpath/
+ExecStart=/yourpath/saveany-bot
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+设为开机启动并启动服务:
+
+```bash
+systemctl enable --now saveany-bot
+```
+
 ## 更新
 
 使用 `upgrade` 或 `up` 升级到最新版
