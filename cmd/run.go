@@ -18,5 +18,5 @@ func Run(_ *cobra.Command, _ []string) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
-	logger.L.Info(sig, "exit")
+	logger.L.Info(sig, ", exit")
 }

@@ -86,6 +86,21 @@ func (a *Alist) Init() {
 	go refreshToken(reqClient)
 }
 
+type putResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		Task struct {
+			ID       string `json:"id"`
+			Name     string `json:"name"`
+			State    int    `json:"state"`
+			Status   string `json:"status"`
+			Progress int    `json:"progress"`
+			Error    string `json:"error"`
+		} `json:"task"`
+	} `json:"data"`
+}
+
 func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {
 	storagePath = path.Join(basePath, storagePath)
 	file, err := os.Open(filePath)
@@ -104,6 +119,13 @@ func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {
 	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to save file to Alist: %s", resp.Status)
+	}
+	var putResp putResponse
+	if err := json.Unmarshal(resp.Bytes(), &putResp); err != nil {
+		return fmt.Errorf("failed to unmarshal put response: %v", err)
+	}
+	if putResp.Code != http.StatusOK {
+		return fmt.Errorf("failed to save file to Alist: %d, %s", putResp.Code, putResp.Message)
 	}
 	return nil
 }
