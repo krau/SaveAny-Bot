@@ -108,6 +108,7 @@ func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		return err
