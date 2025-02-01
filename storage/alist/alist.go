@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -107,11 +108,15 @@ func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {
 	if err != nil {
 		return err
 	}
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
 	resp, err := reqClient.R().
 		SetContext(ctx).
-		SetBody(file).
+		SetBodyBytes(fileBytes).
 		SetHeaders(map[string]string{
-			"File-Path": url.PathEscape(storagePath),
+			"File-Path": url.QueryEscape(storagePath),
 			"As-Task":   "true",
 		}).Put("/api/fs/put")
 	if err != nil {
