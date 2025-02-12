@@ -6,6 +6,11 @@ services:
     environment:
       - SAVEANY_TELEGRAM_TOKEN=bot_token
       - SAVEANY_TELEGRAM_ADMINS=admin_id1,admin_id2
+      # 推荐使用自己的 API ID 和 API HASH (https://my.telegram.org)
+      # 若不配置将使用默认的 API ID 和 API HASH
+      # - SAVEANY_TELEGRAM_APP_ID=app_id
+      # - SAVEANY_TELEGRAM_APP_HASH=app_hash
+      
       # 本地存储
       - SAVEANY_STORAGE_LOCAL_ENABLE=true
       - SAVEANY_STORAGE_LOCAL_BASE_PATH=/app/downloads

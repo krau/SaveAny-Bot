@@ -18,6 +18,8 @@ Demo Video:
 
 ## 部署
 
+### 从二进制文件部署
+
 在 [Release](https://github.com/krau/SaveAny-Bot/releases) 页面下载对应平台的二进制文件.
 
 在解压后目录新建 `config.toml` 文件, 参考 [config.toml.example](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) 编辑配置文件.
@@ -29,7 +31,7 @@ chmod +x saveany-bot
 ./saveany-bot
 ```
 
-### 添加为 systemd 服务
+#### 添加为 systemd 服务
 
 创建文件 `/etc/systemd/system/saveany-bot.service` 并写入以下内容:
 
@@ -52,6 +54,27 @@ WantedBy=multi-user.target
 
 ```bash
 systemctl enable --now saveany-bot
+```
+
+### 使用 Docker 部署
+
+#### Docker Compose
+
+下载 [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml) 文件, 并修改其中的配置.
+
+运行:
+
+```bash
+docker compose up -d
+```
+
+#### Docker
+
+```shell
+docker run -d --name saveany-bot \
+    -v /path/to/config.toml:/app/config.toml \
+    -v /path/to/downloads:/app/downloads \
+    ghcr.io/krau/saveany-bot:latest
 ```
 
 ## 更新
