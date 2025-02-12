@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gotd/td/tg"
 )
@@ -34,6 +35,7 @@ type Task struct {
 	File        *File
 	Storage     StorageType
 	StoragePath string
+	StartTime   time.Time
 
 	MessageID      int
 	ChatID         int64

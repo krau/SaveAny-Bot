@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
@@ -23,7 +24,7 @@ func processPendingTask(task *types.Task) error {
 
 	ctx := task.Ctx.(*ext.Context)
 	ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-		Message: "正在下载: " + task.String(),
+		Message: "正在下载: " + task.FileName(),
 		ID:      task.ReplyMessageID,
 	})
 
@@ -67,8 +68,10 @@ func processPendingTask(task *types.Task) error {
 		if task.File.FileSize < 1024*1024*50 || int(progress)%(100/barTotalCount) != 0 {
 			return
 		}
-		text := fmt.Sprintf("正在下载: %s\n[%s] %.2f%%",
-			task.String(),
+		text := fmt.Sprintf("正在处理下载任务\n文件名: %s\n保存路径: %s\n平均速度: %s\n当前进度: [%s] %.2f%%",
+			task.FileName(),
+			fmt.Sprintf("[%s]:%s", task.Storage, task.StoragePath),
+			getSpeed(bytesRead, task.StartTime),
 			getProgressBar(progress, barTotalCount),
 			progress,
 		)
@@ -91,7 +94,7 @@ func processPendingTask(task *types.Task) error {
 		return fmt.Errorf("Failed to create file: %w", err)
 	}
 	defer dest.Close()
-
+	task.StartTime = time.Now()
 	if _, err := io.CopyN(dest, readCloser, task.File.FileSize); err != nil {
 		return fmt.Errorf("Failed to download file: %w", err)
 	}

@@ -52,11 +52,20 @@ func cleanCacheFile(destPath string) {
 func calculateBarTotalCount(fileSize int64) int {
 	barTotalCount := 5
 	if fileSize > 1024*1024*1000 {
-		barTotalCount = 50
+		barTotalCount = 40
 	} else if fileSize > 1024*1024*500 {
 		barTotalCount = 20
 	} else if fileSize > 1024*1024*200 {
 		barTotalCount = 10
 	}
 	return barTotalCount
+}
+
+func getSpeed(bytesRead int64, startTime time.Time) string {
+	if startTime.IsZero() {
+		return "0MB/s"
+	}
+	elapsed := time.Since(startTime)
+	speed := float64(bytesRead) / 1024 / 1024 / elapsed.Seconds()
+	return fmt.Sprintf("%.2fMB/s", speed)
 }
