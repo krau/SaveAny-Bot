@@ -2,7 +2,7 @@ package bot
 
 import (
 	"context"
-	"crypto/md5"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +13,14 @@ import (
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
+)
+
+var (
+	ErrEmptyFileName   = errors.New("file name is empty")
+	ErrEmptyDocument   = errors.New("document is empty")
+	ErrEmptyPhoto      = errors.New("photo is empty")
+	ErrEmptyPhotoSize  = errors.New("photo size is empty")
+	ErrEmptyPhotoSizes = errors.New("photo size slice is empty")
 )
 
 func supportedMediaFilter(m *tg.Message) (bool, error) {
@@ -79,7 +87,7 @@ func FileFromMedia(media tg.MessageMediaClass) (*types.File, error) {
 	case *tg.MessageMediaDocument:
 		document, ok := media.Document.AsNotEmpty()
 		if !ok {
-			return nil, fmt.Errorf("document is empty")
+			return nil, ErrEmptyDocument
 		}
 		var fileName string
 		for _, attribute := range document.Attributes {
@@ -89,8 +97,7 @@ func FileFromMedia(media tg.MessageMediaClass) (*types.File, error) {
 			}
 		}
 		if fileName == "" {
-			fileName = fmt.Sprintf("%x", md5.Sum(document.GetFileReference()))
-			logger.L.Warnf("File name is empty, using hash: %s", fileName)
+			return nil, ErrEmptyFileName
 		}
 		return &types.File{
 			Location: document.AsInputDocumentFileLocation(),
@@ -100,16 +107,16 @@ func FileFromMedia(media tg.MessageMediaClass) (*types.File, error) {
 	case *tg.MessageMediaPhoto:
 		photo, ok := media.Photo.AsNotEmpty()
 		if !ok {
-			return nil, fmt.Errorf("photo is empty")
+			return nil, ErrEmptyPhoto
 		}
 		sizes := photo.Sizes
 		if len(sizes) == 0 {
-			return nil, fmt.Errorf("photo sizes is empty")
+			return nil, ErrEmptyPhotoSizes
 		}
 		photoSize := sizes[len(sizes)-1]
 		size, ok := photoSize.AsNotEmpty()
 		if !ok {
-			return nil, fmt.Errorf("photo size is empty")
+			return nil, ErrEmptyPhotoSize
 		}
 		location := new(tg.InputPhotoFileLocation)
 		location.ID = photo.GetID()
