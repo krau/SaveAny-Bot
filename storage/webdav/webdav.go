@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -33,8 +32,8 @@ func (w *Webdav) Init() {
 
 func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {
 	storagePath = path.Join(basePath, storagePath)
-	if err := Client.MkdirAll(filepath.Dir(storagePath), os.ModePerm); err != nil {
-		logger.L.Errorf("Failed to create directory %s: %v", filepath.Dir(storagePath), err)
+	if err := Client.MkdirAll(path.Dir(storagePath), os.ModePerm); err != nil {
+		logger.L.Errorf("Failed to create directory %s: %v", path.Dir(storagePath), err)
 		return ErrFailedToCreateDirectory
 	}
 	file, err := os.Open(filePath)
