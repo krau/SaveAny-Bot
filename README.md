@@ -85,6 +85,13 @@ docker run -d --name saveany-bot \
 ./saveany-bot upgrade
 ```
 
+如果是 Docker 部署, 使用以下命令更新:
+
+```bash
+docker pull ghcr.io/krau/saveany-bot:latest
+docker restart saveany-bot
+```
+
 ## 使用
 
 向 Bot 发送(转发)文件, 按照提示操作.
