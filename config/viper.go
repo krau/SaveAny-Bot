@@ -9,8 +9,9 @@ import (
 )
 
 type Config struct {
-	Workers int `toml:"workers" mapstructure:"workers"`
-	Retry   int `toml:"retry" mapstructure:"retry"`
+	Workers      int  `toml:"workers" mapstructure:"workers"`
+	Retry        int  `toml:"retry" mapstructure:"retry"`
+	NoCleanCache bool `toml:"no_clean_cache" mapstructure:"no_clean_cache"`
 
 	Temp     tempConfig     `toml:"temp" mapstructure:"temp"`
 	Log      logConfig      `toml:"log" mapstructure:"log"`

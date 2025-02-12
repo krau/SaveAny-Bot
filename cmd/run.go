@@ -3,9 +3,11 @@ package cmd
 import (
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/krau/SaveAny-Bot/bootstrap"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/spf13/cobra"
@@ -18,5 +20,32 @@ func Run(_ *cobra.Command, _ []string) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
-	logger.L.Info(sig, ", exit")
+	logger.L.Info(sig, ", exitting...")
+	defer logger.L.Info("Bye!")
+	if config.Cfg.NoCleanCache {
+		return
+	}
+	if config.Cfg.Temp.BasePath != "" {
+		for _, path := range []string{"/", ".", "\\", ".."} {
+			if filepath.Clean(config.Cfg.Temp.BasePath) == path {
+				logger.L.Error("Invalid cache dir: ", config.Cfg.Temp.BasePath)
+				return
+			}
+		}
+		currentDir, err := os.Getwd()
+		if err != nil {
+			logger.L.Error("Failed to get current dir: ", err)
+			return
+		}
+		cachePath := filepath.Join(currentDir, config.Cfg.Temp.BasePath)
+		cachePath, err = filepath.Abs(cachePath)
+		if err != nil {
+			logger.L.Error("Failed to get absolute path: ", err)
+			return
+		}
+		logger.L.Info("Cleaning cache dir: ", cachePath)
+		if err := os.RemoveAll(cachePath); err != nil {
+			logger.L.Error("Failed to clean cache dir: ", err)
+		}
+	}
 }
