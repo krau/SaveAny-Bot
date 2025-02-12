@@ -91,6 +91,9 @@ func Init() {
 	viper.SetDefault("workers", 3)
 	viper.SetDefault("retry", 3)
 
+	viper.SetDefault("telegram.app_id", 1025907)
+	viper.SetDefault("telegram.app_hash", "452b0359b988148995f22ff0f4229750")
+
 	viper.SetDefault("temp.base_path", "cache/")
 	viper.SetDefault("temp.cache_ttl", 3600)
 
