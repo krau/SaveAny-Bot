@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -146,6 +147,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("请回复要保存的文件"), nil)
 		return dispatcher.EndGroups
 	}
+
 	msg, err := GetTGMessage(ctx, Client, replyToMsgID)
 
 	supported, _ := supportedMediaFilter(msg)
@@ -165,7 +167,11 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		logger.L.Errorf("Failed to reply: %s", err)
 		return dispatcher.EndGroups
 	}
-	file, err := FileFromMessage(ctx, Client, update.EffectiveChat().GetID(), msg.ID)
+
+	cmdText := update.EffectiveMessage.Text
+	customFileName := strings.TrimSpace(strings.TrimPrefix(cmdText, "/save"))
+
+	file, err := FileFromMessage(ctx, Client, update.EffectiveChat().GetID(), msg.ID, customFileName)
 	if err != nil {
 		logger.L.Errorf("Failed to get file from message: %s", err)
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
@@ -183,16 +189,18 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	if err := dao.AddReceivedFile(&types.ReceivedFile{
+	receivedFile := &types.ReceivedFile{
 		Processing:     false,
 		FileName:       file.FileName,
 		ChatID:         update.EffectiveChat().GetID(),
 		MessageID:      replyToMsgID,
 		ReplyMessageID: replied.ID,
-	}); err != nil {
-		logger.L.Errorf("Failed to add received file: %s", err)
+	}
+
+	if err := dao.SaveReceivedFile(receivedFile); err != nil {
+		logger.L.Errorf("Failed to save received file: %s", err)
 		if _, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: "无法保存文件",
+			Message: fmt.Sprintf("Failed to save received file: %s", err),
 			ID:      replied.ID,
 		}); err != nil {
 			logger.L.Errorf("Failed to edit message: %s", err)
@@ -258,10 +266,14 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	media := update.EffectiveMessage.Media
-	file, err := FileFromMedia(media)
+	file, err := FileFromMedia(media, "")
 	if err != nil {
 		logger.L.Errorf("Failed to get file from media: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("无法获取文件"), nil)
+		if errors.Is(err, ErrEmptyFileName) {
+			ctx.Reply(update, ext.ReplyTextString("无法获取文件名, 请使用 /save <自定义文件名> 回复此文件"), nil)
+		} else {
+			ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("获取文件失败: %s", err)), nil)
+		}
 		return dispatcher.EndGroups
 	}
 	if file.FileName == "" {
@@ -269,7 +281,7 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	if err := dao.AddReceivedFile(&types.ReceivedFile{
+	if err := dao.SaveReceivedFile(&types.ReceivedFile{
 		Processing:     false,
 		FileName:       file.FileName,
 		ChatID:         update.EffectiveChat().GetID(),
@@ -278,12 +290,11 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 	}); err != nil {
 		logger.L.Errorf("Failed to add received file: %s", err)
 		if _, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: "无法保存文件",
+			Message: fmt.Sprintf("Failed to add received file: %s", err),
 			ID:      msg.ID,
 		}); err != nil {
 			logger.L.Errorf("Failed to edit message: %s", err)
 		}
-
 		return dispatcher.EndGroups
 	}
 
@@ -351,18 +362,18 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 	}
 	if update.CallbackQuery.MsgID != record.ReplyMessageID {
 		record.ReplyMessageID = update.CallbackQuery.MsgID
-		if err := dao.UpdateReceivedFile(record); err != nil {
+		if err := dao.SaveReceivedFile(record); err != nil {
 			logger.L.Errorf("Failed to update received file: %s", err)
 		}
 	}
 
-	file, err := FileFromMessage(ctx, Client, record.ChatID, record.MessageID)
+	file, err := FileFromMessage(ctx, Client, record.ChatID, record.MessageID, record.FileName)
 	if err != nil {
 		logger.L.Errorf("Failed to get file from message: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,
-			Message:   "获取消息文件失败",
+			Message:   fmt.Sprintf("获取消息中的文件失败: %s", err),
 			CacheTime: 5,
 		})
 		return dispatcher.EndGroups

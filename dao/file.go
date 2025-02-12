@@ -2,8 +2,12 @@ package dao
 
 import "github.com/krau/SaveAny-Bot/types"
 
-func AddReceivedFile(receivedFile *types.ReceivedFile) error {
-	return db.Create(receivedFile).Error
+func SaveReceivedFile(receivedFile *types.ReceivedFile) error {
+	record, err := GetReceivedFileByChatAndMessageID(receivedFile.ChatID, receivedFile.MessageID)
+	if err == nil {
+		receivedFile.ID = record.ID
+	}
+	return db.Save(receivedFile).Error
 }
 
 func GetReceivedFileByChatAndMessageID(chatID int64, messageID int) (*types.ReceivedFile, error) {
@@ -13,10 +17,6 @@ func GetReceivedFileByChatAndMessageID(chatID int64, messageID int) (*types.Rece
 		return nil, err
 	}
 	return &receivedFile, nil
-}
-
-func UpdateReceivedFile(receivedFile *types.ReceivedFile) error {
-	return db.Save(receivedFile).Error
 }
 
 func DeleteReceivedFile(receivedFile *types.ReceivedFile) error {

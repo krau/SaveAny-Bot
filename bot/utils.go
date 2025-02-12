@@ -82,14 +82,21 @@ func getAddTaskMarkup(messageID int) *tg.ReplyInlineMarkup {
 	}
 }
 
-func FileFromMedia(media tg.MessageMediaClass) (*types.File, error) {
+func FileFromMedia(media tg.MessageMediaClass, customFileName string) (*types.File, error) {
 	switch media := media.(type) {
 	case *tg.MessageMediaDocument:
 		document, ok := media.Document.AsNotEmpty()
 		if !ok {
 			return nil, ErrEmptyDocument
 		}
-		var fileName string
+		if customFileName != "" {
+			return &types.File{
+				Location: document.AsInputDocumentFileLocation(),
+				FileSize: document.Size,
+				FileName: customFileName,
+			}, nil
+		}
+		fileName := ""
 		for _, attribute := range document.Attributes {
 			if name, ok := attribute.(*tg.DocumentAttributeFilename); ok {
 				fileName = name.GetFileName()
@@ -123,17 +130,21 @@ func FileFromMedia(media tg.MessageMediaClass) (*types.File, error) {
 		location.AccessHash = photo.GetAccessHash()
 		location.FileReference = photo.GetFileReference()
 		location.ThumbSize = size.GetType()
+		fileName := customFileName
+		if fileName == "" {
+			fileName = fmt.Sprintf("photo_%s_%d.jpg", time.Now().Format("2006-01-02_15-04-05"), photo.GetID())
+		}
 		return &types.File{
 			Location: location,
 			FileSize: 0,
-			FileName: fmt.Sprintf("photo_%s_%d.jpg", time.Now().Format("2006-01-02_15-04-05"), photo.GetID()),
+			FileName: fileName,
 		}, nil
 
 	}
 	return nil, fmt.Errorf("unexpected type %T", media)
 }
 
-func FileFromMessage(ctx context.Context, client *gotgproto.Client, chatID int64, messageID int) (*types.File, error) {
+func FileFromMessage(ctx context.Context, client *gotgproto.Client, chatID int64, messageID int, customFileName string) (*types.File, error) {
 	key := fmt.Sprintf("file:%d:%d", chatID, messageID)
 	logger.L.Debugf("Getting file: %s", key)
 	var cachedFile types.File
@@ -146,7 +157,7 @@ func FileFromMessage(ctx context.Context, client *gotgproto.Client, chatID int64
 	if err != nil {
 		return nil, err
 	}
-	file, err := FileFromMedia(message.Media)
+	file, err := FileFromMedia(message.Media, customFileName)
 	if err != nil {
 		return nil, err
 	}

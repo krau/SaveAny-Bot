@@ -3,12 +3,14 @@ package dao
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/glebarez/sqlite"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/types"
 	"gorm.io/gorm"
+	glogger "gorm.io/gorm/logger"
 )
 
 var db *gorm.DB
@@ -19,7 +21,16 @@ func Init() {
 		os.Exit(1)
 	}
 	var err error
-	db, err = gorm.Open(sqlite.Open(config.Cfg.DB.Path), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open(config.Cfg.DB.Path), &gorm.Config{
+		Logger: glogger.New(logger.L, glogger.Config{
+			Colorful:                  true,
+			SlowThreshold:             time.Second * 5,
+			LogLevel:                  glogger.Error,
+			IgnoreRecordNotFoundError: true,
+			ParameterizedQueries:      true,
+		}),
+		PrepareStmt: true,
+	})
 	if err != nil {
 		logger.L.Fatal("Failed to open database: ", err)
 		os.Exit(1)
