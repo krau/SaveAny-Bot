@@ -34,10 +34,7 @@ dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("ad
 dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, handleFileMessage))
 }
 
-const noPermissionText string = `
-This Bot is for personal use only.
-You can deploy your own instance: https://github.com/krau/SaveAny-Bot
-`
+const noPermissionText string = ``
 
 func checkPermission(ctx *ext.Context, update *ext.Update) error {
 userID := update.GetUserChat().GetID()
