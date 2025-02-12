@@ -63,7 +63,7 @@ SaveAny Bot - 转存你的 Telegram 文件
 /help - 显示帮助
 /silent - 静默模式
 /storage - 设置默认存储位置
-/save - 保存文件
+/save [自定义文件名] - 保存文件
 
 静默模式: 开启后 Bot 直接保存到收到的文件到默认位置, 不再询问
 `

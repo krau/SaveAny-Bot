@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/celestix/gotgproto/ext"
+	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/bot"
 	"github.com/krau/SaveAny-Bot/config"
@@ -20,7 +21,14 @@ import (
 
 func processPendingTask(task *types.Task) error {
 	logger.L.Debugf("Start processing task: %s", task.String())
-	os.MkdirAll(config.Cfg.Temp.BasePath, os.ModePerm)
+	destPath := filepath.Join(config.Cfg.Temp.BasePath, task.FileName())
+	absDestPath, err := filepath.Abs(destPath)
+	if err != nil {
+		return fmt.Errorf("Failed to get absolute path: %w", err)
+	}
+	if err := fileutil.CreateDir(filepath.Dir(absDestPath)); err != nil {
+		return fmt.Errorf("Failed to create directory: %w", err)
+	}
 
 	ctx := task.Ctx.(*ext.Context)
 	ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
@@ -28,7 +36,6 @@ func processPendingTask(task *types.Task) error {
 		ID:      task.ReplyMessageID,
 	})
 
-	destPath := filepath.Join(config.Cfg.Temp.BasePath, task.File.FileName)
 	if task.StoragePath == "" {
 		task.StoragePath = task.File.FileName
 	}

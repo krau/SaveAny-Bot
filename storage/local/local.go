@@ -21,5 +21,13 @@ func (l *Local) Init() {
 }
 
 func (l *Local) Save(ctx context.Context, filePath, storagePath string) error {
-	return fileutil.CopyFile(filePath, filepath.Join(config.Cfg.Storage.Local.BasePath, storagePath))
+	storagePath = filepath.Join(config.Cfg.Storage.Local.BasePath, storagePath)
+	absPath, err := filepath.Abs(storagePath)
+	if err != nil {
+		return err
+	}
+	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
+		return err
+	}
+	return fileutil.CopyFile(filePath, storagePath)
 }
