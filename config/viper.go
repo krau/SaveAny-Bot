@@ -121,3 +121,20 @@ func Init() {
 		os.Exit(1)
 	}
 }
+
+func Set(key string, value any) {
+	viper.Set(key, value)
+}
+
+func ReloadConfig() error {
+	if err := viper.WriteConfig(); err != nil {
+		return err
+	}
+	if err := viper.ReadInConfig(); err != nil {
+		return err
+	}
+	if error := viper.Unmarshal(Cfg); error != nil {
+		return error
+	}
+	return nil
+}

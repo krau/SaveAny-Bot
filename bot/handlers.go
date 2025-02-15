@@ -30,6 +30,7 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewCommand("silent", silent))
 	dispatcher.AddHandler(handlers.NewCommand("storage", setDefaultStorage))
 	dispatcher.AddHandler(handlers.NewCommand("save", saveCmd))
+	dispatcher.AddHandler(handlers.NewCommand("path", setPath))
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), AddToQueue))
 	dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, handleFileMessage))
 }
@@ -57,13 +58,14 @@ func start(ctx *ext.Context, update *ext.Update) error {
 }
 
 const helpText string = `
-SaveAny Bot - 转存你的 Telegram 文件
+Save Any Bot - 转存你的 Telegram 文件
 命令:
 /start - 开始使用
 /help - 显示帮助
 /silent - 静默模式
 /storage - 设置默认存储位置
 /save [自定义文件名] - 保存文件
+/path <存储类型> <路径> - 更改文件保存路径
 
 静默模式: 开启后 Bot 直接保存到收到的文件到默认位置, 不再询问
 `
@@ -241,6 +243,51 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		logger.L.Errorf("Failed to edit message: %s", err)
 	}
+	return dispatcher.EndGroups
+}
+
+func setPath(ctx *ext.Context, update *ext.Update) error {
+	if len(storage.Storages) == 0 {
+		ctx.Reply(update, ext.ReplyTextString("未配置存储"), nil)
+		return dispatcher.EndGroups
+	}
+	if update.EffectiveMessage == nil {
+		logger.L.Error("No effective message")
+		return dispatcher.EndGroups
+	}
+	args := strings.Split(update.EffectiveMessage.Text, " ")
+	if len(args) < 3 {
+		text := []styling.StyledTextOption{
+			styling.Plain("请提供存储位置名称和路径, 可用项:"),
+		}
+		for name := range storage.Storages {
+			text = append(text, styling.Plain("\n"))
+			text = append(text, styling.Code(string(name)))
+		}
+		text = append(text, styling.Plain("\n示例: /path local /path/to/save"))
+		ctx.Reply(update, ext.ReplyTextStyledTextArray(text), nil)
+		return dispatcher.EndGroups
+	}
+	storageName := args[1]
+	if _, ok := storage.Storages[types.StorageType(storageName)]; !ok {
+		ctx.Reply(update, ext.ReplyTextString("存储位置不存在"), nil)
+		return dispatcher.EndGroups
+	}
+	path := strings.Join(args[2:], " ")
+	switch storageName {
+	case "local":
+		config.Set("storage.local.base_path", path)
+	case "webdav":
+		config.Set("storage.webdav.base_path", path)
+	case "alist":
+		config.Set("storage.alist.base_path", path)
+	}
+	if err := config.ReloadConfig(); err != nil {
+		logger.L.Errorf("Failed to reload config: %s", err)
+		ctx.Reply(update, ext.ReplyTextString("设置失败: "+err.Error()), nil)
+		return dispatcher.EndGroups
+	}
+	ctx.Reply(update, ext.ReplyTextString("设置成功"), nil)
 	return dispatcher.EndGroups
 }
 
