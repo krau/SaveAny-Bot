@@ -31,12 +31,6 @@ func processPendingTask(task *types.Task) error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	ctx := task.Ctx.(*ext.Context)
-	ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-		Message: "正在下载: " + task.FileName(),
-		ID:      task.ReplyMessageID,
-	})
-
 	if task.StoragePath == "" {
 		task.StoragePath = task.File.FileName
 	}
@@ -52,6 +46,8 @@ func processPendingTask(task *types.Task) error {
 	if task.File.FileSize == 0 {
 		return processPhoto(task, cacheDestPath)
 	}
+
+	ctx := task.Ctx.(*ext.Context)
 
 	barTotalCount := calculateBarTotalCount(task.File.FileSize)
 
@@ -73,6 +69,17 @@ func processPendingTask(task *types.Task) error {
 			ID:      task.ReplyMessageID,
 		})
 	}
+
+	ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+		Message: fmt.Sprintf("正在处理下载任务\n文件名: %s\n保存路径: %s\n平均速度: %s\n当前进度: [%s] %.2f%%",
+			task.FileName(),
+			fmt.Sprintf("[%s]:%s", task.Storage, task.StoragePath),
+			"0B/s",
+			getProgressBar(0, barTotalCount),
+			0.0,
+		),
+		ID: task.ReplyMessageID,
+	})
 
 	readCloser, err := NewTelegramReader(task.Ctx, bot.Client, &task.File.Location,
 		0, task.File.FileSize-1, task.File.FileSize,
