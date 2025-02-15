@@ -8,6 +8,7 @@ import (
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gookit/goutil/maputil"
+	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 
@@ -86,12 +87,7 @@ func silent(ctx *ext.Context, update *ext.Update) error {
 		logger.L.Errorf("Failed to update user: %s", err)
 		return dispatcher.EndGroups
 	}
-	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("已%s静默模式", func() string {
-		if user.Silent {
-			return "开启"
-		}
-		return "关闭"
-	}())), nil)
+	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("已%s静默模式", map[bool]string{true: "开启", false: "关闭"}[user.Silent])), nil)
 	return dispatcher.EndGroups
 }
 
@@ -216,9 +212,21 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	if !user.Silent {
-		text := "请选择存储位置"
+		entityBuilder := entity.Builder{}
+		var entities []tg.MessageEntityClass
+		text := fmt.Sprintf("文件名: %s\n请选择存储位置", file.FileName)
+		if err := styling.Perform(&entityBuilder,
+			styling.Plain("文件名: "),
+			styling.Code(file.FileName),
+			styling.Plain("\n请选择存储位置"),
+		); err != nil {
+			logger.L.Errorf("Failed to build entity: %s", err)
+		} else {
+			text, entities = entityBuilder.Complete()
+		}
 		_, err = ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message:     text,
+			Entities:    entities,
 			ReplyMarkup: getAddTaskMarkup(msg.ID),
 			ID:          replied.ID,
 		})
@@ -351,9 +359,21 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	if !user.Silent {
-		text := "请选择存储位置"
+		entityBuilder := entity.Builder{}
+		var entities []tg.MessageEntityClass
+		text := fmt.Sprintf("文件名: %s\n请选择存储位置", file.FileName)
+		if err := styling.Perform(&entityBuilder,
+			styling.Plain("文件名: "),
+			styling.Code(file.FileName),
+			styling.Plain("\n请选择存储位置"),
+		); err != nil {
+			logger.L.Errorf("Failed to build entity: %s", err)
+		} else {
+			text, entities = entityBuilder.Complete()
+		}
 		_, err = ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message:     text,
+			Entities:    entities,
 			ReplyMarkup: getAddTaskMarkup(update.EffectiveMessage.ID),
 			ID:          msg.ID,
 		})
@@ -440,9 +460,25 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		ReplyMessageID: record.ReplyMessageID,
 		MessageID:      record.MessageID,
 	})
+
+	entityBuilder := entity.Builder{}
+	var entities []tg.MessageEntityClass
+	text := fmt.Sprintf("已添加到任务队列\n文件名: %s\n当前排队任务数: %d", record.FileName, queue.Len())
+	if err := styling.Perform(&entityBuilder,
+		styling.Plain("已添加到任务队列\n文件名: "),
+		styling.Code(record.FileName),
+		styling.Plain("\n当前排队任务数: "),
+		styling.Bold(strconv.Itoa(queue.Len())),
+	); err != nil {
+		logger.L.Errorf("Failed to build entity: %s", err)
+	} else {
+		text, entities = entityBuilder.Complete()
+	}
+
 	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-		Message: fmt.Sprintf("已添加到队列: %s\n当前排队任务数: %d", record.FileName, queue.Len()),
-		ID:      record.ReplyMessageID,
+		Message:  text,
+		Entities: entities,
+		ID:       record.ReplyMessageID,
 	})
 	return dispatcher.EndGroups
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/glebarez/sqlite"
 	"github.com/gotd/td/telegram/dcs"
+	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
 	"golang.org/x/net/proxy"
@@ -60,6 +61,24 @@ func Init() {
 				Resolver:         resolver,
 			},
 		)
+		if err != nil {
+			resultChan <- struct {
+				client *gotgproto.Client
+				err    error
+			}{nil, err}
+			return
+		}
+		_, err = client.API().BotsSetBotCommands(ctx, &tg.BotsSetBotCommandsRequest{
+			Scope: &tg.BotCommandScopeDefault{},
+			Commands: []tg.BotCommand{
+				{Command: "start", Description: "开始使用"},
+				{Command: "help", Description: "显示帮助"},
+				{Command: "silent", Description: "开启/关闭静默模式"},
+				{Command: "storage", Description: "设置默认存储端"},
+				{Command: "save", Description: "保存所回复的文件"},
+				{Command: "path", Description: "更改保存路径配置"},
+			},
+		})
 		resultChan <- struct {
 			client *gotgproto.Client
 			err    error

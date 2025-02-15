@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/gotd/td/telegram/message/entity"
+	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/bot"
 	"github.com/krau/SaveAny-Bot/common"
@@ -96,4 +98,30 @@ func getSpeed(bytesRead int64, startTime time.Time) string {
 	elapsed := time.Since(startTime)
 	speed := float64(bytesRead) / 1024 / 1024 / elapsed.Seconds()
 	return fmt.Sprintf("%.2fMB/s", speed)
+}
+
+func buildProgressMessageEntity(task *types.Task, barTotalCount int, bytesRead int64, startTime time.Time, progress float64) (string, []tg.MessageEntityClass) {
+	entityBuilder := entity.Builder{}
+	text := fmt.Sprintf("正在处理下载任务\n文件名: %s\n保存路径: %s\n平均速度: %s\n当前进度: [%s] %.2f%%",
+		task.FileName(),
+		fmt.Sprintf("[%s]:%s", task.Storage, task.StoragePath),
+		getSpeed(bytesRead, startTime),
+		getProgressBar(progress, barTotalCount),
+		progress,
+	)
+	var entities []tg.MessageEntityClass
+	if err := styling.Perform(&entityBuilder,
+		styling.Plain("正在处理下载任务\n文件名: "),
+		styling.Code(task.FileName()),
+		styling.Plain("\n保存路径: "),
+		styling.Code(fmt.Sprintf("[%s]:%s", task.Storage, task.StoragePath)),
+		styling.Plain("\n平均速度: "),
+		styling.Bold(getSpeed(bytesRead, task.StartTime)),
+		styling.Plain("\n当前进度:\n "),
+		styling.Code(fmt.Sprintf("[%s] %.2f%%", getProgressBar(progress, barTotalCount), progress)),
+	); err != nil {
+		logger.L.Errorf("Failed to build entities: %s", err)
+		return text, entities
+	}
+	return entityBuilder.Complete()
 }

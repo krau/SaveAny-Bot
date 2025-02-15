@@ -57,30 +57,20 @@ func processPendingTask(task *types.Task) error {
 		if task.File.FileSize < 1024*1024*50 || int(progress)%(100/barTotalCount) != 0 {
 			return
 		}
-		text := fmt.Sprintf("正在处理下载任务\n文件名: %s\n保存路径: %s\n平均速度: %s\n当前进度: [%s] %.2f%%",
-			task.FileName(),
-			fmt.Sprintf("[%s]:%s", task.Storage, task.StoragePath),
-			getSpeed(bytesRead, task.StartTime),
-			getProgressBar(progress, barTotalCount),
-			progress,
-		)
+		text, entities := buildProgressMessageEntity(task, barTotalCount, bytesRead, task.StartTime, progress)
 		ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-			Message: text,
-			ID:      task.ReplyMessageID,
+			Message:  text,
+			Entities: entities,
+			ID:       task.ReplyMessageID,
 		})
 	}
 
+	text, entities := buildProgressMessageEntity(task, barTotalCount, 0, task.StartTime, 0)
 	ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-		Message: fmt.Sprintf("正在处理下载任务\n文件名: %s\n保存路径: %s\n平均速度: %s\n当前进度: [%s] %.2f%%",
-			task.FileName(),
-			fmt.Sprintf("[%s]:%s", task.Storage, task.StoragePath),
-			"0B/s",
-			getProgressBar(0, barTotalCount),
-			0.0,
-		),
-		ID: task.ReplyMessageID,
+		Message:  text,
+		Entities: entities,
+		ID:       task.ReplyMessageID,
 	})
-
 	readCloser, err := NewTelegramReader(task.Ctx, bot.Client, &task.File.Location,
 		0, task.File.FileSize-1, task.File.FileSize,
 		progressCallback, task.File.FileSize/100)
@@ -135,7 +125,7 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 		case types.Succeeded:
 			logger.L.Infof("Task succeeded: %s", task.String())
 			task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
-				Message: "保存成功\n" + task.FileName(),
+				Message: fmt.Sprintf("文件保存成功\n [%s]: %s", task.Storage, task.StoragePath),
 				ID:      task.ReplyMessageID,
 			})
 		case types.Failed:
