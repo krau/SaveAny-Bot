@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -21,13 +22,13 @@ import (
 
 func processPendingTask(task *types.Task) error {
 	logger.L.Debugf("Start processing task: %s", task.String())
-	destPath := filepath.Join(config.Cfg.Temp.BasePath, task.FileName())
-	absDestPath, err := filepath.Abs(destPath)
+	cacheDestPath := filepath.Join(config.Cfg.Temp.BasePath, task.FileName())
+	cacheDestPath, err := filepath.Abs(cacheDestPath)
 	if err != nil {
-		return fmt.Errorf("Failed to get absolute path: %w", err)
+		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
-	if err := fileutil.CreateDir(filepath.Dir(absDestPath)); err != nil {
-		return fmt.Errorf("Failed to create directory: %w", err)
+	if err := fileutil.CreateDir(filepath.Dir(cacheDestPath)); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	ctx := task.Ctx.(*ext.Context)
@@ -39,32 +40,17 @@ func processPendingTask(task *types.Task) error {
 	if task.StoragePath == "" {
 		task.StoragePath = task.File.FileName
 	}
+	switch task.Storage {
+	case types.Local:
+		task.StoragePath = filepath.Join(config.Cfg.Storage.Local.BasePath, task.StoragePath)
+	case types.Webdav:
+		task.StoragePath = path.Join(config.Cfg.Storage.Webdav.BasePath, task.StoragePath)
+	case types.Alist:
+		task.StoragePath = path.Join(config.Cfg.Storage.Alist.BasePath, task.StoragePath)
+	}
 
-	// process photo
 	if task.File.FileSize == 0 {
-		res, err := bot.Client.API().UploadGetFile(task.Ctx, &tg.UploadGetFileRequest{
-			Location: task.File.Location,
-			Offset:   0,
-			Limit:    1024 * 1024,
-		})
-		if err != nil {
-			return fmt.Errorf("Failed to get file: %w", err)
-		}
-
-		result, ok := res.(*tg.UploadFile)
-		if !ok {
-			return fmt.Errorf("unexpected type %T", res)
-		}
-
-		if err := os.WriteFile(destPath, result.Bytes, os.ModePerm); err != nil {
-			return fmt.Errorf("Failed to write file: %w", err)
-		}
-
-		defer cleanCacheFile(destPath)
-
-		logger.L.Infof("Downloaded file: %s", destPath)
-
-		return saveFileWithRetry(task, destPath)
+		return processPhoto(task, cacheDestPath)
 	}
 
 	barTotalCount := calculateBarTotalCount(task.File.FileSize)
@@ -92,29 +78,29 @@ func processPendingTask(task *types.Task) error {
 		0, task.File.FileSize-1, task.File.FileSize,
 		progressCallback, task.File.FileSize/100)
 	if err != nil {
-		return fmt.Errorf("Failed to create reader: %w", err)
+		return fmt.Errorf("failed to create reader: %w", err)
 	}
 	defer readCloser.Close()
 
-	dest, err := os.Create(destPath)
+	dest, err := os.Create(cacheDestPath)
 	if err != nil {
-		return fmt.Errorf("Failed to create file: %w", err)
+		return fmt.Errorf("failed to create file: %w", err)
 	}
 	defer dest.Close()
 	task.StartTime = time.Now()
 	if _, err := io.CopyN(dest, readCloser, task.File.FileSize); err != nil {
-		return fmt.Errorf("Failed to download file: %w", err)
+		return fmt.Errorf("failed to download file: %w", err)
 	}
 
-	defer cleanCacheFile(destPath)
+	defer cleanCacheFile(cacheDestPath)
 
-	logger.L.Infof("Downloaded file: %s", destPath)
+	logger.L.Infof("Downloaded file: %s", cacheDestPath)
 	ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
 		Message: fmt.Sprintf("下载完成: %s\n正在转存文件...", task.FileName()),
 		ID:      task.ReplyMessageID,
 	})
 
-	return saveFileWithRetry(task, destPath)
+	return saveFileWithRetry(task, cacheDestPath)
 }
 
 func worker(queue *queue.TaskQueue, semaphore chan struct{}) {

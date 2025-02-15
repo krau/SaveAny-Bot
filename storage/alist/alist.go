@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"time"
 
 	"github.com/krau/SaveAny-Bot/config"
@@ -20,7 +19,6 @@ import (
 type Alist struct {
 	client    *http.Client
 	token     string
-	basePath  string
 	baseURL   string
 	loginInfo *loginRequest
 }
@@ -105,7 +103,6 @@ func (a *Alist) refreshToken() {
 }
 
 func (a *Alist) Init() {
-	a.basePath = config.Cfg.Storage.Alist.BasePath
 	a.baseURL = config.Cfg.Storage.Alist.URL
 	a.client = &http.Client{
 		Timeout: 12 * time.Hour,
@@ -128,7 +125,6 @@ func (a *Alist) Init() {
 }
 
 func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {
-	storagePath = path.Join(a.basePath, storagePath)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)

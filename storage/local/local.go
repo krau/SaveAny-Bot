@@ -21,7 +21,6 @@ func (l *Local) Init() {
 }
 
 func (l *Local) Save(ctx context.Context, filePath, storagePath string) error {
-	storagePath = filepath.Join(config.Cfg.Storage.Local.BasePath, storagePath)
 	absPath, err := filepath.Abs(storagePath)
 	if err != nil {
 		return err

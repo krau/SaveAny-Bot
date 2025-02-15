@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/krau/SaveAny-Bot/config"
@@ -15,13 +14,11 @@ import (
 type Webdav struct{}
 
 var (
-	Client   *gowebdav.Client
-	basePath string
+	Client *gowebdav.Client
 )
 
 func (w *Webdav) Init() {
 	webdavConfig := config.Cfg.Storage.Webdav
-	basePath = strings.TrimSuffix(webdavConfig.BasePath, "/")
 	Client = gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
 	if err := Client.Connect(); err != nil {
 		logger.L.Fatalf("Failed to connect to webdav server: %v", err)
@@ -31,7 +28,6 @@ func (w *Webdav) Init() {
 }
 
 func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {
-	storagePath = path.Join(basePath, storagePath)
 	if err := Client.MkdirAll(path.Dir(storagePath), os.ModePerm); err != nil {
 		logger.L.Errorf("Failed to create directory %s: %v", path.Dir(storagePath), err)
 		return ErrFailedToCreateDirectory

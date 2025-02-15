@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"errors"
+	"path"
+	"path/filepath"
 	"sync"
 
 	"github.com/duke-git/lancet/v2/slice"
@@ -16,7 +18,7 @@ import (
 
 type Storage interface {
 	Init()
-	Save(cttx context.Context, filePath, storagePath string) error
+	Save(cttx context.Context, localFilePath, storagePath string) error
 }
 
 var Storages = make(map[types.StorageType]Storage)
@@ -47,6 +49,7 @@ func Init() {
 }
 
 func Save(storageType types.StorageType, ctx context.Context, filePath, storagePath string) error {
+	logger.L.Debugf("Saving file %s to storage: [%s] %s", filePath, storageType, storagePath)
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -59,7 +62,16 @@ func Save(storageType types.StorageType, ctx context.Context, filePath, storageP
 		wg.Add(1)
 		go func(storage Storage) {
 			defer wg.Done()
-			if err := storage.Save(ctx, filePath, storagePath); err != nil {
+			storageDestPath := storagePath
+			switch storage.(type) {
+			case *local.Local:
+				storageDestPath = filepath.Join(config.Cfg.Storage.Local.BasePath, storagePath)
+			case *webdav.Webdav:
+				storageDestPath = path.Join(config.Cfg.Storage.Webdav.BasePath, storagePath)
+			case *alist.Alist:
+				storageDestPath = path.Join(config.Cfg.Storage.Alist.BasePath, storagePath)
+			}
+			if err := storage.Save(ctx, filePath, storageDestPath); err != nil {
 				errs = append(errs, err)
 			}
 		}(storage)
