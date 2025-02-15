@@ -151,6 +151,11 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	msg, err := GetTGMessage(ctx, Client, replyToMsgID)
+	if err != nil {
+		logger.L.Errorf("Failed to get message: %s", err)
+		ctx.Reply(update, ext.ReplyTextString("无法获取消息"), nil)
+		return dispatcher.EndGroups
+	}
 
 	supported, _ := supportedMediaFilter(msg)
 	if !supported {
