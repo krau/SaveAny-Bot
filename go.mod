@@ -7,7 +7,7 @@ require (
 	github.com/celestix/gotgproto v1.0.0-beta20.2
 	github.com/gookit/slog v0.5.7
 	github.com/gotd/contrib v0.21.0
-	github.com/gotd/td v0.118.0
+	github.com/gotd/td v0.120.0
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -62,7 +62,7 @@ require (
 	modernc.org/libc v1.61.13 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.8.2 // indirect
-	modernc.org/sqlite v1.34.5 // indirect
+	modernc.org/sqlite v1.35.0 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
 
