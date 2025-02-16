@@ -18,7 +18,6 @@ import (
 )
 
 var (
-	ErrEmptyFileName   = errors.New("file name is empty")
 	ErrEmptyDocument   = errors.New("document is empty")
 	ErrEmptyPhoto      = errors.New("photo is empty")
 	ErrEmptyPhotoSize  = errors.New("photo size is empty")
@@ -104,9 +103,6 @@ func FileFromMedia(media tg.MessageMediaClass, customFileName string) (*types.Fi
 				fileName = name.GetFileName()
 				break
 			}
-		}
-		if fileName == "" {
-			return nil, ErrEmptyFileName
 		}
 		return &types.File{
 			Location: document.AsInputDocumentFileLocation(),

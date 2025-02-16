@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -41,6 +42,11 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("Failed to resolve chat ID"), nil)
 		return dispatcher.EndGroups
 	}
+	if linkChat == nil {
+		logger.L.Errorf("Cannot find chat: %s", chatUsername)
+		ctx.Reply(update, ext.ReplyTextString("Cannot find chat"), nil)
+		return dispatcher.EndGroups
+	}
 	user, err := dao.GetUserByUserID(update.GetUserChat().GetID())
 	if err != nil {
 		logger.L.Errorf("Failed to get user: %s", err)
@@ -59,12 +65,10 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	if file.FileName == "" {
-		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: "无法获取文件名",
-			ID:      replied.ID,
-		})
-		return dispatcher.EndGroups
+		logger.L.Warnf("Empty file name, use generated name")
+		file.FileName = fmt.Sprintf("%d_%d_%s", linkChat.GetID(), messageID, file.Hash())
 	}
+
 	receivedFile := &types.ReceivedFile{
 		Processing:     false,
 		FileName:       file.FileName,

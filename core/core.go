@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
+
 	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/gotd/td/tg"
@@ -22,6 +24,9 @@ import (
 
 func processPendingTask(task *types.Task) error {
 	logger.L.Debugf("Start processing task: %s", task.String())
+	if task.FileName() == "" {
+		task.File.FileName = fmt.Sprintf("%d_%d_%s", task.FileChatID, task.FileMessageID, task.File.Hash())
+	}
 	cacheDestPath := filepath.Join(config.Cfg.Temp.BasePath, task.FileName())
 	cacheDestPath, err := filepath.Abs(cacheDestPath)
 	if err != nil {
@@ -71,6 +76,7 @@ func processPendingTask(task *types.Task) error {
 		Entities: entities,
 		ID:       task.ReplyMessageID,
 	})
+
 	readCloser, err := NewTelegramReader(task.Ctx, bot.Client, &task.File.Location,
 		0, task.File.FileSize-1, task.File.FileSize,
 		progressCallback, task.File.FileSize/100)
@@ -88,8 +94,16 @@ func processPendingTask(task *types.Task) error {
 	if _, err := io.CopyN(dest, readCloser, task.File.FileSize); err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}
-
 	defer cleanCacheFile(cacheDestPath)
+	if path.Ext(task.FileName()) == "" {
+		mimeType, err := mimetype.DetectFile(cacheDestPath)
+		if err != nil {
+			logger.L.Errorf("Failed to detect mime type: %s", err)
+		} else {
+			task.File.FileName = fmt.Sprintf("%s%s", task.FileName(), mimeType.Extension())
+			task.StoragePath = fmt.Sprintf("%s%s", task.StoragePath, mimeType.Extension())
+		}
+	}
 
 	logger.L.Infof("Downloaded file: %s", cacheDestPath)
 	ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{

@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -183,20 +182,14 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		logger.L.Errorf("Failed to get file from message: %s", err)
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: "获取文件失败: " + err.Error(),
+			Message: fmt.Sprintf("获取文件失败: %s", err),
 			ID:      replied.ID,
 		})
 		return dispatcher.EndGroups
 	}
-
 	if file.FileName == "" {
-		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: "无法获取文件名, 请使用 /save <自定义文件名> 回复此文件",
-			ID:      replied.ID,
-		})
-		return dispatcher.EndGroups
+		file.FileName = fmt.Sprintf("%d_%d_%s", update.EffectiveChat().GetID(), replyToMsgID, file.Hash())
 	}
-
 	receivedFile := &types.ReceivedFile{
 		Processing:     false,
 		FileName:       file.FileName,
@@ -301,16 +294,11 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 	file, err := FileFromMedia(media, "")
 	if err != nil {
 		logger.L.Errorf("Failed to get file from media: %s", err)
-		if errors.Is(err, ErrEmptyFileName) {
-			ctx.Reply(update, ext.ReplyTextString("无法获取文件名, 请使用 /save <自定义文件名> 回复此文件"), nil)
-		} else {
-			ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("获取文件失败: %s", err)), nil)
-		}
+		ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("获取文件失败: %s", err)), nil)
 		return dispatcher.EndGroups
 	}
 	if file.FileName == "" {
-		ctx.Reply(update, ext.ReplyTextString("无法获取文件名"), nil)
-		return dispatcher.EndGroups
+		file.FileName = fmt.Sprintf("%d_%d_%s", update.EffectiveChat().GetID(), update.EffectiveMessage.ID, file.Hash())
 	}
 
 	if err := dao.SaveReceivedFile(&types.ReceivedFile{

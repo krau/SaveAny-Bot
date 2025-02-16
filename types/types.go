@@ -2,6 +2,8 @@ package types
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -55,4 +57,19 @@ type File struct {
 	Location tg.InputFileLocationClass
 	FileSize int64
 	FileName string
+}
+
+func (f File) Hash() string {
+	locationBytes := []byte(f.Location.String())
+	fileSizeBytes := []byte(fmt.Sprintf("%d", f.FileSize))
+	fileNameBytes := []byte(f.FileName)
+
+	structBytes := append(locationBytes, fileSizeBytes...)
+	structBytes = append(structBytes, fileNameBytes...)
+
+	hash := md5.New()
+	hash.Write(structBytes)
+	hashBytes := hash.Sum(nil)
+
+	return hex.EncodeToString(hashBytes)
 }
