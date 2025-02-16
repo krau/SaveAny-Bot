@@ -73,6 +73,10 @@ Save Any Bot - 转存你的 Telegram 文件
 /path <存储类型> <路径> - 更改文件保存路径
 
 静默模式: 开启后 Bot 直接保存到收到的文件到默认位置, 不再询问
+
+默认存储位置: 在静默模式下保存到的位置
+
+向 Bot 发送(转发)文件, 或发送一个公开频道的消息链接以保存文件
 `
 
 func help(ctx *ext.Context, update *ext.Update) error {
