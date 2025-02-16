@@ -58,7 +58,7 @@ func processPendingTask(task *types.Task) error {
 			return
 		}
 		text, entities := buildProgressMessageEntity(task, barTotalCount, bytesRead, task.StartTime, progress)
-		ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 			Message:  text,
 			Entities: entities,
 			ID:       task.ReplyMessageID,
@@ -66,7 +66,7 @@ func processPendingTask(task *types.Task) error {
 	}
 
 	text, entities := buildProgressMessageEntity(task, barTotalCount, 0, task.StartTime, 0)
-	ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 		Message:  text,
 		Entities: entities,
 		ID:       task.ReplyMessageID,
@@ -92,7 +92,7 @@ func processPendingTask(task *types.Task) error {
 	defer cleanCacheFile(cacheDestPath)
 
 	logger.L.Infof("Downloaded file: %s", cacheDestPath)
-	ctx.EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 		Message: fmt.Sprintf("下载完成: %s\n正在转存文件...", task.FileName()),
 		ID:      task.ReplyMessageID,
 	})
@@ -124,13 +124,13 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 			queue.AddTask(task)
 		case types.Succeeded:
 			logger.L.Infof("Task succeeded: %s", task.String())
-			task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+			task.Ctx.(*ext.Context).EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 				Message: fmt.Sprintf("文件保存成功\n [%s]: %s", task.Storage, task.StoragePath),
 				ID:      task.ReplyMessageID,
 			})
 		case types.Failed:
 			logger.L.Errorf("Task failed: %s", task.String())
-			task.Ctx.(*ext.Context).EditMessage(task.ChatID, &tg.MessagesEditMessageRequest{
+			task.Ctx.(*ext.Context).EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 				Message: "文件保存失败\n" + task.Error.Error(),
 				ID:      task.ReplyMessageID,
 			})

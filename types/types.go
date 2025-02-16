@@ -37,13 +37,14 @@ type Task struct {
 	StoragePath string
 	StartTime   time.Time
 
-	MessageID      int
-	ChatID         int64
+	FileMessageID  int
+	FileChatID     int64
 	ReplyMessageID int
+	ReplyChatID    int64
 }
 
 func (t Task) String() string {
-	return fmt.Sprintf("[%d:%d]:%s", t.ChatID, t.MessageID, t.File.FileName)
+	return fmt.Sprintf("[%d:%d]:%s", t.FileChatID, t.FileMessageID, t.File.FileName)
 }
 
 func (t Task) FileName() string {

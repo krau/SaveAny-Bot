@@ -32,6 +32,11 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewCommand("storage", setDefaultStorage))
 	dispatcher.AddHandler(handlers.NewCommand("save", saveCmd))
 	dispatcher.AddHandler(handlers.NewCommand("path", setPath))
+	linkRegexFilter, err := filters.Message.Regex(linkRegexString)
+	if err != nil {
+		logger.L.Panicf("Failed to create regex filter: %s", err)
+	}
+	dispatcher.AddHandler(handlers.NewMessage(linkRegexFilter, handleLinkMessage))
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), AddToQueue))
 	dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, handleFileMessage))
 }
@@ -146,7 +151,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	msg, err := GetTGMessage(ctx, Client, replyToMsgID)
+	msg, err := GetTGMessage(ctx, update.EffectiveChat().GetID(), replyToMsgID)
 	if err != nil {
 		logger.L.Errorf("Failed to get message: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("无法获取消息"), nil)
@@ -174,11 +179,11 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	cmdText := update.EffectiveMessage.Text
 	customFileName := strings.TrimSpace(strings.TrimPrefix(cmdText, "/save"))
 
-	file, err := FileFromMessage(ctx, Client, update.EffectiveChat().GetID(), msg.ID, customFileName)
+	file, err := FileFromMessage(ctx, update.EffectiveChat().GetID(), msg.ID, customFileName)
 	if err != nil {
 		logger.L.Errorf("Failed to get file from message: %s", err)
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: "无法获取文件",
+			Message: "获取文件失败: " + err.Error(),
 			ID:      replied.ID,
 		})
 		return dispatcher.EndGroups
@@ -186,7 +191,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 
 	if file.FileName == "" {
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: "无法获取文件名",
+			Message: "无法获取文件名, 请使用 /save <自定义文件名> 回复此文件",
 			ID:      replied.ID,
 		})
 		return dispatcher.EndGroups
@@ -198,6 +203,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		ChatID:         update.EffectiveChat().GetID(),
 		MessageID:      replyToMsgID,
 		ReplyMessageID: replied.ID,
+		ReplyChatID:    update.GetUserChat().GetID(),
 	}
 
 	if err := dao.SaveReceivedFile(receivedFile); err != nil {
@@ -210,53 +216,19 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		}
 		return dispatcher.EndGroups
 	}
-
 	if !user.Silent {
-		entityBuilder := entity.Builder{}
-		var entities []tg.MessageEntityClass
-		text := fmt.Sprintf("文件名: %s\n请选择存储位置", file.FileName)
-		if err := styling.Perform(&entityBuilder,
-			styling.Plain("文件名: "),
-			styling.Code(file.FileName),
-			styling.Plain("\n请选择存储位置"),
-		); err != nil {
-			logger.L.Errorf("Failed to build entity: %s", err)
-		} else {
-			text, entities = entityBuilder.Complete()
-		}
-		_, err = ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message:     text,
-			Entities:    entities,
-			ReplyMarkup: getAddTaskMarkup(msg.ID),
-			ID:          replied.ID,
-		})
-		if err != nil {
-			logger.L.Errorf("Failed to reply: %s", err)
-		}
-		return dispatcher.EndGroups
+		return ProvideSelectMessage(ctx, update, file, int(update.EffectiveChat().GetID()), msg.ID, replied.ID)
 	}
-
-	if user.DefaultStorage == "" {
-		ctx.Reply(update, ext.ReplyTextString("请先使用 /storage 设置默认存储位置"), nil)
-		return dispatcher.EndGroups
-	}
-	queue.AddTask(types.Task{
+	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
 		Status:         types.Pending,
 		File:           file,
 		Storage:        types.StorageType(user.DefaultStorage),
-		ChatID:         update.EffectiveChat().GetID(),
+		FileChatID:     update.EffectiveChat().GetID(),
 		ReplyMessageID: replied.ID,
-		MessageID:      msg.ID,
+		ReplyChatID:    update.GetUserChat().GetID(),
+		FileMessageID:  msg.ID,
 	})
-	_, err = ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-		Message: fmt.Sprintf("已添加到队列: %s\n当前排队任务数: %d", file.FileName, queue.Len()),
-		ID:      replied.ID,
-	})
-	if err != nil {
-		logger.L.Errorf("Failed to edit message: %s", err)
-	}
-	return dispatcher.EndGroups
 }
 
 func setPath(ctx *ext.Context, update *ext.Update) error {
@@ -347,6 +319,7 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		ChatID:         update.EffectiveChat().GetID(),
 		MessageID:      update.EffectiveMessage.ID,
 		ReplyMessageID: msg.ID,
+		ReplyChatID:    update.GetUserChat().GetID(),
 	}); err != nil {
 		logger.L.Errorf("Failed to add received file: %s", err)
 		if _, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
@@ -359,53 +332,18 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	if !user.Silent {
-		entityBuilder := entity.Builder{}
-		var entities []tg.MessageEntityClass
-		text := fmt.Sprintf("文件名: %s\n请选择存储位置", file.FileName)
-		if err := styling.Perform(&entityBuilder,
-			styling.Plain("文件名: "),
-			styling.Code(file.FileName),
-			styling.Plain("\n请选择存储位置"),
-		); err != nil {
-			logger.L.Errorf("Failed to build entity: %s", err)
-		} else {
-			text, entities = entityBuilder.Complete()
-		}
-		_, err = ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message:     text,
-			Entities:    entities,
-			ReplyMarkup: getAddTaskMarkup(update.EffectiveMessage.ID),
-			ID:          msg.ID,
-		})
-		if err != nil {
-			logger.L.Errorf("Failed to edit message: %s", err)
-		}
-		return dispatcher.EndGroups
+		return ProvideSelectMessage(ctx, update, file, int(update.EffectiveChat().GetID()), update.EffectiveMessage.ID, msg.ID)
 	}
-
-	if user.DefaultStorage == "" {
-		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: "请先使用 /storage 设置默认存储位置",
-			ID:      msg.ID,
-		})
-		return dispatcher.EndGroups
-	}
-
-	queue.AddTask(types.Task{
+	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
 		Status:         types.Pending,
 		File:           file,
 		Storage:        types.StorageType(user.DefaultStorage),
-		ChatID:         update.EffectiveChat().GetID(),
+		FileChatID:     update.EffectiveChat().GetID(),
 		ReplyMessageID: msg.ID,
-		MessageID:      update.EffectiveMessage.ID,
+		ReplyChatID:    update.GetUserChat().GetID(),
+		FileMessageID:  update.EffectiveMessage.ID,
 	})
-
-	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-		Message: fmt.Sprintf("已添加到队列: %s\n当前排队任务数: %d", file.FileName, queue.Len()),
-		ID:      msg.ID,
-	})
-	return dispatcher.EndGroups
 }
 
 func AddToQueue(ctx *ext.Context, update *ext.Update) error {
@@ -419,9 +357,11 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	args := strings.Split(string(update.CallbackQuery.Data), " ")
-	messageID, _ := strconv.Atoi(args[1])
-	logger.L.Tracef("Got add to queue: chatID: %d, messageID: %d, storage: %s", update.EffectiveChat().GetID(), messageID, args[2])
-	record, err := dao.GetReceivedFileByChatAndMessageID(update.EffectiveChat().GetID(), messageID)
+	chatID, _ := strconv.Atoi(args[1])
+	messageID, _ := strconv.Atoi(args[2])
+	storageName := args[3]
+	logger.L.Tracef("Got add to queue: chatID: %d, messageID: %d, storage: %s", chatID, messageID, storageName)
+	record, err := dao.GetReceivedFileByChatAndMessageID(int64(chatID), messageID)
 	if err != nil {
 		logger.L.Errorf("Failed to get received file: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
@@ -439,7 +379,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		}
 	}
 
-	file, err := FileFromMessage(ctx, Client, record.ChatID, record.MessageID, record.FileName)
+	file, err := FileFromMessage(ctx, record.ChatID, record.MessageID, record.FileName)
 	if err != nil {
 		logger.L.Errorf("Failed to get file from message: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
@@ -455,10 +395,11 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		Ctx:            ctx,
 		Status:         types.Pending,
 		File:           file,
-		Storage:        types.StorageType(args[2]),
-		ChatID:         record.ChatID,
+		Storage:        types.StorageType(storageName),
+		FileChatID:     record.ChatID,
 		ReplyMessageID: record.ReplyMessageID,
-		MessageID:      record.MessageID,
+		FileMessageID:  record.MessageID,
+		ReplyChatID:    record.ReplyChatID,
 	})
 
 	entityBuilder := entity.Builder{}

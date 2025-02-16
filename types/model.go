@@ -10,6 +10,7 @@ type ReceivedFile struct {
 	ChatID         int64 `gorm:"uniqueIndex:idx_chat_id_message_id;not null"`
 	MessageID      int   `gorm:"uniqueIndex:idx_chat_id_message_id;not null"`
 	ReplyMessageID int
+	ReplyChatID    int64
 	FileName       string
 }
 
