@@ -59,6 +59,7 @@ type alistConfig struct {
 	URL      string `toml:"url" mapstructure:"url"`
 	Username string `toml:"username" mapstructure:"username"`
 	Password string `toml:"password" mapstructure:"password"`
+	Token    string `toml:"token" mapstructure:"token"`
 	BasePath string `toml:"base_path" mapstructure:"base_path"`
 	TokenExp int64  `toml:"token_exp" mapstructure:"token_exp"`
 }

@@ -40,6 +40,15 @@ type loginResponse struct {
 	} `json:"data"`
 }
 
+type meResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		ID       int    `json:"id"`
+		Username string `json:"username"`
+	} `json:"data"`
+}
+
 type putResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -109,6 +118,44 @@ func (a *Alist) Init() {
 		Transport: &http.Transport{
 			TLSHandshakeTimeout: 10 * time.Second,
 		},
+	}
+	if config.Cfg.Storage.Alist.Token != "" {
+		a.token = config.Cfg.Storage.Alist.Token
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+		defer cancel()
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.baseURL+"/api/me", nil)
+		if err != nil {
+			logger.L.Fatalf("Failed to create request: %v", err)
+			os.Exit(1)
+		}
+		req.Header.Set("Authorization", a.token)
+
+		resp, err := a.client.Do(req)
+		if err != nil {
+			logger.L.Fatalf("Failed to send request: %v", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			logger.L.Fatalf("Failed to get alist user info: %s", resp.Status)
+			os.Exit(1)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logger.L.Fatalf("Failed to read response body: %v", err)
+			os.Exit(1)
+		}
+		var meResp meResponse
+		if err := json.Unmarshal(body, &meResp); err != nil {
+			logger.L.Fatalf("Failed to unmarshal me response: %v", err)
+			os.Exit(1)
+		}
+		if meResp.Code != http.StatusOK {
+			logger.L.Fatalf("Failed to get alist user info: %s", meResp.Message)
+			os.Exit(1)
+		}
+		logger.L.Debugf("Logged in Alist as %s", meResp.Data.Username)
+		return
 	}
 	a.loginInfo = &loginRequest{
 		Username: config.Cfg.Storage.Alist.Username,
