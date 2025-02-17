@@ -106,10 +106,7 @@ func Init() {
 	viper.SetDefault("storage.alist.base_path", "/")
 	viper.SetDefault("storage.alist.token_exp", 3600)
 
-	if err := viper.SafeWriteConfigAs("config.toml"); err != nil {
-		fmt.Println("Error writing default config file, ", err)
-		os.Exit(1)
-	}
+	viper.SafeWriteConfigAs("config.toml")
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Error reading config file, ", err)
