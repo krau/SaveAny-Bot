@@ -2,24 +2,20 @@ workers = 4 # 同时下载文件数
 retry = 3   # 下载失败重试次数
 
 [telegram]
-token = ""                                    # Bot Token
-admins = [777000]                             # 你的 user_id
-app_id = 123456                               # Telegram API ID
-app_hash = "0123456789abcdef0123456789abcdef" # Telegram API Hash
+# Bot Token
+token = ""
+# 允许使用的用户 id 列表                   
+admins = [777000]
+# Telegram API 配置, 若不配置也可运行, 将使用默认的 API ID 和 API HASH
+# 推荐使用自己的 API ID 和 API HASH (https://my.telegram.org)
+# app_id = 123456                              
+# app_hash = "0123456789abcdef0123456789abcdef"
 
 [telegram.proxy]
+# 启用代理连接 telegram, 只支持 socks5
 enable = false
-url = "socks5://127.0.0.1:7890" # 代理地址
+url = "socks5://127.0.0.1:7890"
 
-[log]
-level = "DEBUG" # 日志等级
-
-[temp]
-base_path = "cache/" # 下载文件临时目录, 请不要在此目录下存放任何其他文件
-cache_ttl = 30       # 临时文件保存时间, 单位: 秒
-
-[db]
-path = "data/data.db" # 数据库文件路径
 
 [storage]
 [storage.alist] # Alist
@@ -29,6 +25,9 @@ username = "admin"        # 用户名
 password = "password"     # 密码
 url = "https://alist.com" # Alist 地址
 token_exp = 86400         # token 过期时间, 单位: 秒
+# 可直接使用 token 授权, 此时不能自动刷新登录信息
+# 配置 token 后, username , password , token_exp 将被忽略
+token = "jwt_token"
 
 [storage.local] # 本地磁盘
 enable = true
@@ -40,3 +39,15 @@ base_path = "/telegram"
 username = "admin"
 password = "password"
 url = "https://alist.com/dav"
+
+
+[log]
+# 日志等级
+level = "DEBUG"
+
+[temp]
+base_path = "cache/" # 下载文件临时目录, 请不要在此目录下存放任何其他文件
+cache_ttl = 30       # 临时文件保存时间, 单位: 秒
+
+[db]
+path = "data/data.db" # 数据库文件路径
