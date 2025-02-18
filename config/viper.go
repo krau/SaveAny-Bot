@@ -13,7 +13,7 @@ import (
 type Config struct {
 	Workers      int  `toml:"workers" mapstructure:"workers"`
 	Retry        int  `toml:"retry" mapstructure:"retry"`
-	NoCleanCache bool `toml:"no_clean_cache" mapstructure:"no_clean_cache"`
+	NoCleanCache bool `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
 
 	Temp     tempConfig     `toml:"temp" mapstructure:"temp"`
 	Log      logConfig      `toml:"log" mapstructure:"log"`
@@ -23,14 +23,14 @@ type Config struct {
 }
 
 type tempConfig struct {
-	BasePath string `toml:"base_path" mapstructure:"base_path"`
-	CacheTTL int64  `toml:"cache_ttl" mapstructure:"cache_ttl"`
+	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
+	CacheTTL int64  `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl"`
 }
 
 type logConfig struct {
 	Level       string `toml:"level" mapstructure:"level"`
 	File        string `toml:"file" mapstructure:"file"`
-	BackupCount uint   `toml:"backup_count" mapstructure:"backup_count"`
+	BackupCount uint   `toml:"backup_count" mapstructure:"backup_count" json:"backup_count"`
 }
 
 type dbConfig struct {
@@ -39,8 +39,8 @@ type dbConfig struct {
 
 type telegramConfig struct {
 	Token   string `toml:"token" mapstructure:"token"`
-	AppID   int    `toml:"app_id" mapstructure:"app_id"`
-	AppHash string `toml:"app_hash" mapstructure:"app_hash"`
+	AppID   int    `toml:"app_id" mapstructure:"app_id" json:"app_id"`
+	AppHash string `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
 	// 白名单用户
 	Admins []int64     `toml:"admins" mapstructure:"admins"` // Whitelisted users
 	Proxy  proxyConfig `toml:"proxy" mapstructure:"proxy"`
@@ -63,11 +63,11 @@ type storageConfig struct {
 }
 
 type AlistConfig struct {
-	Enable   bool   `toml:"enable" mapstructure:"enable"`
-	URL      string `toml:"url" mapstructure:"url"`
-	Username string `toml:"username" mapstructure:"username"`
-	Password string `toml:"password" mapstructure:"password"`
-	Token    string `toml:"token" mapstructure:"token"`
+	Enable   bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	URL      string `toml:"url" mapstructure:"url" json:"url"`
+	Username string `toml:"username" mapstructure:"username" json:"username"`
+	Password string `toml:"password" mapstructure:"password" json:"password"`
+	Token    string `toml:"token" mapstructure:"token" json:"token"`
 	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
 	TokenExp int64  `toml:"token_exp" mapstructure:"token_exp" json:"token_exp"`
 }
@@ -78,8 +78,8 @@ func (a *AlistConfig) ToJSON() datatypes.JSON {
 }
 
 type LocalConfig struct {
-	Enable   bool   `toml:"enable" mapstructure:"enable"`
-	BasePath string `toml:"base_path" mapstructure:"base_path"`
+	Enable   bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
 }
 
 func (l *LocalConfig) ToJSON() datatypes.JSON {
@@ -87,11 +87,11 @@ func (l *LocalConfig) ToJSON() datatypes.JSON {
 }
 
 type WebdavConfig struct {
-	Enable   bool   `toml:"enable" mapstructure:"enable"`
-	URL      string `toml:"url" mapstructure:"url"`
-	Username string `toml:"username" mapstructure:"username"`
-	Password string `toml:"password" mapstructure:"password"`
-	BasePath string `toml:"base_path" mapstructure:"base_path"`
+	Enable   bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	URL      string `toml:"url" mapstructure:"url" json:"url"`
+	Username string `toml:"username" mapstructure:"username" json:"username"`
+	Password string `toml:"password" mapstructure:"password" json:"password"`
+	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
 }
 
 func (w *WebdavConfig) ToJSON() datatypes.JSON {
