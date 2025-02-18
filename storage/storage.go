@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/krau/SaveAny-Bot/storage/alist"
 	"github.com/krau/SaveAny-Bot/storage/local"
@@ -39,26 +40,36 @@ func GetStorageFromModel(model types.StorageModel) (Storage, error) {
 	return storage, nil
 }
 
-func NewStorage(storageModel types.StorageModel) (Storage, error) {
-	switch storageModel.Type {
-	case string(types.StorageTypeAlist):
-		alistStorage := new(alist.Alist)
-		if err := alistStorage.Init(storageModel); err != nil {
-			return nil, err
-		}
-		return alistStorage, nil
-	case string(types.StorageTypeLocal):
-		localStorage := new(local.Local)
-		if err := localStorage.Init(storageModel); err != nil {
-			return nil, err
-		}
-		return localStorage, nil
-	case string(types.StorageTypeWebdav):
-		webdavStorage := new(webdav.Webdav)
-		if err := webdavStorage.Init(storageModel); err != nil {
-			return nil, err
-		}
-		return webdavStorage, nil
+type StorageConstructor func() Storage
+
+var storageConstructors = map[string]StorageConstructor{
+	string(types.StorageTypeAlist):  func() Storage { return new(alist.Alist) },
+	string(types.StorageTypeLocal):  func() Storage { return new(local.Local) },
+	string(types.StorageTypeWebdav): func() Storage { return new(webdav.Webdav) },
+}
+
+func NewStorage(model types.StorageModel) (Storage, error) {
+	constructor, ok := storageConstructors[model.Type]
+	if !ok {
+		return nil, fmt.Errorf("unsupported storage type: %s", model.Type)
 	}
-	return nil, nil
+
+	storage := constructor()
+	if err := storage.Init(model); err != nil {
+		return nil, fmt.Errorf("failed to init %s storage: %w", model.Type, err)
+	}
+
+	return storage, nil
+}
+
+func GetStorageConfigurableItems(storageType types.StorageType) []string {
+	switch storageType {
+	case types.StorageTypeAlist:
+		return alist.ConfigurableItems
+	case types.StorageTypeLocal:
+		return local.ConfigurableItems
+	case types.StorageTypeWebdav:
+		return webdav.ConfigurableItems
+	}
+	return nil
 }

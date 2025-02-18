@@ -16,6 +16,10 @@ type Local struct {
 	config config.LocalConfig
 }
 
+var ConfigurableItems = []string{
+	"base_path",
+}
+
 func (l *Local) Init(model types.StorageModel) error {
 	var localConfig config.LocalConfig
 	if err := json.Unmarshal([]byte(model.Config), &localConfig); err != nil {

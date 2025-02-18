@@ -26,9 +26,8 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewCommand("start", start))
 	dispatcher.AddHandler(handlers.NewCommand("help", help))
 	dispatcher.AddHandler(handlers.NewCommand("silent", silent))
-	dispatcher.AddHandler(handlers.NewCommand("storage", setDefaultStorage))
+	dispatcher.AddHandler(handlers.NewCommand("storage", manageStorageEntry))
 	dispatcher.AddHandler(handlers.NewCommand("save", saveCmd))
-	dispatcher.AddHandler(handlers.NewCommand("path", setPath))
 	linkRegexFilter, err := filters.Message.Regex(linkRegexString)
 	if err != nil {
 		logger.L.Panicf("Failed to create regex filter: %s", err)
@@ -36,6 +35,7 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewMessage(linkRegexFilter, handleLinkMessage))
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), AddToQueue))
 	dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, handleFileMessage))
+	dispatcher.AddHandler(handlers.NewMessage(filters.Message.Text, handleConversation))
 }
 
 const noPermissionText string = `
@@ -94,21 +94,6 @@ func silent(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("已%s静默模式", map[bool]string{true: "开启", false: "关闭"}[user.Silent])), nil)
-	return dispatcher.EndGroups
-}
-
-func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
-	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
-	if err != nil {
-		logger.L.Errorf("Failed to get user active storages: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取用户存储失败"), nil)
-		return dispatcher.EndGroups
-	}
-	if len(user.Storages) == 0 {
-		ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
-		return dispatcher.EndGroups
-	}
-	// TODO: select storage
 	return dispatcher.EndGroups
 }
 
@@ -208,11 +193,6 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		ReplyChatID:    update.GetUserChat().GetID(),
 		FileMessageID:  msg.ID,
 	})
-}
-
-func setPath(ctx *ext.Context, update *ext.Update) error {
-	// TODO: implement
-	return dispatcher.EndGroups
 }
 
 func handleFileMessage(ctx *ext.Context, update *ext.Update) error {

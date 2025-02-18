@@ -24,6 +24,15 @@ type Alist struct {
 	config    config.AlistConfig
 }
 
+var ConfigurableItems = []string{
+	"url",
+	"username",
+	"password",
+	"base_path",
+	"token_exp",
+	"token",
+}
+
 func (a *Alist) Init(model types.StorageModel) error {
 	var alistConfig config.AlistConfig
 	if err := json.Unmarshal([]byte(model.Config), &alistConfig); err != nil {

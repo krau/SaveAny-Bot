@@ -25,6 +25,39 @@ var (
 	ErrNoStorages      = errors.New("no available storage")
 )
 
+var (
+	manageStorageButtonAdd        = "添加存储"
+	manageStorageButtonDelete     = "删除存储"
+	manageStorageButtonEdit       = "修改存储"
+	manageStorageButtonSetDefault = "设置默认存储"
+	manageStorageKeyboardMarkup   = tg.ReplyKeyboardMarkup{
+		Selective: true,
+		Resize:    true,
+		Rows: []tg.KeyboardButtonRow{
+			{
+				Buttons: []tg.KeyboardButtonClass{
+					&tg.KeyboardButton{
+						Text: manageStorageButtonAdd,
+					},
+					&tg.KeyboardButton{
+						Text: manageStorageButtonDelete,
+					},
+					&tg.KeyboardButton{
+						Text: manageStorageButtonEdit,
+					},
+				},
+			},
+			{
+				Buttons: []tg.KeyboardButtonClass{
+					&tg.KeyboardButton{
+						Text: manageStorageButtonSetDefault,
+					},
+				},
+			},
+		},
+	}
+)
+
 func supportedMediaFilter(m *tg.Message) (bool, error) {
 	if not := m.Media == nil; not {
 		return false, dispatcher.EndGroups

@@ -16,11 +16,10 @@ import (
 
 type Webdav struct {
 	config config.WebdavConfig
+	client *gowebdav.Client
 }
 
-var (
-	Client *gowebdav.Client
-)
+var ConfigurableItems = []string{"url", "username", "password", "base_path"}
 
 func (w *Webdav) Init(model types.StorageModel) error {
 	var webdavConfig config.WebdavConfig
@@ -28,11 +27,12 @@ func (w *Webdav) Init(model types.StorageModel) error {
 		return fmt.Errorf("failed to unmarshal webdav config: %w", err)
 	}
 	w.config = webdavConfig
-	Client = gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
-	if err := Client.Connect(); err != nil {
+	client := gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
+	if err := client.Connect(); err != nil {
 		return fmt.Errorf("failed to connect to webdav server: %w", err)
 	}
-	Client.SetTimeout(12 * time.Hour)
+	client.SetTimeout(12 * time.Hour)
+	w.client = client
 	return nil
 }
 
@@ -41,7 +41,7 @@ func (w *Webdav) Type() types.StorageType {
 }
 
 func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {
-	if err := Client.MkdirAll(path.Dir(storagePath), os.ModePerm); err != nil {
+	if err := w.client.MkdirAll(path.Dir(storagePath), os.ModePerm); err != nil {
 		logger.L.Errorf("Failed to create directory %s: %v", path.Dir(storagePath), err)
 		return ErrFailedToCreateDirectory
 	}
@@ -52,7 +52,7 @@ func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {
 	}
 	defer file.Close()
 
-	if err := Client.WriteStream(storagePath, file, os.ModePerm); err != nil {
+	if err := w.client.WriteStream(storagePath, file, os.ModePerm); err != nil {
 		logger.L.Errorf("Failed to write file %s: %v", storagePath, err)
 		return ErrFailedToWriteFile
 	}

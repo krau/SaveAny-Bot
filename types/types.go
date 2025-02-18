@@ -22,13 +22,17 @@ var (
 type StorageType string
 
 var (
-	StorageAll        StorageType = "all"
 	StorageTypeLocal  StorageType = "local"
 	StorageTypeWebdav StorageType = "webdav"
 	StorageTypeAlist  StorageType = "alist"
 )
 
-var StorageTypes = []StorageType{StorageTypeLocal, StorageTypeAlist, StorageTypeWebdav, StorageAll}
+var StorageTypes = []StorageType{StorageTypeLocal, StorageTypeAlist, StorageTypeWebdav}
+var StorageTypeDisplay = map[StorageType]string{
+	StorageTypeLocal:  "本地磁盘",
+	StorageTypeWebdav: "WebDAV",
+	StorageTypeAlist:  "Alist",
+}
 
 type Task struct {
 	Ctx         context.Context
