@@ -47,9 +47,14 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("Cannot find chat"), nil)
 		return dispatcher.EndGroups
 	}
-	user, err := dao.GetUserByUserID(update.GetUserChat().GetID())
+	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
 	if err != nil {
 		logger.L.Errorf("Failed to get user: %s", err)
+		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
+		return dispatcher.EndGroups
+	}
+	if len(user.Storages) == 0 {
+		ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
 		return dispatcher.EndGroups
 	}
 	replied, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件..."), nil)
@@ -64,6 +69,7 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}
+	// TODO: Better file name
 	if file.FileName == "" {
 		logger.L.Warnf("Empty file name, use generated name")
 		file.FileName = fmt.Sprintf("%d_%d_%s", linkChat.GetID(), messageID, file.Hash())
@@ -85,14 +91,14 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		})
 		return dispatcher.EndGroups
 	}
-	if !user.Silent {
+	if !user.Silent || user.DefaultStorageID == 0 {
 		return ProvideSelectMessage(ctx, update, file, int(linkChat.GetID()), messageID, replied.ID)
 	}
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
 		Status:         types.Pending,
 		File:           file,
-		Storage:        types.StorageType(user.DefaultStorage),
+		StorageID:      user.DefaultStorageID,
 		FileChatID:     linkChat.GetID(),
 		FileMessageID:  messageID,
 		ReplyMessageID: replied.ID,

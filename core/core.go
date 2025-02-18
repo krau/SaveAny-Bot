@@ -17,8 +17,10 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/bot"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/queue"
+	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -39,17 +41,18 @@ func processPendingTask(task *types.Task) error {
 	if task.StoragePath == "" {
 		task.StoragePath = task.File.FileName
 	}
-	switch task.Storage {
-	case types.Local:
-		task.StoragePath = filepath.Join(config.Cfg.Storage.Local.BasePath, task.StoragePath)
-	case types.Webdav:
-		task.StoragePath = path.Join(config.Cfg.Storage.Webdav.BasePath, task.StoragePath)
-	case types.Alist:
-		task.StoragePath = path.Join(config.Cfg.Storage.Alist.BasePath, task.StoragePath)
+	storageModel, err := dao.GetStorageByID(task.StorageID)
+	if err != nil {
+		return err
 	}
+	taskStorage, err := storage.GetStorageFromModel(*storageModel)
+	if err != nil {
+		return err
+	}
+	task.StoragePath = taskStorage.JoinStoragePath(*task)
 
 	if task.File.FileSize == 0 {
-		return processPhoto(task, cacheDestPath)
+		return processPhoto(task, taskStorage, cacheDestPath)
 	}
 
 	ctx := task.Ctx.(*ext.Context)
@@ -111,7 +114,7 @@ func processPendingTask(task *types.Task) error {
 		ID:      task.ReplyMessageID,
 	})
 
-	return saveFileWithRetry(task, cacheDestPath)
+	return saveFileWithRetry(task, taskStorage, cacheDestPath)
 }
 
 func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
@@ -139,7 +142,7 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 		case types.Succeeded:
 			logger.L.Infof("Task succeeded: %s", task.String())
 			task.Ctx.(*ext.Context).EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-				Message: fmt.Sprintf("文件保存成功\n [%s]: %s", task.Storage, task.StoragePath),
+				Message: fmt.Sprintf("文件保存成功\n [%d]: %s", task.StorageID, task.StoragePath),
 				ID:      task.ReplyMessageID,
 			})
 		case types.Failed:

@@ -3,13 +3,8 @@ package storage
 import (
 	"context"
 	"errors"
-	"path"
-	"path/filepath"
-	"sync"
 
-	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/logger"
+	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/storage/alist"
 	"github.com/krau/SaveAny-Bot/storage/local"
 	"github.com/krau/SaveAny-Bot/storage/webdav"
@@ -17,68 +12,72 @@ import (
 )
 
 type Storage interface {
-	Init()
+	Init(model types.StorageModel) error
+	Type() types.StorageType
+	JoinStoragePath(task types.Task) string
 	Save(cttx context.Context, localFilePath, storagePath string) error
 }
 
-var Storages = make(map[types.StorageType]Storage)
-var StorageKeys = make([]types.StorageType, 0)
+var (
+	ErrInvalidStorageID = errors.New("invalid storage ID")
+)
 
-func Init() {
-	logger.L.Debug("Initializing storage...")
-	if config.Cfg.Storage.Alist.Enable {
-		Storages[types.Alist] = new(alist.Alist)
-		Storages[types.Alist].Init()
-	}
-	if config.Cfg.Storage.Local.Enable {
-		Storages[types.Local] = new(local.Local)
-		Storages[types.Local].Init()
-	}
-	if config.Cfg.Storage.Webdav.Enable {
-		Storages[types.Webdav] = new(webdav.Webdav)
-		Storages[types.Webdav].Init()
-	}
+var Storages = make(map[uint]Storage)
 
-	for k := range Storages {
-		StorageKeys = append(StorageKeys, k)
+// LoadExistingStorages loads existing storages from the database, and initializes them
+//
+// Should only be called at startup
+func LoadExistingStorages() error {
+	storageModels, err := dao.GetActiveStorages()
+	if err != nil {
+		return err
 	}
-
-	slice.Sort(StorageKeys)
-
-	logger.L.Debug("Storage initialized")
-}
-
-func Save(storageType types.StorageType, ctx context.Context, filePath, storagePath string) error {
-	logger.L.Debugf("Saving file %s to storage: [%s] %s", filePath, storageType, storagePath)
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if storageType != types.StorageAll {
-		return Storages[storageType].Save(ctx, filePath, storagePath)
-	}
-	errs := make([]error, 0)
-	var wg sync.WaitGroup
-	for _, storage := range Storages {
-		wg.Add(1)
-		go func(storage Storage) {
-			defer wg.Done()
-			storageDestPath := storagePath
-			switch storage.(type) {
-			case *local.Local:
-				storageDestPath = filepath.Join(config.Cfg.Storage.Local.BasePath, storagePath)
-			case *webdav.Webdav:
-				storageDestPath = path.Join(config.Cfg.Storage.Webdav.BasePath, storagePath)
-			case *alist.Alist:
-				storageDestPath = path.Join(config.Cfg.Storage.Alist.BasePath, storagePath)
-			}
-			if err := storage.Save(ctx, filePath, storageDestPath); err != nil {
-				errs = append(errs, err)
-			}
-		}(storage)
-	}
-	wg.Wait()
-	if len(errs) > 0 {
-		return errors.Join(errs...)
+	for _, storageModel := range storageModels {
+		storage, err := NewStorage(storageModel)
+		if err != nil {
+			return err
+		}
+		Storages[storageModel.ID] = storage
 	}
 	return nil
+}
+
+// Get storage from model, if it exists, otherwise create and init a new storage
+func GetStorageFromModel(model types.StorageModel) (Storage, error) {
+	if model.ID == 0 {
+		return nil, ErrInvalidStorageID
+	}
+	if storage, ok := Storages[model.ID]; ok {
+		return storage, nil
+	}
+	storage, err := NewStorage(model)
+	if err != nil {
+		return nil, err
+	}
+	Storages[model.ID] = storage
+	return storage, nil
+}
+
+func NewStorage(storageModel types.StorageModel) (Storage, error) {
+	switch storageModel.Type {
+	case string(types.StorageTypeAlist):
+		alistStorage := new(alist.Alist)
+		if err := alistStorage.Init(storageModel); err != nil {
+			return nil, err
+		}
+		return alistStorage, nil
+	case string(types.StorageTypeLocal):
+		localStorage := new(local.Local)
+		if err := localStorage.Init(storageModel); err != nil {
+			return nil, err
+		}
+		return localStorage, nil
+	case string(types.StorageTypeWebdav):
+		webdavStorage := new(webdav.Webdav)
+		if err := webdavStorage.Init(storageModel); err != nil {
+			return nil, err
+		}
+		return webdavStorage, nil
+	}
+	return nil, nil
 }

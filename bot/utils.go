@@ -11,9 +11,9 @@ import (
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common"
+	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/queue"
-	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -22,6 +22,7 @@ var (
 	ErrEmptyPhoto      = errors.New("photo is empty")
 	ErrEmptyPhotoSize  = errors.New("photo size is empty")
 	ErrEmptyPhotoSizes = errors.New("photo size slice is empty")
+	ErrNoStorages      = errors.New("no available storage")
 )
 
 func supportedMediaFilter(m *tg.Message) (bool, error) {
@@ -38,49 +39,28 @@ func supportedMediaFilter(m *tg.Message) (bool, error) {
 	}
 }
 
-var StorageDisplayNames = map[string]string{
-	"all":    "全部",
-	"local":  "服务器磁盘",
-	"alist":  "Alist",
-	"webdav": "WebDAV",
-}
-
-func getAddTaskMarkup(chatID, messageID int) *tg.ReplyInlineMarkup {
-	storageButtons := make([]tg.KeyboardButtonClass, 0)
-	for _, name := range storage.StorageKeys {
-		storageButtons = append(storageButtons, &tg.KeyboardButtonCallback{
-			Text: StorageDisplayNames[string(name)],
-			Data: []byte(fmt.Sprintf("add %d %d %s", chatID, messageID, name)),
+func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*tg.ReplyInlineMarkup, error) {
+	user, err := dao.GetUserByChatID(userChatID)
+	if err != nil {
+		return nil, err
+	}
+	if len(user.Storages) < 1 {
+		return nil, ErrNoStorages
+	}
+	buttons := make([]tg.KeyboardButtonClass, 0)
+	for _, storage := range user.Storages {
+		buttons = append(buttons, &tg.KeyboardButtonCallback{
+			Text: storage.Name,
+			Data: []byte(fmt.Sprintf("add %d %d %d", fileChatID, fileMessageID, storage.ID)),
 		})
 	}
-
-	if len(storageButtons) < 1 {
-		return nil
+	markup := &tg.ReplyInlineMarkup{}
+	for i := 0; i < len(buttons); i += 3 {
+		row := tg.KeyboardButtonRow{}
+		row.Buttons = buttons[i:min(i+3, len(buttons))]
+		markup.Rows = append(markup.Rows, row)
 	}
-	if len(storageButtons) == 1 {
-		return &tg.ReplyInlineMarkup{
-			Rows: []tg.KeyboardButtonRow{
-				{
-					Buttons: storageButtons,
-				},
-			},
-		}
-	}
-	return &tg.ReplyInlineMarkup{
-		Rows: []tg.KeyboardButtonRow{
-			{
-				Buttons: storageButtons,
-			},
-			{
-				Buttons: []tg.KeyboardButtonClass{
-					&tg.KeyboardButtonCallback{
-						Text: "全部",
-						Data: []byte(fmt.Sprintf("add %d %d all", chatID, messageID)),
-					},
-				},
-			},
-		},
-	}
+	return markup, nil
 }
 
 func FileFromMedia(media tg.MessageMediaClass, customFileName string) (*types.File, error) {
@@ -194,10 +174,26 @@ func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, file *types.File
 	} else {
 		text, entities = entityBuilder.Complete()
 	}
-	_, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
+	markup, err := getSelectStorageMarkup(update.EffectiveUser().GetID(), chatID, fileMsgID)
+	if errors.Is(err, ErrNoStorages) {
+		logger.L.Errorf("Failed to get select storage markup: %s", err)
+		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
+			Message: "无可用存储",
+			ID:      toEditMsgID,
+		})
+		return dispatcher.EndGroups
+	} else if err != nil {
+		logger.L.Errorf("Failed to get select storage markup: %s", err)
+		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
+			Message: "无法获取存储",
+			ID:      toEditMsgID,
+		})
+		return dispatcher.EndGroups
+	}
+	_, err = ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 		Message:     text,
 		Entities:    entities,
-		ReplyMarkup: getAddTaskMarkup(chatID, fileMsgID),
+		ReplyMarkup: markup,
 		ID:          toEditMsgID,
 	})
 	if err != nil {
@@ -207,7 +203,7 @@ func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, file *types.File
 }
 
 func HandleSilentAddTask(ctx *ext.Context, update *ext.Update, user *types.User, task *types.Task) error {
-	if user.DefaultStorage == "" {
+	if user.DefaultStorageID == 0 {
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message: "请先使用 /storage 设置默认存储位置",
 			ID:      task.ReplyMessageID,

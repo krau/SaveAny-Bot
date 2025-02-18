@@ -16,7 +16,7 @@ import (
 var db *gorm.DB
 
 func Init() {
-	if err := os.MkdirAll(filepath.Dir(config.Cfg.DB.Path), 755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(config.Cfg.DB.Path), 0755); err != nil {
 		logger.L.Fatal("Failed to create data directory: ", err)
 		os.Exit(1)
 	}

@@ -36,11 +36,12 @@ type dbConfig struct {
 }
 
 type telegramConfig struct {
-	Token   string      `toml:"token" mapstructure:"token"`
-	AppID   int         `toml:"app_id" mapstructure:"app_id"`
-	AppHash string      `toml:"app_hash" mapstructure:"app_hash"`
-	Admins  []int64     `toml:"admins" mapstructure:"admins"`
-	Proxy   proxyConfig `toml:"proxy" mapstructure:"proxy"`
+	Token   string `toml:"token" mapstructure:"token"`
+	AppID   int    `toml:"app_id" mapstructure:"app_id"`
+	AppHash string `toml:"app_hash" mapstructure:"app_hash"`
+	// 白名单用户
+	Admins []int64     `toml:"admins" mapstructure:"admins"` // Whitelisted users
+	Proxy  proxyConfig `toml:"proxy" mapstructure:"proxy"`
 }
 
 type proxyConfig struct {
@@ -48,13 +49,17 @@ type proxyConfig struct {
 	URL    string `toml:"url" mapstructure:"url"`
 }
 
+// pre-defined storages, for compatibility.
+/*
+在配置文件中定义的存储将会为telegram.admins中的每个用户创建一个存储模型
+*/
 type storageConfig struct {
-	Alist  alistConfig  `toml:"alist" mapstructure:"alist"`
-	Local  localConfig  `toml:"local" mapstructure:"local"`
-	Webdav webdavConfig `toml:"webdav" mapstructure:"webdav"`
+	Alist  AlistConfig  `toml:"alist" mapstructure:"alist"`
+	Local  LocalConfig  `toml:"local" mapstructure:"local"`
+	Webdav WebdavConfig `toml:"webdav" mapstructure:"webdav"`
 }
 
-type alistConfig struct {
+type AlistConfig struct {
 	Enable   bool   `toml:"enable" mapstructure:"enable"`
 	URL      string `toml:"url" mapstructure:"url"`
 	Username string `toml:"username" mapstructure:"username"`
@@ -64,12 +69,12 @@ type alistConfig struct {
 	TokenExp int64  `toml:"token_exp" mapstructure:"token_exp"`
 }
 
-type localConfig struct {
+type LocalConfig struct {
 	Enable   bool   `toml:"enable" mapstructure:"enable"`
 	BasePath string `toml:"base_path" mapstructure:"base_path"`
 }
 
-type webdavConfig struct {
+type WebdavConfig struct {
 	Enable   bool   `toml:"enable" mapstructure:"enable"`
 	URL      string `toml:"url" mapstructure:"url"`
 	Username string `toml:"username" mapstructure:"username"`

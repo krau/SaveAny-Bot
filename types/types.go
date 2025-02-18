@@ -22,20 +22,20 @@ var (
 type StorageType string
 
 var (
-	StorageAll StorageType = "all"
-	Local      StorageType = "local"
-	Webdav     StorageType = "webdav"
-	Alist      StorageType = "alist"
+	StorageAll        StorageType = "all"
+	StorageTypeLocal  StorageType = "local"
+	StorageTypeWebdav StorageType = "webdav"
+	StorageTypeAlist  StorageType = "alist"
 )
 
-var StorageTypes = []StorageType{Local, Alist, Webdav, StorageAll}
+var StorageTypes = []StorageType{StorageTypeLocal, StorageTypeAlist, StorageTypeWebdav, StorageAll}
 
 type Task struct {
 	Ctx         context.Context
 	Error       error
 	Status      TaskStatus
 	File        *File
-	Storage     StorageType
+	StorageID   uint
 	StoragePath string
 	StartTime   time.Time
 

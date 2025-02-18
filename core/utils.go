@@ -16,9 +16,9 @@ import (
 	"github.com/krau/SaveAny-Bot/types"
 )
 
-func saveFileWithRetry(task *types.Task, localFilePath string) error {
+func saveFileWithRetry(task *types.Task, taskStorage storage.Storage, localFilePath string) error {
 	for i := 0; i <= config.Cfg.Retry; i++ {
-		if err := storage.Save(task.Storage, task.Ctx, localFilePath, task.StoragePath); err != nil {
+		if err := taskStorage.Save(task.Ctx, localFilePath, task.StoragePath); err != nil {
 			if i == config.Cfg.Retry {
 				return fmt.Errorf("failed to save file: %w", err)
 			}
@@ -30,7 +30,7 @@ func saveFileWithRetry(task *types.Task, localFilePath string) error {
 	return nil
 }
 
-func processPhoto(task *types.Task, cachePath string) error {
+func processPhoto(task *types.Task, taskStorage storage.Storage, cachePath string) error {
 	res, err := bot.Client.API().UploadGetFile(task.Ctx, &tg.UploadGetFileRequest{
 		Location: task.File.Location,
 		Offset:   0,
@@ -53,7 +53,7 @@ func processPhoto(task *types.Task, cachePath string) error {
 
 	logger.L.Infof("Downloaded file: %s", cachePath)
 
-	return saveFileWithRetry(task, cachePath)
+	return saveFileWithRetry(task, taskStorage, cachePath)
 }
 
 func getProgressBar(progress float64, totalCount int) string {
@@ -104,7 +104,8 @@ func buildProgressMessageEntity(task *types.Task, barTotalCount int, bytesRead i
 	entityBuilder := entity.Builder{}
 	text := fmt.Sprintf("正在处理下载任务\n文件名: %s\n保存路径: %s\n平均速度: %s\n当前进度: [%s] %.2f%%",
 		task.FileName(),
-		fmt.Sprintf("[%s]:%s", task.Storage, task.StoragePath),
+		// TODO: use storage name instead of ID
+		fmt.Sprintf("[%d]:%s", task.StorageID, task.StoragePath),
 		getSpeed(bytesRead, startTime),
 		getProgressBar(progress, barTotalCount),
 		progress,
@@ -114,7 +115,7 @@ func buildProgressMessageEntity(task *types.Task, barTotalCount int, bytesRead i
 		styling.Plain("正在处理下载任务\n文件名: "),
 		styling.Code(task.FileName()),
 		styling.Plain("\n保存路径: "),
-		styling.Code(fmt.Sprintf("[%s]:%s", task.Storage, task.StoragePath)),
+		styling.Code(fmt.Sprintf("[%d]:%s", task.StorageID, task.StoragePath)),
 		styling.Plain("\n平均速度: "),
 		styling.Bold(getSpeed(bytesRead, task.StartTime)),
 		styling.Plain("\n当前进度:\n "),

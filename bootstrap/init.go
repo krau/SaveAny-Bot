@@ -12,10 +12,10 @@ import (
 func InitAll() {
 	config.Init()
 	logger.InitLogger()
-	logger.L.Info("Running...")
+	logger.L.Info("Starting SaveAny-Bot...")
 
 	common.Init()
-	storage.Init()
 	dao.Init()
+	storage.LoadExistingStorages()
 	bot.Init()
 }
