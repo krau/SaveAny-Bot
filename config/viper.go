@@ -3,9 +3,11 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
+	"gorm.io/datatypes"
 )
 
 type Config struct {
@@ -53,6 +55,7 @@ type proxyConfig struct {
 /*
 在配置文件中定义的存储将会为telegram.admins中的每个用户创建一个存储模型
 */
+// these config will be removed in the future.
 type storageConfig struct {
 	Alist  AlistConfig  `toml:"alist" mapstructure:"alist"`
 	Local  LocalConfig  `toml:"local" mapstructure:"local"`
@@ -65,13 +68,22 @@ type AlistConfig struct {
 	Username string `toml:"username" mapstructure:"username"`
 	Password string `toml:"password" mapstructure:"password"`
 	Token    string `toml:"token" mapstructure:"token"`
-	BasePath string `toml:"base_path" mapstructure:"base_path"`
-	TokenExp int64  `toml:"token_exp" mapstructure:"token_exp"`
+	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
+	TokenExp int64  `toml:"token_exp" mapstructure:"token_exp" json:"token_exp"`
+}
+
+func (a *AlistConfig) ToJSON() datatypes.JSON {
+	tokenExp := strconv.FormatInt(a.TokenExp, 10)
+	return datatypes.JSON([]byte(`{"url":"` + a.URL + `","username":"` + a.Username + `","password":"` + a.Password + `","token":"` + a.Token + `","base_path":"` + a.BasePath + `","token_exp":` + tokenExp + `}`))
 }
 
 type LocalConfig struct {
 	Enable   bool   `toml:"enable" mapstructure:"enable"`
 	BasePath string `toml:"base_path" mapstructure:"base_path"`
+}
+
+func (l *LocalConfig) ToJSON() datatypes.JSON {
+	return datatypes.JSON([]byte(`{"base_path":"` + l.BasePath + `"}`))
 }
 
 type WebdavConfig struct {
@@ -80,6 +92,10 @@ type WebdavConfig struct {
 	Username string `toml:"username" mapstructure:"username"`
 	Password string `toml:"password" mapstructure:"password"`
 	BasePath string `toml:"base_path" mapstructure:"base_path"`
+}
+
+func (w *WebdavConfig) ToJSON() datatypes.JSON {
+	return datatypes.JSON([]byte(`{"url":"` + w.URL + `","username":"` + w.Username + `","password":"` + w.Password + `","base_path":"` + w.BasePath + `"}`))
 }
 
 var Cfg *Config
@@ -109,9 +125,6 @@ func Init() {
 
 	viper.SetDefault("db.path", "data/saveany.db")
 
-	viper.SetDefault("storage.alist.base_path", "/")
-	viper.SetDefault("storage.alist.token_exp", 3600)
-
 	viper.SafeWriteConfigAs("config.toml")
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -123,6 +136,9 @@ func Init() {
 	if err := viper.Unmarshal(Cfg); err != nil {
 		fmt.Println("Error unmarshalling config file, ", err)
 		os.Exit(1)
+	}
+	if Cfg.Storage != (storageConfig{}) {
+		fmt.Println("警告: 存储配置已经废弃, 未来版本将会移除.\n请直接使用 Bot 命令添加存储.")
 	}
 	if Cfg.Workers < 1 || Cfg.Retry < 1 {
 		fmt.Println("Invalid workers or retry value")

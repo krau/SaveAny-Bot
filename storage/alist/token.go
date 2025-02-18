@@ -49,8 +49,13 @@ func (a *Alist) getToken() error {
 }
 
 func (a *Alist) refreshToken(cfg config.AlistConfig) {
+	tokenExp := cfg.TokenExp
+	if tokenExp <= 0 {
+		logger.L.Warn("Invalid token expiration time, using default value")
+		tokenExp = 3600
+	}
 	for {
-		time.Sleep(time.Duration(cfg.TokenExp) * time.Second)
+		time.Sleep(time.Duration(tokenExp) * time.Second)
 		if err := a.getToken(); err != nil {
 			logger.L.Errorf("Failed to refresh jwt token: %v", err)
 			continue

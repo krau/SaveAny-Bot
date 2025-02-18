@@ -11,6 +11,12 @@ func CreateUser(chatID int64) error {
 	return db.Create(&types.User{ChatID: chatID}).Error
 }
 
+func GetAllUsers() ([]types.User, error) {
+	var users []types.User
+	err := db.Find(&users).Error
+	return users, err
+}
+
 // GetUserByUserID gets a user by their telegram user ID
 //
 // Return with active storages
@@ -28,4 +34,8 @@ func GetUserWithAllStoragesByChatID(chatID int64) (*types.User, error) {
 
 func UpdateUser(user *types.User) error {
 	return db.Save(user).Error
+}
+
+func DeleteUser(user *types.User) error {
+	return db.Select("Storages").Delete(user).Error
 }

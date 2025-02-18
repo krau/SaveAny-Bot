@@ -1,6 +1,9 @@
 package types
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -19,7 +22,7 @@ type ReceivedFile struct {
 
 type User struct {
 	gorm.Model
-	ChatID           int64 `gorm:"uniqueIndex"` // Telegram user ID
+	ChatID           int64 `gorm:"uniqueIndex;not null"`
 	Silent           bool
 	DefaultStorageID uint
 	Storages         []*StorageModel `gorm:"many2many:user_storages;"`
@@ -28,9 +31,24 @@ type User struct {
 type StorageModel struct {
 	gorm.Model
 	Type   string
-	Name   string // just for display
-	Desc   string
-	Active bool
 	Config datatypes.JSON
+	Active bool
 	Users  []*User `gorm:"many2many:user_storages;"`
+	Hash   string  `gorm:"uniqueIndex"`
+	// just for display
+	Name string `gorm:"not null"`
+	Desc string
+}
+
+func (s *StorageModel) GenHash() string {
+	if s.Type == "" || s.Config == nil {
+		return ""
+	}
+	typeBytes := []byte(s.Type)
+	configBytes := s.Config
+	structBytes := append(typeBytes, configBytes...)
+	hash := md5.New()
+	hash.Write(structBytes)
+	hashBytes := hash.Sum(nil)
+	return hex.EncodeToString(hashBytes)
 }

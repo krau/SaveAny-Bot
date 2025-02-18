@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/storage/alist"
 	"github.com/krau/SaveAny-Bot/storage/local"
 	"github.com/krau/SaveAny-Bot/storage/webdav"
@@ -23,24 +22,6 @@ var (
 )
 
 var Storages = make(map[uint]Storage)
-
-// LoadExistingStorages loads existing storages from the database, and initializes them
-//
-// Should only be called at startup
-func LoadExistingStorages() error {
-	storageModels, err := dao.GetActiveStorages()
-	if err != nil {
-		return err
-	}
-	for _, storageModel := range storageModels {
-		storage, err := NewStorage(storageModel)
-		if err != nil {
-			return err
-		}
-		Storages[storageModel.ID] = storage
-	}
-	return nil
-}
 
 // Get storage from model, if it exists, otherwise create and init a new storage
 func GetStorageFromModel(model types.StorageModel) (Storage, error) {
