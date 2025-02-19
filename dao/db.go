@@ -40,7 +40,9 @@ func Init() {
 		logger.L.Fatal("迁移数据库失败, 如果您从旧版本升级, 建议手动删除数据库文件后重试: ", err)
 	}
 
-	for _, admin := range config.Cfg.Telegram.Admins {
-		CreateUser(int64(admin))
+	for _, admin := range config.Cfg.GetUsersID() {
+		if err := CreateUser(int64(admin)); err != nil {
+			logger.L.Fatal("Failed to create admin user: ", err)
+		}
 	}
 }
