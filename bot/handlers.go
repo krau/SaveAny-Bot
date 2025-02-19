@@ -39,10 +39,7 @@ dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("se
 dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, handleFileMessage))
 }
 
-const noPermissionText string = `
-You are not in the whitelist and cannot use this Bot.
-You can deploy your own instance: https://github.com/krau/SaveAny-Bot
-`
+const noPermissionText string = ``
 
 func checkPermission(ctx *ext.Context, update *ext.Update) error {
 userID := update.GetUserChat().GetID()
