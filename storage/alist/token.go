@@ -48,7 +48,7 @@ func (a *Alist) getToken() error {
 	return nil
 }
 
-func (a *Alist) refreshToken(cfg config.AlistConfig) {
+func (a *Alist) refreshToken(cfg config.AlistStorageConfig) {
 	tokenExp := cfg.TokenExp
 	if tokenExp <= 0 {
 		logger.L.Warn("Invalid token expiration time, using default value")

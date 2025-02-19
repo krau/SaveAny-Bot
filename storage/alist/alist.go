@@ -21,7 +21,7 @@ type Alist struct {
 	token     string
 	baseURL   string
 	loginInfo *loginRequest
-	config    config.AlistConfig
+	config    config.AlistStorageConfig
 }
 
 var ConfigurableItems = []string{
@@ -33,12 +33,16 @@ var ConfigurableItems = []string{
 	"token",
 }
 
-func (a *Alist) Init(model types.StorageModel) error {
-	var alistConfig config.AlistConfig
-	if err := json.Unmarshal([]byte(model.Config), &alistConfig); err != nil {
-		return fmt.Errorf("failed to unmarshal alist config: %w", err)
+func (a *Alist) Init(cfg config.StorageConfig) error {
+	alistConfig, ok := cfg.(*config.AlistStorageConfig)
+	if !ok {
+		return fmt.Errorf("failed to cast alist config")
 	}
-	a.config = alistConfig
+	if err := alistConfig.Validate(); err != nil {
+		return err
+	}
+	a.config = *alistConfig
+
 	a.baseURL = alistConfig.URL
 	a.client = getHttpClient()
 	if alistConfig.Token != "" {
@@ -90,12 +94,16 @@ func (a *Alist) Init(model types.StorageModel) error {
 	}
 	logger.L.Debug("Logged in to Alist")
 
-	go a.refreshToken(alistConfig)
+	go a.refreshToken(*alistConfig)
 	return nil
 }
 
 func (a *Alist) Type() types.StorageType {
 	return types.StorageTypeAlist
+}
+
+func (a *Alist) Name() string {
+	return a.config.Name
 }
 
 func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {

@@ -2,7 +2,6 @@ package local
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,19 +12,22 @@ import (
 )
 
 type Local struct {
-	config config.LocalConfig
+	config config.LocalStorageConfig
 }
 
 var ConfigurableItems = []string{
 	"base_path",
 }
 
-func (l *Local) Init(model types.StorageModel) error {
-	var localConfig config.LocalConfig
-	if err := json.Unmarshal([]byte(model.Config), &localConfig); err != nil {
-		return fmt.Errorf("failed to unmarshal local config: %w", err)
+func (l *Local) Init(cfg config.StorageConfig) error {
+	localConfig, ok := cfg.(*config.LocalStorageConfig)
+	if !ok {
+		return fmt.Errorf("failed to cast local config")
 	}
-	l.config = localConfig
+	if err := localConfig.Validate(); err != nil {
+		return err
+	}
+	l.config = *localConfig
 	err := os.MkdirAll(localConfig.BasePath, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create local storage directory: %w", err)
@@ -35,6 +37,10 @@ func (l *Local) Init(model types.StorageModel) error {
 
 func (l *Local) Type() types.StorageType {
 	return types.StorageTypeLocal
+}
+
+func (l *Local) Name() string {
+	return l.config.Name
 }
 
 func (l *Local) Save(ctx context.Context, filePath, storagePath string) error {

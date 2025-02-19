@@ -11,6 +11,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/logger"
+	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -53,7 +54,9 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
-	if len(user.Storages) == 0 {
+	storages := storage.GetUserStorages(user.ChatID)
+
+	if len(storages) == 0 {
 		ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
 		return dispatcher.EndGroups
 	}
@@ -91,14 +94,14 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		})
 		return dispatcher.EndGroups
 	}
-	if !user.Silent || user.DefaultStorageID == 0 {
-		return ProvideSelectMessage(ctx, update, file, int(linkChat.GetID()), messageID, replied.ID)
+	if !user.Silent || user.DefaultStorage == "" {
+		return ProvideSelectMessage(ctx, update, file, linkChat.GetID(), messageID, replied.ID)
 	}
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
 		Status:         types.Pending,
 		File:           file,
-		StorageID:      user.DefaultStorageID,
+		StorageName:    user.DefaultStorage,
 		FileChatID:     linkChat.GetID(),
 		FileMessageID:  messageID,
 		ReplyMessageID: replied.ID,

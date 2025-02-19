@@ -2,7 +2,6 @@ package webdav
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -15,18 +14,21 @@ import (
 )
 
 type Webdav struct {
-	config config.WebdavConfig
+	config config.WebdavStorageConfig
 	client *gowebdav.Client
 }
 
 var ConfigurableItems = []string{"url", "username", "password", "base_path"}
 
-func (w *Webdav) Init(model types.StorageModel) error {
-	var webdavConfig config.WebdavConfig
-	if err := json.Unmarshal([]byte(model.Config), &webdavConfig); err != nil {
-		return fmt.Errorf("failed to unmarshal webdav config: %w", err)
+func (w *Webdav) Init(cfg config.StorageConfig) error {
+	webdavConfig, ok := cfg.(*config.WebdavStorageConfig)
+	if !ok {
+		return fmt.Errorf("failed to cast webdav config")
 	}
-	w.config = webdavConfig
+	if err := webdavConfig.Validate(); err != nil {
+		return err
+	}
+	w.config = *webdavConfig
 	client := gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
 	if err := client.Connect(); err != nil {
 		return fmt.Errorf("failed to connect to webdav server: %w", err)
@@ -38,6 +40,10 @@ func (w *Webdav) Init(model types.StorageModel) error {
 
 func (w *Webdav) Type() types.StorageType {
 	return types.StorageTypeWebdav
+}
+
+func (w *Webdav) Name() string {
+	return w.config.Name
 }
 
 func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {

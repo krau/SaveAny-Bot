@@ -17,7 +17,6 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/bot"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/queue"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -41,11 +40,8 @@ func processPendingTask(task *types.Task) error {
 	if task.StoragePath == "" {
 		task.StoragePath = task.File.FileName
 	}
-	storageModel, err := dao.GetStorageByID(task.StorageID)
-	if err != nil {
-		return err
-	}
-	taskStorage, err := storage.GetStorageFromModel(*storageModel)
+
+	taskStorage, err := storage.GetStorageByName(task.StorageName)
 	if err != nil {
 		return err
 	}
@@ -142,7 +138,7 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 		case types.Succeeded:
 			logger.L.Infof("Task succeeded: %s", task.String())
 			task.Ctx.(*ext.Context).EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-				Message: fmt.Sprintf("文件保存成功\n [%d]: %s", task.StorageID, task.StoragePath),
+				Message: fmt.Sprintf("文件保存成功\n [%s]: %s", task.StorageName, task.StoragePath),
 				ID:      task.ReplyMessageID,
 			})
 		case types.Failed:

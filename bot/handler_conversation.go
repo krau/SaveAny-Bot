@@ -2,17 +2,9 @@ package bot
 
 import (
 	"sync"
-
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
-	"github.com/krau/SaveAny-Bot/logger"
 )
 
 type ConversationType string
-
-const (
-	ConversationTypeManageStorage ConversationType = "manage_storage"
-)
 
 type ConversationState struct {
 	sync.Mutex
@@ -54,31 +46,30 @@ func (c *ConversationState) SetData(key string, value interface{}) {
 	c.data[c.conversationType][key] = value
 }
 
-var userConversationState = make(map[int64]*ConversationState)
+// TODO: Implement conversation handling
+// var userConversationState = make(map[int64]*ConversationState)
 
-func handleConversation(ctx *ext.Context, update *ext.Update) error {
-	userID := update.EffectiveUser().GetID()
-	state, ok := userConversationState[userID]
-	if !ok {
-		return dispatcher.ContinueGroups
-	}
-	if update.EffectiveMessage.Text == "/cancel" {
-		state.Reset()
-		ctx.Reply(update, ext.ReplyTextString("已取消"), nil)
-		return dispatcher.EndGroups
-	}
-	if !state.InConversation {
-		return dispatcher.ContinueGroups
-	}
-	return handleConversationState(ctx, update, state)
-}
+// func handleConversation(ctx *ext.Context, update *ext.Update) error {
+// 	userID := update.EffectiveUser().GetID()
+// 	state, ok := userConversationState[userID]
+// 	if !ok {
+// 		return dispatcher.ContinueGroups
+// 	}
+// 	if update.EffectiveMessage.Text == "/cancel" {
+// 		state.Reset()
+// 		ctx.Reply(update, ext.ReplyTextString("已取消"), nil)
+// 		return dispatcher.EndGroups
+// 	}
+// 	if !state.InConversation {
+// 		return dispatcher.ContinueGroups
+// 	}
+// 	return handleConversationState(ctx, update, state)
+// }
 
-func handleConversationState(ctx *ext.Context, update *ext.Update, state *ConversationState) error {
-	switch state.conversationType {
-	case ConversationTypeManageStorage:
-		return handleManageStorageConversation(ctx, update, state)
-	default:
-		logger.L.Errorf("Unknown conversation type: %s", state.conversationType)
-	}
-	return dispatcher.EndGroups
-}
+// func handleConversationState(ctx *ext.Context, update *ext.Update, state *ConversationState) error {
+// 	switch state.conversationType {
+// 	default:
+// 		logger.L.Errorf("Unknown conversation type: %s", state.conversationType)
+// 	}
+// 	return dispatcher.EndGroups
+// }

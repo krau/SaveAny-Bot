@@ -3,23 +3,24 @@ package config
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
-	"gorm.io/datatypes"
 )
 
 type Config struct {
-	Workers      int  `toml:"workers" mapstructure:"workers"`
-	Retry        int  `toml:"retry" mapstructure:"retry"`
-	NoCleanCache bool `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
+	Workers      int          `toml:"workers" mapstructure:"workers"`
+	Retry        int          `toml:"retry" mapstructure:"retry"`
+	NoCleanCache bool         `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
+	Users        []userConfig `toml:"users" mapstructure:"users" json:"users"`
 
-	Temp     tempConfig     `toml:"temp" mapstructure:"temp"`
-	Log      logConfig      `toml:"log" mapstructure:"log"`
-	DB       dbConfig       `toml:"db" mapstructure:"db"`
-	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram"`
-	Storage  storageConfig  `toml:"storage" mapstructure:"storage"`
+	Temp     tempConfig      `toml:"temp" mapstructure:"temp"`
+	Log      logConfig       `toml:"log" mapstructure:"log"`
+	DB       dbConfig        `toml:"db" mapstructure:"db"`
+	Telegram telegramConfig  `toml:"telegram" mapstructure:"telegram"`
+	Storages []StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
+	// Deprecated
+	DeprecatedStorage deprecatedStorageConfig `toml:"storage" mapstructure:"storage"`
 }
 
 type tempConfig struct {
@@ -38,12 +39,13 @@ type dbConfig struct {
 }
 
 type telegramConfig struct {
-	Token   string `toml:"token" mapstructure:"token"`
-	AppID   int    `toml:"app_id" mapstructure:"app_id" json:"app_id"`
-	AppHash string `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
-	// 白名单用户
-	Admins []int64     `toml:"admins" mapstructure:"admins"` // Whitelisted users
-	Proxy  proxyConfig `toml:"proxy" mapstructure:"proxy"`
+	Token   string      `toml:"token" mapstructure:"token"`
+	AppID   int         `toml:"app_id" mapstructure:"app_id" json:"app_id"`
+	AppHash string      `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
+	Proxy   proxyConfig `toml:"proxy" mapstructure:"proxy"`
+
+	// Deprecated
+	Admins []int64 `toml:"admins" mapstructure:"admins"`
 }
 
 type proxyConfig struct {
@@ -51,56 +53,9 @@ type proxyConfig struct {
 	URL    string `toml:"url" mapstructure:"url"`
 }
 
-// pre-defined storages, for compatibility.
-/*
-在配置文件中定义的存储将会为telegram.admins中的每个用户创建一个存储模型
-*/
-// these config will be removed in the future.
-type storageConfig struct {
-	Alist  AlistConfig  `toml:"alist" mapstructure:"alist"`
-	Local  LocalConfig  `toml:"local" mapstructure:"local"`
-	Webdav WebdavConfig `toml:"webdav" mapstructure:"webdav"`
-}
-
-type AlistConfig struct {
-	Enable   bool   `toml:"enable" mapstructure:"enable" json:"enable"`
-	URL      string `toml:"url" mapstructure:"url" json:"url"`
-	Username string `toml:"username" mapstructure:"username" json:"username"`
-	Password string `toml:"password" mapstructure:"password" json:"password"`
-	Token    string `toml:"token" mapstructure:"token" json:"token"`
-	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
-	TokenExp int64  `toml:"token_exp" mapstructure:"token_exp" json:"token_exp"`
-}
-
-func (a *AlistConfig) ToJSON() datatypes.JSON {
-	tokenExp := strconv.FormatInt(a.TokenExp, 10)
-	return datatypes.JSON([]byte(`{"url":"` + a.URL + `","username":"` + a.Username + `","password":"` + a.Password + `","token":"` + a.Token + `","base_path":"` + a.BasePath + `","token_exp":` + tokenExp + `}`))
-}
-
-type LocalConfig struct {
-	Enable   bool   `toml:"enable" mapstructure:"enable" json:"enable"`
-	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
-}
-
-func (l *LocalConfig) ToJSON() datatypes.JSON {
-	return datatypes.JSON([]byte(`{"base_path":"` + l.BasePath + `"}`))
-}
-
-type WebdavConfig struct {
-	Enable   bool   `toml:"enable" mapstructure:"enable" json:"enable"`
-	URL      string `toml:"url" mapstructure:"url" json:"url"`
-	Username string `toml:"username" mapstructure:"username" json:"username"`
-	Password string `toml:"password" mapstructure:"password" json:"password"`
-	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
-}
-
-func (w *WebdavConfig) ToJSON() datatypes.JSON {
-	return datatypes.JSON([]byte(`{"url":"` + w.URL + `","username":"` + w.Username + `","password":"` + w.Password + `","base_path":"` + w.BasePath + `"}`))
-}
-
 var Cfg *Config
 
-func Init() {
+func Init() error {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/saveany/")
@@ -125,7 +80,11 @@ func Init() {
 
 	viper.SetDefault("db.path", "data/saveany.db")
 
-	viper.SafeWriteConfigAs("config.toml")
+	if err := viper.SafeWriteConfigAs("config.toml"); err != nil {
+		if _, ok := err.(viper.ConfigFileAlreadyExistsError); !ok {
+			return fmt.Errorf("error saving default config: %w", err)
+		}
+	}
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Error reading config file, ", err)
@@ -133,17 +92,52 @@ func Init() {
 	}
 
 	Cfg = &Config{}
+
 	if err := viper.Unmarshal(Cfg); err != nil {
 		fmt.Println("Error unmarshalling config file, ", err)
 		os.Exit(1)
 	}
-	if Cfg.Storage != (storageConfig{}) {
-		fmt.Println("警告: 存储配置已经废弃, 未来版本将会移除.\n请直接使用 Bot 命令添加存储.")
+
+	if Cfg.Telegram.Admins != nil {
+		fmt.Println("警告: 你正在使用旧版 Telegram 管理员配置, 该配置下的用户将可用所有存储.\ntelegram.admins 未来版本将会被废弃, 请参考新的配置文件模板, 使用 users 配置替代.")
+		for _, admin := range Cfg.Telegram.Admins {
+			Cfg.Users = append(Cfg.Users, userConfig{
+				ID:        admin,
+				Storages:  []string{},
+				Blacklist: true,
+			})
+		}
 	}
+
+	storagesConfig, err := LoadStorageConfigs(viper.GetViper())
+	if err != nil {
+		return fmt.Errorf("error loading storage configs: %w", err)
+	}
+	Cfg.Storages = storagesConfig
+
+	if Cfg.DeprecatedStorage != (deprecatedStorageConfig{}) {
+		fmt.Println("\n警告: 你正在使用旧版存储配置, 未来版本将会被废弃.\n请参考新的配置文件模板.")
+		transformDeprecatedStorageConfig()
+	}
+
+	storageNames := make(map[string]struct{})
+	for _, storage := range Cfg.Storages {
+		if _, ok := storageNames[storage.GetName()]; ok {
+			return fmt.Errorf("重复的存储名: %s", storage.GetName())
+		}
+		storageNames[storage.GetName()] = struct{}{}
+	}
+
+	fmt.Printf("已加载 %d 个存储:\n", len(Cfg.Storages))
+	for _, storage := range Cfg.Storages {
+		fmt.Printf("  - %s (%s)\n", storage.GetName(), storage.GetType())
+	}
+
 	if Cfg.Workers < 1 || Cfg.Retry < 1 {
-		fmt.Println("Invalid workers or retry value")
-		os.Exit(1)
+		return fmt.Errorf("workers 和 retry 必须大于 0, 当前值: workers=%d, retry=%d", Cfg.Workers, Cfg.Retry)
 	}
+
+	return nil
 }
 
 func Set(key string, value any) {

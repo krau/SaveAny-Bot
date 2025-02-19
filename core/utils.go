@@ -104,8 +104,7 @@ func buildProgressMessageEntity(task *types.Task, barTotalCount int, bytesRead i
 	entityBuilder := entity.Builder{}
 	text := fmt.Sprintf("正在处理下载任务\n文件名: %s\n保存路径: %s\n平均速度: %s\n当前进度: [%s] %.2f%%",
 		task.FileName(),
-		// TODO: use storage name instead of ID
-		fmt.Sprintf("[%d]:%s", task.StorageID, task.StoragePath),
+		fmt.Sprintf("[%s]:%s", task.StorageName, task.StoragePath),
 		getSpeed(bytesRead, startTime),
 		getProgressBar(progress, barTotalCount),
 		progress,
@@ -115,7 +114,7 @@ func buildProgressMessageEntity(task *types.Task, barTotalCount int, bytesRead i
 		styling.Plain("正在处理下载任务\n文件名: "),
 		styling.Code(task.FileName()),
 		styling.Plain("\n保存路径: "),
-		styling.Code(fmt.Sprintf("[%d]:%s", task.StorageID, task.StoragePath)),
+		styling.Code(fmt.Sprintf("[%s]:%s", task.StorageName, task.StoragePath)),
 		styling.Plain("\n平均速度: "),
 		styling.Bold(getSpeed(bytesRead, task.StartTime)),
 		styling.Plain("\n当前进度:\n "),

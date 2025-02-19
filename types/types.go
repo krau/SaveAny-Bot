@@ -39,7 +39,7 @@ type Task struct {
 	Error       error
 	Status      TaskStatus
 	File        *File
-	StorageID   uint
+	StorageName string
 	StoragePath string
 	StartTime   time.Time
 

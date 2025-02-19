@@ -18,6 +18,7 @@ import (
 	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/queue"
+	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -26,7 +27,7 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewCommand("start", start))
 	dispatcher.AddHandler(handlers.NewCommand("help", help))
 	dispatcher.AddHandler(handlers.NewCommand("silent", silent))
-	dispatcher.AddHandler(handlers.NewCommand("storage", manageStorageEntry))
+	dispatcher.AddHandler(handlers.NewCommand("storage", storageCmd))
 	dispatcher.AddHandler(handlers.NewCommand("save", saveCmd))
 	linkRegexFilter, err := filters.Message.Regex(linkRegexString)
 	if err != nil {
@@ -35,7 +36,7 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewMessage(linkRegexFilter, handleLinkMessage))
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), AddToQueue))
 	dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, handleFileMessage))
-	dispatcher.AddHandler(handlers.NewMessage(filters.Message.Text, handleConversation))
+	// dispatcher.AddHandler(handlers.NewMessage(filters.Message.Text, handleConversation))
 }
 
 const noPermissionText string = `
@@ -120,7 +121,10 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
-	if len(user.Storages) == 0 {
+
+	storages := storage.GetUserStorages(user.ChatID)
+
+	if len(storages) == 0 {
 		ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
 		return dispatcher.EndGroups
 	}
@@ -180,19 +184,24 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		}
 		return dispatcher.EndGroups
 	}
-	if !user.Silent || user.DefaultStorageID == 0 {
-		return ProvideSelectMessage(ctx, update, file, int(update.EffectiveChat().GetID()), msg.ID, replied.ID)
+	if !user.Silent || user.DefaultStorage == "" {
+		return ProvideSelectMessage(ctx, update, file, update.EffectiveChat().GetID(), msg.ID, replied.ID)
 	}
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
 		Status:         types.Pending,
 		File:           file,
-		StorageID:      user.DefaultStorageID,
+		StorageName:    user.DefaultStorage,
 		FileChatID:     update.EffectiveChat().GetID(),
 		ReplyMessageID: replied.ID,
 		ReplyChatID:    update.GetUserChat().GetID(),
 		FileMessageID:  msg.ID,
 	})
+}
+
+func storageCmd(ctx *ext.Context, update *ext.Update) error {
+	// TODO: Implement
+	return dispatcher.EndGroups
 }
 
 func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
@@ -211,7 +220,8 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
-	if len(user.Storages) == 0 {
+	storages := storage.GetUserStorages(user.ChatID)
+	if len(storages) == 0 {
 		ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
 		return dispatcher.EndGroups
 	}
@@ -250,14 +260,14 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	if !user.Silent || user.DefaultStorageID == 0 {
-		return ProvideSelectMessage(ctx, update, file, int(update.EffectiveChat().GetID()), update.EffectiveMessage.ID, msg.ID)
+	if !user.Silent || user.DefaultStorage == "" {
+		return ProvideSelectMessage(ctx, update, file, update.EffectiveChat().GetID(), update.EffectiveMessage.ID, msg.ID)
 	}
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
 		Status:         types.Pending,
 		File:           file,
-		StorageID:      user.DefaultStorageID,
+		StorageName:    user.DefaultStorage,
 		FileChatID:     update.EffectiveChat().GetID(),
 		ReplyMessageID: msg.ID,
 		ReplyChatID:    update.GetUserChat().GetID(),
@@ -278,8 +288,19 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 	args := strings.Split(string(update.CallbackQuery.Data), " ")
 	fileChatID, _ := strconv.Atoi(args[1])
 	fileMessageID, _ := strconv.Atoi(args[2])
-	storageID, _ := strconv.Atoi(args[3])
-	logger.L.Tracef("Got add to queue: chatID: %d, messageID: %d, storageID: %d", fileChatID, fileMessageID, storageID)
+	storageNameHash := args[3]
+	storageName := storageHashName[storageNameHash]
+	if storageName == "" {
+		logger.L.Errorf("Unknown storage name hash: %d", storageNameHash)
+		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+			QueryID:   update.CallbackQuery.QueryID,
+			Alert:     true,
+			Message:   "未知存储位置",
+			CacheTime: 5,
+		})
+		return dispatcher.EndGroups
+	}
+	logger.L.Tracef("Got add to queue: chatID: %d, messageID: %d, storage: %s", fileChatID, fileMessageID, storageName)
 	record, err := dao.GetReceivedFileByChatAndMessageID(int64(fileChatID), fileMessageID)
 	if err != nil {
 		logger.L.Errorf("Failed to get received file: %s", err)
@@ -313,7 +334,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		Ctx:            ctx,
 		Status:         types.Pending,
 		File:           file,
-		StorageID:      uint(storageID),
+		StorageName:    storageName,
 		FileChatID:     record.ChatID,
 		ReplyMessageID: record.ReplyMessageID,
 		FileMessageID:  record.MessageID,

@@ -17,18 +17,9 @@ func GetAllUsers() ([]types.User, error) {
 	return users, err
 }
 
-// GetUserByUserID gets a user by their telegram user ID
-//
-// Return with active storages
 func GetUserByChatID(chatID int64) (*types.User, error) {
 	var user types.User
-	err := db.Preload("Storages", "active = ?", true).Where("chat_id = ?", chatID).First(&user).Error
-	return &user, err
-}
-
-func GetUserWithAllStoragesByChatID(chatID int64) (*types.User, error) {
-	var user types.User
-	err := db.Preload("Storages").Where("chat_id = ?", chatID).First(&user).Error
+	err := db.Where("chat_id = ?", chatID).First(&user).Error
 	return &user, err
 }
 
@@ -37,5 +28,5 @@ func UpdateUser(user *types.User) error {
 }
 
 func DeleteUser(user *types.User) error {
-	return db.Select("Storages").Delete(user).Error
+	return db.Delete(user).Error
 }

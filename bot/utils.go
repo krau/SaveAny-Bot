@@ -14,6 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/queue"
+	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -23,39 +24,6 @@ var (
 	ErrEmptyPhotoSize  = errors.New("photo size is empty")
 	ErrEmptyPhotoSizes = errors.New("photo size slice is empty")
 	ErrNoStorages      = errors.New("no available storage")
-)
-
-var (
-	manageStorageButtonAdd        = "添加存储"
-	manageStorageButtonDelete     = "删除存储"
-	manageStorageButtonEdit       = "修改存储"
-	manageStorageButtonSetDefault = "设置默认存储"
-	manageStorageKeyboardMarkup   = tg.ReplyKeyboardMarkup{
-		Selective: true,
-		Resize:    true,
-		Rows: []tg.KeyboardButtonRow{
-			{
-				Buttons: []tg.KeyboardButtonClass{
-					&tg.KeyboardButton{
-						Text: manageStorageButtonAdd,
-					},
-					&tg.KeyboardButton{
-						Text: manageStorageButtonDelete,
-					},
-					&tg.KeyboardButton{
-						Text: manageStorageButtonEdit,
-					},
-				},
-			},
-			{
-				Buttons: []tg.KeyboardButtonClass{
-					&tg.KeyboardButton{
-						Text: manageStorageButtonSetDefault,
-					},
-				},
-			},
-		},
-	}
 )
 
 func supportedMediaFilter(m *tg.Message) (bool, error) {
@@ -72,19 +40,23 @@ func supportedMediaFilter(m *tg.Message) (bool, error) {
 	}
 }
 
+// for callback data
+var storageHashName = map[string]string{}
+
 func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*tg.ReplyInlineMarkup, error) {
 	user, err := dao.GetUserByChatID(userChatID)
 	if err != nil {
 		return nil, err
 	}
-	if len(user.Storages) < 1 {
-		return nil, ErrNoStorages
-	}
+	storages := storage.GetUserStorages(user.ChatID)
+
 	buttons := make([]tg.KeyboardButtonClass, 0)
-	for _, storage := range user.Storages {
+	for _, storage := range storages {
+		nameHash := common.HashString(storage.Name())
+		storageHashName[nameHash] = storage.Name()
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: storage.Name,
-			Data: []byte(fmt.Sprintf("add %d %d %d", fileChatID, fileMessageID, storage.ID)),
+			Text: storage.Name(),
+			Data: []byte(fmt.Sprintf("add %d %d %s", fileChatID, fileMessageID, nameHash)),
 		})
 	}
 	markup := &tg.ReplyInlineMarkup{}
@@ -194,7 +166,7 @@ func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, e
 	return tgMessage, nil
 }
 
-func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, file *types.File, chatID int, fileMsgID, toEditMsgID int) error {
+func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, file *types.File, chatID int64, fileMsgID, toEditMsgID int) error {
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	text := fmt.Sprintf("文件名: %s\n请选择存储位置", file.FileName)
@@ -207,7 +179,7 @@ func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, file *types.File
 	} else {
 		text, entities = entityBuilder.Complete()
 	}
-	markup, err := getSelectStorageMarkup(update.EffectiveUser().GetID(), chatID, fileMsgID)
+	markup, err := getSelectStorageMarkup(update.EffectiveUser().GetID(), int(chatID), fileMsgID)
 	if errors.Is(err, ErrNoStorages) {
 		logger.L.Errorf("Failed to get select storage markup: %s", err)
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
@@ -236,7 +208,7 @@ func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, file *types.File
 }
 
 func HandleSilentAddTask(ctx *ext.Context, update *ext.Update, user *types.User, task *types.Task) error {
-	if user.DefaultStorageID == 0 {
+	if user.DefaultStorage == "" {
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message: "请先使用 /storage 设置默认存储位置",
 			ID:      task.ReplyMessageID,
