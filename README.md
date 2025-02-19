@@ -2,6 +2,8 @@
 
 # <img src="docs/logo.jpg" width="45" align="center"> Save Any Bot
 
+**简体中文** | [English](README_EN.md) 
+
 把 Telegram 的文件保存到各类存储端.
 
 > _就像 PikPak Bot 一样_
@@ -60,9 +62,9 @@ systemctl enable --now saveany-bot
 
 #### Docker Compose
 
-下载 [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml) 文件, 并修改其中的配置.
+下载 [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml) 文件, 在同目录下新建 `config.toml` 文件, 参考 [config.toml.example](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) 编辑配置文件.
 
-运行:
+启动:
 
 ```bash
 docker compose up -d
@@ -94,7 +96,7 @@ docker restart saveany-bot
 
 ## 使用
 
-向 Bot 发送(转发)文件, 按照提示操作.
+向 Bot 发送(转发)文件, 或发送公开频道的消息链接, 按照提示操作.
 
 ---
 
