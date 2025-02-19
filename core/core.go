@@ -31,10 +31,10 @@ func processPendingTask(task *types.Task) error {
 	cacheDestPath := filepath.Join(config.Cfg.Temp.BasePath, task.FileName())
 	cacheDestPath, err := filepath.Abs(cacheDestPath)
 	if err != nil {
-		return fmt.Errorf("failed to get absolute path: %w", err)
+		return fmt.Errorf("处理路径失败: %w", err)
 	}
 	if err := fileutil.CreateDir(filepath.Dir(cacheDestPath)); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+		return fmt.Errorf("创建目录失败: %w", err)
 	}
 
 	if task.StoragePath == "" {
@@ -80,18 +80,18 @@ func processPendingTask(task *types.Task) error {
 		0, task.File.FileSize-1, task.File.FileSize,
 		progressCallback, task.File.FileSize/100)
 	if err != nil {
-		return fmt.Errorf("failed to create reader: %w", err)
+		return fmt.Errorf("创建下载失败: %w", err)
 	}
 	defer readCloser.Close()
 
 	dest, err := os.Create(cacheDestPath)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
+		return fmt.Errorf("创建文件失败: %w", err)
 	}
 	defer dest.Close()
 	task.StartTime = time.Now()
 	if _, err := io.CopyN(dest, readCloser, task.File.FileSize); err != nil {
-		return fmt.Errorf("failed to download file: %w", err)
+		return fmt.Errorf("下载文件失败: %w", err)
 	}
 	defer cleanCacheFile(cacheDestPath)
 	if path.Ext(task.FileName()) == "" {

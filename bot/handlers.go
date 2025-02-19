@@ -31,7 +31,7 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewCommand("save", saveCmd))
 	linkRegexFilter, err := filters.Message.Regex(linkRegexString)
 	if err != nil {
-		logger.L.Panicf("Failed to create regex filter: %s", err)
+		logger.L.Panicf("创建正则表达式过滤器失败: %s", err)
 	}
 	dispatcher.AddHandler(handlers.NewMessage(linkRegexFilter, handleLinkMessage))
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), AddToQueue))
@@ -55,7 +55,7 @@ func checkPermission(ctx *ext.Context, update *ext.Update) error {
 
 func start(ctx *ext.Context, update *ext.Update) error {
 	if err := dao.CreateUser(update.GetUserChat().GetID()); err != nil {
-		logger.L.Errorf("Failed to create user: %s", err)
+		logger.L.Errorf("创建用户失败: %s", err)
 		return dispatcher.EndGroups
 	}
 	return help(ctx, update)
@@ -85,12 +85,13 @@ func help(ctx *ext.Context, update *ext.Update) error {
 func silent(ctx *ext.Context, update *ext.Update) error {
 	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
 	if err != nil {
-		logger.L.Errorf("Failed to get user: %s", err)
+		logger.L.Errorf("获取用户失败: %s", err)
 		return dispatcher.EndGroups
 	}
 	user.Silent = !user.Silent
 	if err := dao.UpdateUser(user); err != nil {
-		logger.L.Errorf("Failed to update user: %s", err)
+		logger.L.Errorf("更新用户失败: %s", err)
+		ctx.Reply(update, ext.ReplyTextString("更新用户失败"), nil)
 		return dispatcher.EndGroups
 	}
 	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("已%s静默模式", map[bool]string{true: "开启", false: "关闭"}[user.Silent])), nil)
@@ -116,7 +117,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 
 	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
 	if err != nil {
-		logger.L.Errorf("Failed to get user: %s", err)
+		logger.L.Errorf("获取用户失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
@@ -130,7 +131,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 
 	msg, err := GetTGMessage(ctx, update.EffectiveChat().GetID(), replyToMsgID)
 	if err != nil {
-		logger.L.Errorf("Failed to get message: %s", err)
+		logger.L.Errorf("获取消息失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("无法获取消息"), nil)
 		return dispatcher.EndGroups
 	}
@@ -143,7 +144,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 
 	replied, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)
 	if err != nil {
-		logger.L.Errorf("Failed to reply: %s", err)
+		logger.L.Errorf("回复失败: %s", err)
 		return dispatcher.EndGroups
 	}
 
@@ -152,7 +153,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 
 	file, err := FileFromMessage(ctx, update.EffectiveChat().GetID(), msg.ID, customFileName)
 	if err != nil {
-		logger.L.Errorf("Failed to get file from message: %s", err)
+		logger.L.Errorf("获取文件失败: %s", err)
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message: fmt.Sprintf("获取文件失败: %s", err),
 			ID:      replied.ID,
@@ -174,12 +175,12 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	if err := dao.SaveReceivedFile(receivedFile); err != nil {
-		logger.L.Errorf("Failed to save received file: %s", err)
+		logger.L.Errorf("保存接收的文件失败: %s", err)
 		if _, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: fmt.Sprintf("Failed to save received file: %s", err),
+			Message: fmt.Sprintf("保存接收的文件失败: %s", err),
 			ID:      replied.ID,
 		}); err != nil {
-			logger.L.Errorf("Failed to edit message: %s", err)
+			logger.L.Errorf("编辑消息失败: %s", err)
 		}
 		return dispatcher.EndGroups
 	}
@@ -202,7 +203,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 func storageCmd(ctx *ext.Context, update *ext.Update) error {
 	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
 	if err != nil {
-		logger.L.Errorf("Failed to get user: %s", err)
+		logger.L.Errorf("获取用户失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
@@ -236,7 +237,7 @@ func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 	selectedStorage, err := storage.GetStorageByName(storageName)
 
 	if err != nil {
-		logger.L.Errorf("failed to get storage: %s", err)
+		logger.L.Errorf("获取指定存储失败: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,
@@ -286,7 +287,7 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 
 	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
 	if err != nil {
-		logger.L.Errorf("Failed to get user: %s", err)
+		logger.L.Errorf("获取用户失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
@@ -298,13 +299,13 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 
 	msg, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)
 	if err != nil {
-		logger.L.Errorf("Failed to reply: %s", err)
+		logger.L.Errorf("回复失败: %s", err)
 		return dispatcher.EndGroups
 	}
 	media := update.EffectiveMessage.Media
 	file, err := FileFromMedia(media, "")
 	if err != nil {
-		logger.L.Errorf("Failed to get file from media: %s", err)
+		logger.L.Errorf("获取文件失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("获取文件失败: %s", err)), nil)
 		return dispatcher.EndGroups
 	}
@@ -320,12 +321,12 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		ReplyMessageID: msg.ID,
 		ReplyChatID:    update.GetUserChat().GetID(),
 	}); err != nil {
-		logger.L.Errorf("Failed to add received file: %s", err)
+		logger.L.Errorf("添加接收的文件失败: %s", err)
 		if _, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			Message: fmt.Sprintf("Failed to add received file: %s", err),
+			Message: fmt.Sprintf("添加接收的文件失败: %s", err),
 			ID:      msg.ID,
 		}); err != nil {
-			logger.L.Errorf("Failed to edit message: %s", err)
+			logger.L.Errorf("编辑消息失败: %s", err)
 		}
 		return dispatcher.EndGroups
 	}
@@ -362,7 +363,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 	storageNameHash := args[3]
 	storageName := storageHashName[storageNameHash]
 	if storageName == "" {
-		logger.L.Errorf("Unknown storage name hash: %d", storageNameHash)
+		logger.L.Errorf("未知存储位置哈希: %d", storageNameHash)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,
@@ -374,7 +375,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 	logger.L.Tracef("Got add to queue: chatID: %d, messageID: %d, storage: %s", fileChatID, fileMessageID, storageName)
 	record, err := dao.GetReceivedFileByChatAndMessageID(int64(fileChatID), fileMessageID)
 	if err != nil {
-		logger.L.Errorf("Failed to get received file: %s", err)
+		logger.L.Errorf("获取记录失败: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,
@@ -386,12 +387,12 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 	if update.CallbackQuery.MsgID != record.ReplyMessageID {
 		record.ReplyMessageID = update.CallbackQuery.MsgID
 		if err := dao.SaveReceivedFile(record); err != nil {
-			logger.L.Errorf("Failed to update received file: %s", err)
+			logger.L.Errorf("更新接收的文件失败: %s", err)
 		}
 	}
 	file, err := FileFromMessage(ctx, record.ChatID, record.MessageID, record.FileName)
 	if err != nil {
-		logger.L.Errorf("Failed to get file from message: %s", err)
+		logger.L.Errorf("获取消息中的文件失败: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,

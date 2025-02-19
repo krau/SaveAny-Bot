@@ -27,7 +27,7 @@ func newProxyDialer(proxyUrl string) (proxy.Dialer, error) {
 }
 
 func Init() {
-	logger.L.Info("Initializing client...")
+	logger.L.Info("初始化 Telegram 客户端...")
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	resultChan := make(chan struct {
@@ -76,7 +76,6 @@ func Init() {
 				{Command: "silent", Description: "开启/关闭静默模式"},
 				{Command: "storage", Description: "设置默认存储端"},
 				{Command: "save", Description: "保存所回复的文件"},
-				{Command: "path", Description: "更改保存路径配置"},
 			},
 		})
 		resultChan <- struct {
@@ -87,15 +86,15 @@ func Init() {
 
 	select {
 	case <-ctx.Done():
-		logger.L.Fatal("Failed to initialize client: timeout")
+		logger.L.Fatal("初始化客户端失败: 超时")
 		os.Exit(1)
 	case result := <-resultChan:
 		if result.err != nil {
-			logger.L.Fatalf("Failed to initialize client: %s", result.err)
+			logger.L.Fatalf("初始化客户端失败: %s", result.err)
 			os.Exit(1)
 		}
 		Client = result.client
 		RegisterHandlers(Client.Dispatcher)
-		logger.L.Info("Client initialized")
+		logger.L.Info("客户端初始化完成")
 	}
 }

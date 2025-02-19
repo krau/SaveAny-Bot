@@ -14,11 +14,11 @@ import (
 
 func InitAll() {
 	if err := config.Init(); err != nil {
-		fmt.Println("Failed to init config: ", err)
+		fmt.Println("加载配置文件失败: ", err)
 		os.Exit(1)
 	}
 	logger.InitLogger()
-	logger.L.Info("Starting SaveAny-Bot...")
+	logger.L.Info("正在启动 SaveAny-Bot...")
 	storage.LoadStorages()
 	common.Init()
 	dao.Init()
