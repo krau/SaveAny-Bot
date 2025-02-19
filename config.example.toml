@@ -4,11 +4,9 @@ retry = 3   # 下载失败重试次数
 [telegram]
 # Bot Token
 token = ""
-# 允许使用的用户 id 列表                   
-admins = [777000]
 # Telegram API 配置, 若不配置也可运行, 将使用默认的 API ID 和 API HASH
 # 推荐使用自己的 API ID 和 API HASH (https://my.telegram.org)
-# app_id = 123456                              
+# app_id = 123456
 # app_hash = "0123456789abcdef0123456789abcdef"
 
 [telegram.proxy]
@@ -17,37 +15,70 @@ enable = false
 url = "socks5://127.0.0.1:7890"
 
 
-[storage]
-[storage.alist] # Alist
+# 存储配置列表
+[[storages]]
+# 标识名, 需要唯一
+name = "本机1"
+# 存储类型, 目前可用: local , alist , webdav
+type = "local"
 enable = true
-base_path = "/telegram"   # 保存路径
-username = "admin"        # 用户名
-password = "password"     # 密码
-url = "https://alist.com" # Alist 地址
-token_exp = 86400         # token 过期时间, 单位: 秒
-# 可直接使用 token 授权, 此时不能自动刷新登录信息
-# 配置 token 后, username , password , token_exp 将被忽略
-token = "jwt_token"
+base_path = "./downloads"
 
-[storage.local] # 本地磁盘
+[[storages]]
+name = "本机2"
+type = "local"
 enable = true
-base_path = "downloads/" # 保存路径
+base_path = "./downloads/2"
 
-[storage.webdav] # WebDav
+[[storages]]
+name = "MyAlist"
+type = "alist"
 enable = true
-base_path = "/telegram"
-username = "admin"
-password = "password"
-url = "https://alist.com/dav"
+base_path = '/'
+url = 'https://alist.com'
+username = 'admin'
+password = 'password'
+token_exp = 86400
+# alist 可直接使用 token 登录, 此时 username, password, token_exp 将被忽略
+# 请自行在 alist 侧配置合理的 token 过期时间
+# token = ""
 
 
-[log]
-# 日志等级
-level = "DEBUG"
+[[storages]]
+name = "MyWebdav"
+type = "webdav"
+base_path = '/path/telegram'
+enable = true
+url = 'https://example.com/dav'
+username = 'username'
+password = 'password'
 
-[temp]
-base_path = "cache/" # 下载文件临时目录, 请不要在此目录下存放任何其他文件
-cache_ttl = 30       # 临时文件保存时间, 单位: 秒
 
-[db]
-path = "data/data.db" # 数据库文件路径
+# 用户列表
+[[users]]
+# user id
+id = 123456
+# 存储名称过滤列表
+storages = ["MyAlist", "本机1"]
+# 开启黑名单模式, 过滤列表中的存储将无法使用, 默认为白名单模式
+blacklist = false
+
+[[users]]
+id = 114514
+# 将列表留空并开启黑名单模式以允许使用所有存储
+storages = []
+blacklist = true
+
+
+# [log]
+# # 日志等级
+# level = "DEBUG"
+
+# [temp]
+# # 下载文件临时目录, 请不要在此目录下存放任何其他文件
+# base_path = "cache/"
+# # 临时文件保存时间, 单位: 秒
+# cache_ttl = 30
+
+# [db]
+# path = "data/data.db" # 数据库文件路径

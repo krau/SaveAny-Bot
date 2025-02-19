@@ -3,30 +3,8 @@ services:
     image: ghcr.io/krau/saveany-bot:latest
     container_name: saveany-bot
     restart: unless-stopped
-    environment:
-      - SAVEANY_TELEGRAM_TOKEN=bot_token
-      - SAVEANY_TELEGRAM_ADMINS=admin_id1,admin_id2
-      # 推荐使用自己的 API ID 和 API HASH (https://my.telegram.org)
-      # 若不配置也可运行, 将使用默认的 API ID 和 API HASH
-      # - SAVEANY_TELEGRAM_APP_ID=app_id
-      # - SAVEANY_TELEGRAM_APP_HASH=app_hash
-      
-      # 本地存储
-      - SAVEANY_STORAGE_LOCAL_ENABLE=true
-      - SAVEANY_STORAGE_LOCAL_BASE_PATH=/app/downloads
-      # Alist
-      - SAVEANY_STORAGE_ALIST_ENABLE=true
-      - SAVEANY_STORAGE_ALIST_BASE_PATH=/saveany
-      - SAVEANY_STORAGE_ALIST_URL=https://example.com
-      - SAVEANY_STORAGE_ALIST_USERNAME=username
-      - SAVEANY_STORAGE_ALIST_PASSWORD=password
-      # webdav
-      - SAVEANY_STORAGE_WEBDAV_ENABLE=true
-      - SAVEANY_STORAGE_WEBDAV_BASE_PATH=/saveany
-      - SAVEANY_STORAGE_WEBDAV_URL=https://example.com
-      - SAVEANY_STORAGE_WEBDAV_USERNAME=username
-      - SAVEANY_STORAGE_WEBDAV_PASSWORD=password
     volumes:
       - ./data:/app/data
+      - ./config.toml:/app/config.toml
       - ./downloads:/app/downloads
       - ./cache:/app/cache
