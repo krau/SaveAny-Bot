@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -40,9 +41,44 @@ func Init() {
 		logger.L.Fatal("迁移数据库失败, 如果您从旧版本升级, 建议手动删除数据库文件后重试: ", err)
 	}
 
-	for _, admin := range config.Cfg.GetUsersID() {
-		if err := CreateUser(int64(admin)); err != nil {
-			logger.L.Fatal("Failed to create admin user: ", err)
+	if err := syncUsers(); err != nil {
+		logger.L.Fatal("Failed to sync users:", err)
+	}
+}
+
+func syncUsers() error {
+	dbUsers, err := GetAllUsers()
+	if err != nil {
+		return fmt.Errorf("failed to get users: %w", err)
+	}
+
+	dbUserMap := make(map[int64]types.User)
+	for _, u := range dbUsers {
+		dbUserMap[u.ChatID] = u
+	}
+
+	cfgUserMap := make(map[int64]struct{})
+	for _, u := range config.Cfg.Users {
+		cfgUserMap[u.ID] = struct{}{}
+	}
+
+	for cfgID := range cfgUserMap {
+		if _, exists := dbUserMap[cfgID]; !exists {
+			if err := CreateUser(cfgID); err != nil {
+				return fmt.Errorf("failed to create user %d: %w", cfgID, err)
+			}
+			logger.L.Infof("创建用户: %d", cfgID)
 		}
 	}
+
+	for dbID, dbUser := range dbUserMap {
+		if _, exists := cfgUserMap[dbID]; !exists {
+			if err := DeleteUser(&dbUser); err != nil {
+				return fmt.Errorf("failed to delete user %d: %w", dbID, err)
+			}
+			logger.L.Infof("删除用户: %d", dbID)
+		}
+	}
+
+	return nil
 }

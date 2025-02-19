@@ -28,5 +28,5 @@ func UpdateUser(user *types.User) error {
 }
 
 func DeleteUser(user *types.User) error {
-	return db.Delete(user).Error
+	return db.Unscoped().Delete(user).Error
 }

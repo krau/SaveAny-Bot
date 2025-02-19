@@ -20,5 +20,5 @@ func GetReceivedFileByChatAndMessageID(chatID int64, messageID int) (*types.Rece
 }
 
 func DeleteReceivedFile(receivedFile *types.ReceivedFile) error {
-	return db.Delete(receivedFile).Error
+	return db.Unscoped().Delete(receivedFile).Error
 }

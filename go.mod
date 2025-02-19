@@ -5,6 +5,7 @@ go 1.23.5
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/celestix/gotgproto v1.0.0-beta20.2
+	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/gookit/slog v0.5.7
 	github.com/gotd/contrib v0.21.0
 	github.com/gotd/td v0.120.0
@@ -25,7 +26,6 @@ require (
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/glebarez/go-sqlite v1.22.0 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
@@ -76,13 +76,13 @@ require (
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/glebarez/sqlite v1.11.0
 	github.com/gookit/color v1.5.4 // indirect
-	github.com/gookit/goutil v0.6.18
+	github.com/gookit/goutil v0.6.18 // indirect
 	github.com/gookit/gsr v0.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/magiconair/properties v1.8.9 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
