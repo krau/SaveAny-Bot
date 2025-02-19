@@ -18,8 +18,6 @@ type Webdav struct {
 	client *gowebdav.Client
 }
 
-var ConfigurableItems = []string{"url", "username", "password", "base_path"}
-
 func (w *Webdav) Init(cfg config.StorageConfig) error {
 	webdavConfig, ok := cfg.(*config.WebdavStorageConfig)
 	if !ok {

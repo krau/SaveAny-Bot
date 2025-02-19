@@ -15,10 +15,6 @@ type Local struct {
 	config config.LocalStorageConfig
 }
 
-var ConfigurableItems = []string{
-	"base_path",
-}
-
 func (l *Local) Init(cfg config.StorageConfig) error {
 	localConfig, ok := cfg.(*config.LocalStorageConfig)
 	if !ok {

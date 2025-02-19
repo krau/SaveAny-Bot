@@ -43,10 +43,13 @@ type Task struct {
 	StoragePath string
 	StartTime   time.Time
 
-	FileMessageID  int
-	FileChatID     int64
+	FileMessageID int
+	FileChatID    int64
+	// to track the reply message
 	ReplyMessageID int
 	ReplyChatID    int64
+	// to track the user
+	UserID int64
 }
 
 func (t Task) String() string {

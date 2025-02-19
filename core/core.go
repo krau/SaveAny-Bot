@@ -41,7 +41,7 @@ func processPendingTask(task *types.Task) error {
 		task.StoragePath = task.File.FileName
 	}
 
-	taskStorage, err := storage.GetStorageByName(task.StorageName)
+	taskStorage, err := storage.GetStorageByUserIDAndName(task.UserID, task.StorageName)
 	if err != nil {
 		return err
 	}

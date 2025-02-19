@@ -35,8 +35,8 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	}
 	dispatcher.AddHandler(handlers.NewMessage(linkRegexFilter, handleLinkMessage))
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), AddToQueue))
+	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("set_default"), setDefaultStorage))
 	dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, handleFileMessage))
-	// dispatcher.AddHandler(handlers.NewMessage(filters.Message.Text, handleConversation))
 }
 
 const noPermissionText string = `
@@ -69,7 +69,6 @@ Save Any Bot - 转存你的 Telegram 文件
 /silent - 开关静默模式
 /storage - 设置默认存储位置
 /save [自定义文件名] - 保存文件
-/path <存储类型> <路径> - 更改文件保存路径
 
 静默模式: 开启后 Bot 直接保存到收到的文件到默认位置, 不再询问
 
@@ -196,11 +195,82 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		ReplyMessageID: replied.ID,
 		ReplyChatID:    update.GetUserChat().GetID(),
 		FileMessageID:  msg.ID,
+		UserID:         user.ChatID,
 	})
 }
 
 func storageCmd(ctx *ext.Context, update *ext.Update) error {
-	// TODO: Implement
+	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
+	if err != nil {
+		logger.L.Errorf("Failed to get user: %s", err)
+		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
+		return dispatcher.EndGroups
+	}
+	storages := storage.GetUserStorages(user.ChatID)
+	if len(storages) == 0 {
+		ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
+		return dispatcher.EndGroups
+	}
+
+	ctx.Reply(update, ext.ReplyTextString("请选择要设为默认的存储位置"), &ext.ReplyOpts{
+		Markup: getSetDefaultStorageMarkup(user.ChatID, storages),
+	})
+
+	return dispatcher.EndGroups
+}
+
+func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
+	args := strings.Split(string(update.CallbackQuery.Data), " ")
+	userID, _ := strconv.Atoi(args[1])
+	storageNameHash := args[2]
+	if userID != int(update.CallbackQuery.GetUserID()) {
+		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+			QueryID:   update.CallbackQuery.QueryID,
+			Alert:     true,
+			Message:   "你没有权限",
+			CacheTime: 5,
+		})
+		return dispatcher.EndGroups
+	}
+	storageName := storageHashName[storageNameHash]
+	selectedStorage, err := storage.GetStorageByName(storageName)
+
+	if err != nil {
+		logger.L.Errorf("failed to get storage: %s", err)
+		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+			QueryID:   update.CallbackQuery.QueryID,
+			Alert:     true,
+			Message:   "获取指定存储失败",
+			CacheTime: 5,
+		})
+		return dispatcher.EndGroups
+	}
+	user, err := dao.GetUserByChatID(int64(userID))
+	if err != nil {
+		logger.L.Errorf("Failed to get user: %s", err)
+		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+			QueryID:   update.CallbackQuery.QueryID,
+			Alert:     true,
+			Message:   "获取用户失败",
+			CacheTime: 5,
+		})
+		return dispatcher.EndGroups
+	}
+	user.DefaultStorage = storageName
+	if err := dao.UpdateUser(user); err != nil {
+		logger.L.Errorf("Failed to update user: %s", err)
+		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+			QueryID:   update.CallbackQuery.QueryID,
+			Alert:     true,
+			Message:   "更新用户失败",
+			CacheTime: 5,
+		})
+		return dispatcher.EndGroups
+	}
+	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
+		Message: fmt.Sprintf("已将 %s (%s) 设为默认存储位置", selectedStorage.Name(), selectedStorage.Type()),
+		ID:      update.CallbackQuery.GetMsgID(),
+	})
 	return dispatcher.EndGroups
 }
 
@@ -272,11 +342,12 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		ReplyMessageID: msg.ID,
 		ReplyChatID:    update.GetUserChat().GetID(),
 		FileMessageID:  update.EffectiveMessage.ID,
+		UserID:         user.ChatID,
 	})
 }
 
 func AddToQueue(ctx *ext.Context, update *ext.Update) error {
-	if !slice.Contain(config.Cfg.Telegram.Admins, update.CallbackQuery.UserID) {
+	if !slice.Contain(config.Cfg.GetUsersID(), update.CallbackQuery.UserID) {
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,
@@ -339,6 +410,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		ReplyMessageID: record.ReplyMessageID,
 		FileMessageID:  record.MessageID,
 		ReplyChatID:    record.ReplyChatID,
+		UserID:         update.EffectiveUser().GetID(),
 	})
 
 	entityBuilder := entity.Builder{}

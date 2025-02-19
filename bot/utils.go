@@ -68,6 +68,26 @@ func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*t
 	return markup, nil
 }
 
+func getSetDefaultStorageMarkup(userChatID int64, storages []storage.Storage) *tg.ReplyInlineMarkup {
+	buttons := make([]tg.KeyboardButtonClass, 0)
+	for _, storage := range storages {
+		nameHash := common.HashString(storage.Name())
+		storageHashName[nameHash] = storage.Name()
+		buttons = append(buttons, &tg.KeyboardButtonCallback{
+			Text: storage.Name(),
+			Data: []byte(fmt.Sprintf("set_default %d %s", userChatID, nameHash)),
+		})
+	}
+	markup := &tg.ReplyInlineMarkup{}
+	for i := 0; i < len(buttons); i += 3 {
+		row := tg.KeyboardButtonRow{}
+		row.Buttons = buttons[i:min(i+3, len(buttons))]
+		markup.Rows = append(markup.Rows, row)
+	}
+	return markup
+
+}
+
 func FileFromMedia(media tg.MessageMediaClass, customFileName string) (*types.File, error) {
 	switch media := media.(type) {
 	case *tg.MessageMediaDocument:

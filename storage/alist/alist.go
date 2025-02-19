@@ -24,15 +24,6 @@ type Alist struct {
 	config    config.AlistStorageConfig
 }
 
-var ConfigurableItems = []string{
-	"url",
-	"username",
-	"password",
-	"base_path",
-	"token_exp",
-	"token",
-}
-
 func (a *Alist) Init(cfg config.StorageConfig) error {
 	alistConfig, ok := cfg.(*config.AlistStorageConfig)
 	if !ok {

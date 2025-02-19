@@ -101,6 +101,16 @@ func Init() error {
 	if Cfg.Telegram.Admins != nil {
 		fmt.Println("警告: 你正在使用旧版 Telegram 管理员配置, 该配置下的用户将可用所有存储.\ntelegram.admins 未来版本将会被废弃, 请参考新的配置文件模板, 使用 users 配置替代.")
 		for _, admin := range Cfg.Telegram.Admins {
+			found := false
+			for _, user := range Cfg.Users {
+				if user.ID == admin {
+					found = true
+					break
+				}
+			}
+			if found {
+				continue
+			}
 			Cfg.Users = append(Cfg.Users, userConfig{
 				ID:        admin,
 				Storages:  []string{},

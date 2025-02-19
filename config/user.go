@@ -26,3 +26,24 @@ func (c *Config) GetStorageNamesByUserID(userID int64) []string {
 	}
 	return nil
 }
+
+func (c *Config) GetUsersID() []int64 {
+	var ids []int64
+	for _, user := range c.Users {
+		ids = append(ids, user.ID)
+	}
+	return ids
+}
+
+func (c *Config) HasStorage(userID int64, storageName string) bool {
+	for _, user := range c.Users {
+		if user.ID == userID {
+			if user.Blacklist {
+				return !slice.Contain(user.Storages, storageName)
+			} else {
+				return slice.Contain(user.Storages, storageName)
+			}
+		}
+	}
+	return false
+}

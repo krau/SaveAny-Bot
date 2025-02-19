@@ -9,6 +9,7 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/logger"
+	"github.com/krau/SaveAny-Bot/storage"
 )
 
 func InitAll() {
@@ -18,7 +19,7 @@ func InitAll() {
 	}
 	logger.InitLogger()
 	logger.L.Info("Starting SaveAny-Bot...")
-
+	storage.LoadStorages()
 	common.Init()
 	dao.Init()
 	bot.Init()
