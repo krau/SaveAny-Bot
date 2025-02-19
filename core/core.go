@@ -161,7 +161,7 @@ func Run() {
 logger.L.Info("Start processing tasks...")
 semaphore := make(chan struct{}, config.Cfg.Workers)
 for i := 0; i < config.Cfg.Workers; i++ {
-go woLet guests (queue.Queue, semaphore)
-}
+go worker(queue.Queue, semaphore)
+	}
 
 }
