@@ -102,6 +102,7 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		Status:         types.Pending,
 		File:           file,
 		StorageName:    user.DefaultStorage,
+		UserID:         user.ChatID,
 		FileChatID:     linkChat.GetID(),
 		FileMessageID:  messageID,
 		ReplyMessageID: replied.ID,

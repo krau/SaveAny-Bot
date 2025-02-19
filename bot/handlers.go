@@ -88,6 +88,10 @@ func silent(ctx *ext.Context, update *ext.Update) error {
 		logger.L.Errorf("获取用户失败: %s", err)
 		return dispatcher.EndGroups
 	}
+	if !user.Silent && user.DefaultStorage == "" {
+		ctx.Reply(update, ext.ReplyTextString("请先使用 /storage 设置默认存储位置"), nil)
+		return dispatcher.EndGroups
+	}
 	user.Silent = !user.Silent
 	if err := dao.UpdateUser(user); err != nil {
 		logger.L.Errorf("更新用户失败: %s", err)
