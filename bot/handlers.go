@@ -46,7 +46,7 @@ const noPermissionText string = `
 
 func checkPermission(ctx *ext.Context, update *ext.Update) error {
 	userID := update.GetUserChat().GetID()
-	if !slice.Contain(config.Cfg.Telegram.Admins, userID) {
+	if !slice.Contain(config.Cfg.GetUsersID(), userID) {
 		ctx.Reply(update, ext.ReplyTextString(noPermissionText), nil)
 		return dispatcher.EndGroups
 	}
