@@ -21,6 +21,7 @@ url = "socks5://127.0.0.1:7890"
 name = "本机1"
 # 存储类型, 目前可用: local , alist , webdav
 type = "local"
+# 启用存储
 enable = true
 base_path = "./downloads"
 
@@ -33,7 +34,7 @@ base_path = "./downloads/2"
 [[storages]]
 name = "MyAlist"
 type = "alist"
-enable = true
+enable = false
 base_path = '/'
 url = 'https://alist.com'
 username = 'admin'
@@ -48,7 +49,7 @@ token_exp = 86400
 name = "MyWebdav"
 type = "webdav"
 base_path = '/path/telegram'
-enable = true
+enable = false
 url = 'https://example.com/dav'
 username = 'username'
 password = 'password'
@@ -59,7 +60,7 @@ password = 'password'
 # user id
 id = 123456
 # 存储名称过滤列表
-storages = ["MyAlist", "本机1"]
+storages = ["本机1"]
 # 开启黑名单模式, 过滤列表中的存储将无法使用, 默认为白名单模式
 blacklist = false
 

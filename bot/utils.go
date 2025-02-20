@@ -49,6 +49,9 @@ func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*t
 		return nil, err
 	}
 	storages := storage.GetUserStorages(user.ChatID)
+	if len(storages) == 0 {
+		return nil, ErrNoStorages
+	}
 
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range storages {
@@ -199,7 +202,7 @@ func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, file *types.File
 	} else {
 		text, entities = entityBuilder.Complete()
 	}
-	markup, err := getSelectStorageMarkup(update.EffectiveUser().GetID(), int(chatID), fileMsgID)
+	markup, err := getSelectStorageMarkup(update.GetUserChat().GetID(), int(chatID), fileMsgID)
 	if errors.Is(err, ErrNoStorages) {
 		logger.L.Errorf("Failed to get select storage markup: %s", err)
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{

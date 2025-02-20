@@ -415,7 +415,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		ReplyMessageID: record.ReplyMessageID,
 		FileMessageID:  record.MessageID,
 		ReplyChatID:    record.ReplyChatID,
-		UserID:         update.EffectiveUser().GetID(),
+		UserID:         update.GetUserChat().GetID(),
 	})
 
 	entityBuilder := entity.Builder{}
