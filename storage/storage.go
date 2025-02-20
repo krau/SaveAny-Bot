@@ -22,6 +22,8 @@ type Storage interface {
 
 var Storages = make(map[string]Storage)
 
+var UserStorages = make(map[int64][]Storage)
+
 // GetStorageByName returns storage by name from cache or creates new one
 func GetStorageByName(name string) (Storage, error) {
 	if name == "" {
@@ -59,6 +61,12 @@ func GetStorageByUserIDAndName(chatID int64, name string) (Storage, error) {
 }
 
 func GetUserStorages(chatID int64) []Storage {
+	if chatID <= 0 {
+		return nil
+	}
+	if storages, ok := UserStorages[chatID]; ok {
+		return storages
+	}
 	var storages []Storage
 	for _, name := range config.Cfg.GetStorageNamesByUserID(chatID) {
 		storage, err := GetStorageByName(name)
@@ -101,4 +109,7 @@ func LoadStorages() {
 		}
 	}
 	logger.L.Infof("成功加载 %d 个存储", len(Storages))
+	for user := range config.Cfg.GetUsersID() {
+		UserStorages[int64(user)] = GetUserStorages(int64(user))
+	}
 }
