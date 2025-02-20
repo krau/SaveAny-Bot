@@ -46,7 +46,7 @@ var storageHashName = map[string]string{}
 func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*tg.ReplyInlineMarkup, error) {
 	user, err := dao.GetUserByChatID(userChatID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get user by chat ID: %d, error: %w", userChatID, err)
 	}
 	storages := storage.GetUserStorages(user.ChatID)
 	if len(storages) == 0 {
