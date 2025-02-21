@@ -162,9 +162,9 @@ func fixTaskFileExt(task *types.Task, localFilePath string) {
 func getTaskThreads(fileSize int64) int {
 	threads := 1
 	if fileSize > 1024*1024*100 {
-		threads = 4
+		threads = config.Cfg.Threads
 	} else if fileSize > 1024*1024*50 {
-		threads = 2
+		threads = config.Cfg.Threads / 2
 	}
 	return threads
 }

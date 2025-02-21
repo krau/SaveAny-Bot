@@ -9,10 +9,12 @@ import (
 )
 
 type Config struct {
-	Workers      int          `toml:"workers" mapstructure:"workers"`
-	Retry        int          `toml:"retry" mapstructure:"retry"`
-	NoCleanCache bool         `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
-	Users        []userConfig `toml:"users" mapstructure:"users" json:"users"`
+	Workers      int  `toml:"workers" mapstructure:"workers"`
+	Retry        int  `toml:"retry" mapstructure:"retry"`
+	NoCleanCache bool `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
+	Threads      int  `toml:"threads" mapstructure:"threads" json:"threads"`
+
+	Users []userConfig `toml:"users" mapstructure:"users" json:"users"`
 
 	Temp     tempConfig      `toml:"temp" mapstructure:"temp"`
 	Log      logConfig       `toml:"log" mapstructure:"log"`
@@ -67,6 +69,7 @@ func Init() error {
 
 	viper.SetDefault("workers", 3)
 	viper.SetDefault("retry", 3)
+	viper.SetDefault("threads", 4)
 
 	viper.SetDefault("telegram.app_id", 1025907)
 	viper.SetDefault("telegram.app_hash", "452b0359b988148995f22ff0f4229750")
