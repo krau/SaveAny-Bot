@@ -98,6 +98,7 @@ func (a *Alist) Name() string {
 }
 
 func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {
+	logger.L.Infof("Saving file %s to %s", filePath, storagePath)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
