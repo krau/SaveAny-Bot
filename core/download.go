@@ -2,8 +2,6 @@ package core
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -50,31 +48,26 @@ func processPendingTask(task *types.Task) error {
 		return fmt.Errorf("context is not *ext.Context: %T", task.Ctx)
 	}
 
-	barTotalCount := calculateBarTotalCount(task.File.FileSize)
-	text, entities := buildProgressMessageEntity(task, barTotalCount, 0, task.StartTime, 0)
+	text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
 	ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 		Message:  text,
 		Entities: entities,
 		ID:       task.ReplyMessageID,
 	})
-	progressCallback := buildProgressCallback(ctx, task, barTotalCount)
-	readCloser, err := NewTelegramReader(ctx, bot.Client, &task.File.Location,
-		0, task.File.FileSize-1, task.File.FileSize,
-		progressCallback, task.File.FileSize/100)
-	if err != nil {
-		return fmt.Errorf("创建下载失败: %w", err)
-	}
-	defer readCloser.Close()
+	progressCallback := buildProgressCallback(ctx, task, getProgressUpdateCount(task.File.FileSize))
 
-	dest, err := os.Create(cacheDestPath)
+	dest, err := NewTaskLocalFile(cacheDestPath, task.File.FileSize, progressCallback)
 	if err != nil {
 		return fmt.Errorf("创建文件失败: %w", err)
 	}
 	defer dest.Close()
 	task.StartTime = time.Now()
-	if _, err := io.CopyN(dest, readCloser, task.File.FileSize); err != nil {
+	downloadBuider := Downloader.Download(bot.Client.API(), task.File.Location).WithThreads(getTaskThreads(task.File.FileSize))
+	_, err = downloadBuider.Parallel(ctx, dest)
+	if err != nil {
 		return fmt.Errorf("下载文件失败: %w", err)
 	}
+
 	defer cleanCacheFile(cacheDestPath)
 
 	fixTaskFileExt(task, cacheDestPath)
