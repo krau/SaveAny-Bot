@@ -3,8 +3,11 @@ package core
 import (
 	"fmt"
 	"os"
+	"path"
 	"time"
 
+	"github.com/celestix/gotgproto/ext"
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
@@ -124,4 +127,32 @@ func buildProgressMessageEntity(task *types.Task, barTotalCount int, bytesRead i
 		return text, entities
 	}
 	return entityBuilder.Complete()
+}
+
+func buildProgressCallback(ctx *ext.Context, task *types.Task, barTotalCount int) func(bytesRead, contentLength int64) {
+	return func(bytesRead, contentLength int64) {
+		progress := float64(bytesRead) / float64(contentLength) * 100
+		logger.L.Tracef("Downloading %s: %.2f%%", task.String(), progress)
+		if task.File.FileSize < 1024*1024*50 || int(progress)%(100/barTotalCount) != 0 {
+			return
+		}
+		text, entities := buildProgressMessageEntity(task, barTotalCount, bytesRead, task.StartTime, progress)
+		ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
+			Message:  text,
+			Entities: entities,
+			ID:       task.ReplyMessageID,
+		})
+	}
+}
+
+func fixTaskFileExt(task *types.Task, localFilePath string) {
+	if path.Ext(task.FileName()) == "" {
+		mimeType, err := mimetype.DetectFile(localFilePath)
+		if err != nil {
+			logger.L.Errorf("Failed to detect mime type: %s", err)
+		} else {
+			task.File.FileName = fmt.Sprintf("%s%s", task.FileName(), mimeType.Extension())
+			task.StoragePath = fmt.Sprintf("%s%s", task.StoragePath, mimeType.Extension())
+		}
+	}
 }

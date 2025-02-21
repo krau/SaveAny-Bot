@@ -16,7 +16,7 @@ type telegramReader struct {
 	location         *tg.InputFileLocationClass
 	bytesread        int64
 	chunkSize        int64
-	i                int64
+	copied           int64
 	contentLength    int64
 	start            int64
 	end              int64
@@ -32,12 +32,12 @@ func (*telegramReader) Close() error {
 	return nil
 }
 
-func (r *telegramReader) Read(p []byte) (n int, err error) {
+func (r *telegramReader) Read(dst []byte) (n int, err error) {
 	if r.bytesread == r.contentLength {
 		return 0, io.EOF
 	}
 
-	if r.i >= int64(len(r.buffer)) {
+	if r.copied >= int64(len(r.buffer)) {
 		r.buffer, err = r.next()
 		if err != nil {
 			return 0, err
@@ -50,10 +50,10 @@ func (r *telegramReader) Read(p []byte) (n int, err error) {
 			}
 
 		}
-		r.i = 0
+		r.copied = 0
 	}
-	n = copy(p, r.buffer[r.i:])
-	r.i += int64(n)
+	n = copy(dst, r.buffer[r.copied:])
+	r.copied += int64(n)
 	r.bytesread += int64(n)
 
 	if r.progressCallback != nil && (r.bytesread-r.lastProgress >= r.callbackInterval || r.bytesread == r.contentLength) {
@@ -62,33 +62,6 @@ func (r *telegramReader) Read(p []byte) (n int, err error) {
 	}
 
 	return n, nil
-}
-
-func NewTelegramReader(
-	ctx context.Context,
-	client *gotgproto.Client,
-	location *tg.InputFileLocationClass,
-	start int64,
-	end int64,
-	contentLength int64,
-	progressCallback func(bytesRead, contentLength int64),
-	callbackInterval int64,
-) (io.ReadCloser, error) {
-
-	r := &telegramReader{
-		ctx:              ctx,
-		location:         location,
-		client:           client,
-		start:            start,
-		end:              end,
-		chunkSize:        int64(1024 * 1024),
-		contentLength:    contentLength,
-		progressCallback: progressCallback,
-		callbackInterval: callbackInterval,
-	}
-
-	r.next = r.partStream()
-	return r, nil
 }
 
 func (r *telegramReader) chunk(offset int64, limit int64) ([]byte, error) {
@@ -151,4 +124,31 @@ func (r *telegramReader) partStream() func() ([]byte, error) {
 		return res, nil
 	}
 	return readData
+}
+
+func NewTelegramReader(
+	ctx context.Context,
+	client *gotgproto.Client,
+	location *tg.InputFileLocationClass,
+	start int64,
+	end int64,
+	contentLength int64,
+	progressCallback func(bytesRead, contentLength int64),
+	callbackInterval int64,
+) (io.ReadCloser, error) {
+
+	r := &telegramReader{
+		ctx:              ctx,
+		location:         location,
+		client:           client,
+		start:            start,
+		end:              end,
+		chunkSize:        int64(1024 * 1024),
+		contentLength:    contentLength,
+		progressCallback: progressCallback,
+		callbackInterval: callbackInterval,
+	}
+
+	r.next = r.partStream()
+	return r, nil
 }
