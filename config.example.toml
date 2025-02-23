@@ -24,6 +24,7 @@ name = "本机1"
 type = "local"
 # 启用存储
 enable = true
+# 文件保存根路径
 base_path = "./downloads"
 
 [[storages]]
@@ -49,8 +50,8 @@ token_exp = 86400
 [[storages]]
 name = "MyWebdav"
 type = "webdav"
-base_path = '/path/telegram'
 enable = false
+base_path = '/path/telegram'
 url = 'https://example.com/dav'
 username = 'username'
 password = 'password'
@@ -58,19 +59,24 @@ password = 'password'
 
 # 用户列表
 [[users]]
-# user id
-id = 123456
-# 存储名称过滤列表
-storages = ["本机1"]
-# 开启黑名单模式, 过滤列表中的存储将无法使用, 默认为白名单模式
-blacklist = false
-
-[[users]]
+# telegram user id
 id = 114514
+# 将过滤模式设为黑名单
+blacklist = true
+# 存储过滤列表
 # 将列表留空并开启黑名单模式以允许使用所有存储
 storages = []
-blacklist = true
 
+
+[[users]]
+id = 123456
+blacklist = false
+# 此时该用户只能使用 本机1
+storages = ["本机1"]
+
+
+
+# 其他配置
 
 # [log]
 # # 日志等级
