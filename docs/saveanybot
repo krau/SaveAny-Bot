@@ -1,0 +1,34 @@
+#!/bin/sh /etc/rc.common
+
+# This is the OpenWRT init.d script for SaveAnyBot
+
+START=99  # 设置启动顺序，数字越大越后启动
+STOP=10   # 设置停止顺序，数字越小越先停止
+
+# 脚本描述
+description="SaveAnyBot"
+
+# 设置工作目录和执行文件路径
+WORKING_DIR="/mnt/mmc1-1/SaveAnyBot"
+EXEC_PATH="$WORKING_DIR/saveany-bot"
+
+# 启动函数
+start() {
+    echo "Starting SaveAnyBot..."
+    # 切换到工作目录并执行程序
+    cd $WORKING_DIR
+    $EXEC_PATH &
+}
+
+# 停止函数
+stop() {
+    echo "Stopping SaveAnyBot..."
+    # 查找并杀死进程
+    killall saveany-bot
+}
+
+# 重启函数
+reload() {
+    stop
+    start
+}
