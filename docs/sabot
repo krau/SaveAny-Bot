@@ -1,0 +1,28 @@
+#!/bin/sh
+
+case "$1" in
+    start)
+        /etc/init.d/saveanybot start
+        ;;
+    stop)
+        /etc/init.d/saveanybot stop
+        ;;
+    restart)
+        /etc/init.d/saveanybot restart
+        ;;
+    status)
+        /etc/init.d/saveanybot status
+        ;;
+    enable)
+        /etc/init.d/saveanybot enable
+        echo "Enable SaveAnyBot auto-start."
+        ;;
+    disable)
+        /etc/init.d/saveanybot disable
+        echo "Disable SaveAnyBot auto-start."
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status|enable|disable}"
+        exit 1
+        ;;
+esac

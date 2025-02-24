@@ -1,5 +1,6 @@
 <div align="center">
 
+
 # <img src="docs/logo.jpg" width="45" align="center"> Save Any Bot
 
 **简体中文** | [English](README_EN.md) 
@@ -14,6 +15,7 @@ Demo Video:
 
 <div align="center">
 
+
 [SaveAny-Bot 演示视频 ｜ The Demo of SaveAny-Bot.webm](https://github.com/user-attachments/assets/a0de2453-a4d1-4a12-81fb-9d84856dce09)
 
 </div>
@@ -24,7 +26,7 @@ Demo Video:
 
 在 [Release](https://github.com/krau/SaveAny-Bot/releases) 页面下载对应平台的二进制文件.
 
-在解压后目录新建 `config.toml` 文件, 参考 [config.toml.example](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) 编辑配置文件.
+在解压后目录新建 `config.toml` 文件, 参考 [config.toml.example](./config.example.toml) 编辑配置文件.
 
 运行:
 
@@ -58,11 +60,30 @@ WantedBy=multi-user.target
 systemctl enable --now saveany-bot
 ```
 
+#### 为OpenWrt及衍生系统添加开机自启动服务
+
+创建文件 ` /etc/init.d/saveanybot` ，参考[saveanybot](./docs/saveanybot)自行修改.
+
+`chmod +x /etc/init.d/saveanybot`
+
+完成后，将文件复制到 `/etc/rc.d`并重命名为`S99saveanybot`.
+
+`chmod +x /etc/rc.d/S99saveanybot`
+
+#### 为OpenWrt及衍生系统添加快捷指令
+
+创建文件` /usr/bin/sabot` ，参考[sabot](./docs/sabot)自行配置修改，注意此处文件编码仅支持 ANSI 936 .
+
+`chmod +x /usr/bin/sabot`
+
+之后，终端输入`sabot start|stop|restart|status|enable|disable`即可.
+
+
 ### 使用 Docker 部署
 
 #### Docker Compose
 
-下载 [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml) 文件, 在同目录下新建 `config.toml` 文件, 参考 [config.toml.example](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) 编辑配置文件.
+下载 [docker-compose.yml](./docker-compose.yml) 文件, 在同目录下新建 `config.toml` 文件, 参考 [config.toml.example](./config.example.toml) 编辑配置文件.
 
 启动:
 
