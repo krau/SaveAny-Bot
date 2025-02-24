@@ -26,7 +26,7 @@ Demo Video:
 
 在 [Release](https://github.com/krau/SaveAny-Bot/releases) 页面下载对应平台的二进制文件.
 
-在解压后目录新建 `config.toml` 文件, 参考 [config.toml.example](./config.example.toml) 编辑配置文件.
+在解压后目录新建 `config.toml` 文件, 参考 [config.example.toml](./config.example.toml) 编辑配置文件.
 
 运行:
 
