@@ -83,7 +83,7 @@ systemctl enable --now saveany-bot
 
 #### Docker Compose
 
-下载 [docker-compose.yml](./docker-compose.yml) 文件, 在同目录下新建 `config.toml` 文件, 参考 [config.toml.example](./config.example.toml) 编辑配置文件.
+下载 [docker-compose.yml](./docker-compose.yml) 文件, 在同目录下新建 `config.toml` 文件, 参考 [config.example.toml](./config.example.toml) 编辑配置文件.
 
 启动:
 
