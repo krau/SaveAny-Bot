@@ -158,7 +158,6 @@ func fixTaskFileExt(task *types.Task, localFilePath string) {
 	}
 }
 
-// TODO: configurable
 func getTaskThreads(fileSize int64) int {
 	threads := 1
 	if fileSize > 1024*1024*100 {

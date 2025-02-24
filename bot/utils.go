@@ -24,6 +24,7 @@ var (
 	ErrEmptyPhotoSize  = errors.New("photo size is empty")
 	ErrEmptyPhotoSizes = errors.New("photo size slice is empty")
 	ErrNoStorages      = errors.New("no available storage")
+	ErrEmptyMessage    = errors.New("message is empty")
 )
 
 func supportedMediaFilter(m *tg.Message) (bool, error) {
@@ -179,7 +180,7 @@ func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, e
 		return nil, err
 	}
 	if len(messages) == 0 {
-		return nil, errors.New("no messages found")
+		return nil, ErrEmptyMessage
 	}
 	msg := messages[0]
 	tgMessage, ok := msg.(*tg.Message)
