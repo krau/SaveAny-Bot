@@ -36,12 +36,12 @@ base_path = "./downloads/2"
 [[storages]]
 name = "MyAlist"
 type = "alist"
-enable = false
+enable = false  #记得启用
 base_path = '/'
 url = 'https://alist.com'
 username = 'admin'
 password = 'password'
-token_exp = 86400
+token_exp = 86400  # 86400--1天   604800--7天   1296000--15天   2592000--30天   15552000--180天
 # alist 可直接使用 token 登录, 此时 username, password, token_exp 将被忽略
 # 请自行在 alist 侧配置合理的 token 过期时间
 # token = ""
@@ -61,17 +61,16 @@ password = 'password'
 [[users]]
 # telegram user id
 id = 114514
-# 将过滤模式设为黑名单
+# 开启黑名单，开启后下方留空以使用所有存储，反之则为白名单，白名单请在下方输入允许的存储名
 blacklist = true
-# 存储过滤列表
-# 将列表留空并开启黑名单模式以允许使用所有存储
+# 将列表留空并开启黑名单模式以允许使用所有存储，此处示例为黑名单模式，用户114514可使用所有存储
 storages = []
 
 
 [[users]]
 id = 123456
-blacklist = false
-# 此时该用户只能使用 本机1
+blacklist = false  #开启白名单模式，此时，用户仅可使用下方列表中的存储
+# 此时该用户只能使用名为 本机1 的存储
 storages = ["本机1"]
 
 
