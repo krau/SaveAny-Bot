@@ -5,6 +5,7 @@ threads = 4 # 单个任务下载最大线程数
 
 [telegram]
 # Bot Token
+# 更换 Bot Token 后请删除数据库文件和 session.db
 token = ""
 # Telegram API 配置, 若不配置也可运行, 将使用默认的 API ID 和 API HASH
 # 推荐使用自己的 API ID 和 API HASH (https://my.telegram.org)
