@@ -1,32 +1,30 @@
 package dao
 
-import (
-	"github.com/krau/SaveAny-Bot/types"
-)
-
 func CreateUser(chatID int64) error {
 	if _, err := GetUserByChatID(chatID); err == nil {
 		return nil
 	}
-	return db.Create(&types.User{ChatID: chatID}).Error
+	return db.Create(&User{ChatID: chatID}).Error
 }
 
-func GetAllUsers() ([]types.User, error) {
-	var users []types.User
-	err := db.Find(&users).Error
+func GetAllUsers() ([]User, error) {
+	var users []User
+	err := db.Preload("Dirs").Find(&users).Error
 	return users, err
 }
 
-func GetUserByChatID(chatID int64) (*types.User, error) {
-	var user types.User
-	err := db.Where("chat_id = ?", chatID).First(&user).Error
+func GetUserByChatID(chatID int64) (*User, error) {
+	var user User
+	err := db.
+		Preload("Dirs").
+		Where("chat_id = ?", chatID).First(&user).Error
 	return &user, err
 }
 
-func UpdateUser(user *types.User) error {
+func UpdateUser(user *User) error {
 	return db.Save(user).Error
 }
 
-func DeleteUser(user *types.User) error {
-	return db.Unscoped().Delete(user).Error
+func DeleteUser(user *User) error {
+	return db.Unscoped().Select("Dirs").Delete(user).Error
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
-	"github.com/krau/SaveAny-Bot/types"
 	"gorm.io/gorm"
 	glogger "gorm.io/gorm/logger"
 )
@@ -37,7 +36,7 @@ func Init() {
 		os.Exit(1)
 	}
 	logger.L.Debug("Database connected")
-	if err := db.AutoMigrate(&types.ReceivedFile{}, &types.User{}); err != nil {
+	if err := db.AutoMigrate(&ReceivedFile{}, &User{}, &Dir{}, &CallbackData{}); err != nil {
 		logger.L.Fatal("迁移数据库失败, 如果您从旧版本升级, 建议手动删除数据库文件后重试: ", err)
 	}
 
@@ -52,7 +51,7 @@ func syncUsers() error {
 		return fmt.Errorf("failed to get users: %w", err)
 	}
 
-	dbUserMap := make(map[int64]types.User)
+	dbUserMap := make(map[int64]User)
 	for _, u := range dbUsers {
 		dbUserMap[u.ChatID] = u
 	}

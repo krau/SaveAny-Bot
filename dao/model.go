@@ -1,4 +1,4 @@
-package types
+package dao
 
 import (
 	"gorm.io/gorm"
@@ -21,4 +21,17 @@ type User struct {
 	ChatID         int64 `gorm:"uniqueIndex;not null"`
 	Silent         bool
 	DefaultStorage string // Default storage name
+	Dirs           []Dir
+}
+
+type Dir struct {
+	gorm.Model
+	UserID      uint
+	StorageName string
+	Path        string
+}
+
+type CallbackData struct {
+	gorm.Model
+	Data string
 }

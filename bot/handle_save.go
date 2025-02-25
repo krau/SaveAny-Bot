@@ -80,7 +80,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	if file.FileName == "" {
 		file.FileName = fmt.Sprintf("%d_%d_%s", update.EffectiveChat().GetID(), replyToMsgID, file.Hash())
 	}
-	receivedFile := &types.ReceivedFile{
+	receivedFile := &dao.ReceivedFile{
 		Processing:     false,
 		FileName:       file.FileName,
 		ChatID:         update.EffectiveChat().GetID(),

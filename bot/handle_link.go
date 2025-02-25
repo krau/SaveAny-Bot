@@ -78,7 +78,7 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		file.FileName = fmt.Sprintf("%d_%d_%s", linkChat.GetID(), messageID, file.Hash())
 	}
 
-	receivedFile := &types.ReceivedFile{
+	receivedFile := &dao.ReceivedFile{
 		Processing:     false,
 		FileName:       file.FileName,
 		ChatID:         linkChat.GetID(),

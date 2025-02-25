@@ -14,29 +14,27 @@ import (
 )
 
 func storageCmd(ctx *ext.Context, update *ext.Update) error {
-	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
-	if err != nil {
-		logger.L.Errorf("获取用户失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
-		return dispatcher.EndGroups
-	}
-	storages := storage.GetUserStorages(user.ChatID)
+	userChatID := update.GetUserChat().GetID()
+	storages := storage.GetUserStorages(userChatID)
 	if len(storages) == 0 {
 		ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
 		return dispatcher.EndGroups
 	}
-
+	markup, err := getSetDefaultStorageMarkup(userChatID, storages)
+	if err != nil {
+		logger.L.Errorf("Failed to get markup: %s", err)
+		ctx.Reply(update, ext.ReplyTextString("获取存储位置失败"), nil)
+		return dispatcher.EndGroups
+	}
 	ctx.Reply(update, ext.ReplyTextString("请选择要设为默认的存储位置"), &ext.ReplyOpts{
-		Markup: getSetDefaultStorageMarkup(user.ChatID, storages),
+		Markup: markup,
 	})
-
 	return dispatcher.EndGroups
 }
 
 func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 	args := strings.Split(string(update.CallbackQuery.Data), " ")
 	userID, _ := strconv.Atoi(args[1])
-	storageNameHash := args[2]
 	if userID != int(update.CallbackQuery.GetUserID()) {
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
@@ -46,7 +44,19 @@ func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 		})
 		return dispatcher.EndGroups
 	}
-	storageName := storageHashName[storageNameHash]
+	cbDataId, _ := strconv.Atoi(args[2])
+	storageName, err := dao.GetCallbackData(uint(cbDataId))
+	if err != nil {
+		logger.L.Errorf("获取回调数据失败: %s", err)
+		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+			QueryID:   update.CallbackQuery.QueryID,
+			Alert:     true,
+			Message:   "获取回调数据失败",
+			CacheTime: 5,
+		})
+		return dispatcher.EndGroups
+	}
+
 	selectedStorage, err := storage.GetStorageByName(storageName)
 
 	if err != nil {

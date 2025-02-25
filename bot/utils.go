@@ -41,9 +41,6 @@ func supportedMediaFilter(m *tg.Message) (bool, error) {
 	}
 }
 
-// for callback data
-var storageHashName = map[string]string{}
-
 func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*tg.ReplyInlineMarkup, error) {
 	user, err := dao.GetUserByChatID(userChatID)
 	if err != nil {
@@ -56,11 +53,14 @@ func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*t
 
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range storages {
-		nameHash := common.HashString(storage.Name())
-		storageHashName[nameHash] = storage.Name()
+		cbData := fmt.Sprintf("%d %d %s 0", fileChatID, fileMessageID, storage.Name()) // 0 for empty dir id
+		cbDataId, err := dao.CreateCallbackData(cbData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create callback data: %w", err)
+		}
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
 			Text: storage.Name(),
-			Data: []byte(fmt.Sprintf("add %d %d %s", fileChatID, fileMessageID, nameHash)),
+			Data: []byte(fmt.Sprintf("add %d", cbDataId)),
 		})
 	}
 	markup := &tg.ReplyInlineMarkup{}
@@ -72,14 +72,19 @@ func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*t
 	return markup, nil
 }
 
-func getSetDefaultStorageMarkup(userChatID int64, storages []storage.Storage) *tg.ReplyInlineMarkup {
+func getSelectDirMarkup(fileChatID, fileMessageID int, storageName string, dirs []dao.Dir) (*tg.ReplyInlineMarkup, error) {
 	buttons := make([]tg.KeyboardButtonClass, 0)
-	for _, storage := range storages {
-		nameHash := common.HashString(storage.Name())
-		storageHashName[nameHash] = storage.Name()
+	for _, dir := range dirs {
+		if dir.ID == 0 || dir.StorageName != storageName {
+			return nil, fmt.Errorf("unexpected dir: %v", dir)
+		}
+		cbDataId, err := dao.CreateCallbackData(fmt.Sprintf("%d %d %s %d", fileChatID, fileMessageID, storageName, dir.ID))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create callback data: %w", err)
+		}
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: storage.Name(),
-			Data: []byte(fmt.Sprintf("set_default %d %s", userChatID, nameHash)),
+			Text: dir.Path,
+			Data: []byte(fmt.Sprintf("add_to_dir %d", cbDataId)),
 		})
 	}
 	markup := &tg.ReplyInlineMarkup{}
@@ -88,8 +93,28 @@ func getSetDefaultStorageMarkup(userChatID int64, storages []storage.Storage) *t
 		row.Buttons = buttons[i:min(i+3, len(buttons))]
 		markup.Rows = append(markup.Rows, row)
 	}
-	return markup
+	return markup, nil
+}
 
+func getSetDefaultStorageMarkup(userChatID int64, storages []storage.Storage) (*tg.ReplyInlineMarkup, error) {
+	buttons := make([]tg.KeyboardButtonClass, 0)
+	for _, storage := range storages {
+		cbDataId, err := dao.CreateCallbackData(storage.Name())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create callback data: %w", err)
+		}
+		buttons = append(buttons, &tg.KeyboardButtonCallback{
+			Text: storage.Name(),
+			Data: []byte(fmt.Sprintf("set_default %d %d", userChatID, cbDataId)),
+		})
+	}
+	markup := &tg.ReplyInlineMarkup{}
+	for i := 0; i < len(buttons); i += 3 {
+		row := tg.KeyboardButtonRow{}
+		row.Buttons = buttons[i:min(i+3, len(buttons))]
+		markup.Rows = append(markup.Rows, row)
+	}
+	return markup, nil
 }
 
 func FileFromMedia(media tg.MessageMediaClass, customFileName string) (*types.File, error) {
@@ -231,7 +256,7 @@ func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, file *types.File
 	return dispatcher.EndGroups
 }
 
-func HandleSilentAddTask(ctx *ext.Context, update *ext.Update, user *types.User, task *types.Task) error {
+func HandleSilentAddTask(ctx *ext.Context, update *ext.Update, user *dao.User, task *types.Task) error {
 	if user.DefaultStorage == "" {
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message: "请先使用 /storage 设置默认存储位置",

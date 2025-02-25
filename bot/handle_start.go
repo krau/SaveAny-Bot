@@ -7,11 +7,6 @@ import (
 	"github.com/krau/SaveAny-Bot/logger"
 )
 
-const noPermissionText string = `
-您不在白名单中, 无法使用此 Bot.
-您可以部署自己的实例: https://github.com/krau/SaveAny-Bot
-`
-
 func start(ctx *ext.Context, update *ext.Update) error {
 	if err := dao.CreateUser(update.GetUserChat().GetID()); err != nil {
 		logger.L.Errorf("创建用户失败: %s", err)
