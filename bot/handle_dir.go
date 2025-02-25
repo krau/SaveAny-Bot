@@ -14,6 +14,12 @@ import (
 func dirCmd(ctx *ext.Context, update *ext.Update) error {
 	args := strings.Split(strings.TrimPrefix(update.EffectiveMessage.Text, "/dir "), " ")
 	if len(args) < 3 {
+		dirs, err := dao.GetUserDirsByChatID(update.GetUserChat().GetID())
+		if err != nil {
+			logger.L.Errorf("获取用户路径失败: %s", err)
+			ctx.Reply(update, ext.ReplyTextString("获取用户路径失败"), nil)
+			return dispatcher.EndGroups
+		}
 		ctx.Reply(update, ext.ReplyTextStyledTextArray(
 			[]styling.StyledTextOption{
 				styling.Bold("使用方法: /dir <操作> <存储名> <路径>"),
@@ -24,6 +30,17 @@ func dirCmd(ctx *ext.Context, update *ext.Update) error {
 				styling.Plain(" - 删除路径\n"),
 				styling.Plain("\n示例:\n"),
 				styling.Code("/dir add local1 path/to/dir"),
+				styling.Plain("\n\n当前已添加的路径:\n"),
+				styling.Blockquote(func() string {
+					var sb strings.Builder
+					for _, dir := range dirs {
+						sb.WriteString(dir.StorageName)
+						sb.WriteString(" - ")
+						sb.WriteString(dir.Path)
+						sb.WriteString("\n")
+					}
+					return sb.String()
+				}(), true),
 			},
 		), nil)
 		return dispatcher.EndGroups

@@ -76,6 +76,7 @@ func Init() {
 				{Command: "silent", Description: "开启/关闭静默模式"},
 				{Command: "storage", Description: "设置默认存储端"},
 				{Command: "save", Description: "保存所回复的文件"},
+				{Command: "dir", Description: "管理存储文件夹"},
 			},
 		})
 		resultChan <- struct {
