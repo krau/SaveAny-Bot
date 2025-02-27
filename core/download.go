@@ -51,7 +51,6 @@ func processPendingTask(task *types.Task) error {
 
 	cancelCtx, cancel := context.WithCancel(ctx)
 	task.Cancel = cancel
-	task.Ctx = cancelCtx
 
 	text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
 	ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
@@ -84,5 +83,5 @@ func processPendingTask(task *types.Task) error {
 		ID:      task.ReplyMessageID,
 	})
 
-	return saveFileWithRetry(task, taskStorage, cacheDestPath)
+	return saveFileWithRetry(cancelCtx, task, taskStorage, cacheDestPath)
 }

@@ -17,10 +17,9 @@ type TaskQueue struct {
 func (q *TaskQueue) AddTask(task *types.Task) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
-	if task.Status == types.Pending {
-		q.list.PushBack(task)
-		q.cond.Signal()
-	} else {
+	q.list.PushBack(task)
+	q.cond.Signal()
+	if task.Status != types.Pending {
 		delete(q.activeMap, task.Key())
 	}
 }
@@ -34,8 +33,16 @@ func (q *TaskQueue) GetTask() *types.Task {
 	e := q.list.Front()
 	task := e.Value.(*types.Task)
 	q.list.Remove(e)
-	q.activeMap[task.Key()] = task
+	if task.Status == types.Pending {
+		q.activeMap[task.Key()] = task
+	}
 	return task
+}
+
+func (q *TaskQueue) DoneTask(task *types.Task) {
+	q.mutex.Lock()
+	defer q.mutex.Unlock()
+	delete(q.activeMap, task.Key())
 }
 
 func (q *TaskQueue) CancelTask(key string) bool {
@@ -96,4 +103,8 @@ func Len() int {
 
 func CancelTask(key string) bool {
 	return Queue.CancelTask(key)
+}
+
+func DoneTask(task *types.Task) {
+	Queue.DoneTask(task)
 }

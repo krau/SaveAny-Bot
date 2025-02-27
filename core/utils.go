@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -19,19 +20,19 @@ import (
 	"github.com/krau/SaveAny-Bot/types"
 )
 
-func saveFileWithRetry(task *types.Task, taskStorage storage.Storage, localFilePath string) error {
+func saveFileWithRetry(ctx context.Context, task *types.Task, taskStorage storage.Storage, localFilePath string) error {
 	for i := 0; i <= config.Cfg.Retry; i++ {
-		if err := task.Ctx.Err(); err != nil {
+		if err := ctx.Err(); err != nil {
 			return fmt.Errorf("context canceled while saving file: %w", err)
 		}
-		if err := taskStorage.Save(task.Ctx, localFilePath, task.StoragePath); err != nil {
+		if err := taskStorage.Save(ctx, localFilePath, task.StoragePath); err != nil {
 			if i == config.Cfg.Retry {
 				return fmt.Errorf("failed to save file: %w", err)
 			}
 			logger.L.Errorf("Failed to save file: %s, retrying...", err)
 			select {
-			case <-task.Ctx.Done():
-				return fmt.Errorf("context canceled during retry delay: %w", task.Ctx.Err())
+			case <-ctx.Done():
+				return fmt.Errorf("context canceled during retry delay: %w", ctx.Err())
 			case <-time.After(time.Duration(i*500) * time.Millisecond):
 			}
 			continue
@@ -64,7 +65,7 @@ func processPhoto(task *types.Task, taskStorage storage.Storage, cachePath strin
 
 	logger.L.Infof("Downloaded file: %s", cachePath)
 
-	return saveFileWithRetry(task, taskStorage, cachePath)
+	return saveFileWithRetry(task.Ctx, task, taskStorage, cachePath)
 }
 
 // func getProgressBar(progress float64, updateCount int) string {
