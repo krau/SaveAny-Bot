@@ -36,6 +36,7 @@ var StorageTypeDisplay = map[StorageType]string{
 
 type Task struct {
 	Ctx         context.Context
+	Cancel      context.CancelFunc
 	Error       error
 	Status      TaskStatus
 	File        *File
@@ -50,6 +51,10 @@ type Task struct {
 	ReplyChatID    int64
 	// to track the user
 	UserID int64
+}
+
+func (t Task) Key() string {
+	return fmt.Sprintf("%d:%d", t.FileChatID, t.FileMessageID)
 }
 
 func (t Task) String() string {

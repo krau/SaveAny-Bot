@@ -139,10 +139,17 @@ func buildProgressCallback(ctx *ext.Context, task *types.Task, updateCount int) 
 		}
 		text, entities := buildProgressMessageEntity(task, bytesRead, task.StartTime, progress)
 		ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-			Message:  text,
-			Entities: entities,
-			ID:       task.ReplyMessageID,
+			Message:     text,
+			Entities:    entities,
+			ID:          task.ReplyMessageID,
+			ReplyMarkup: getCancelTaskMarkup(task),
 		})
+	}
+}
+
+func getCancelTaskMarkup(task *types.Task) *tg.ReplyInlineMarkup {
+	return &tg.ReplyInlineMarkup{
+		Rows: []tg.KeyboardButtonRow{{Buttons: []tg.KeyboardButtonClass{&tg.KeyboardButtonCallback{Text: "取消任务", Data: fmt.Appendf(nil, "cancel %s", task.Key())}}}},
 	}
 }
 

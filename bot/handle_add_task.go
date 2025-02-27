@@ -163,7 +163,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		task.StoragePath = path.Join(dir.Path, file.FileName)
 	}
 
-	queue.AddTask(task)
+	queue.AddTask(&task)
 
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass

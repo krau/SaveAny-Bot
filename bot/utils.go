@@ -264,7 +264,7 @@ func HandleSilentAddTask(ctx *ext.Context, update *ext.Update, user *dao.User, t
 		})
 		return dispatcher.EndGroups
 	}
-	queue.AddTask(*task)
+	queue.AddTask(task)
 	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 		Message: fmt.Sprintf("已添加到队列: %s\n当前排队任务数: %d", task.FileName(), queue.Len()),
 		ID:      task.ReplyMessageID,

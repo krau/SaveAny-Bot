@@ -22,13 +22,13 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 		switch task.Status {
 		case types.Pending:
 			logger.L.Infof("Processing task: %s", task.String())
-			if err := processPendingTask(&task); err != nil {
-				logger.L.Errorf("Failed to do task: %s", err)
+			if err := processPendingTask(task); err != nil {
 				task.Error = err
 				if errors.Is(err, context.Canceled) {
 					logger.L.Debugf("Task canceled: %s", task.String())
 					task.Status = types.Canceled
 				} else {
+					logger.L.Errorf("Failed to do task: %s", err)
 					task.Status = types.Failed
 				}
 			} else {
