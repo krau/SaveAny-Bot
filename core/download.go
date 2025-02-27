@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -48,11 +49,15 @@ func processPendingTask(task *types.Task) error {
 		return fmt.Errorf("context is not *ext.Context: %T", task.Ctx)
 	}
 
+	cancelCtx, cancel := context.WithCancel(ctx)
+	task.Cancel = cancel
+
 	text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
 	ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-		Message:  text,
-		Entities: entities,
-		ID:       task.ReplyMessageID,
+		Message:     text,
+		Entities:    entities,
+		ID:          task.ReplyMessageID,
+		ReplyMarkup: getCancelTaskMarkup(task),
 	})
 	progressCallback := buildProgressCallback(ctx, task, getProgressUpdateCount(task.File.FileSize))
 
@@ -63,7 +68,7 @@ func processPendingTask(task *types.Task) error {
 	defer dest.Close()
 	task.StartTime = time.Now()
 	downloadBuider := Downloader.Download(bot.Client.API(), task.File.Location).WithThreads(getTaskThreads(task.File.FileSize))
-	_, err = downloadBuider.Parallel(ctx, dest)
+	_, err = downloadBuider.Parallel(cancelCtx, dest)
 	if err != nil {
 		return fmt.Errorf("下载文件失败: %w", err)
 	}
@@ -78,5 +83,5 @@ func processPendingTask(task *types.Task) error {
 		ID:      task.ReplyMessageID,
 	})
 
-	return saveFileWithRetry(task, taskStorage, cacheDestPath)
+	return saveFileWithRetry(cancelCtx, task, taskStorage, cacheDestPath)
 }

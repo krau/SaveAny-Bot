@@ -153,7 +153,6 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		Status:         types.Pending,
 		File:           file,
 		StorageName:    storageName,
-		StoragePath:    path.Join(),
 		FileChatID:     record.ChatID,
 		ReplyMessageID: record.ReplyMessageID,
 		FileMessageID:  record.MessageID,
@@ -164,7 +163,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		task.StoragePath = path.Join(dir.Path, file.FileName)
 	}
 
-	queue.AddTask(task)
+	queue.AddTask(&task)
 
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
