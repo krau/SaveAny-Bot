@@ -153,7 +153,6 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		Status:         types.Pending,
 		File:           file,
 		StorageName:    storageName,
-		StoragePath:    path.Join(),
 		FileChatID:     record.ChatID,
 		ReplyMessageID: record.ReplyMessageID,
 		FileMessageID:  record.MessageID,
