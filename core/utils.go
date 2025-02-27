@@ -21,11 +21,19 @@ import (
 
 func saveFileWithRetry(task *types.Task, taskStorage storage.Storage, localFilePath string) error {
 	for i := 0; i <= config.Cfg.Retry; i++ {
+		if err := task.Ctx.Err(); err != nil {
+			return fmt.Errorf("context canceled while saving file: %w", err)
+		}
 		if err := taskStorage.Save(task.Ctx, localFilePath, task.StoragePath); err != nil {
 			if i == config.Cfg.Retry {
 				return fmt.Errorf("failed to save file: %w", err)
 			}
 			logger.L.Errorf("Failed to save file: %s, retrying...", err)
+			select {
+			case <-task.Ctx.Done():
+				return fmt.Errorf("context canceled during retry delay: %w", task.Ctx.Err())
+			case <-time.After(time.Duration(i*500) * time.Millisecond):
+			}
 			continue
 		}
 		return nil
