@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
@@ -18,6 +19,11 @@ type Storage interface {
 	Name() string
 	JoinStoragePath(task types.Task) string
 	Save(cttx context.Context, localFilePath, storagePath string) error
+}
+
+type StreamStorage interface {
+	Storage
+	NewUploadStream(ctx context.Context, path string) (io.WriteCloser, error)
 }
 
 var Storages = make(map[string]Storage)

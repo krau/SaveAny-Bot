@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/krau/SaveAny-Bot/config"
@@ -149,4 +150,89 @@ func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {
 
 func (a *Alist) JoinStoragePath(task types.Task) string {
 	return path.Join(a.config.BasePath, task.StoragePath)
+}
+
+type uploadStream struct {
+	ctx         context.Context
+	client      *http.Client
+	token       string
+	storagePath string
+	baseURL     string
+	pr          *io.PipeReader
+	pw          *io.PipeWriter
+	errChan     chan error
+	once        sync.Once
+}
+
+func (us *uploadStream) Write(p []byte) (int, error) {
+	return us.pw.Write(p)
+}
+
+func (us *uploadStream) Close() error {
+	var uploadErr error
+	us.once.Do(func() {
+		if err := us.pw.Close(); err != nil {
+			uploadErr = fmt.Errorf("failed to close pipe writer: %w", err)
+			return
+		}
+
+		if err := <-us.errChan; err != nil {
+			uploadErr = err
+		}
+	})
+	return uploadErr
+}
+
+func (a *Alist) NewUploadStream(ctx context.Context, storagePath string) (io.WriteCloser, error) {
+	if a.token == "" {
+		if err := a.getToken(); err != nil {
+			return nil, fmt.Errorf("not logged in to Alist: %w", err)
+		}
+	}
+
+	pr, pw := io.Pipe()
+
+	// 创建上传流对象
+	us := &uploadStream{
+		ctx:         ctx,
+		client:      a.client,
+		token:       a.token,
+		storagePath: storagePath,
+		baseURL:     a.baseURL,
+		pr:          pr,
+		pw:          pw,
+		errChan:     make(chan error, 1),
+	}
+
+	go func() {
+		defer close(us.errChan)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, a.baseURL+"/api/fs/put", pr)
+		if err != nil {
+			us.errChan <- fmt.Errorf("failed to create request: %w", err)
+			return
+		}
+
+		req.Header.Set("Authorization", a.token)
+		req.Header.Set("File-Path", url.PathEscape(storagePath))
+		req.Header.Set("As-Task", "true")
+		req.Header.Set("Content-Type", "application/octet-stream")
+
+		resp, err := a.client.Do(req)
+		if err != nil {
+			us.errChan <- fmt.Errorf("failed to send request: %w", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			us.errChan <- fmt.Errorf("failed to upload file, status code: %d, response: %s", resp.StatusCode, string(body))
+			return
+		}
+
+		us.errChan <- nil
+	}()
+
+	return us, nil
 }
