@@ -13,6 +13,7 @@ type Config struct {
 	Retry        int  `toml:"retry" mapstructure:"retry"`
 	NoCleanCache bool `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
 	Threads      int  `toml:"threads" mapstructure:"threads" json:"threads"`
+	Stream       bool `toml:"stream" mapstructure:"stream" json:"stream"`
 
 	Users []userConfig `toml:"users" mapstructure:"users" json:"users"`
 

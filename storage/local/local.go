@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -54,4 +55,19 @@ func (l *Local) Save(ctx context.Context, filePath, storagePath string) error {
 
 func (l *Local) JoinStoragePath(task types.Task) string {
 	return filepath.Join(l.config.BasePath, task.StoragePath)
+}
+
+func (l *Local) NewUploadStream(ctx context.Context, path string) (io.WriteCloser, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
+		return nil, err
+	}
+	file, err := os.Create(absPath)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
 }
