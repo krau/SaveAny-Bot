@@ -1,6 +1,5 @@
 <div align="center">
 
-
 # <img src="docs/logo.jpg" width="45" align="center"> Save Any Bot
 
 **简体中文** | [English](README_EN.md) 
@@ -8,15 +7,6 @@
 把 Telegram 的文件保存到各类存储端.
 
 > _就像 PikPak Bot 一样_
-
-</div
-
-Demo Video:
-
-<div align="center">
-
-
-[SaveAny-Bot 演示视频 ｜ The Demo of SaveAny-Bot.webm](https://github.com/user-attachments/assets/a0de2453-a4d1-4a12-81fb-9d84856dce09)
 
 </div>
 
