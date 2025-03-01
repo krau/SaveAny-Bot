@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"time"
@@ -67,19 +68,6 @@ func processPhoto(task *types.Task, taskStorage storage.Storage, cachePath strin
 
 	return saveFileWithRetry(task.Ctx, task, taskStorage, cachePath)
 }
-
-// func getProgressBar(progress float64, updateCount int) string {
-// 	bar := ""
-// 	barSize := 100 / updateCount
-// 	for i := 0; i < updateCount; i++ {
-// 		if progress >= float64(barSize*(i+1)) {
-// 			bar += "█"
-// 		} else {
-// 			bar += "░"
-// 		}
-// 	}
-// 	return bar
-// }
 
 func cleanCacheFile(destPath string) {
 	if config.Cfg.Temp.CacheTTL > 0 {
@@ -232,4 +220,41 @@ func NewTaskLocalFile(filePath string, fileSize int64, progressCallback func(byt
 		nextCallbackAt:   callbackInterval,
 		callbackInterval: callbackInterval,
 	}, nil
+}
+
+type ProgressStream struct {
+	writer   io.Writer
+	size     int64
+	done     int64
+	callback func(bytesRead, contentLength int64)
+	nextAt   int64
+	interval int64
+}
+
+func (ps *ProgressStream) Write(p []byte) (n int, err error) {
+	n, err = ps.writer.Write(p)
+	if err != nil {
+		return n, err
+	}
+	ps.done += int64(n)
+	if ps.callback != nil && ps.done >= ps.nextAt {
+		ps.callback(ps.done, ps.size)
+		ps.nextAt += ps.interval
+	}
+	return n, nil
+}
+
+func NewProgressStream(writer io.Writer, size int64, callback func(bytesRead, contentLength int64)) *ProgressStream {
+	var interval int64
+	interval = size / 100
+	if interval == 0 {
+		interval = 1
+	}
+	return &ProgressStream{
+		writer:   writer,
+		size:     size,
+		callback: callback,
+		nextAt:   interval,
+		interval: interval,
+	}
 }

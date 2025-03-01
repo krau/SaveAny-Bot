@@ -8,8 +8,6 @@ import (
 
 	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/fileutil"
-	"github.com/gotd/td/telegram/message/entity"
-	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/bot"
 	"github.com/krau/SaveAny-Bot/config"
@@ -56,28 +54,12 @@ func processPendingTask(task *types.Task) error {
 
 	downloadBuider := Downloader.Download(bot.Client.API(), task.File.Location).WithThreads(getTaskThreads(task.File.FileSize))
 
-	// TODO: show progress for stream storage
 	taskStreamStorage, isStreamStorage := taskStorage.(storage.StreamStorage)
 	if config.Cfg.Stream {
 		if !isStreamStorage {
 			logger.L.Warnf("存储 %s 不支持流式上传", taskStorage.Name())
 		} else {
-			entityBuilder := entity.Builder{}
-			text := fmt.Sprintf("正在处理下载任务 (流式)\n文件名: %s\n保存路径: %s",
-				task.FileName(),
-				fmt.Sprintf("[%s]:%s", task.StorageName, task.StoragePath),
-			)
-			var entities []tg.MessageEntityClass
-			if err := styling.Perform(&entityBuilder,
-				styling.Plain("正在处理下载任务 (流式)\n文件名: "),
-				styling.Code(task.FileName()),
-				styling.Plain("\n保存路径: "),
-				styling.Code(fmt.Sprintf("[%s]:%s", task.StorageName, task.StoragePath)),
-			); err != nil {
-				logger.L.Errorf("Failed to build entities: %s", err)
-			} else {
-				text, entities = entityBuilder.Complete()
-			}
+			text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
 			ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 				Message:     text,
 				Entities:    entities,
@@ -89,7 +71,13 @@ func processPendingTask(task *types.Task) error {
 				return fmt.Errorf("创建上传流失败: %w", err)
 			}
 			defer uploadStream.Close()
-			_, err = downloadBuider.Stream(cancelCtx, uploadStream)
+
+			task.StartTime = time.Now()
+			progressCallback := buildProgressCallback(ctx, task, getProgressUpdateCount(task.File.FileSize))
+
+			progressStream := NewProgressStream(uploadStream, task.File.FileSize, progressCallback)
+
+			_, err = downloadBuider.Stream(cancelCtx, progressStream)
 			if err != nil {
 				return fmt.Errorf("下载文件失败: %w", err)
 			}
@@ -128,5 +116,4 @@ func processPendingTask(task *types.Task) error {
 	})
 
 	return saveFileWithRetry(cancelCtx, task, taskStorage, cacheDestPath)
-
 }
