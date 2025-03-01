@@ -12,7 +12,6 @@ require (
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
-	github.com/studio-b12/gowebdav v0.10.0
 	golang.org/x/net v0.35.0
 	golang.org/x/time v0.10.0
 )

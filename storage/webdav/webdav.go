@@ -3,6 +3,7 @@ package webdav
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"time"
@@ -10,12 +11,11 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/types"
-	"github.com/studio-b12/gowebdav"
 )
 
 type Webdav struct {
 	config config.WebdavStorageConfig
-	client *gowebdav.Client
+	client *Client
 }
 
 func (w *Webdav) Init(cfg config.StorageConfig) error {
@@ -27,12 +27,9 @@ func (w *Webdav) Init(cfg config.StorageConfig) error {
 		return err
 	}
 	w.config = *webdavConfig
-	client := gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
-	if err := client.Connect(); err != nil {
-		return fmt.Errorf("failed to connect to webdav server: %w", err)
-	}
-	client.SetTimeout(12 * time.Hour)
-	w.client = client
+	w.client = NewClient(w.config.URL, w.config.Username, w.config.Password, &http.Client{
+		Timeout: time.Hour * 12,
+	})
 	return nil
 }
 
@@ -46,7 +43,7 @@ func (w *Webdav) Name() string {
 
 func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {
 	logger.L.Infof("Saving file %s to %s", filePath, storagePath)
-	if err := w.client.MkdirAll(path.Dir(storagePath), os.ModePerm); err != nil {
+	if err := w.client.MkDir(ctx, path.Dir(storagePath)); err != nil {
 		logger.L.Errorf("Failed to create directory %s: %v", path.Dir(storagePath), err)
 		return ErrFailedToCreateDirectory
 	}
@@ -57,7 +54,7 @@ func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {
 	}
 	defer file.Close()
 
-	if err := w.client.WriteStream(storagePath, file, os.ModePerm); err != nil {
+	if err := w.client.WriteFile(ctx, storagePath, file); err != nil {
 		logger.L.Errorf("Failed to write file %s: %v", storagePath, err)
 		return ErrFailedToWriteFile
 	}
