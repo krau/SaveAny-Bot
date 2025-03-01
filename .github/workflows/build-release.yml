@@ -55,7 +55,7 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          executable_compression: upx
+          executable_compression: ${{ matrix.goos == 'windows' && matrix.goarch == 'arm64' && '' || 'upx' }}
           extra_files: |
             LICENSE
             README.md
