@@ -2,6 +2,7 @@
 workers = 4 # 同时下载文件数
 retry = 3   # 下载失败重试次数
 threads = 4 # 单个任务下载最大线程数
+stream = false # 使用stream模式, 详情请查看文档
 
 [telegram]
 # Bot Token
