@@ -4,7 +4,7 @@
 
 在 [Release](https://github.com/krau/SaveAny-Bot/releases) 页面下载对应平台的二进制文件.
 
-在解压后目录新建 `config.toml` 文件, 参考 [config.example.toml](./config.example.toml) 编辑配置文件.
+在解压后目录新建 `config.toml` 文件, 参考 [config.example.toml](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) 编辑配置文件.
 
 运行:
 
@@ -40,7 +40,7 @@ systemctl enable --now saveany-bot
 
 ### 为OpenWrt及衍生系统添加开机自启动服务
 
-创建文件 ` /etc/init.d/saveanybot` ，参考[saveanybot](./docs/saveanybot)自行修改.
+创建文件 ` /etc/init.d/saveanybot` ，参考[saveanybot](https://github.com/krau/SaveAny-Bot/blob/main/docs/saveanybot)自行修改.
 
 `chmod +x /etc/init.d/saveanybot`
 
@@ -50,7 +50,7 @@ systemctl enable --now saveany-bot
 
 ### 为OpenWrt及衍生系统添加快捷指令
 
-创建文件` /usr/bin/sabot` ，参考[sabot](./docs/sabot)自行配置修改，注意此处文件编码仅支持 ANSI 936 .
+创建文件` /usr/bin/sabot` ，参考[sabot](https://github.com/krau/SaveAny-Bot/blob/main/docs/sabot)自行配置修改，注意此处文件编码仅支持 ANSI 936 .
 
 `chmod +x /usr/bin/sabot`
 
@@ -61,7 +61,7 @@ systemctl enable --now saveany-bot
 
 ### Docker Compose
 
-下载 [docker-compose.yml](./docker-compose.yml) 文件, 在同目录下新建 `config.toml` 文件, 参考 [config.example.toml](./config.example.toml) 编辑配置文件.
+下载 [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml) 文件, 在同目录下新建 `config.toml` 文件, 参考 [config.example.toml](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) 编辑配置文件.
 
 启动:
 
