@@ -117,7 +117,7 @@ func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {
 	}
 	req.Header.Set("Authorization", a.token)
 	req.Header.Set("File-Path", url.PathEscape(storagePath))
-	req.Header.Set("As-Task", "true")
+	// req.Header.Set("As-Task", "true")
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.ContentLength = filestat.Size()
 
@@ -192,7 +192,6 @@ func (a *Alist) NewUploadStream(ctx context.Context, storagePath string) (io.Wri
 
 	pr, pw := io.Pipe()
 
-	// 创建上传流对象
 	us := &uploadStream{
 		ctx:         ctx,
 		client:      a.client,
@@ -215,7 +214,7 @@ func (a *Alist) NewUploadStream(ctx context.Context, storagePath string) (io.Wri
 
 		req.Header.Set("Authorization", a.token)
 		req.Header.Set("File-Path", url.PathEscape(storagePath))
-		req.Header.Set("As-Task", "true")
+		// req.Header.Set("As-Task", "true")
 		req.Header.Set("Content-Type", "application/octet-stream")
 
 		resp, err := a.client.Do(req)
