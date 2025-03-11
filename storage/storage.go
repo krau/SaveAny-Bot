@@ -10,6 +10,7 @@ import (
 	"github.com/krau/SaveAny-Bot/storage/alist"
 	"github.com/krau/SaveAny-Bot/storage/local"
 	"github.com/krau/SaveAny-Bot/storage/webdav"
+	"github.com/krau/SaveAny-Bot/storage/minio"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -90,6 +91,7 @@ var storageConstructors = map[string]StorageConstructor{
 	string(types.StorageTypeAlist):  func() Storage { return new(alist.Alist) },
 	string(types.StorageTypeLocal):  func() Storage { return new(local.Local) },
 	string(types.StorageTypeWebdav): func() Storage { return new(webdav.Webdav) },
+	string(types.StorageTypeMinio):  func() Storage { return new(minio.Minio) },
 }
 
 func NewStorage(cfg config.StorageConfig) (Storage, error) {
