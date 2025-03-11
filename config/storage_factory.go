@@ -1,5 +1,3 @@
-// storage_config.go
-
 package config
 
 import (
@@ -18,25 +16,49 @@ type StorageConfig interface {
 
 // Base storage config
 type NewStorageConfig struct {
-	Name      string                 `toml:"name" mapstructure:"name" json:"name"`
-	Type      string                 `toml:"type" mapstructure:"type" json:"type"`
-	Enable    bool                   `toml:"enable" mapstructure:"enable" json:"enable"`
-	RawConfig map[string]interface{} `toml:"-" mapstructure:",remain"`
+	Name      string         `toml:"name" mapstructure:"name" json:"name"`
+	Type      string         `toml:"type" mapstructure:"type" json:"type"`
+	Enable    bool           `toml:"enable" mapstructure:"enable" json:"enable"`
+	RawConfig map[string]any `toml:"-" mapstructure:",remain"`
 }
 
-type StorageConfigFactory func(cfg *NewStorageConfig) (StorageConfig, error)
-
-var storageFactories = make(map[string]StorageConfigFactory)
-
-func RegisterStorageFactory(storageType string, factory StorageConfigFactory) {
-	storageFactories[storageType] = factory
+var storageFactories = map[types.StorageType]func(cfg *NewStorageConfig) (StorageConfig, error){
+	types.StorageTypeLocal:  newLocalStorageConfig,
+	types.StorageTypeAlist:  newAlistStorageConfig,
+	types.StorageTypeWebdav: newWebdavStorageConfig,
+	types.StorageTypeMinio:  newMinioStorageConfig,
 }
 
-func init() {
-	RegisterStorageFactory(string(types.StorageTypeLocal), newLocalStorageConfig)
-	RegisterStorageFactory(string(types.StorageTypeAlist), newAlistStorageConfig)
-	RegisterStorageFactory(string(types.StorageTypeWebdav), newWebdavStorageConfig)
-	RegisterStorageFactory(string(types.StorageTypeMinio), newMinioStorageConfig)
+func LoadStorageConfigs(v *viper.Viper) ([]StorageConfig, error) {
+	var baseConfigs []NewStorageConfig
+	if err := v.UnmarshalKey("storages", &baseConfigs); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal storage configs: %w", err)
+	}
+
+	var configs []StorageConfig
+	for _, baseCfg := range baseConfigs {
+		if !baseCfg.Enable {
+			continue
+		}
+
+		factory, ok := storageFactories[types.StorageType(baseCfg.Type)]
+		if !ok {
+			return nil, fmt.Errorf("unsupported storage type: %s", baseCfg.Type)
+		}
+
+		cfg, err := factory(&baseCfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create storage config for %s: %w", baseCfg.Name, err)
+		}
+
+		if err := cfg.Validate(); err != nil {
+			return nil, fmt.Errorf("invalid storage config for %s: %w", baseCfg.Name, err)
+		}
+
+		configs = append(configs, cfg)
+	}
+
+	return configs, nil
 }
 
 func newLocalStorageConfig(cfg *NewStorageConfig) (StorageConfig, error) {
@@ -70,38 +92,6 @@ func newWebdavStorageConfig(cfg *NewStorageConfig) (StorageConfig, error) {
 	}
 
 	return &webdavCfg, nil
-}
-
-func LoadStorageConfigs(v *viper.Viper) ([]StorageConfig, error) {
-	var baseConfigs []NewStorageConfig
-	if err := v.UnmarshalKey("storages", &baseConfigs); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal storage configs: %w", err)
-	}
-
-	var configs []StorageConfig
-	for _, baseCfg := range baseConfigs {
-		if !baseCfg.Enable {
-			continue
-		}
-
-		factory, ok := storageFactories[baseCfg.Type]
-		if !ok {
-			return nil, fmt.Errorf("unsupported storage type: %s", baseCfg.Type)
-		}
-
-		cfg, err := factory(&baseCfg)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create storage config for %s: %w", baseCfg.Name, err)
-		}
-
-		if err := cfg.Validate(); err != nil {
-			return nil, fmt.Errorf("invalid storage config for %s: %w", baseCfg.Name, err)
-		}
-
-		configs = append(configs, cfg)
-	}
-
-	return configs, nil
 }
 
 func newMinioStorageConfig(cfg *NewStorageConfig) (StorageConfig, error) {
