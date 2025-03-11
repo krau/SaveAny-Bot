@@ -36,6 +36,7 @@ func init() {
 	RegisterStorageFactory(string(types.StorageTypeLocal), newLocalStorageConfig)
 	RegisterStorageFactory(string(types.StorageTypeAlist), newAlistStorageConfig)
 	RegisterStorageFactory(string(types.StorageTypeWebdav), newWebdavStorageConfig)
+	RegisterStorageFactory(string(types.StorageTypeMinio), newMinioStorageConfig)
 }
 
 func newLocalStorageConfig(cfg *NewStorageConfig) (StorageConfig, error) {
@@ -101,4 +102,13 @@ func LoadStorageConfigs(v *viper.Viper) ([]StorageConfig, error) {
 	}
 
 	return configs, nil
+}
+
+func newMinioStorageConfig(cfg *NewStorageConfig) (StorageConfig, error) {
+	var minioCfg MinioStorageConfig
+	minioCfg.NewStorageConfig = *cfg
+	if err := mapstructure.Decode(cfg.RawConfig, &minioCfg); err != nil {
+		return nil, fmt.Errorf("failed to decode minio storage config: %w", err)
+	}
+	return &minioCfg, nil
 }

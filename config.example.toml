@@ -23,7 +23,7 @@ url = "socks5://127.0.0.1:7890"
 [[storages]]
 # 标识名, 需要唯一
 name = "本机1"
-# 存储类型, 目前可用: local , alist , webdav
+# 存储类型, 目前可用: local, alist, webdav, minio
 type = "local"
 # 启用存储
 enable = true
@@ -59,6 +59,16 @@ url = 'https://example.com/dav'
 username = 'username'
 password = 'password'
 
+[[storages]]
+name = "MyMinio"
+type = "minio"
+enable = true
+endpoint = 'play.min.io'
+use_ssl = true
+access_key_id = 'Q3AM3UQ867SPQQA43P2F'
+secret_access_key = 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
+bucket_name = 'saveanybot'
+base_path = '/path/telegram'
 
 # 用户列表
 [[users]]

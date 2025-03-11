@@ -25,13 +25,15 @@ var (
 	StorageTypeLocal  StorageType = "local"
 	StorageTypeWebdav StorageType = "webdav"
 	StorageTypeAlist  StorageType = "alist"
+	StorageTypeMinio  StorageType = "minio"
 )
 
-var StorageTypes = []StorageType{StorageTypeLocal, StorageTypeAlist, StorageTypeWebdav}
+var StorageTypes = []StorageType{StorageTypeLocal, StorageTypeAlist, StorageTypeWebdav, StorageTypeMinio}
 var StorageTypeDisplay = map[StorageType]string{
 	StorageTypeLocal:  "本地磁盘",
 	StorageTypeWebdav: "WebDAV",
 	StorageTypeAlist:  "Alist",
+	StorageTypeMinio:  "Minio",
 }
 
 type Task struct {

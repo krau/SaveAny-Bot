@@ -9,6 +9,7 @@ require (
 	github.com/gookit/slog v0.5.7
 	github.com/gotd/contrib v0.21.0
 	github.com/gotd/td v0.120.0
+	github.com/minio/minio-go/v7 v7.0.81
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -31,7 +32,9 @@ require (
 	github.com/go-faster/jx v1.1.0 // indirect
 	github.com/go-faster/xor v1.0.0 // indirect
 	github.com/go-faster/yaml v0.4.6 // indirect
+	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
+	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20250128161936-077ca0a936bf // indirect
@@ -41,13 +44,16 @@ require (
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/ogen-go/ogen v1.10.0 // indirect
 	github.com/onsi/gomega v1.36.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/rs/xid v1.6.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/tcnksm/go-gitconfig v0.1.2 // indirect
 	github.com/ulikunitz/xz v0.5.12 // indirect
