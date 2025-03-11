@@ -10,21 +10,13 @@ Save Telegram files to various storage endpoints.
 
 </div>
 
-Demo Video:
-
-<div align="center">
-
-[SaveAny-Bot Demo Video.webm](https://github.com/user-attachments/assets/a0de2453-a4d1-4a12-81fb-9d84856dce09)
-
-</div>
-
 ## Deployment
 
 ### Deploy from Binary
 
 Download the binary file for your platform from the [Release](https://github.com/krau/SaveAny-Bot/releases) page.
 
-Create a `config.toml` file in the extracted directory, refer to [config.toml.example](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) for configuration.
+Create a `config.toml` file in the extracted directory, refer to [config.example.toml](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) for configuration.
 
 Run:
 
@@ -62,7 +54,7 @@ systemctl enable --now saveany-bot
 
 #### Docker Compose
 
-Download [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml) file and create a `config.toml` file in the same directory, refer to [config.toml.example](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) for configuration.
+Download [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml) file and create a `config.toml` file in the same directory, refer to [config.example.toml](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) for configuration.
 
 Run:
 
