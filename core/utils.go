@@ -16,7 +16,6 @@ import (
 	"github.com/krau/SaveAny-Bot/bot"
 	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
@@ -30,7 +29,7 @@ func saveFileWithRetry(ctx context.Context, task *types.Task, taskStorage storag
 			if i == config.Cfg.Retry {
 				return fmt.Errorf("failed to save file: %w", err)
 			}
-			logger.L.Errorf("Failed to save file: %s, retrying...", err)
+			common.Log.Errorf("Failed to save file: %s, retrying...", err)
 			select {
 			case <-ctx.Done():
 				return fmt.Errorf("context canceled during retry delay: %w", ctx.Err())
@@ -64,7 +63,7 @@ func processPhoto(task *types.Task, taskStorage storage.Storage, cachePath strin
 
 	defer cleanCacheFile(cachePath)
 
-	logger.L.Infof("Downloaded file: %s", cachePath)
+	common.Log.Infof("Downloaded file: %s", cachePath)
 
 	return saveFileWithRetry(task.Ctx, task, taskStorage, cachePath)
 }
@@ -74,7 +73,7 @@ func cleanCacheFile(destPath string) {
 		common.RmFileAfter(destPath, time.Duration(config.Cfg.Temp.CacheTTL)*time.Second)
 	} else {
 		if err := os.Remove(destPath); err != nil {
-			logger.L.Errorf("Failed to purge file: %s", err)
+			common.Log.Errorf("Failed to purge file: %s", err)
 		}
 	}
 }
@@ -120,7 +119,7 @@ func buildProgressMessageEntity(task *types.Task, bytesRead int64, startTime tim
 		styling.Plain("\n当前进度: "),
 		styling.Bold(fmt.Sprintf("%.2f%%", progress)),
 	); err != nil {
-		logger.L.Errorf("Failed to build entities: %s", err)
+		common.Log.Errorf("Failed to build entities: %s", err)
 		return text, entities
 	}
 	return entityBuilder.Complete()
@@ -129,7 +128,7 @@ func buildProgressMessageEntity(task *types.Task, bytesRead int64, startTime tim
 func buildProgressCallback(ctx *ext.Context, task *types.Task, updateCount int) func(bytesRead, contentLength int64) {
 	return func(bytesRead, contentLength int64) {
 		progress := float64(bytesRead) / float64(contentLength) * 100
-		logger.L.Tracef("Downloading %s: %.2f%%", task.String(), progress)
+		common.Log.Tracef("Downloading %s: %.2f%%", task.String(), progress)
 		progressInt := int(progress)
 		if task.File.FileSize < 1024*1024*50 || progressInt == 0 || progressInt%int(100/updateCount) != 0 {
 			return
@@ -154,7 +153,7 @@ func fixTaskFileExt(task *types.Task, localFilePath string) {
 	if path.Ext(task.FileName()) == "" {
 		mimeType, err := mimetype.DetectFile(localFilePath)
 		if err != nil {
-			logger.L.Errorf("Failed to detect mime type: %s", err)
+			common.Log.Errorf("Failed to detect mime type: %s", err)
 		} else {
 			task.File.FileName = fmt.Sprintf("%s%s", task.FileName(), mimeType.Extension())
 			task.StoragePath = fmt.Sprintf("%s%s", task.StoragePath, mimeType.Extension())

@@ -5,14 +5,14 @@ import (
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/dao"
-	"github.com/krau/SaveAny-Bot/logger"
 )
 
 func silent(ctx *ext.Context, update *ext.Update) error {
 	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
 	if err != nil {
-		logger.L.Errorf("获取用户失败: %s", err)
+		common.Log.Errorf("获取用户失败: %s", err)
 		return dispatcher.EndGroups
 	}
 	if !user.Silent && user.DefaultStorage == "" {
@@ -21,7 +21,7 @@ func silent(ctx *ext.Context, update *ext.Update) error {
 	}
 	user.Silent = !user.Silent
 	if err := dao.UpdateUser(user); err != nil {
-		logger.L.Errorf("更新用户失败: %s", err)
+		common.Log.Errorf("更新用户失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("更新用户失败"), nil)
 		return dispatcher.EndGroups
 	}

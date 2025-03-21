@@ -1,21 +1,20 @@
-package logger
+package common
 
 import (
-	"github.com/krau/SaveAny-Bot/config"
-
 	"github.com/gookit/slog"
 	"github.com/gookit/slog/handler"
 	"github.com/gookit/slog/rotatefile"
+	"github.com/krau/SaveAny-Bot/config"
 )
 
-var L *slog.Logger
+var Log *slog.Logger
 
 func InitLogger() {
-	if L != nil {
+	if Log != nil {
 		return
 	}
 	slog.DefaultChannelName = "SaveAnyBot"
-	L = slog.New()
+	Log = slog.New()
 	logLevel := slog.LevelByName(config.Cfg.Log.Level)
 	logFilePath := config.Cfg.Log.File
 	logBackupNum := config.Cfg.Log.BackupCount
@@ -36,5 +35,5 @@ func InitLogger() {
 	if err != nil {
 		panic(err)
 	}
-	L.AddHandlers(consoleH, fileH)
+	Log.AddHandlers(consoleH, fileH)
 }

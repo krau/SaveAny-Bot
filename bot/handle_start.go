@@ -3,13 +3,13 @@ package bot
 import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/dao"
-	"github.com/krau/SaveAny-Bot/logger"
 )
 
 func start(ctx *ext.Context, update *ext.Update) error {
 	if err := dao.CreateUser(update.GetUserChat().GetID()); err != nil {
-		logger.L.Errorf("创建用户失败: %s", err)
+		common.Log.Errorf("创建用户失败: %s", err)
 		return dispatcher.EndGroups
 	}
 	return help(ctx, update)

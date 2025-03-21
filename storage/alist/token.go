@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/krau/SaveAny-Bot/common"
 	config "github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/logger"
 )
 
 func (a *Alist) getToken() error {
@@ -51,15 +51,15 @@ func (a *Alist) getToken() error {
 func (a *Alist) refreshToken(cfg config.AlistStorageConfig) {
 	tokenExp := cfg.TokenExp
 	if tokenExp <= 0 {
-		logger.L.Warn("Invalid token expiration time, using default value")
+		common.Log.Warn("Invalid token expiration time, using default value")
 		tokenExp = 3600
 	}
 	for {
 		time.Sleep(time.Duration(tokenExp) * time.Second)
 		if err := a.getToken(); err != nil {
-			logger.L.Errorf("Failed to refresh jwt token: %v", err)
+			common.Log.Errorf("Failed to refresh jwt token: %v", err)
 			continue
 		}
-		logger.L.Info("Refreshed Alist jwt token")
+		common.Log.Info("Refreshed Alist jwt token")
 	}
 }

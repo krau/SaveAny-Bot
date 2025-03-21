@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/krau/SaveAny-Bot/logger"
 )
 
 // 创建文件, 自动创建目录
@@ -31,10 +29,10 @@ func PurgeFile(path string) error {
 func RmFileAfter(path string, td time.Duration) {
 	_, err := os.Stat(path)
 	if err != nil {
-		logger.L.Errorf("Failed to create timer for %s: %s", path, err)
+		Log.Errorf("Failed to create timer for %s: %s", path, err)
 		return
 	}
-	logger.L.Debugf("Remove file after %s: %s", td, path)
+	Log.Debugf("Remove file after %s: %s", td, path)
 	time.AfterFunc(td, func() {
 		PurgeFile(path)
 	})

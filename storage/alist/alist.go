@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/krau/SaveAny-Bot/common"
 	config "github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -43,36 +43,36 @@ func (a *Alist) Init(cfg config.StorageConfig) error {
 		defer cancel()
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.baseURL+"/api/me", nil)
 		if err != nil {
-			logger.L.Fatalf("Failed to create request: %v", err)
+			common.Log.Fatalf("Failed to create request: %v", err)
 			return err
 		}
 		req.Header.Set("Authorization", a.token)
 
 		resp, err := a.client.Do(req)
 		if err != nil {
-			logger.L.Fatalf("Failed to send request: %v", err)
+			common.Log.Fatalf("Failed to send request: %v", err)
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			logger.L.Fatalf("Failed to get alist user info: %s", resp.Status)
+			common.Log.Fatalf("Failed to get alist user info: %s", resp.Status)
 			return err
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			logger.L.Fatalf("Failed to read response body: %v", err)
+			common.Log.Fatalf("Failed to read response body: %v", err)
 			return err
 		}
 		var meResp meResponse
 		if err := json.Unmarshal(body, &meResp); err != nil {
-			logger.L.Fatalf("Failed to unmarshal me response: %v", err)
+			common.Log.Fatalf("Failed to unmarshal me response: %v", err)
 			return err
 		}
 		if meResp.Code != http.StatusOK {
-			logger.L.Fatalf("Failed to get alist user info: %s", meResp.Message)
+			common.Log.Fatalf("Failed to get alist user info: %s", meResp.Message)
 			return err
 		}
-		logger.L.Debugf("Logged in Alist as %s", meResp.Data.Username)
+		common.Log.Debugf("Logged in Alist as %s", meResp.Data.Username)
 		return nil
 	}
 	a.loginInfo = &loginRequest{
@@ -81,10 +81,10 @@ func (a *Alist) Init(cfg config.StorageConfig) error {
 	}
 
 	if err := a.getToken(); err != nil {
-		logger.L.Fatalf("Failed to login to Alist: %v", err)
+		common.Log.Fatalf("Failed to login to Alist: %v", err)
 		return err
 	}
-	logger.L.Debug("Logged in to Alist")
+	common.Log.Debug("Logged in to Alist")
 
 	go a.refreshToken(*alistConfig)
 	return nil
@@ -99,7 +99,7 @@ func (a *Alist) Name() string {
 }
 
 func (a *Alist) Save(ctx context.Context, filePath, storagePath string) error {
-	logger.L.Infof("Saving file %s to %s", filePath, storagePath)
+	common.Log.Infof("Saving file %s to %s", filePath, storagePath)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)

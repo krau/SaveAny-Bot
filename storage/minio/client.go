@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/krau/SaveAny-Bot/common"
 	config "github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/types"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -60,7 +60,7 @@ func (m *Minio) JoinStoragePath(task types.Task) string {
 }
 
 func (m *Minio) Save(ctx context.Context, localFilePath, storagePath string) error {
-	logger.L.Infof("Saving file %s to %s", localFilePath, storagePath)
+	common.Log.Infof("Saving file %s to %s", localFilePath, storagePath)
 
 	_, err := m.client.FPutObject(ctx, m.config.BucketName, storagePath, localFilePath, minio.PutObjectOptions{})
 	if err != nil {

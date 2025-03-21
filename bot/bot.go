@@ -11,8 +11,8 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/logger"
 	"golang.org/x/net/proxy"
 )
 
@@ -27,7 +27,7 @@ func newProxyDialer(proxyUrl string) (proxy.Dialer, error) {
 }
 
 func Init() {
-	logger.L.Info("初始化 Telegram 客户端...")
+	common.Log.Info("初始化 Telegram 客户端...")
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	resultChan := make(chan struct {
@@ -87,15 +87,15 @@ func Init() {
 
 	select {
 	case <-ctx.Done():
-		logger.L.Fatal("初始化客户端失败: 超时")
+		common.Log.Fatal("初始化客户端失败: 超时")
 		os.Exit(1)
 	case result := <-resultChan:
 		if result.err != nil {
-			logger.L.Fatalf("初始化客户端失败: %s", result.err)
+			common.Log.Fatalf("初始化客户端失败: %s", result.err)
 			os.Exit(1)
 		}
 		Client = result.client
 		RegisterHandlers(Client.Dispatcher)
-		logger.L.Info("客户端初始化完成")
+		common.Log.Info("客户端初始化完成")
 	}
 }

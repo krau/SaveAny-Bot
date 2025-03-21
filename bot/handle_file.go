@@ -6,14 +6,14 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/dao"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
 func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
-	logger.L.Trace("Got media: ", update.EffectiveMessage.Media.TypeName())
+	common.Log.Trace("Got media: ", update.EffectiveMessage.Media.TypeName())
 	supported, err := supportedMediaFilter(update.EffectiveMessage.Message)
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 
 	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
 	if err != nil {
-		logger.L.Errorf("获取用户失败: %s", err)
+		common.Log.Errorf("获取用户失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
@@ -36,13 +36,13 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 
 	msg, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)
 	if err != nil {
-		logger.L.Errorf("回复失败: %s", err)
+		common.Log.Errorf("回复失败: %s", err)
 		return dispatcher.EndGroups
 	}
 	media := update.EffectiveMessage.Media
 	file, err := FileFromMedia(media, "")
 	if err != nil {
-		logger.L.Errorf("获取文件失败: %s", err)
+		common.Log.Errorf("获取文件失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("获取文件失败: %s", err)), nil)
 		return dispatcher.EndGroups
 	}
@@ -58,12 +58,12 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		ReplyMessageID: msg.ID,
 		ReplyChatID:    update.GetUserChat().GetID(),
 	}); err != nil {
-		logger.L.Errorf("添加接收的文件失败: %s", err)
+		common.Log.Errorf("添加接收的文件失败: %s", err)
 		if _, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message: fmt.Sprintf("添加接收的文件失败: %s", err),
 			ID:      msg.ID,
 		}); err != nil {
-			logger.L.Errorf("编辑消息失败: %s", err)
+			common.Log.Errorf("编辑消息失败: %s", err)
 		}
 		return dispatcher.EndGroups
 	}

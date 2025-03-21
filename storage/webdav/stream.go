@@ -6,7 +6,7 @@ import (
 	"io"
 	"path"
 
-	"github.com/krau/SaveAny-Bot/logger"
+	"github.com/krau/SaveAny-Bot/common"
 )
 
 type WebdavWriter struct {
@@ -32,7 +32,7 @@ func (w *WebdavWriter) Close() error {
 
 func (w *Webdav) NewUploadStream(ctx context.Context, storagePath string) (io.WriteCloser, error) {
 	if err := w.client.MkDir(ctx, path.Dir(storagePath)); err != nil {
-		logger.L.Errorf("Failed to create directory %s: %v", path.Dir(storagePath), err)
+		common.Log.Errorf("Failed to create directory %s: %v", path.Dir(storagePath), err)
 		return nil, ErrFailedToCreateDirectory
 	}
 	pipeReader, pipeWriter := io.Pipe()

@@ -10,14 +10,14 @@ import (
 	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/bot"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
 func processPendingTask(task *types.Task) error {
-	logger.L.Debugf("Start processing task: %s", task.String())
+	common.Log.Debugf("Start processing task: %s", task.String())
 	if task.FileName() == "" {
 		task.File.FileName = fmt.Sprintf("%d_%d_%s", task.FileChatID, task.FileMessageID, task.File.Hash())
 	}
@@ -57,7 +57,7 @@ func processPendingTask(task *types.Task) error {
 	taskStreamStorage, isStreamStorage := taskStorage.(storage.StreamStorage)
 	if config.Cfg.Stream {
 		if !isStreamStorage {
-			logger.L.Warnf("存储 %s 不支持流式上传", taskStorage.Name())
+			common.Log.Warnf("存储 %s 不支持流式上传", taskStorage.Name())
 		} else {
 			text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
 			ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
@@ -81,7 +81,7 @@ func processPendingTask(task *types.Task) error {
 			if err != nil {
 				return fmt.Errorf("下载文件失败: %w", err)
 			}
-			logger.L.Infof("Uploaded file: %s", task.StoragePath)
+			common.Log.Infof("Uploaded file: %s", task.StoragePath)
 			return nil
 		}
 	}
@@ -109,7 +109,7 @@ func processPendingTask(task *types.Task) error {
 
 	fixTaskFileExt(task, cacheDestPath)
 
-	logger.L.Infof("Downloaded file: %s", cacheDestPath)
+	common.Log.Infof("Downloaded file: %s", cacheDestPath)
 	ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 		Message: fmt.Sprintf("下载完成: %s\n正在转存文件...", task.FileName()),
 		ID:      task.ReplyMessageID,

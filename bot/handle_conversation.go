@@ -69,7 +69,7 @@ func (c *ConversationState) SetData(key string, value interface{}) {
 // func handleConversationState(ctx *ext.Context, update *ext.Update, state *ConversationState) error {
 // 	switch state.conversationType {
 // 	default:
-// 		logger.L.Errorf("Unknown conversation type: %s", state.conversationType)
+// 		common.Log.Errorf("Unknown conversation type: %s", state.conversationType)
 // 	}
 // 	return dispatcher.EndGroups
 // }

@@ -4,7 +4,7 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/dispatcher/handlers"
 	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
-	"github.com/krau/SaveAny-Bot/logger"
+	"github.com/krau/SaveAny-Bot/common"
 )
 
 func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
@@ -17,7 +17,7 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewCommand("dir", dirCmd))
 	linkRegexFilter, err := filters.Message.Regex(linkRegexString)
 	if err != nil {
-		logger.L.Panicf("创建正则表达式过滤器失败: %s", err)
+		common.Log.Panicf("创建正则表达式过滤器失败: %s", err)
 	}
 	dispatcher.AddHandler(handlers.NewMessage(linkRegexFilter, handleLinkMessage))
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), AddToQueue))

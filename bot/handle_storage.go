@@ -8,8 +8,8 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/dao"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
@@ -22,7 +22,7 @@ func storageCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 	markup, err := getSetDefaultStorageMarkup(userChatID, storages)
 	if err != nil {
-		logger.L.Errorf("Failed to get markup: %s", err)
+		common.Log.Errorf("Failed to get markup: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取存储位置失败"), nil)
 		return dispatcher.EndGroups
 	}
@@ -47,7 +47,7 @@ func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 	cbDataId, _ := strconv.Atoi(args[2])
 	storageName, err := dao.GetCallbackData(uint(cbDataId))
 	if err != nil {
-		logger.L.Errorf("获取回调数据失败: %s", err)
+		common.Log.Errorf("获取回调数据失败: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,
@@ -60,7 +60,7 @@ func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 	selectedStorage, err := storage.GetStorageByName(storageName)
 
 	if err != nil {
-		logger.L.Errorf("获取指定存储失败: %s", err)
+		common.Log.Errorf("获取指定存储失败: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,
@@ -71,7 +71,7 @@ func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 	}
 	user, err := dao.GetUserByChatID(int64(userID))
 	if err != nil {
-		logger.L.Errorf("Failed to get user: %s", err)
+		common.Log.Errorf("Failed to get user: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,
@@ -82,7 +82,7 @@ func setDefaultStorage(ctx *ext.Context, update *ext.Update) error {
 	}
 	user.DefaultStorage = storageName
 	if err := dao.UpdateUser(user); err != nil {
-		logger.L.Errorf("Failed to update user: %s", err)
+		common.Log.Errorf("Failed to update user: %s", err)
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
 			Alert:     true,

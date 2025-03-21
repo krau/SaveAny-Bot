@@ -8,8 +8,8 @@ import (
 	"path"
 	"time"
 
+	"github.com/krau/SaveAny-Bot/common"
 	config "github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -42,20 +42,20 @@ func (w *Webdav) Name() string {
 }
 
 func (w *Webdav) Save(ctx context.Context, filePath, storagePath string) error {
-	logger.L.Infof("Saving file %s to %s", filePath, storagePath)
+	common.Log.Infof("Saving file %s to %s", filePath, storagePath)
 	if err := w.client.MkDir(ctx, path.Dir(storagePath)); err != nil {
-		logger.L.Errorf("Failed to create directory %s: %v", path.Dir(storagePath), err)
+		common.Log.Errorf("Failed to create directory %s: %v", path.Dir(storagePath), err)
 		return ErrFailedToCreateDirectory
 	}
 	file, err := os.Open(filePath)
 	if err != nil {
-		logger.L.Errorf("Failed to open file %s: %v", filePath, err)
+		common.Log.Errorf("Failed to open file %s: %v", filePath, err)
 		return err
 	}
 	defer file.Close()
 
 	if err := w.client.WriteFile(ctx, storagePath, file); err != nil {
-		logger.L.Errorf("Failed to write file %s: %v", storagePath, err)
+		common.Log.Errorf("Failed to write file %s: %v", storagePath, err)
 		return ErrFailedToWriteFile
 	}
 	return nil

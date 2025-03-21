@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/glebarez/sqlite"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/logger"
 	"gorm.io/gorm"
 	glogger "gorm.io/gorm/logger"
 )
@@ -17,12 +17,12 @@ var db *gorm.DB
 
 func Init() {
 	if err := os.MkdirAll(filepath.Dir(config.Cfg.DB.Path), 0755); err != nil {
-		logger.L.Fatal("Failed to create data directory: ", err)
+		common.Log.Fatal("Failed to create data directory: ", err)
 		os.Exit(1)
 	}
 	var err error
 	db, err = gorm.Open(sqlite.Open(config.Cfg.DB.Path), &gorm.Config{
-		Logger: glogger.New(logger.L, glogger.Config{
+		Logger: glogger.New(common.Log, glogger.Config{
 			Colorful:                  true,
 			SlowThreshold:             time.Second * 5,
 			LogLevel:                  glogger.Error,
@@ -32,16 +32,16 @@ func Init() {
 		PrepareStmt: true,
 	})
 	if err != nil {
-		logger.L.Fatal("Failed to open database: ", err)
+		common.Log.Fatal("Failed to open database: ", err)
 		os.Exit(1)
 	}
-	logger.L.Debug("Database connected")
+	common.Log.Debug("Database connected")
 	if err := db.AutoMigrate(&ReceivedFile{}, &User{}, &Dir{}, &CallbackData{}); err != nil {
-		logger.L.Fatal("迁移数据库失败, 如果您从旧版本升级, 建议手动删除数据库文件后重试: ", err)
+		common.Log.Fatal("迁移数据库失败, 如果您从旧版本升级, 建议手动删除数据库文件后重试: ", err)
 	}
 
 	if err := syncUsers(); err != nil {
-		logger.L.Fatal("Failed to sync users:", err)
+		common.Log.Fatal("Failed to sync users:", err)
 	}
 }
 
@@ -66,7 +66,7 @@ func syncUsers() error {
 			if err := CreateUser(cfgID); err != nil {
 				return fmt.Errorf("failed to create user %d: %w", cfgID, err)
 			}
-			logger.L.Infof("创建用户: %d", cfgID)
+			common.Log.Infof("创建用户: %d", cfgID)
 		}
 	}
 
@@ -75,7 +75,7 @@ func syncUsers() error {
 			if err := DeleteUser(&dbUser); err != nil {
 				return fmt.Errorf("failed to delete user %d: %w", dbID, err)
 			}
-			logger.L.Infof("删除用户: %d", dbID)
+			common.Log.Infof("删除用户: %d", dbID)
 		}
 	}
 

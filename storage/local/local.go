@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/duke-git/lancet/v2/fileutil"
+	"github.com/krau/SaveAny-Bot/common"
 	config "github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -42,7 +42,7 @@ func (l *Local) Name() string {
 }
 
 func (l *Local) Save(ctx context.Context, filePath, storagePath string) error {
-	logger.L.Infof("Saving file %s to %s", filePath, storagePath)
+	common.Log.Infof("Saving file %s to %s", filePath, storagePath)
 	absPath, err := filepath.Abs(storagePath)
 	if err != nil {
 		return err

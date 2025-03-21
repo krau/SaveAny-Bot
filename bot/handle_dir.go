@@ -6,8 +6,8 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/telegram/message/styling"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/dao"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
@@ -16,7 +16,7 @@ func dirCmd(ctx *ext.Context, update *ext.Update) error {
 	if len(args) < 3 {
 		dirs, err := dao.GetUserDirsByChatID(update.GetUserChat().GetID())
 		if err != nil {
-			logger.L.Errorf("获取用户路径失败: %s", err)
+			common.Log.Errorf("获取用户路径失败: %s", err)
 			ctx.Reply(update, ext.ReplyTextString("获取用户路径失败"), nil)
 			return dispatcher.EndGroups
 		}
@@ -47,7 +47,7 @@ func dirCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 	user, err := dao.GetUserByChatID(update.GetUserChat().GetID())
 	if err != nil {
-		logger.L.Errorf("获取用户失败: %s", err)
+		common.Log.Errorf("获取用户失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
@@ -69,7 +69,7 @@ func addDir(ctx *ext.Context, update *ext.Update, user *dao.User, storageName, p
 	}
 
 	if err := dao.CreateDirForUser(user.ID, storageName, path); err != nil {
-		logger.L.Errorf("创建路径失败: %s", err)
+		common.Log.Errorf("创建路径失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("创建路径失败"), nil)
 		return dispatcher.EndGroups
 	}
@@ -79,7 +79,7 @@ func addDir(ctx *ext.Context, update *ext.Update, user *dao.User, storageName, p
 
 func delDir(ctx *ext.Context, update *ext.Update, user *dao.User, storageName, path string) error {
 	if err := dao.DeleteDirForUser(user.ID, storageName, path); err != nil {
-		logger.L.Errorf("删除路径失败: %s", err)
+		common.Log.Errorf("删除路径失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("删除路径失败"), nil)
 		return dispatcher.EndGroups
 	}

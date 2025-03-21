@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/krau/SaveAny-Bot/logger"
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/minio/minio-go/v7"
 )
 
@@ -48,7 +48,7 @@ func (w *MinioWriter) Close() error {
 }
 
 func (m *Minio) NewUploadStream(ctx context.Context, storagePath string) (io.WriteCloser, error) {
-	logger.L.Infof("Creating upload stream for %s", storagePath)
+	common.Log.Infof("Creating upload stream for %s", storagePath)
 
 	uploadCtx, cancel := context.WithCancel(ctx)
 	pipeReader, pipeWriter := io.Pipe()
@@ -73,12 +73,12 @@ func (m *Minio) NewUploadStream(ctx context.Context, storagePath string) (io.Wri
 		)
 
 		if err != nil {
-			logger.L.Errorf("Failed to upload to %s: %v", storagePath, err)
+			common.Log.Errorf("Failed to upload to %s: %v", storagePath, err)
 			done <- err
 			return
 		}
 
-		logger.L.Infof("uploaded %d bytes to %s", info.Size, storagePath)
+		common.Log.Infof("uploaded %d bytes to %s", info.Size, storagePath)
 		done <- nil
 	}()
 

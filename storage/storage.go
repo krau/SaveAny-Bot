@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/config"
 	sc "github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage/alist"
 	"github.com/krau/SaveAny-Bot/storage/local"
 	"github.com/krau/SaveAny-Bot/storage/minio"
@@ -110,14 +110,14 @@ func NewStorage(cfg sc.StorageConfig) (Storage, error) {
 }
 
 func LoadStorages() {
-	logger.L.Info("加载存储...")
+	common.Log.Info("加载存储...")
 	for _, storage := range config.Cfg.Storages {
 		_, err := GetStorageByName(storage.GetName())
 		if err != nil {
-			logger.L.Errorf("加载存储 %s 失败: %v", storage.GetName(), err)
+			common.Log.Errorf("加载存储 %s 失败: %v", storage.GetName(), err)
 		}
 	}
-	logger.L.Infof("成功加载 %d 个存储", len(Storages))
+	common.Log.Infof("成功加载 %d 个存储", len(Storages))
 	for user := range config.Cfg.GetUsersID() {
 		UserStorages[int64(user)] = GetUserStorages(int64(user))
 	}
