@@ -23,14 +23,6 @@ func processPendingTask(task *types.Task) error {
 	if task.FileName() == "" {
 		task.File.FileName = fmt.Sprintf("%d_%d_%s", task.FileChatID, task.FileMessageID, task.File.Hash())
 	}
-	cacheDestPath := filepath.Join(config.Cfg.Temp.BasePath, task.FileName())
-	cacheDestPath, err := filepath.Abs(cacheDestPath)
-	if err != nil {
-		return fmt.Errorf("处理路径失败: %w", err)
-	}
-	if err := fileutil.CreateDir(filepath.Dir(cacheDestPath)); err != nil {
-		return fmt.Errorf("创建目录失败: %w", err)
-	}
 
 	if task.StoragePath == "" {
 		task.StoragePath = task.File.FileName
@@ -91,6 +83,15 @@ func processPendingTask(task *types.Task) error {
 		}
 
 		return nil
+	}
+
+	cacheDestPath := filepath.Join(config.Cfg.Temp.BasePath, task.FileName())
+	cacheDestPath, err = filepath.Abs(cacheDestPath)
+	if err != nil {
+		return fmt.Errorf("处理路径失败: %w", err)
+	}
+	if err := fileutil.CreateDir(filepath.Dir(cacheDestPath)); err != nil {
+		return fmt.Errorf("创建目录失败: %w", err)
 	}
 
 	text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
