@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/spf13/viper"
 )
 
@@ -17,13 +18,11 @@ type Config struct {
 
 	Users []userConfig `toml:"users" mapstructure:"users" json:"users"`
 
-	Temp     tempConfig      `toml:"temp" mapstructure:"temp"`
-	Log      logConfig       `toml:"log" mapstructure:"log"`
-	DB       dbConfig        `toml:"db" mapstructure:"db"`
-	Telegram telegramConfig  `toml:"telegram" mapstructure:"telegram"`
-	Storages []StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
-	// Deprecated
-	DeprecatedStorage deprecatedStorageConfig `toml:"storage" mapstructure:"storage"`
+	Temp     tempConfig              `toml:"temp" mapstructure:"temp"`
+	Log      logConfig               `toml:"log" mapstructure:"log"`
+	DB       dbConfig                `toml:"db" mapstructure:"db"`
+	Telegram telegramConfig          `toml:"telegram" mapstructure:"telegram"`
+	Storages []storage.StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
 }
 
 type tempConfig struct {
@@ -57,6 +56,15 @@ type proxyConfig struct {
 }
 
 var Cfg *Config
+
+func (c Config) GetStorageByName(name string) storage.StorageConfig {
+	for _, storage := range c.Storages {
+		if storage.GetName() == name {
+			return storage
+		}
+	}
+	return nil
+}
 
 func Init() error {
 	viper.SetConfigName("config")
@@ -102,37 +110,11 @@ func Init() error {
 		os.Exit(1)
 	}
 
-	if Cfg.Telegram.Admins != nil {
-		fmt.Println("警告: 你正在使用旧版 Telegram 管理员配置, 该配置下的用户将可用所有存储.\ntelegram.admins 未来版本将会被废弃, 请参考新的配置文件模板, 使用 users 配置替代.")
-		for _, admin := range Cfg.Telegram.Admins {
-			found := false
-			for _, user := range Cfg.Users {
-				if user.ID == admin {
-					found = true
-					break
-				}
-			}
-			if found {
-				continue
-			}
-			Cfg.Users = append(Cfg.Users, userConfig{
-				ID:        admin,
-				Storages:  []string{},
-				Blacklist: true,
-			})
-		}
-	}
-
-	storagesConfig, err := LoadStorageConfigs(viper.GetViper())
+	storagesConfig, err := storage.LoadStorageConfigs(viper.GetViper())
 	if err != nil {
 		return fmt.Errorf("error loading storage configs: %w", err)
 	}
 	Cfg.Storages = storagesConfig
-
-	if Cfg.DeprecatedStorage != (deprecatedStorageConfig{}) {
-		fmt.Println("\n警告: 你正在使用旧版存储配置, 未来版本将会被废弃.\n请参考新的配置文件模板.")
-		transformDeprecatedStorageConfig()
-	}
 
 	storageNames := make(map[string]struct{})
 	for _, storage := range Cfg.Storages {

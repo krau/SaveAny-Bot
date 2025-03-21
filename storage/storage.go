@@ -6,16 +6,17 @@ import (
 	"io"
 
 	"github.com/krau/SaveAny-Bot/config"
+	sc "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/storage/alist"
 	"github.com/krau/SaveAny-Bot/storage/local"
-	"github.com/krau/SaveAny-Bot/storage/webdav"
 	"github.com/krau/SaveAny-Bot/storage/minio"
+	"github.com/krau/SaveAny-Bot/storage/webdav"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
 type Storage interface {
-	Init(cfg config.StorageConfig) error
+	Init(cfg sc.StorageConfig) error
 	Type() types.StorageType
 	Name() string
 	JoinStoragePath(task types.Task) string
@@ -94,7 +95,7 @@ var storageConstructors = map[string]StorageConstructor{
 	string(types.StorageTypeMinio):  func() Storage { return new(minio.Minio) },
 }
 
-func NewStorage(cfg config.StorageConfig) (Storage, error) {
+func NewStorage(cfg sc.StorageConfig) (Storage, error) {
 	constructor, ok := storageConstructors[string(cfg.GetType())]
 	if !ok {
 		return nil, fmt.Errorf("不支持的存储类型: %s", cfg.GetType())

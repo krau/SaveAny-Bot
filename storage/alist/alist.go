@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/krau/SaveAny-Bot/config"
+	config "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/logger"
 	"github.com/krau/SaveAny-Bot/types"
 )

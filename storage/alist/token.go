@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/krau/SaveAny-Bot/config"
+	config "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/logger"
 )
 
