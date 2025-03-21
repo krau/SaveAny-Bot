@@ -3,6 +3,7 @@ package minio
 import (
 	"context"
 	"fmt"
+	"io"
 	"path"
 
 	"github.com/krau/SaveAny-Bot/common"
@@ -59,10 +60,10 @@ func (m *Minio) JoinStoragePath(task types.Task) string {
 	return path.Join(m.config.BasePath, task.StoragePath)
 }
 
-func (m *Minio) Save(ctx context.Context, localFilePath, storagePath string) error {
-	common.Log.Infof("Saving file %s to %s", localFilePath, storagePath)
+func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error {
+	common.Log.Infof("Saving file from reader to %s", storagePath)
 
-	_, err := m.client.FPutObject(ctx, m.config.BucketName, storagePath, localFilePath, minio.PutObjectOptions{})
+	_, err := m.client.PutObject(ctx, m.config.BucketName, storagePath, r, -1, minio.PutObjectOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to upload file to minio: %w", err)
 	}

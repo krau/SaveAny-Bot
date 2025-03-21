@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
+	"golang.org/x/sync/errgroup"
 )
 
 func processPendingTask(task *types.Task) error {
@@ -40,10 +42,6 @@ func processPendingTask(task *types.Task) error {
 	}
 	task.StoragePath = taskStorage.JoinStoragePath(*task)
 
-	if task.File.FileSize == 0 {
-		return processPhoto(task, taskStorage, cacheDestPath)
-	}
-
 	ctx, ok := task.Ctx.(*ext.Context)
 	if !ok {
 		return fmt.Errorf("context is not *ext.Context: %T", task.Ctx)
@@ -52,38 +50,47 @@ func processPendingTask(task *types.Task) error {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	task.Cancel = cancel
 
-	downloadBuider := Downloader.Download(bot.Client.API(), task.File.Location).WithThreads(getTaskThreads(task.File.FileSize))
+	if task.File.FileSize == 0 {
+		return processPhoto(task, taskStorage)
+	}
 
-	taskStreamStorage, isStreamStorage := taskStorage.(storage.StreamStorage)
+	downloadBuilder := Downloader.Download(bot.Client.API(), task.File.Location).WithThreads(getTaskThreads(task.File.FileSize))
+
 	if config.Cfg.Stream {
-		if !isStreamStorage {
-			common.Log.Warnf("存储 %s 不支持流式上传", taskStorage.Name())
-		} else {
-			text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
-			ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-				Message:     text,
-				Entities:    entities,
-				ID:          task.ReplyMessageID,
-				ReplyMarkup: getCancelTaskMarkup(task),
-			})
-			uploadStream, err := taskStreamStorage.NewUploadStream(cancelCtx, task.StoragePath)
-			if err != nil {
-				return fmt.Errorf("创建上传流失败: %w", err)
+
+		text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
+		ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
+			Message:     text,
+			Entities:    entities,
+			ID:          task.ReplyMessageID,
+			ReplyMarkup: getCancelTaskMarkup(task),
+		})
+
+		pr, pw := io.Pipe()
+		defer pr.Close()
+
+		task.StartTime = time.Now()
+		progressCallback := buildProgressCallback(ctx, task, getProgressUpdateCount(task.File.FileSize))
+
+		progressStream := NewProgressStream(pw, task.File.FileSize, progressCallback)
+
+		eg, uploadCtx := errgroup.WithContext(cancelCtx)
+
+		eg.Go(func() error {
+			return taskStorage.Save(uploadCtx, pr, task.StoragePath)
+		})
+		eg.Go(func() error {
+			_, err := downloadBuilder.Stream(uploadCtx, progressStream)
+			if closeErr := pw.CloseWithError(err); closeErr != nil {
+				common.Log.Errorf("Failed to close pipe writer: %v", closeErr)
 			}
-			defer uploadStream.Close()
-
-			task.StartTime = time.Now()
-			progressCallback := buildProgressCallback(ctx, task, getProgressUpdateCount(task.File.FileSize))
-
-			progressStream := NewProgressStream(uploadStream, task.File.FileSize, progressCallback)
-
-			_, err = downloadBuider.Stream(cancelCtx, progressStream)
-			if err != nil {
-				return fmt.Errorf("下载文件失败: %w", err)
-			}
-			common.Log.Infof("Uploaded file: %s", task.StoragePath)
-			return nil
+			return err
+		})
+		if err := eg.Wait(); err != nil {
+			return err
 		}
+
+		return nil
 	}
 
 	text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
@@ -101,7 +108,7 @@ func processPendingTask(task *types.Task) error {
 	}
 	defer dest.Close()
 	task.StartTime = time.Now()
-	_, err = downloadBuider.Parallel(cancelCtx, dest)
+	_, err = downloadBuilder.Parallel(cancelCtx, dest)
 	if err != nil {
 		return fmt.Errorf("下载文件失败: %w", err)
 	}

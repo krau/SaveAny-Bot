@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -20,12 +21,16 @@ import (
 	"github.com/krau/SaveAny-Bot/types"
 )
 
-func saveFileWithRetry(ctx context.Context, task *types.Task, taskStorage storage.Storage, localFilePath string) error {
+func saveFileWithRetry(ctx context.Context, task *types.Task, taskStorage storage.Storage, cacheFilePath string) error {
 	for i := 0; i <= config.Cfg.Retry; i++ {
 		if err := ctx.Err(); err != nil {
 			return fmt.Errorf("context canceled while saving file: %w", err)
 		}
-		if err := taskStorage.Save(ctx, localFilePath, task.StoragePath); err != nil {
+		file, err := os.Open(cacheFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to open cache file: %w", err)
+		}
+		if err := taskStorage.Save(ctx, file, task.StoragePath); err != nil {
 			if i == config.Cfg.Retry {
 				return fmt.Errorf("failed to save file: %w", err)
 			}
@@ -42,7 +47,7 @@ func saveFileWithRetry(ctx context.Context, task *types.Task, taskStorage storag
 	return nil
 }
 
-func processPhoto(task *types.Task, taskStorage storage.Storage, cachePath string) error {
+func processPhoto(task *types.Task, taskStorage storage.Storage) error {
 	res, err := bot.Client.API().UploadGetFile(task.Ctx, &tg.UploadGetFileRequest{
 		Location: task.File.Location,
 		Offset:   0,
@@ -57,15 +62,9 @@ func processPhoto(task *types.Task, taskStorage storage.Storage, cachePath strin
 		return fmt.Errorf("unexpected type %T", res)
 	}
 
-	if err := os.WriteFile(cachePath, result.Bytes, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
-	}
+	common.Log.Infof("Downloaded photo: %s", task.FileName())
 
-	defer cleanCacheFile(cachePath)
-
-	common.Log.Infof("Downloaded file: %s", cachePath)
-
-	return saveFileWithRetry(task.Ctx, task, taskStorage, cachePath)
+	return taskStorage.Save(task.Ctx, bytes.NewReader(result.Bytes), task.StoragePath)
 }
 
 func cleanCacheFile(destPath string) {

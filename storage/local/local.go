@@ -41,8 +41,13 @@ func (l *Local) Name() string {
 	return l.config.Name
 }
 
-func (l *Local) Save(ctx context.Context, filePath, storagePath string) error {
-	common.Log.Infof("Saving file %s to %s", filePath, storagePath)
+func (l *Local) JoinStoragePath(task types.Task) string {
+	return filepath.Join(l.config.BasePath, task.StoragePath)
+}
+
+func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error {
+	common.Log.Infof("Saving file to %s", storagePath)
+
 	absPath, err := filepath.Abs(storagePath)
 	if err != nil {
 		return err
@@ -50,24 +55,11 @@ func (l *Local) Save(ctx context.Context, filePath, storagePath string) error {
 	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
 		return err
 	}
-	return fileutil.CopyFile(filePath, storagePath)
-}
-
-func (l *Local) JoinStoragePath(task types.Task) string {
-	return filepath.Join(l.config.BasePath, task.StoragePath)
-}
-
-func (l *Local) NewUploadStream(ctx context.Context, path string) (io.WriteCloser, error) {
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
-	}
-	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
-		return nil, err
-	}
 	file, err := os.Create(absPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return file, nil
+	defer file.Close()
+	_, err = io.Copy(file, r)
+	return err
 }

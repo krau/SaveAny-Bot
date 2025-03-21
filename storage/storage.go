@@ -20,12 +20,7 @@ type Storage interface {
 	Type() types.StorageType
 	Name() string
 	JoinStoragePath(task types.Task) string
-	Save(cttx context.Context, localFilePath, storagePath string) error
-}
-
-type StreamStorage interface {
-	Storage
-	NewUploadStream(ctx context.Context, path string) (io.WriteCloser, error)
+	Save(ctx context.Context, reader io.Reader, storagePath string) error
 }
 
 var Storages = make(map[string]Storage)
