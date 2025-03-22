@@ -47,7 +47,7 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	if file.FileName == "" {
-		file.FileName = fmt.Sprintf("%d_%d_%s", update.EffectiveChat().GetID(), update.EffectiveMessage.ID, file.Hash())
+		file.FileName = GenFileNameFromMessage(*update.EffectiveMessage.Message, file)
 	}
 
 	if err := dao.SaveReceivedFile(&dao.ReceivedFile{

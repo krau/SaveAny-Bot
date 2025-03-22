@@ -3,6 +3,8 @@ package bot
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/celestix/gotgproto/dispatcher"
@@ -269,4 +271,20 @@ func HandleSilentAddTask(ctx *ext.Context, update *ext.Update, user *dao.User, t
 		ID:      task.ReplyMessageID,
 	})
 	return dispatcher.EndGroups
+}
+
+func GenFileNameFromMessage(message tg.Message, file *types.File) string {
+	if file.FileName != "" {
+		return file.FileName
+	}
+	text := strings.TrimSpace(message.GetMessage())
+	if text == "" {
+		return file.Hash()
+	}
+	tags := common.ExtractTagsFromText(text)
+	if len(tags) > 0 {
+		return fmt.Sprintf("%s_%s", strings.Join(tags, "_"), strconv.Itoa(message.GetID()))
+	}
+	runes := []rune(text)
+	return string(runes[:min(128, len(runes))])
 }

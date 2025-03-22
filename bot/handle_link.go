@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -72,10 +71,8 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}
-	// TODO: Better file name
 	if file.FileName == "" {
-		common.Log.Warnf("文件名为空，使用生成的名称")
-		file.FileName = fmt.Sprintf("%d_%d_%s", linkChat.GetID(), messageID, file.Hash())
+		file.FileName = GenFileNameFromMessage(*update.EffectiveMessage.Message, file)
 	}
 
 	receivedFile := &dao.ReceivedFile{

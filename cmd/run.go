@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"slices"
+
 	"github.com/krau/SaveAny-Bot/bot"
 	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/config"
@@ -29,11 +31,9 @@ func Run(_ *cobra.Command, _ []string) {
 		return
 	}
 	if config.Cfg.Temp.BasePath != "" && !config.Cfg.Stream {
-		for _, path := range []string{"/", ".", "\\", ".."} {
-			if filepath.Clean(config.Cfg.Temp.BasePath) == path {
-				common.Log.Error("无效的缓存文件夹: ", config.Cfg.Temp.BasePath)
-				return
-			}
+		if slices.Contains([]string{"/", ".", "\\", ".."}, filepath.Clean(config.Cfg.Temp.BasePath)) {
+			common.Log.Error("无效的缓存文件夹: ", config.Cfg.Temp.BasePath)
+			return
 		}
 		currentDir, err := os.Getwd()
 		if err != nil {

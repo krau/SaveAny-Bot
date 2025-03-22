@@ -76,9 +76,8 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// TODO: better file name
 	if file.FileName == "" {
-		file.FileName = fmt.Sprintf("%d_%d_%s", update.EffectiveChat().GetID(), replyToMsgID, file.Hash())
+		file.FileName = GenFileNameFromMessage(*msg, file)
 	}
 	receivedFile := &dao.ReceivedFile{
 		Processing:     false,
