@@ -14,6 +14,8 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/telegraph-go/v2"
 	"github.com/duke-git/lancet/v2/fileutil"
+	"github.com/gotd/td/telegram/message/entity"
+	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/bot"
 	"github.com/krau/SaveAny-Bot/common"
@@ -144,6 +146,27 @@ func processTelegraph(extCtx *ext.Context, cancelCtx context.Context, task *type
 	if tgphUrl == "" || tgphPath == "" {
 		return fmt.Errorf("invalid telegraph url")
 	}
+	entityBuilder := entity.Builder{}
+	text := fmt.Sprintf("正在下载 Telegraph \n文件夹: %s\n保存路径: %s",
+		task.FileName(),
+		fmt.Sprintf("[%s]:%s", task.StorageName, task.StoragePath),
+	)
+	var entities []tg.MessageEntityClass
+	if err := styling.Perform(&entityBuilder,
+		styling.Plain("正在下载 Telegraph \n文件夹: "),
+		styling.Code(task.FileName()),
+		styling.Plain("\n保存路径: "),
+		styling.Code(fmt.Sprintf("[%s]:%s", task.StorageName, task.StoragePath)),
+	); err != nil {
+		common.Log.Errorf("Failed to build entities: %s", err)
+	}
+
+	extCtx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
+		Message:     text,
+		Entities:    entities,
+		ID:          task.ReplyMessageID,
+		ReplyMarkup: getCancelTaskMarkup(task),
+	})
 
 	resultCh := make(chan error)
 	go func() {
@@ -180,6 +203,9 @@ func processTelegraph(extCtx *ext.Context, cancelCtx context.Context, task *type
 		eg, ectx := errgroup.WithContext(cancelCtx)
 		eg.SetLimit(config.Cfg.Workers) // TODO: use a new config field for this
 		for i, img := range imgs {
+			if strings.HasPrefix(img, "/file/") {
+				img = "https://telegra.ph" + img
+			}
 			eg.Go(func() error {
 				var lastErr error
 				for attempt := range config.Cfg.Retry {
