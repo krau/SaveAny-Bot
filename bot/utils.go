@@ -200,13 +200,7 @@ func FileFromMessage(ctx *ext.Context, chatID int64, messageID int, customFileNa
 }
 
 func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, error) {
-	key := fmt.Sprintf("message:%d:%d", chatId, messageID)
 	common.Log.Debugf("Fetching message: %d", messageID)
-	var cachedMessage tg.Message
-	err := common.Cache.Get(key, &cachedMessage)
-	if err == nil {
-		return &cachedMessage, nil
-	}
 	messages, err := ctx.GetMessages(chatId, []tg.InputMessageClass{&tg.InputMessageID{ID: messageID}})
 	if err != nil {
 		return nil, err
@@ -218,9 +212,6 @@ func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, e
 	tgMessage, ok := msg.(*tg.Message)
 	if !ok {
 		return nil, fmt.Errorf("unexpected message type: %T", msg)
-	}
-	if err := common.Cache.Set(key, tgMessage, 3600); err != nil {
-		common.Log.Errorf("Failed to cache message: %s", err)
 	}
 	return tgMessage, nil
 }

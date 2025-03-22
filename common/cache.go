@@ -21,8 +21,6 @@ func initCache() {
 	gob.Register(types.File{})
 	gob.Register(tg.InputDocumentFileLocation{})
 	gob.Register(tg.InputPhotoFileLocation{})
-	gob.Register(tg.Message{})
-	gob.Register(tg.PeerUser{})
 	Cache = &CommonCache{cache: freecache.NewCache(10 * 1024 * 1024)}
 }
 
