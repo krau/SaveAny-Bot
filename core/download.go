@@ -2,12 +2,17 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/telegraph-go/v2"
 	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/bot"
@@ -25,7 +30,7 @@ func processPendingTask(task *types.Task) error {
 	}
 
 	if task.StoragePath == "" {
-		task.StoragePath = task.File.FileName
+		task.StoragePath = task.FileName()
 	}
 
 	taskStorage, err := storage.GetStorageByUserIDAndName(task.UserID, task.StorageName)
@@ -41,6 +46,10 @@ func processPendingTask(task *types.Task) error {
 
 	cancelCtx, cancel := context.WithCancel(ctx)
 	task.Cancel = cancel
+
+	if task.IsTelegraph {
+		return processTelegraph(ctx, cancelCtx, task, taskStorage)
+	}
 
 	if task.File.FileSize == 0 {
 		return processPhoto(task, taskStorage)
@@ -123,5 +132,103 @@ func processPendingTask(task *types.Task) error {
 		ID:      task.ReplyMessageID,
 	})
 
-	return saveFileWithRetry(cancelCtx, task, taskStorage, cacheDestPath)
+	return saveFileWithRetry(cancelCtx, task.StoragePath, taskStorage, cacheDestPath)
+}
+
+func processTelegraph(extCtx *ext.Context, cancelCtx context.Context, task *types.Task, taskStorage storage.Storage) error {
+	if bot.TelegraphClient == nil {
+		return fmt.Errorf("telegraph client is not initialized")
+	}
+	tgphUrl := task.TelegraphURL
+	tgphPath := strings.Split(tgphUrl, "/")[len(strings.Split(tgphUrl, "/"))-1]
+	if tgphUrl == "" || tgphPath == "" {
+		return fmt.Errorf("invalid telegraph url")
+	}
+
+	resultCh := make(chan error)
+	go func() {
+		page, err := bot.TelegraphClient.GetPage(tgphPath, true)
+		if err != nil {
+			resultCh <- fmt.Errorf("获取 telegraph 页面失败: %w", err)
+			return
+		}
+		imgs := make([]string, 0)
+		for _, element := range page.Content {
+			var node telegraph.NodeElement
+			data, err := json.Marshal(element)
+			if err != nil {
+				common.Log.Errorf("Failed to marshal element: %s", err)
+				continue
+			}
+			err = json.Unmarshal(data, &node)
+			if err != nil {
+				common.Log.Errorf("Failed to unmarshal element: %s", err)
+				continue
+			}
+			if node.Tag == "img" {
+				if src, ok := node.Attrs["src"]; ok {
+					imgs = append(imgs, src)
+				}
+			}
+
+		}
+		if len(imgs) == 0 {
+			resultCh <- fmt.Errorf("没有找到图片")
+			return
+		}
+		hc := bot.TelegraphClient.HttpClient
+		eg, ectx := errgroup.WithContext(cancelCtx)
+		eg.SetLimit(config.Cfg.Workers) // TODO: use a new config field for this
+		for i, img := range imgs {
+			eg.Go(func() error {
+				var lastErr error
+				for attempt := range config.Cfg.Retry {
+					if attempt > 0 {
+						retryDelay := time.Duration(attempt*attempt) * time.Second
+						select {
+						case <-ectx.Done():
+							return ectx.Err()
+						case <-time.After(retryDelay):
+						}
+						common.Log.Debugf("Retrying to download image %s (attempt %d)", img, attempt+1)
+					}
+					req, err := http.NewRequestWithContext(ectx, http.MethodGet, img, nil)
+					if err != nil {
+						lastErr = fmt.Errorf("创建请求失败: %w", err)
+						continue
+					}
+					resp, err := hc.Do(req)
+					if err != nil {
+						lastErr = fmt.Errorf("发送请求失败: %w", err)
+						continue
+					}
+					defer resp.Body.Close()
+					if resp.StatusCode != http.StatusOK {
+						lastErr = fmt.Errorf("请求图片失败: %s", resp.Status)
+						continue
+					}
+					targetPath := path.Join(task.StoragePath, fmt.Sprintf("%d%s", i+1, path.Ext(img)))
+					err = taskStorage.Save(ectx, resp.Body, targetPath)
+					if err != nil {
+						lastErr = fmt.Errorf("保存图片失败: %w", err)
+						continue
+					}
+					common.Log.Infof("Saved image: %s", targetPath)
+					return nil
+				}
+				return lastErr
+			})
+		}
+		if err := eg.Wait(); err != nil {
+			resultCh <- err
+			return
+		}
+		resultCh <- nil
+	}()
+	select {
+	case err := <-resultCh:
+		return err
+	case <-cancelCtx.Done():
+		return cancelCtx.Err()
+	}
 }

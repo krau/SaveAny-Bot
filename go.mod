@@ -5,6 +5,7 @@ go 1.23.5
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/celestix/gotgproto v1.0.0-beta20.2
+	github.com/celestix/telegraph-go/v2 v2.0.4
 	github.com/gabriel-vasile/mimetype v1.4.8
 	github.com/gookit/slog v0.5.7
 	github.com/gotd/contrib v0.21.0

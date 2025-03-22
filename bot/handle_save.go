@@ -99,7 +99,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	if !user.Silent || user.DefaultStorage == "" {
-		return ProvideSelectMessage(ctx, update, file, update.EffectiveChat().GetID(), msg.ID, replied.ID)
+		return ProvideSelectMessage(ctx, update, file.FileName, update.EffectiveChat().GetID(), msg.ID, replied.ID)
 	}
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,

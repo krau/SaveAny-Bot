@@ -33,7 +33,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	args := strings.Split(string(update.CallbackQuery.Data), " ")
-	addToDir := args[0] == "add_to_dir"
+	addToDir := args[0] == "add_to_dir" // 已经选择了路径
 	cbDataId, _ := strconv.Atoi(args[1])
 	cbData, err := dao.GetCallbackData(uint(cbDataId))
 	if err != nil {
@@ -136,31 +136,50 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		}
 	}
 
-	file, err := FileFromMessage(ctx, record.ChatID, record.MessageID, record.FileName)
-	if err != nil {
-		common.Log.Errorf("获取消息中的文件失败: %s", err)
-		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
-			QueryID:   update.CallbackQuery.QueryID,
-			Alert:     true,
-			Message:   fmt.Sprintf("获取消息中的文件失败: %s", err),
-			CacheTime: 5,
-		})
-		return dispatcher.EndGroups
-	}
+	var task types.Task
+	if record.IsTelegraph {
+		task = types.Task{
+			Ctx:            ctx,
+			Status:         types.Pending,
+			IsTelegraph:    true,
+			TelegraphURL:   record.TelegraphURL,
+			StorageName:    storageName,
+			FileChatID:     record.ChatID,
+			FileMessageID:  record.MessageID,
+			ReplyMessageID: record.ReplyMessageID,
+			ReplyChatID:    record.ReplyChatID,
+			UserID:         update.GetUserChat().GetID(),
+		}
+		if dir != nil {
+			task.StoragePath = path.Join(dir.Path, record.FileName)
+		}
+	} else {
+		file, err := FileFromMessage(ctx, record.ChatID, record.MessageID, record.FileName)
+		if err != nil {
+			common.Log.Errorf("获取消息中的文件失败: %s", err)
+			ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+				QueryID:   update.CallbackQuery.QueryID,
+				Alert:     true,
+				Message:   fmt.Sprintf("获取消息中的文件失败: %s", err),
+				CacheTime: 5,
+			})
+			return dispatcher.EndGroups
+		}
 
-	task := types.Task{
-		Ctx:            ctx,
-		Status:         types.Pending,
-		File:           file,
-		StorageName:    storageName,
-		FileChatID:     record.ChatID,
-		ReplyMessageID: record.ReplyMessageID,
-		FileMessageID:  record.MessageID,
-		ReplyChatID:    record.ReplyChatID,
-		UserID:         update.GetUserChat().GetID(),
-	}
-	if dir != nil {
-		task.StoragePath = path.Join(dir.Path, file.FileName)
+		task = types.Task{
+			Ctx:            ctx,
+			Status:         types.Pending,
+			File:           file,
+			StorageName:    storageName,
+			FileChatID:     record.ChatID,
+			ReplyMessageID: record.ReplyMessageID,
+			FileMessageID:  record.MessageID,
+			ReplyChatID:    record.ReplyChatID,
+			UserID:         update.GetUserChat().GetID(),
+		}
+		if dir != nil {
+			task.StoragePath = path.Join(dir.Path, file.FileName)
+		}
 	}
 
 	queue.AddTask(&task)

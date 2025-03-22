@@ -14,6 +14,8 @@ type ReceivedFile struct {
 	ReplyMessageID int
 	ReplyChatID    int64
 	FileName       string
+	IsTelegraph    bool
+	TelegraphURL   string
 }
 
 type User struct {

@@ -21,7 +21,7 @@ import (
 	"github.com/krau/SaveAny-Bot/types"
 )
 
-func saveFileWithRetry(ctx context.Context, task *types.Task, taskStorage storage.Storage, cacheFilePath string) error {
+func saveFileWithRetry(ctx context.Context, storagePath string, taskStorage storage.Storage, cacheFilePath string) error {
 	for i := 0; i <= config.Cfg.Retry; i++ {
 		if err := ctx.Err(); err != nil {
 			return fmt.Errorf("context canceled while saving file: %w", err)
@@ -30,7 +30,7 @@ func saveFileWithRetry(ctx context.Context, task *types.Task, taskStorage storag
 		if err != nil {
 			return fmt.Errorf("failed to open cache file: %w", err)
 		}
-		if err := taskStorage.Save(ctx, file, task.StoragePath); err != nil {
+		if err := taskStorage.Save(ctx, file, storagePath); err != nil {
 			if i == config.Cfg.Retry {
 				return fmt.Errorf("failed to save file: %w", err)
 			}

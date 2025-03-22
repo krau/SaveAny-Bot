@@ -92,7 +92,7 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	if !user.Silent || user.DefaultStorage == "" {
-		return ProvideSelectMessage(ctx, update, file, linkChat.GetID(), messageID, replied.ID)
+		return ProvideSelectMessage(ctx, update, file.FileName, linkChat.GetID(), messageID, replied.ID)
 	}
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,

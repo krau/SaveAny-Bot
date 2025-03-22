@@ -200,7 +200,13 @@ func FileFromMessage(ctx *ext.Context, chatID int64, messageID int, customFileNa
 }
 
 func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, error) {
+	key := fmt.Sprintf("message:%d:%d", chatId, messageID)
 	common.Log.Debugf("Fetching message: %d", messageID)
+	var cachedMessage tg.Message
+	err := common.Cache.Get(key, &cachedMessage)
+	if err == nil {
+		return &cachedMessage, nil
+	}
 	messages, err := ctx.GetMessages(chatId, []tg.InputMessageClass{&tg.InputMessageID{ID: messageID}})
 	if err != nil {
 		return nil, err
@@ -213,16 +219,19 @@ func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, e
 	if !ok {
 		return nil, fmt.Errorf("unexpected message type: %T", msg)
 	}
+	if err := common.Cache.Set(key, tgMessage, 3600); err != nil {
+		common.Log.Errorf("Failed to cache message: %s", err)
+	}
 	return tgMessage, nil
 }
 
-func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, file *types.File, chatID int64, fileMsgID, toEditMsgID int) error {
+func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, fileName string, chatID int64, fileMsgID, toEditMsgID int) error {
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
-	text := fmt.Sprintf("文件名: %s\n请选择存储位置", file.FileName)
+	text := fmt.Sprintf("文件名: %s\n请选择存储位置", fileName)
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain("文件名: "),
-		styling.Code(file.FileName),
+		styling.Code(fileName),
 		styling.Plain("\n请选择存储位置"),
 	); err != nil {
 		common.Log.Errorf("Failed to build entity: %s", err)

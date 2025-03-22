@@ -69,7 +69,7 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	if !user.Silent || user.DefaultStorage == "" {
-		return ProvideSelectMessage(ctx, update, file, update.EffectiveChat().GetID(), update.EffectiveMessage.ID, msg.ID)
+		return ProvideSelectMessage(ctx, update, file.FileName, update.EffectiveChat().GetID(), update.EffectiveMessage.ID, msg.ID)
 	}
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
