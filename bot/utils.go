@@ -9,6 +9,7 @@ import (
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
@@ -277,6 +278,19 @@ func GenFileNameFromMessage(message tg.Message, file *types.File) string {
 	if file.FileName != "" {
 		return file.FileName
 	}
+	fileName := genFileNameFromMessageText(message, file)
+	media, ok := message.GetMedia()
+	if !ok {
+		return fileName
+	}
+	ext, ok := extraMediaExt(media)
+	if ok {
+		return fileName + ext
+	}
+	return fileName
+}
+
+func genFileNameFromMessageText(message tg.Message, file *types.File) string {
 	text := strings.TrimSpace(message.GetMessage())
 	if text == "" {
 		return file.Hash()
@@ -287,4 +301,22 @@ func GenFileNameFromMessage(message tg.Message, file *types.File) string {
 	}
 	runes := []rune(text)
 	return string(runes[:min(128, len(runes))])
+}
+
+func extraMediaExt(media tg.MessageMediaClass) (string, bool) {
+	switch media := media.(type) {
+	case *tg.MessageMediaDocument:
+		doc, ok := media.Document.AsNotEmpty()
+		if !ok {
+			return "", false
+		}
+		ext := mimetype.Lookup(doc.MimeType).Extension()
+		if ext == "" {
+			return "", false
+		}
+		return ext, true
+	case *tg.MessageMediaPhoto:
+		return ".jpg", true
+	}
+	return "", false
 }
