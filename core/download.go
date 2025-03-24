@@ -188,6 +188,13 @@ func processTelegraph(extCtx *ext.Context, cancelCtx context.Context, task *type
 				common.Log.Errorf("Failed to unmarshal element: %s", err)
 				continue
 			}
+
+			if len(node.Children) != 0 {
+				for _, child := range node.Children {
+					imgs = append(imgs, GetImages(child)...)
+				}
+			}
+
 			if node.Tag == "img" {
 				if src, ok := node.Attrs["src"]; ok {
 					imgs = append(imgs, src)
@@ -257,4 +264,28 @@ func processTelegraph(extCtx *ext.Context, cancelCtx context.Context, task *type
 	case <-cancelCtx.Done():
 		return cancelCtx.Err()
 	}
+}
+
+func GetImages(node telegraph.Node) []string {
+	var srcs []string
+
+	var nodeElement telegraph.NodeElement
+	data, err := json.Marshal(node)
+	if err != nil {
+		return srcs
+	}
+	err = json.Unmarshal(data, &nodeElement)
+	if err != nil {
+		return srcs
+	}
+
+	if nodeElement.Tag == "img" {
+		if src, exists := nodeElement.Attrs["src"]; exists {
+			srcs = append(srcs, src)
+		}
+	}
+	for _, child := range nodeElement.Children {
+		srcs = append(srcs, GetImages(child)...)
+	}
+	return srcs
 }

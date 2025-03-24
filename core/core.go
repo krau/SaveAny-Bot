@@ -6,12 +6,19 @@ import (
 	"fmt"
 
 	"github.com/celestix/gotgproto/ext"
+	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/queue"
 	"github.com/krau/SaveAny-Bot/types"
 )
+
+var Downloader *downloader.Downloader
+
+func init() {
+	Downloader = downloader.NewDownloader().WithPartSize(1024 * 1024)
+}
 
 func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 	for {
