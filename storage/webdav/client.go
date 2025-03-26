@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/krau/SaveAny-Bot/types"
 )
 
 type Client struct {
@@ -37,6 +39,11 @@ func (c *Client) doRequest(ctx context.Context, method, url string, body io.Read
 	}
 	if c.Username != "" && c.Password != "" {
 		req.SetBasicAuth(c.Username, c.Password)
+	}
+	if length := ctx.Value(types.ContextKeyContentLength); length != nil {
+		if l, ok := length.(int64); ok {
+			req.ContentLength = l
+		}
 	}
 	return c.httpClient.Do(req)
 }

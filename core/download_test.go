@@ -72,7 +72,7 @@ func TestGetImgSrcs(t *testing.T) {
 		"https://example.com/image4.png",
 	}
 
-	got := GetImages(complexStructure)
+	got := getNodeImages(complexStructure)
 
 	if !reflect.DeepEqual(expected, got) {
 		t.Errorf("expected %v，got %v", expected, got)

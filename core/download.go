@@ -191,7 +191,7 @@ func processTelegraph(extCtx *ext.Context, cancelCtx context.Context, task *type
 
 			if len(node.Children) != 0 {
 				for _, child := range node.Children {
-					imgs = append(imgs, GetImages(child)...)
+					imgs = append(imgs, getNodeImages(child)...)
 				}
 			}
 
@@ -264,28 +264,4 @@ func processTelegraph(extCtx *ext.Context, cancelCtx context.Context, task *type
 	case <-cancelCtx.Done():
 		return cancelCtx.Err()
 	}
-}
-
-func GetImages(node telegraph.Node) []string {
-	var srcs []string
-
-	var nodeElement telegraph.NodeElement
-	data, err := json.Marshal(node)
-	if err != nil {
-		return srcs
-	}
-	err = json.Unmarshal(data, &nodeElement)
-	if err != nil {
-		return srcs
-	}
-
-	if nodeElement.Tag == "img" {
-		if src, exists := nodeElement.Attrs["src"]; exists {
-			srcs = append(srcs, src)
-		}
-	}
-	for _, child := range nodeElement.Children {
-		srcs = append(srcs, GetImages(child)...)
-	}
-	return srcs
 }

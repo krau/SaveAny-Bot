@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/telegraph-go/v2"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
@@ -22,22 +24,33 @@ import (
 )
 
 func saveFileWithRetry(ctx context.Context, storagePath string, taskStorage storage.Storage, cacheFilePath string) error {
+	file, err := os.Open(cacheFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to open cache file: %w", err)
+	}
+	defer file.Close()
+	fileStat, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to get file stat: %w", err)
+	}
+	vctx := context.WithValue(ctx, types.ContextKeyContentLength, fileStat.Size())
 	for i := 0; i <= config.Cfg.Retry; i++ {
-		if err := ctx.Err(); err != nil {
+		if err := vctx.Err(); err != nil {
 			return fmt.Errorf("context canceled while saving file: %w", err)
 		}
 		file, err := os.Open(cacheFilePath)
 		if err != nil {
 			return fmt.Errorf("failed to open cache file: %w", err)
 		}
-		if err := taskStorage.Save(ctx, file, storagePath); err != nil {
+		defer file.Close()
+		if err := taskStorage.Save(vctx, file, storagePath); err != nil {
 			if i == config.Cfg.Retry {
 				return fmt.Errorf("failed to save file: %w", err)
 			}
 			common.Log.Errorf("Failed to save file: %s, retrying...", err)
 			select {
-			case <-ctx.Done():
-				return fmt.Errorf("context canceled during retry delay: %w", ctx.Err())
+			case <-vctx.Done():
+				return fmt.Errorf("context canceled during retry delay: %w", vctx.Err())
 			case <-time.After(time.Duration(i*500) * time.Millisecond):
 			}
 			continue
@@ -255,4 +268,28 @@ func NewProgressStream(writer io.Writer, size int64, callback func(bytesRead, co
 		nextAt:   interval,
 		interval: interval,
 	}
+}
+
+func getNodeImages(node telegraph.Node) []string {
+	var srcs []string
+
+	var nodeElement telegraph.NodeElement
+	data, err := json.Marshal(node)
+	if err != nil {
+		return srcs
+	}
+	err = json.Unmarshal(data, &nodeElement)
+	if err != nil {
+		return srcs
+	}
+
+	if nodeElement.Tag == "img" {
+		if src, exists := nodeElement.Attrs["src"]; exists {
+			srcs = append(srcs, src)
+		}
+	}
+	for _, child := range nodeElement.Children {
+		srcs = append(srcs, getNodeImages(child)...)
+	}
+	return srcs
 }
