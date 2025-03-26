@@ -23,6 +23,11 @@ type Storage interface {
 	Save(ctx context.Context, reader io.Reader, storagePath string) error
 }
 
+type StorageNotSupportStream interface {
+	Storage
+	NotSupportStream() string
+}
+
 var Storages = make(map[string]Storage)
 
 var UserStorages = make(map[int64][]Storage)

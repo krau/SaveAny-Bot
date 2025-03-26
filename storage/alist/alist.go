@@ -140,6 +140,10 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 	return nil
 }
 
+func (a *Alist) NotSupportStream() string {
+	return "Alist does not support chunked transfer encoding"
+}
+
 func (a *Alist) JoinStoragePath(task types.Task) string {
 	return path.Join(a.config.BasePath, task.StoragePath)
 }
