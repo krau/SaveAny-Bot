@@ -2,7 +2,7 @@
 
 # <img src="docs/logo.jpg" width="45" align="center"> Save Any Bot
 
-**简体中文** | [English](README_EN.md) 
+**简体中文** | [English](README_EN.md)
 
 把 Telegram 的文件保存到各类存储端.
 
@@ -50,7 +50,7 @@ WantedBy=multi-user.target
 systemctl enable --now saveany-bot
 ```
 
-#### 为OpenWrt及衍生系统添加开机自启动服务
+#### 为 OpenWrt 及衍生系统添加开机自启动服务
 
 创建文件 ` /etc/init.d/saveanybot` ，参考[saveanybot](./docs/saveanybot)自行修改.
 
@@ -60,14 +60,13 @@ systemctl enable --now saveany-bot
 
 `chmod +x /etc/rc.d/S99saveanybot`
 
-#### 为OpenWrt及衍生系统添加快捷指令
+#### 为 OpenWrt 及衍生系统添加快捷指令
 
 创建文件` /usr/bin/sabot` ，参考[sabot](./docs/sabot)自行配置修改，注意此处文件编码仅支持 ANSI 936 .
 
 `chmod +x /usr/bin/sabot`
 
 之后，终端输入`sabot start|stop|restart|status|enable|disable`即可.
-
 
 ### 使用 Docker 部署
 
@@ -110,6 +109,14 @@ docker restart saveany-bot
 向 Bot 发送(转发)文件, 或发送公开频道的消息链接, 按照提示操作.
 
 ---
+
+## 赞助
+
+本项目受到 [YxVM](https://yxvm.com/) 与 [NodeSupport](https://github.com/NodeSeekDev/NodeSupport) 的支持.
+
+如果这个项目对你有帮助, 你可以考虑通过以下方式赞助我:
+
+- [爱发电](https://afdian.com/a/acherkrau)
 
 ## Thanks
 

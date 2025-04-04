@@ -92,6 +92,14 @@ Send (forward) files to the Bot and follow the prompts.
 
 ---
 
+## Sponsors
+
+This project is supported by [YxVM](https://yxvm.com/) and [NodeSupport](https://github.com/NodeSeekDev/NodeSupport).
+
+You can consider sponsoring me if this project helps you:
+
+- [Afdian](https://afdian.com/a/acherkrau)
+
 ## Thanks
 
 - [gotd](https://github.com/gotd/td)
