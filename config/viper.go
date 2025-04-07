@@ -44,6 +44,7 @@ type telegramConfig struct {
 	Token   string      `toml:"token" mapstructure:"token"`
 	AppID   int         `toml:"app_id" mapstructure:"app_id" json:"app_id"`
 	AppHash string      `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
+	Timeout int         `toml:"timeout" mapstructure:"timeout" json:"timeout"`
 	Proxy   proxyConfig `toml:"proxy" mapstructure:"proxy"`
 
 	// Deprecated
@@ -82,6 +83,7 @@ func Init() error {
 
 	viper.SetDefault("telegram.app_id", 1025907)
 	viper.SetDefault("telegram.app_hash", "452b0359b988148995f22ff0f4229750")
+	viper.SetDefault("telegram.timeout", 60)
 
 	viper.SetDefault("temp.base_path", "cache/")
 	viper.SetDefault("temp.cache_ttl", 3600)

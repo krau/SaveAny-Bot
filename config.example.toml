@@ -13,6 +13,9 @@ token = ""
 # app_id = 123456
 # app_hash = "0123456789abcdef0123456789abcdef"
 
+# 初始化超时时间, 单位: 秒
+timeout = 60
+
 [telegram.proxy]
 # 启用代理连接 telegram, 只支持 socks5
 enable = false
@@ -31,12 +34,6 @@ enable = true
 base_path = "./downloads"
 
 [[storages]]
-name = "本机2"
-type = "local"
-enable = true
-base_path = "./downloads/2"
-
-[[storages]]
 name = "MyAlist"
 type = "alist"
 enable = false  #记得启用
@@ -48,7 +45,6 @@ token_exp = 86400  # 86400--1天   604800--7天   1296000--15天   2592000--30�
 # alist 可直接使用 token 登录, 此时 username, password, token_exp 将被忽略
 # 请自行在 alist 侧配置合理的 token 过期时间
 # token = ""
-
 
 [[storages]]
 name = "MyWebdav"

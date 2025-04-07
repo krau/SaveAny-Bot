@@ -27,10 +27,10 @@ func newProxyDialer(proxyUrl string) (proxy.Dialer, error) {
 }
 
 func Init() {
-	InitTelegraphClient()
 	common.Log.Info("初始化 Telegram 客户端...")
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Cfg.Telegram.Timeout)*time.Second)
 	defer cancel()
+	go InitTelegraphClient()
 	resultChan := make(chan struct {
 		client *gotgproto.Client
 		err    error
