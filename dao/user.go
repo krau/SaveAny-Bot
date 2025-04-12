@@ -9,7 +9,9 @@ func CreateUser(chatID int64) error {
 
 func GetAllUsers() ([]User, error) {
 	var users []User
-	err := db.Preload("Dirs").Find(&users).Error
+	err := db.Preload("Dirs").
+		Preload("Rules").
+		Find(&users).Error
 	return users, err
 }
 
@@ -17,6 +19,7 @@ func GetUserByChatID(chatID int64) (*User, error) {
 	var user User
 	err := db.
 		Preload("Dirs").
+		Preload("Rules").
 		Where("chat_id = ?", chatID).First(&user).Error
 	return &user, err
 }
@@ -26,5 +29,5 @@ func UpdateUser(user *User) error {
 }
 
 func DeleteUser(user *User) error {
-	return db.Unscoped().Select("Dirs").Delete(user).Error
+	return db.Unscoped().Select("Dirs", "Rules").Delete(user).Error
 }

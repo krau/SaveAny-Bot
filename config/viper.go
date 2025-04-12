@@ -37,7 +37,8 @@ type logConfig struct {
 }
 
 type dbConfig struct {
-	Path string `toml:"path" mapstructure:"path"`
+	Path   string `toml:"path" mapstructure:"path"`
+	Expire int64  `toml:"expire" mapstructure:"expire"`
 }
 
 type telegramConfig struct {
@@ -93,6 +94,7 @@ func Init() error {
 	viper.SetDefault("log.backup_count", 7)
 
 	viper.SetDefault("db.path", "data/saveany.db")
+	viper.SetDefault("db.expire", 86400*5)
 
 	if err := viper.SafeWriteConfigAs("config.toml"); err != nil {
 		if _, ok := err.(viper.ConfigFileAlreadyExistsError); !ok {
