@@ -180,12 +180,11 @@ func FileFromMedia(media tg.MessageMediaClass, customFileName string) (*types.Fi
 
 func FileFromMessage(ctx *ext.Context, chatID int64, messageID int, customFileName string) (*types.File, error) {
 	key := fmt.Sprintf("file:%d:%d", chatID, messageID)
-	common.Log.Debugf("Getting file: %s", key)
-	var cachedFile types.File
-	err := common.Cache.Get(key, &cachedFile)
+	cachedFile, err := common.CacheGet[*types.File](ctx, key)
 	if err == nil {
-		return &cachedFile, nil
+		return cachedFile, nil
 	}
+	common.Log.Debugf("Getting file: %s", key)
 	message, err := GetTGMessage(ctx, chatID, messageID)
 	if err != nil {
 		return nil, err
@@ -194,13 +193,18 @@ func FileFromMessage(ctx *ext.Context, chatID int64, messageID int, customFileNa
 	if err != nil {
 		return nil, err
 	}
-	if err := common.Cache.Set(key, file, 3600); err != nil {
+	if err := common.CacheSet(ctx, key, file); err != nil {
 		common.Log.Errorf("Failed to cache file: %s", err)
 	}
 	return file, nil
 }
 
 func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, error) {
+	key := fmt.Sprintf("message:%d:%d", chatId, messageID)
+	cacheMessage, err := common.CacheGet[*tg.Message](ctx, key)
+	if err == nil {
+		return cacheMessage, nil
+	}
 	common.Log.Debugf("Fetching message: %d", messageID)
 	messages, err := ctx.GetMessages(chatId, []tg.InputMessageClass{&tg.InputMessageID{ID: messageID}})
 	if err != nil {
@@ -213,6 +217,9 @@ func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, e
 	tgMessage, ok := msg.(*tg.Message)
 	if !ok {
 		return nil, fmt.Errorf("unexpected message type: %T", msg)
+	}
+	if err := common.CacheSet(ctx, key, tgMessage); err != nil {
+		common.Log.Errorf("Failed to cache message: %s", err)
 	}
 	return tgMessage, nil
 }

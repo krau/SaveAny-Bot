@@ -1,60 +1,38 @@
 package common
 
 import (
-	"bytes"
-	"encoding/gob"
-	"sync"
+	"context"
+	"time"
 
-	"github.com/coocood/freecache"
-	"github.com/gotd/td/tg"
-	"github.com/krau/SaveAny-Bot/types"
+	"github.com/eko/gocache/lib/v4/cache"
+	gocachestore "github.com/eko/gocache/store/go_cache/v4"
+	gocache "github.com/patrickmn/go-cache"
 )
 
-type CommonCache struct {
-	cache *freecache.Cache
-	mu    sync.RWMutex
-}
-
-var Cache *CommonCache
+var Cache *cache.Cache[any]
 
 func initCache() {
-	gob.Register(types.File{})
-	gob.Register(tg.InputDocumentFileLocation{})
-	gob.Register(tg.InputPhotoFileLocation{})
-	Cache = &CommonCache{cache: freecache.NewCache(10 * 1024 * 1024)}
+	gocacheClient := gocache.New(time.Hour*1, time.Minute*10)
+	gocacheStore := gocachestore.NewGoCache(gocacheClient)
+	cacheManager := cache.New[any](gocacheStore)
+	Cache = cacheManager
 }
 
-func (c *CommonCache) Get(key string, value any) error {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	data, err := Cache.cache.Get([]byte(key))
+func CacheGet[T any](ctx context.Context, key string) (T, error) {
+	data, err := Cache.Get(ctx, key)
 	if err != nil {
-		return err
+		return *new(T), err
 	}
-	dec := gob.NewDecoder(bytes.NewReader(data))
-	err = dec.Decode(&value)
-	if err != nil {
-		return err
+	if v, ok := data.(T); ok {
+		return v, nil
 	}
-	return nil
+	return *new(T), nil
 }
 
-func (c *CommonCache) Set(key string, value any, expireSeconds int) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(value)
-	if err != nil {
-		return err
-	}
-	Cache.cache.Set([]byte(key), buf.Bytes(), expireSeconds)
-	return nil
+func CacheSet(ctx context.Context, key string, value any) error {
+	return Cache.Set(ctx, key, value)
 }
 
-func (c *CommonCache) Delete(key string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	Cache.cache.Del([]byte(key))
-	return nil
+func CacheDelete(ctx context.Context, key string) error {
+	return Cache.Delete(ctx, key)
 }
