@@ -63,12 +63,14 @@ func processPendingTask(task *types.Task) error {
 	if config.Cfg.Stream {
 		if !notsupportStream {
 			text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
-			ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-				Message:     text,
-				Entities:    entities,
-				ID:          task.ReplyMessageID,
-				ReplyMarkup: cancelMarkUp,
-			})
+			if task.ReplyMessageID != 0 {
+				ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
+					Message:     text,
+					Entities:    entities,
+					ID:          task.ReplyMessageID,
+					ReplyMarkup: cancelMarkUp,
+				})
+			}
 
 			pr, pw := io.Pipe()
 			defer pr.Close()
@@ -97,11 +99,14 @@ func processPendingTask(task *types.Task) error {
 			return nil
 		}
 		common.Log.Warnf("存储 %s 不支持流式传输: %s", task.StorageName, notsupportStreamStorage.NotSupportStream())
-		ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-			Message:     fmt.Sprintf("存储 %s 不支持流式传输: %s\n正在使用普通下载...", task.StorageName, notsupportStreamStorage.NotSupportStream()),
-			ID:          task.ReplyMessageID,
-			ReplyMarkup: cancelMarkUp,
-		})
+
+		if task.ReplyMessageID != 0 {
+			ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
+				Message:     fmt.Sprintf("存储 %s 不支持流式传输: %s\n正在使用普通下载...", task.StorageName, notsupportStreamStorage.NotSupportStream()),
+				ID:          task.ReplyMessageID,
+				ReplyMarkup: cancelMarkUp,
+			})
+		}
 	}
 
 	cacheDestPath := filepath.Join(config.Cfg.Temp.BasePath, task.FileName())
@@ -114,12 +119,14 @@ func processPendingTask(task *types.Task) error {
 	}
 
 	text, entities := buildProgressMessageEntity(task, 0, task.StartTime, 0)
-	ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-		Message:     text,
-		Entities:    entities,
-		ID:          task.ReplyMessageID,
-		ReplyMarkup: cancelMarkUp,
-	})
+	if task.ReplyMessageID != 0 {
+		ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
+			Message:     text,
+			Entities:    entities,
+			ID:          task.ReplyMessageID,
+			ReplyMarkup: cancelMarkUp,
+		})
+	}
 
 	progressCallback := buildProgressCallback(ctx, task, getProgressUpdateCount(task.File.FileSize))
 	dest, err := NewTaskLocalFile(cacheDestPath, task.File.FileSize, progressCallback)
@@ -137,11 +144,12 @@ func processPendingTask(task *types.Task) error {
 	fixTaskFileExt(task, cacheDestPath)
 
 	common.Log.Infof("Downloaded file: %s", cacheDestPath)
-	ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-		Message: fmt.Sprintf("下载完成: %s\n正在转存文件...", task.FileName()),
-		ID:      task.ReplyMessageID,
-	})
-
+	if task.ReplyMessageID != 0 {
+		ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
+			Message: fmt.Sprintf("下载完成: %s\n正在转存文件...", task.FileName()),
+			ID:      task.ReplyMessageID,
+		})
+	}
 	return saveFileWithRetry(cancelCtx, task.StoragePath, taskStorage, cacheDestPath)
 }
 
@@ -169,12 +177,14 @@ func processTelegraph(extCtx *ext.Context, cancelCtx context.Context, task *type
 		common.Log.Errorf("Failed to build entities: %s", err)
 	}
 
-	extCtx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
-		Message:     text,
-		Entities:    entities,
-		ID:          task.ReplyMessageID,
-		ReplyMarkup: getCancelTaskMarkup(task),
-	})
+	if task.ReplyMessageID != 0 {
+		extCtx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
+			Message:     text,
+			Entities:    entities,
+			ID:          task.ReplyMessageID,
+			ReplyMarkup: getCancelTaskMarkup(task),
+		})
+	}
 
 	resultCh := make(chan error)
 	go func() {

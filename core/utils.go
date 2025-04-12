@@ -145,6 +145,9 @@ func buildProgressCallback(ctx *ext.Context, task *types.Task, updateCount int) 
 		if task.File.FileSize < 1024*1024*50 || progressInt == 0 || progressInt%int(100/updateCount) != 0 {
 			return
 		}
+		if task.ReplyMessageID == 0 {
+			return
+		}
 		text, entities := buildProgressMessageEntity(task, bytesRead, task.StartTime, progress)
 		ctx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 			Message:     text,

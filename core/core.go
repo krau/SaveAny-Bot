@@ -46,7 +46,7 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 			extCtx, ok := task.Ctx.(*ext.Context)
 			if !ok {
 				common.Log.Errorf("Context is not *ext.Context: %T", task.Ctx)
-			} else {
+			} else if task.ReplyMessageID != 0 {
 				extCtx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 					Message: fmt.Sprintf("文件保存成功\n [%s]: %s", task.StorageName, task.StoragePath),
 					ID:      task.ReplyMessageID,
@@ -57,7 +57,7 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 			extCtx, ok := task.Ctx.(*ext.Context)
 			if !ok {
 				common.Log.Errorf("Context is not *ext.Context: %T", task.Ctx)
-			} else {
+			} else if task.ReplyMessageID != 0 {
 				extCtx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 					Message: "文件保存失败\n" + task.Error.Error(),
 					ID:      task.ReplyMessageID,
@@ -68,7 +68,7 @@ func worker(queue *queue.TaskQueue, semaphore chan struct{}) {
 			extCtx, ok := task.Ctx.(*ext.Context)
 			if !ok {
 				common.Log.Errorf("Context is not *ext.Context: %T", task.Ctx)
-			} else {
+			} else if task.ReplyMessageID != 0 {
 				extCtx.EditMessage(task.ReplyChatID, &tg.MessagesEditMessageRequest{
 					Message: "任务已取消",
 					ID:      task.ReplyMessageID,
