@@ -15,6 +15,7 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewCommand("storage", storageCmd))
 	dispatcher.AddHandler(handlers.NewCommand("save", saveCmd))
 	dispatcher.AddHandler(handlers.NewCommand("dir", dirCmd))
+	dispatcher.AddHandler(handlers.NewCommand("rule", ruleCmd))
 	linkRegexFilter, err := filters.Message.Regex(linkRegexString)
 	if err != nil {
 		common.Log.Panicf("创建正则表达式过滤器失败: %s", err)

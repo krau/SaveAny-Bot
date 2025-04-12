@@ -41,3 +41,7 @@ func GetDirsByUserIDAndStorageName(userID uint, storageName string) ([]Dir, erro
 func DeleteDirForUser(userID uint, storageName, path string) error {
 	return db.Unscoped().Where("user_id = ? AND storage_name = ? AND path = ?", userID, storageName, path).Delete(&Dir{}).Error
 }
+
+func DeleteDirByID(id uint) error {
+	return db.Unscoped().Delete(&Dir{}, id).Error
+}

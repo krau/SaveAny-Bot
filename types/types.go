@@ -31,3 +31,12 @@ type ContextKey string
 const (
 	ContextKeyContentLength ContextKey = "content-length"
 )
+
+type RuleType string
+
+const (
+	RuleTypeFileNameRegex RuleType = "FILENAME-REGEX"
+	RuleTypeMessageRegex  RuleType = "MESSAGE-REGEX"
+)
+
+var RuleTypes = []RuleType{RuleTypeFileNameRegex, RuleTypeMessageRegex}

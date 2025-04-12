@@ -31,15 +31,14 @@ func processPendingTask(task *types.Task) error {
 		task.File.FileName = fmt.Sprintf("%d_%d_%s", task.FileChatID, task.FileMessageID, task.File.Hash())
 	}
 
-	if task.StoragePath == "" {
-		task.StoragePath = task.FileName()
-	}
-
-	taskStorage, err := storage.GetStorageByUserIDAndName(task.UserID, task.StorageName)
+	taskStorage, storagePath, err := getStorageAndPathForTask(task)
 	if err != nil {
 		return err
 	}
-	task.StoragePath = taskStorage.JoinStoragePath(*task)
+	if taskStorage == nil {
+		return fmt.Errorf("not found storage: %s", task.StorageName)
+	}
+	task.StoragePath = storagePath
 
 	ctx, ok := task.Ctx.(*ext.Context)
 	if !ok {

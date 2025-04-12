@@ -78,6 +78,7 @@ func Init() {
 				{Command: "storage", Description: "设置默认存储端"},
 				{Command: "save", Description: "保存所回复的文件"},
 				{Command: "dir", Description: "管理存储文件夹"},
+				{Command: "rule", Description: "管理规则"},
 			},
 		})
 		resultChan <- struct {
