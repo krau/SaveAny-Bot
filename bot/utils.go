@@ -62,7 +62,7 @@ func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*t
 		}
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
 			Text: storage.Name(),
-			Data: []byte(fmt.Sprintf("add %d", cbDataId)),
+			Data: fmt.Appendf(nil, "add %d", cbDataId),
 		})
 	}
 	markup := &tg.ReplyInlineMarkup{}

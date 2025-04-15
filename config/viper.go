@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/spf13/viper"
 )
@@ -136,6 +137,19 @@ func Init() error {
 	if Cfg.Workers < 1 || Cfg.Retry < 1 {
 		return fmt.Errorf("workers 和 retry 必须大于 0, 当前值: workers=%d, retry=%d", Cfg.Workers, Cfg.Retry)
 	}
+
+	for _, storage := range Cfg.Storages {
+		storages = append(storages, storage.GetName())
+	}
+	for _, user := range Cfg.Users {
+		userIDs = append(userIDs, user.ID)
+		if user.Blacklist {
+			userStorages[user.ID] = slice.Compact(slice.Difference(storages, user.Storages))
+		} else {
+			userStorages[user.ID] = user.Storages
+		}
+	}
+
 
 	return nil
 }

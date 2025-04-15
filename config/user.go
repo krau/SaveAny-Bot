@@ -10,40 +10,26 @@ type userConfig struct {
 	Blacklist bool     `toml:"blacklist" mapstructure:"blacklist" json:"blacklist"` // 黑名单模式, storage names 中的存储将不会被使用, 默认为白名单模式
 }
 
+var userIDs []int64
+var storages []string
+var userStorages = make(map[int64][]string)
+
 func (c *Config) GetStorageNamesByUserID(userID int64) []string {
-	for _, user := range c.Users {
-		if user.ID == userID {
-			if user.Blacklist {
-				allStorages := make([]string, 0, len(c.Storages))
-				for _, storage := range c.Storages {
-					allStorages = append(allStorages, storage.GetName())
-				}
-				return slice.Compact(slice.Difference(allStorages, user.Storages))
-			} else {
-				return user.Storages
-			}
-		}
+	us, ok := userStorages[userID]
+	if ok {
+		return us
 	}
 	return nil
 }
 
 func (c *Config) GetUsersID() []int64 {
-	var ids []int64
-	for _, user := range c.Users {
-		ids = append(ids, user.ID)
-	}
-	return ids
+	return userIDs
 }
 
 func (c *Config) HasStorage(userID int64, storageName string) bool {
-	for _, user := range c.Users {
-		if user.ID == userID {
-			if user.Blacklist {
-				return !slice.Contain(user.Storages, storageName)
-			} else {
-				return slice.Contain(user.Storages, storageName)
-			}
-		}
+	us, ok := userStorages[userID]
+	if !ok {
+		return false
 	}
-	return false
+	return slice.Contain(us, storageName)
 }
