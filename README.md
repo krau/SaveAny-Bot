@@ -26,8 +26,8 @@
 
 ## Contributors
 
-<!-- readme: contributors -start -->
-<!-- readme: contributors -end -->
+<!-- readme: contributors,AHCorn -start -->
+<!-- readme: contributors,AHCorn -end -->
 
 ## Thanks
 
