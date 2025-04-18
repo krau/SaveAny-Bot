@@ -24,6 +24,11 @@
 
 - [爱发电](https://afdian.com/a/acherkrau)
 
+## Contributors
+
+<!-- readme: contributors -start -->
+<!-- readme: contributors -end -->
+
 ## Thanks
 
 - [gotd](https://github.com/gotd/td)
