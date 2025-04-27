@@ -17,6 +17,14 @@ type Client struct {
 	httpClient *http.Client
 }
 
+type WebdavMethod string
+
+const (
+	WebdavMethodMkcol    WebdavMethod = "MKCOL"
+	WebdavMethodPropfind WebdavMethod = "PROPFIND"
+	WebdavMethodPut      WebdavMethod = "PUT"
+)
+
 func NewClient(baseURL, username, password string, httpClient *http.Client) *Client {
 	if !strings.HasSuffix(baseURL, "/") {
 		baseURL += "/"
@@ -32,17 +40,22 @@ func NewClient(baseURL, username, password string, httpClient *http.Client) *Cli
 	}
 }
 
-func (c *Client) doRequest(ctx context.Context, method, url string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, method, url, body)
+func (c *Client) doRequest(ctx context.Context, method WebdavMethod, url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, string(method), url, body)
 	if err != nil {
 		return nil, err
 	}
 	if c.Username != "" && c.Password != "" {
 		req.SetBasicAuth(c.Username, c.Password)
 	}
-	if length := ctx.Value(types.ContextKeyContentLength); length != nil {
-		if l, ok := length.(int64); ok {
-			req.ContentLength = l
+	if method == WebdavMethodPropfind {
+		req.Header.Set("Depth", "1")
+	}
+	if method == WebdavMethodPut && ctx != nil {
+		if length := ctx.Value(types.ContextKeyContentLength); length != nil {
+			if l, ok := length.(int64); ok {
+				req.ContentLength = l
+			}
 		}
 	}
 	return c.httpClient.Do(req)
@@ -50,7 +63,7 @@ func (c *Client) doRequest(ctx context.Context, method, url string, body io.Read
 
 func (c *Client) Exists(ctx context.Context, remotePath string) (bool, error) {
 	url := c.BaseURL + remotePath
-	resp, err := c.doRequest(ctx, "PROPFIND", url, nil)
+	resp, err := c.doRequest(ctx, WebdavMethodPropfind, url, nil)
 	if err != nil {
 		return false, err
 	}
@@ -86,7 +99,7 @@ func (c *Client) MkDir(ctx context.Context, dirPath string) error {
 			continue
 		}
 		url := c.BaseURL + currentPath
-		resp, err := c.doRequest(ctx, "MKCOL", url, nil)
+		resp, err := c.doRequest(ctx, WebdavMethodMkcol, url, nil)
 		if err != nil {
 			return err
 		}
@@ -101,7 +114,7 @@ func (c *Client) MkDir(ctx context.Context, dirPath string) error {
 
 func (c *Client) WriteFile(ctx context.Context, remotePath string, content io.Reader) error {
 	url := c.BaseURL + remotePath
-	resp, err := c.doRequest(ctx, "PUT", url, content)
+	resp, err := c.doRequest(ctx, WebdavMethodPut, url, content)
 	if err != nil {
 		return err
 	}
