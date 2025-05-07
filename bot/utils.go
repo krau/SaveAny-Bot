@@ -182,6 +182,9 @@ func FileFromMessage(ctx *ext.Context, chatID int64, messageID int, customFileNa
 	key := fmt.Sprintf("file:%d:%d", chatID, messageID)
 	cachedFile, err := common.CacheGet[*types.File](ctx, key)
 	if err == nil {
+		if customFileName != "" {
+			cachedFile.FileName = customFileName
+		}
 		return cachedFile, nil
 	}
 	common.Log.Debugf("Getting file: %s", key)
