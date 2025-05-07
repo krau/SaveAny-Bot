@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/krau/SaveAny-Bot/types"
@@ -113,8 +115,13 @@ func (c *Client) MkDir(ctx context.Context, dirPath string) error {
 }
 
 func (c *Client) WriteFile(ctx context.Context, remotePath string, content io.Reader) error {
-	url := c.BaseURL + remotePath
-	resp, err := c.doRequest(ctx, WebdavMethodPut, url, content)
+	u, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return err
+	}
+	parts := strings.Split(strings.Trim(remotePath, "/"), "/")
+	u.Path = path.Join(u.Path, strings.Join(parts, "/"))
+	resp, err := c.doRequest(ctx, WebdavMethodPut, u.String(), content)
 	if err != nil {
 		return err
 	}
@@ -124,4 +131,5 @@ func (c *Client) WriteFile(ctx context.Context, remotePath string, content io.Re
 		return nil
 	}
 	return fmt.Errorf("PUT: %s", resp.Status)
+
 }
