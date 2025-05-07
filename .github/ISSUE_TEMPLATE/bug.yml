@@ -1,0 +1,35 @@
+name: "👾 报告 bug"
+description: "报告 bug"
+labels:
+  - ":space_invader: Bug"
+assignees:
+  - krau
+body:
+  - type: textarea
+    attributes:
+      label: "👾 问题描述"
+      description: "What happened?"
+      placeholder: "When called ... happens ..."
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: "⚡️ 预期行为"
+      description: "What was expected?"
+      placeholder: "It should be ..."
+  - type: textarea
+    attributes:
+      label: "📄 配置文件"
+      description: "Please provide your config file"
+      placeholder: "请自行隐去密钥信息"
+      render: toml
+  - type: textarea
+    attributes:
+      label: "🔍 日志"
+      description: "Please provide logs"
+      placeholder: "可删除隐私信息"
+      render: shell
+  - type: markdown
+    attributes:
+      value: |
+        ## Thank you for contributing to the project :slightly_smiling_face:

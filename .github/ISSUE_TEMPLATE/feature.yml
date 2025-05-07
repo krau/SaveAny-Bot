@@ -1,0 +1,33 @@
+name: "⭐️ 功能请求"
+description: "功能请求"
+labels:
+  - ":fire: Enhancement"
+assignees:
+  - krau
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 请详细描述你想要的功能
+  - type: textarea
+    attributes:
+      label: "⭐️ Feature description"
+      description: "What new feature you want to see?"
+      placeholder: "Add ... in order to ..."
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: "🌈 Your view"
+      description: "How do you see this feature will be used and/or implemented?"
+      placeholder: "It should be like ..."
+  - type: textarea
+    attributes:
+      label: "🧐 Code example"
+      description: "You can provide code (or pseudocode) example"
+      placeholder: "Cool code that will work ..."
+      render: Go
+  - type: markdown
+    attributes:
+      value: |
+        ## Thank you for contributing to the project :slightly_smiling_face:

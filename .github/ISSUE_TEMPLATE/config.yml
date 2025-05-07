@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 不知道如何正确使用?
+    url: https://github.com/krau/SaveAny-Bot/discussions
+    about: "前往讨论区提问"
+  - name: 📄 文档
+    url: https://sabot.unv.app
+    about: "查看文档"
