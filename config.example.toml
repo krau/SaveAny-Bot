@@ -10,19 +10,36 @@ stream = false # 使用stream模式, 详情请查看文档
 token = ""
 # Telegram API 配置, 若不配置也可运行, 将使用默认的 API ID 和 API HASH
 # 推荐使用自己的 API ID 和 API HASH (https://my.telegram.org)
-# app_id = 123456
-# app_hash = "0123456789abcdef0123456789abcdef"
+# app_id = 1025907
+# app_hash = "452b0359b988148995f22ff0f4229750"
 
 # 初始化超时时间, 单位: 秒
 timeout = 60
+
+# flood_retry = 5
+# rpc_retry = 5
 
 [telegram.proxy]
 # 启用代理连接 telegram, 只支持 socks5
 enable = false
 url = "socks5://127.0.0.1:7890"
 
+# 用户列表
+[[users]]
+# telegram user id
+id = 114514
+# 使用黑名单模式，开启后下方留空以使用所有存储，反之则为白名单，白名单请在下方输入允许的存储名
+blacklist = true
+# 将列表留空并开启黑名单模式以允许使用所有存储，此处示例为黑名单模式，用户 114514 可使用所有存储
+storages = []
 
-# 存储配置列表
+[[users]]
+id = 123456
+blacklist = false  # 使用白名单模式，此时，用户123456 仅可使用下方列表中的存储
+# 此时该用户只能使用名为 本机1 的存储
+storages = ["本机1"]
+
+# 存储列表
 [[storages]]
 # 标识名, 需要唯一
 name = "本机1"
@@ -41,7 +58,9 @@ base_path = '/'
 url = 'https://alist.com'
 username = 'admin'
 password = 'password'
-token_exp = 86400  # 86400--1天   604800--7天   1296000--15天   2592000--30天   15552000--180天
+# alist token 刷新时间 
+# 86400--1天   604800--7天   1296000--15天   2592000--30天   15552000--180天
+token_exp = 86400  
 # alist 可直接使用 token 登录, 此时 username, password, token_exp 将被忽略
 # 请自行在 alist 侧配置合理的 token 过期时间
 # token = ""
@@ -66,23 +85,6 @@ secret_access_key = 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
 bucket_name = 'saveanybot'
 base_path = '/path/telegram'
 
-# 用户列表
-[[users]]
-# telegram user id
-id = 114514
-# 开启黑名单，开启后下方留空以使用所有存储，反之则为白名单，白名单请在下方输入允许的存储名
-blacklist = true
-# 将列表留空并开启黑名单模式以允许使用所有存储，此处示例为黑名单模式，用户114514 可使用所有存储
-storages = []
-
-
-[[users]]
-id = 123456
-blacklist = false  #开启白名单模式，此时，用户123456 仅可使用下方列表中的存储
-# 此时该用户只能使用名为 本机1 的存储
-storages = ["本机1"]
-
-
 
 # 其他配置
 
@@ -98,3 +100,5 @@ storages = ["本机1"]
 
 # [db]
 # path = "data/data.db" # 数据库文件路径
+# session = "data/session.db"
+

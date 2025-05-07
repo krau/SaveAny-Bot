@@ -56,10 +56,11 @@ func Init() {
 			config.Cfg.Telegram.AppHash,
 			gotgproto.ClientTypeBot(config.Cfg.Telegram.Token),
 			&gotgproto.ClientOpts{
-				Session:          sessionMaker.SqlSession(sqlite.Open("data/session.db")),
+				Session:          sessionMaker.SqlSession(sqlite.Open(config.Cfg.DB.Session)),
 				DisableCopyright: true,
 				Middlewares:      FloodWaitMiddleware(),
 				Resolver:         resolver,
+				MaxRetries:       config.Cfg.Telegram.RpcRetry,
 			},
 		)
 		if err != nil {

@@ -14,7 +14,7 @@ import (
 )
 
 func FloodWaitMiddleware() []telegram.Middleware {
-	waiter := floodwait.NewSimpleWaiter().WithMaxRetries(5)
+	waiter := floodwait.NewSimpleWaiter().WithMaxRetries(uint(config.Cfg.Telegram.FloodRetry))
 	ratelimiter := ratelimit.New(rate.Every(time.Millisecond*100), 5)
 	return []telegram.Middleware{
 		waiter,

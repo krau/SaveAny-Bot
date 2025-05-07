@@ -38,19 +38,19 @@ type logConfig struct {
 }
 
 type dbConfig struct {
-	Path   string `toml:"path" mapstructure:"path"`
-	Expire int64  `toml:"expire" mapstructure:"expire"`
+	Path    string `toml:"path" mapstructure:"path"`
+	Session string `toml:"session" mapstructure:"session"`
+	Expire  int64  `toml:"expire" mapstructure:"expire"`
 }
 
 type telegramConfig struct {
-	Token   string      `toml:"token" mapstructure:"token"`
-	AppID   int         `toml:"app_id" mapstructure:"app_id" json:"app_id"`
-	AppHash string      `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
-	Timeout int         `toml:"timeout" mapstructure:"timeout" json:"timeout"`
-	Proxy   proxyConfig `toml:"proxy" mapstructure:"proxy"`
-
-	// Deprecated
-	Admins []int64 `toml:"admins" mapstructure:"admins"`
+	Token      string      `toml:"token" mapstructure:"token"`
+	AppID      int         `toml:"app_id" mapstructure:"app_id" json:"app_id"`
+	AppHash    string      `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
+	Timeout    int         `toml:"timeout" mapstructure:"timeout" json:"timeout"`
+	Proxy      proxyConfig `toml:"proxy" mapstructure:"proxy"`
+	FloodRetry int         `toml:"flood_retry" mapstructure:"flood_retry" json:"flood_retry"`
+	RpcRetry   int         `toml:"rpc_retry" mapstructure:"rpc_retry" json:"rpc_retry"`
 }
 
 type proxyConfig struct {
@@ -86,6 +86,8 @@ func Init() error {
 	viper.SetDefault("telegram.app_id", 1025907)
 	viper.SetDefault("telegram.app_hash", "452b0359b988148995f22ff0f4229750")
 	viper.SetDefault("telegram.timeout", 60)
+	viper.SetDefault("telegram.flood_retry", 5)
+	viper.SetDefault("telegram.rpc_retry", 5)
 
 	viper.SetDefault("temp.base_path", "cache/")
 	viper.SetDefault("temp.cache_ttl", 3600)
@@ -95,6 +97,7 @@ func Init() error {
 	viper.SetDefault("log.backup_count", 7)
 
 	viper.SetDefault("db.path", "data/saveany.db")
+	viper.SetDefault("db.session", "data/session.db")
 	viper.SetDefault("db.expire", 86400*5)
 
 	if err := viper.SafeWriteConfigAs("config.toml"); err != nil {
@@ -149,7 +152,6 @@ func Init() error {
 			userStorages[user.ID] = user.Storages
 		}
 	}
-
 
 	return nil
 }
