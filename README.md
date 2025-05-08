@@ -26,7 +26,7 @@
 
 ## Contributors
 
-<!-- readme: contributors,AHCorn -start -->
+<!-- readme: contributors -start -->
 <table>
 	<tbody>
 		<tr>
@@ -61,7 +61,7 @@
 		</tr>
 	<tbody>
 </table>
-<!-- readme: contributors,AHCorn -end -->
+<!-- readme: contributors -end -->
 
 ## Thanks
 
