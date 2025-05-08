@@ -90,11 +90,9 @@ func Init() error {
 	viper.SetDefault("telegram.rpc_retry", 5)
 
 	viper.SetDefault("temp.base_path", "cache/")
-	viper.SetDefault("temp.cache_ttl", 3600)
+	viper.SetDefault("temp.cache_ttl", 30)
 
 	viper.SetDefault("log.level", "INFO")
-	viper.SetDefault("log.file", "logs/saveany.log")
-	viper.SetDefault("log.backup_count", 7)
 
 	viper.SetDefault("db.path", "data/saveany.db")
 	viper.SetDefault("db.session", "data/session.db")

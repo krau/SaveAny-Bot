@@ -25,15 +25,16 @@ func InitLogger() {
 		}
 	}
 	consoleH := handler.NewConsoleHandler(logLevels)
-	fileH, err := handler.NewTimeRotateFile(
-		logFilePath,
-		rotatefile.EveryDay,
-		handler.WithLogLevels(slog.AllLevels),
-		handler.WithBackupNum(logBackupNum),
-		handler.WithBuffSize(0),
-	)
-	if err != nil {
-		panic(err)
+	Log.AddHandler(consoleH)
+	if logFilePath != "" && logBackupNum > 0 {
+		fileH, err := handler.NewTimeRotateFile(
+			logFilePath,
+			rotatefile.EveryDay,
+			handler.WithLogLevels(slog.AllLevels),
+			handler.WithBackupNum(logBackupNum))
+		if err != nil {
+			panic(err)
+		}
+		Log.AddHandler(fileH)
 	}
-	Log.AddHandlers(consoleH, fileH)
 }
