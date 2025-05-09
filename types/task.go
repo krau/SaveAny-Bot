@@ -20,6 +20,7 @@ type Task struct {
 	StorageName string
 	StoragePath string
 	StartTime   time.Time
+	FileDBID    uint
 
 	File          *File
 	FileMessageID int

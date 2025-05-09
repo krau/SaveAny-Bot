@@ -117,7 +117,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 	if update.CallbackQuery.MsgID != record.ReplyMessageID {
 		record.ReplyMessageID = update.CallbackQuery.MsgID
 		if err := dao.SaveReceivedFile(record); err != nil {
-			common.Log.Errorf("更新接收的文件失败: %s", err)
+			common.Log.Errorf("更新记录失败: %s", err)
 		}
 	}
 
@@ -169,6 +169,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		task = types.Task{
 			Ctx:            ctx,
 			Status:         types.Pending,
+			FileDBID:       record.ID,
 			File:           file,
 			StorageName:    storageName,
 			FileChatID:     record.ChatID,
