@@ -1,7 +1,7 @@
 name: "👾 报告 bug"
 description: "报告 bug"
 labels:
-  - ":space_invader: Bug"
+  - "bug"
 assignees:
   - krau
 body:
