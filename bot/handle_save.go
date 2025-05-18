@@ -256,7 +256,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		successadd++
 	}
 	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-		Message: fmt.Sprintf("批量保存完成\n成功添加: %d/%d\n获取文件失败: %d\n获取消息失败: %d\n保存数据库失败: %d", successadd, total, failedGetFile, failedGetMsg, failedSaveDB),
+		Message: fmt.Sprintf("批量添加任务完成\n成功添加: %d/%d\n获取文件失败: %d\n获取消息失败: %d\n保存数据库失败: %d", successadd, total, failedGetFile, failedGetMsg, failedSaveDB),
 		ID:      replied.ID,
 	})
 	return dispatcher.EndGroups
