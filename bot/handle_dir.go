@@ -77,7 +77,7 @@ func dirCmd(ctx *ext.Context, update *ext.Update) error {
 			ctx.Reply(update, ext.ReplyTextString("路径ID无效"), nil)
 			return dispatcher.EndGroups
 		}
-		return delDir(ctx, update, user, dirID)
+		return delDir(ctx, update, dirID)
 	default:
 		ctx.Reply(update, ext.ReplyTextString("未知操作"), nil)
 		return dispatcher.EndGroups
@@ -99,7 +99,7 @@ func addDir(ctx *ext.Context, update *ext.Update, user *dao.User, storageName, p
 	return dispatcher.EndGroups
 }
 
-func delDir(ctx *ext.Context, update *ext.Update, user *dao.User, dirID int) error {
+func delDir(ctx *ext.Context, update *ext.Update, dirID int) error {
 	if err := dao.DeleteDirByID(uint(dirID)); err != nil {
 		common.Log.Errorf("删除路径失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("删除路径失败"), nil)

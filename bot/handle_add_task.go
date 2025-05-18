@@ -22,7 +22,6 @@ import (
 )
 
 func AddToQueue(ctx *ext.Context, update *ext.Update) error {
-	// TODO: 回调数据用户独立鉴权 (处理 bot 在群聊中的情况)
 	if !slice.Contain(config.Cfg.GetUsersID(), update.CallbackQuery.UserID) {
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.QueryID,
