@@ -1,0 +1,13 @@
+services:
+  saveany-bot:
+    build: .
+    container_name: saveany-bot
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./config.toml:/app/config.toml
+      - ./downloads:/app/downloads
+      - ./cache:/app/cache
+    # 使用 host 模式以便访问宿主机服务 (如代理)
+    # 如果你对 Docker 网络模式熟悉, 可以自行修改
+    network_mode: host

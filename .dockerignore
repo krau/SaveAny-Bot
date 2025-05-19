@@ -1,7 +1,11 @@
 *.md
 .git
-.github
+.github/
 .gitignore
-.vscode
+.vscode/
+downloads/
+data/
+cache/
 docs
-docker-compose.yml
+config.example.toml
+docker-compose.*
