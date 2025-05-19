@@ -1,7 +1,7 @@
 FROM golang:alpine AS builder
 
 ARG VERSION="dev"
-ARG GiTCommit="Unknown"
+ARG GitCommit="Unknown"
 ARG BuildTime="Unknown"
 
 WORKDIR /app
