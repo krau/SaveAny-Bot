@@ -47,7 +47,7 @@ func Run(_ *cobra.Command, _ []string) {
 			return
 		}
 		common.Log.Info("正在清理缓存文件夹: ", cachePath)
-		if err := os.RemoveAll(cachePath); err != nil {
+		if err := common.RemoveAllInDir(cachePath); err != nil {
 			common.Log.Error("清理缓存失败: ", err)
 		}
 	}
