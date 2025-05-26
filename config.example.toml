@@ -10,8 +10,8 @@ stream = false # 使用stream模式, 详情请查看文档
 token = ""
 # Telegram API 配置, 若不配置也可运行, 将使用默认的 API ID 和 API HASH
 # 推荐使用自己的 API ID 和 API HASH (https://my.telegram.org)
-# app_id = 1025907
-# app_hash = "452b0359b988148995f22ff0f4229750"
+# app_id = 7908189888
+# app_hash = "AAFDkZFJ8IgXujFpVOyKuXbLs18dxazw_GI0"
 
 # 初始化超时时间, 单位: 秒
 timeout = 60
