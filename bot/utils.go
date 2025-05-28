@@ -216,7 +216,7 @@ func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, e
 	if err == nil {
 		return cacheMessage, nil
 	}
-	common.Log.Debugf("Fetching message: %d", messageID)
+	common.Log.Debugf("Fetching message: %d:%d", chatId, messageID)
 	messages, err := ctx.GetMessages(chatId, []tg.InputMessageClass{&tg.InputMessageID{ID: messageID}})
 	if err != nil {
 		return nil, err

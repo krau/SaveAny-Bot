@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -18,47 +19,47 @@ var (
 	linkRegex       = regexp.MustCompile(linkRegexString)
 )
 
+func parseLink(ctx *ext.Context, link string) (chatID int64, messageID int, err error) {
+	strSlice := strings.Split(link, "/")
+	if len(strSlice) < 3 {
+		return 0, 0, fmt.Errorf("链接格式错误: %s", link)
+	}
+	messageID, err = strconv.Atoi(strSlice[len(strSlice)-1])
+	if err != nil {
+		return 0, 0, fmt.Errorf("无法解析消息 ID: %s", err)
+	}
+	if len(strSlice) == 3 {
+		chatUsername := strSlice[1]
+		linkChat, err := ctx.ResolveUsername(chatUsername)
+		if err != nil {
+			return 0, 0, fmt.Errorf("解析用户名失败: %s", err)
+		}
+		if linkChat == nil {
+			return 0, 0, fmt.Errorf("找不到该聊天: %s", chatUsername)
+		}
+		chatID = linkChat.GetID()
+	} else if len(strSlice) == 4 {
+		chatIDInt, err := strconv.Atoi(strSlice[2])
+		if err != nil {
+			return 0, 0, fmt.Errorf("无法解析 Chat ID: %s", err)
+		}
+		chatID = int64(chatIDInt)
+	} else {
+		return 0, 0, fmt.Errorf("无效的链接: %s", link)
+	}
+	return chatID, messageID, nil
+}
+
 func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 	common.Log.Trace("Got link message")
 	link := linkRegex.FindString(update.EffectiveMessage.Text)
 	if link == "" {
 		return dispatcher.ContinueGroups
 	}
-	strSlice := strings.Split(link, "/")
-	if len(strSlice) < 3 {
-		return dispatcher.ContinueGroups
-	}
-	messageID, err := strconv.Atoi(strSlice[len(strSlice)-1])
+	linkChatID, messageID, err := parseLink(ctx, link)
 	if err != nil {
-		common.Log.Errorf("解析消息 ID 失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("无法解析消息 ID"), nil)
-		return dispatcher.EndGroups
-	}
-	var linkChatID int64
-	if len(strSlice) == 3 {
-		chatUsername := strSlice[1]
-		linkChat, err := ctx.ResolveUsername(chatUsername)
-		if err != nil {
-			common.Log.Errorf("解析用户名失败: %s", err)
-			ctx.Reply(update, ext.ReplyTextString("解析用户名失败"), nil)
-			return dispatcher.EndGroups
-		}
-		if linkChat == nil {
-			common.Log.Errorf("无法找到聊天: %s", chatUsername)
-			ctx.Reply(update, ext.ReplyTextString("无法找到聊天"), nil)
-			return dispatcher.EndGroups
-		}
-		linkChatID = linkChat.GetID()
-	} else if len(strSlice) == 4 {
-		chatID, err := strconv.Atoi(strSlice[2])
-		if err != nil {
-			common.Log.Errorf("解析 Chat ID 失败: %s", err)
-			ctx.Reply(update, ext.ReplyTextString("解析 Chat ID 失败"), nil)
-			return dispatcher.EndGroups
-		}
-		linkChatID = int64(chatID)
-	} else {
-		ctx.Reply(update, ext.ReplyTextString("无法解析链接"), nil)
+		common.Log.Errorf("解析链接失败: %s", err)
+		ctx.Reply(update, ext.ReplyTextString("解析链接失败: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}
 
