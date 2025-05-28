@@ -29,5 +29,6 @@ func RegisterHandlers(dispatcher dispatcher.Dispatcher) {
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), AddToQueue))
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("set_default"), setDefaultStorage))
 	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cancel"), cancelTask))
+	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("send_here"), sendFileToTelegram))
 	dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, handleFileMessage))
 }

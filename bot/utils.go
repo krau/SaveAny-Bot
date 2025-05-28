@@ -71,6 +71,14 @@ func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*t
 		row.Buttons = buttons[i:min(i+3, len(buttons))]
 		markup.Rows = append(markup.Rows, row)
 	}
+	markup.Rows = append(markup.Rows, tg.KeyboardButtonRow{
+		Buttons: []tg.KeyboardButtonClass{
+			&tg.KeyboardButtonCallback{
+				Text: "发送到当前聊天",
+				Data: []byte(fmt.Sprintf("send_here %d %d", fileChatID, fileMessageID)),
+			},
+		},
+	})
 	return markup, nil
 }
 
