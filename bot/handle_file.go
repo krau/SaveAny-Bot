@@ -8,7 +8,6 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/dao"
-	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
 )
 
@@ -28,11 +27,11 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
-	storages := storage.GetUserStorages(user.ChatID)
-	if len(storages) == 0 {
-		ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
-		return dispatcher.EndGroups
-	}
+	// storages := storage.GetUserStorages(user.ChatID)
+	// if len(storages) == 0 {
+	// 	ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
+	// 	return dispatcher.EndGroups
+	// }
 
 	msg, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)
 	if err != nil {

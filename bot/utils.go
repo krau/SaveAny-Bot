@@ -49,9 +49,9 @@ func getSelectStorageMarkup(userChatID int64, fileChatID, fileMessageID int) (*t
 		return nil, fmt.Errorf("failed to get user by chat ID: %d, error: %w", userChatID, err)
 	}
 	storages := storage.GetUserStorages(user.ChatID)
-	if len(storages) == 0 {
-		return nil, ErrNoStorages
-	}
+	// if len(storages) == 0 {
+	// 	return nil, ErrNoStorages
+	// }
 
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range storages {

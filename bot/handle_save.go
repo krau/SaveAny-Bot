@@ -63,12 +63,11 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	storages := storage.GetUserStorages(user.ChatID)
-
-	if len(storages) == 0 {
-		ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
-		return dispatcher.EndGroups
-	}
+	// storages := storage.GetUserStorages(user.ChatID)
+	// if len(storages) == 0 {
+	// 	ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
+	// 	return dispatcher.EndGroups
+	// }
 
 	msg, err := GetTGMessage(ctx, update.EffectiveChat().GetID(), replyToMsgID)
 	if err != nil {
