@@ -45,10 +45,10 @@ func tryCopyMedia(ctx *ext.Context, update *ext.Update) {
 	if !config.Cfg.AsPublicCopyMediaBot {
 		return
 	}
-	if update.EffectiveMessage == nil || update.EffectiveMessage.Message == nil || update.EffectiveMessage.Media == nil {
+	if update.EffectiveMessage == nil || update.EffectiveMessage.Message == nil {
 		return
 	}
-	common.Log.Tracef("Got media from %d: %s", update.EffectiveChat().GetID(), update.EffectiveMessage.Media.TypeName())
+	common.Log.Tracef("Got copy media request from %d", update.EffectiveChat().GetID())
 	msg := update.EffectiveMessage.Message
 	if link := linkRegex.FindString(update.EffectiveMessage.Text); link != "" {
 		linkChatID, messageID, err := parseLink(ctx, link)
@@ -64,5 +64,7 @@ func tryCopyMedia(ctx *ext.Context, update *ext.Update) {
 		}
 		msg = fileMessage
 	}
-	copyMediaToChat(ctx, msg, update.EffectiveChat().GetID())
+	if _, err := copyMediaToChat(ctx, msg, update.EffectiveChat().GetID()); err != nil {
+		common.Log.Errorf("Failed to copy media: %v", err)
+	}
 }
