@@ -49,14 +49,15 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 		file.FileName = GenFileNameFromMessage(*update.EffectiveMessage.Message, file)
 	}
 
-	if err := dao.SaveReceivedFile(&dao.ReceivedFile{
+	record, err := dao.SaveReceivedFile(&dao.ReceivedFile{
 		Processing:     false,
 		FileName:       file.FileName,
 		ChatID:         update.EffectiveChat().GetID(),
 		MessageID:      update.EffectiveMessage.ID,
 		ReplyMessageID: msg.ID,
 		ReplyChatID:    update.GetUserChat().GetID(),
-	}); err != nil {
+	})
+	if err != nil {
 		common.Log.Errorf("添加接收的文件失败: %s", err)
 		if _, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message: fmt.Sprintf("添加接收的文件失败: %s", err),
@@ -73,6 +74,7 @@ func handleFileMessage(ctx *ext.Context, update *ext.Update) error {
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
 		Status:         types.Pending,
+		FileDBID:       record.ID,
 		File:           file,
 		StorageName:    user.DefaultStorage,
 		FileChatID:     update.EffectiveChat().GetID(),

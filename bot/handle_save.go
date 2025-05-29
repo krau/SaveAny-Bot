@@ -113,7 +113,8 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 		ReplyChatID:    update.GetUserChat().GetID(),
 	}
 
-	if err := dao.SaveReceivedFile(receivedFile); err != nil {
+	record, err := dao.SaveReceivedFile(receivedFile)
+	if err != nil {
 		common.Log.Errorf("保存接收的文件失败: %s", err)
 		if _, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message: fmt.Sprintf("保存接收的文件失败: %s", err),
@@ -129,6 +130,7 @@ func saveCmd(ctx *ext.Context, update *ext.Update) error {
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
 		Status:         types.Pending,
+		FileDBID:       record.ID,
 		File:           file,
 		StorageName:    user.DefaultStorage,
 		FileChatID:     update.EffectiveChat().GetID(),
@@ -235,7 +237,8 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 			ReplyChatID:    update.GetUserChat().GetID(),
 			ReplyMessageID: 0,
 		}
-		if err := dao.SaveReceivedFile(receivedFile); err != nil {
+		record, err := dao.SaveReceivedFile(receivedFile)
+		if err != nil {
 			common.Log.Errorf("保存接收的文件失败: %s", err)
 			failedSaveDB++
 			continue
@@ -243,6 +246,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		task := &types.Task{
 			Ctx:            ctx,
 			Status:         types.Pending,
+			FileDBID:       record.ID,
 			File:           file,
 			StorageName:    user.DefaultStorage,
 			FileChatID:     chatID,

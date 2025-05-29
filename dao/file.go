@@ -1,11 +1,12 @@
 package dao
 
-func SaveReceivedFile(receivedFile *ReceivedFile) error {
+func SaveReceivedFile(receivedFile *ReceivedFile) (*ReceivedFile, error) {
 	record, err := GetReceivedFileByChatAndMessageID(receivedFile.ChatID, receivedFile.MessageID)
 	if err == nil {
 		receivedFile.ID = record.ID
 	}
-	return db.Save(receivedFile).Error
+	db.Save(receivedFile)
+	return receivedFile, db.Error
 }
 
 func GetReceivedFileByChatAndMessageID(chatID int64, messageID int) (*ReceivedFile, error) {

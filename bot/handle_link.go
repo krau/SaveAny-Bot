@@ -100,7 +100,8 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		ReplyMessageID: replied.ID,
 		ReplyChatID:    update.GetUserChat().GetID(),
 	}
-	if err := dao.SaveReceivedFile(receivedFile); err != nil {
+	record, err := dao.SaveReceivedFile(receivedFile)
+	if err != nil {
 		common.Log.Errorf("保存接收的文件失败: %s", err)
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message: "无法保存文件: " + err.Error(),
@@ -114,6 +115,7 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 	return HandleSilentAddTask(ctx, update, user, &types.Task{
 		Ctx:            ctx,
 		Status:         types.Pending,
+		FileDBID:       record.ID,
 		File:           file,
 		StorageName:    user.DefaultStorage,
 		UserID:         user.ChatID,

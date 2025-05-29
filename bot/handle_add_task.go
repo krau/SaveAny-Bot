@@ -115,7 +115,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 	}
 	if update.CallbackQuery.MsgID != record.ReplyMessageID {
 		record.ReplyMessageID = update.CallbackQuery.MsgID
-		if err := dao.SaveReceivedFile(record); err != nil {
+		if _, err := dao.SaveReceivedFile(record); err != nil {
 			common.Log.Errorf("更新记录失败: %s", err)
 		}
 	}

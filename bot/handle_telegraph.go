@@ -89,7 +89,7 @@ func handleTelegraph(ctx *ext.Context, update *ext.Update) error {
 		IsTelegraph:    true,
 		TelegraphURL:   tgphUrl,
 	}
-	if err := dao.SaveReceivedFile(record); err != nil {
+	if _, err := dao.SaveReceivedFile(record); err != nil {
 		common.Log.Errorf("保存接收的文件失败: %s", err)
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			Message: "无法保存文件: " + err.Error(),
