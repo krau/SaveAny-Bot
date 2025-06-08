@@ -11,11 +11,12 @@ import (
 )
 
 type Config struct {
-	Workers      int  `toml:"workers" mapstructure:"workers"`
-	Retry        int  `toml:"retry" mapstructure:"retry"`
-	NoCleanCache bool `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
-	Threads      int  `toml:"threads" mapstructure:"threads" json:"threads"`
-	Stream       bool `toml:"stream" mapstructure:"stream" json:"stream"`
+	Lang         string `toml:"lang" mapstructure:"lang" json:"lang"`
+	Workers      int    `toml:"workers" mapstructure:"workers"`
+	Retry        int    `toml:"retry" mapstructure:"retry"`
+	NoCleanCache bool   `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
+	Threads      int    `toml:"threads" mapstructure:"threads" json:"threads"`
+	Stream       bool   `toml:"stream" mapstructure:"stream" json:"stream"`
 
 	// Experimental: 将拷贝媒体文件的功能设为公开可用
 	AsPublicCopyMediaBot bool `toml:"as_public_copy_media_bot" mapstructure:"as_public_copy_media_bot" json:"as_public_copy_media_bot"`
@@ -81,6 +82,8 @@ func Init() error {
 	viper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
+
+	viper.SetDefault("lang", "zh-Hans")
 
 	viper.SetDefault("workers", 3)
 	viper.SetDefault("retry", 3)

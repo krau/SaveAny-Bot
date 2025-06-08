@@ -1,0 +1,16 @@
+[initing]
+other = "正在启动..."
+[exiting]
+other = "正在退出..."
+[bye]
+other = "已退出"
+[InvalidCacheDir]
+other = "无效的缓存文件夹: {{.Path}}"
+[GetWorkdirFailed]
+other = "获取工作目录失败: {{.Error}}"
+[GetCacheAbsPathFailed]
+other = "获取缓存绝对路径失败: {{.Error}}"
+[CleaningCache]
+other = "正在清理缓存文件夹: {{.Path}}"
+[CleanCacheFailed]
+other = "清理缓存失败: {{.Error}}"
