@@ -35,6 +35,6 @@ Save Any Bot - 转存你的 Telegram 文件
 `
 
 func help(ctx *ext.Context, update *ext.Update) error {
-	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf(helpText, common.Version, common.GitCommit[:7])), nil)
+	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf(helpText, common.Version, common.GitCommit)), nil)
 	return dispatcher.EndGroups
 }
