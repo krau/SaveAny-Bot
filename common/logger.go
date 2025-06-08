@@ -13,7 +13,6 @@ func InitLogger() {
 	if Log != nil {
 		return
 	}
-	slog.DefaultChannelName = "SaveAnyBot"
 	Log = slog.New()
 	logLevel := slog.LevelByName(config.Cfg.Log.Level)
 	logFilePath := config.Cfg.Log.File
@@ -24,14 +23,18 @@ func InitLogger() {
 			logLevels = append(logLevels, level)
 		}
 	}
+	tem := "[{{datetime}}] [{{level}}] [{{caller}}] {{message}} {{data}} {{extra}}\n"
 	consoleH := handler.NewConsoleHandler(logLevels)
+	consoleH.Formatter().(*slog.TextFormatter).SetTemplate(tem)
 	Log.AddHandler(consoleH)
 	if logFilePath != "" && logBackupNum > 0 {
 		fileH, err := handler.NewTimeRotateFile(
 			logFilePath,
 			rotatefile.EveryDay,
 			handler.WithLogLevels(slog.AllLevels),
-			handler.WithBackupNum(logBackupNum))
+			handler.WithBackupNum(logBackupNum),
+		)
+		fileH.Formatter().(*slog.TextFormatter).SetTemplate(tem)
 		if err != nil {
 			panic(err)
 		}
