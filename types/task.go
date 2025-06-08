@@ -13,15 +13,16 @@ import (
 )
 
 type Task struct {
-	Ctx         context.Context
-	Cancel      context.CancelFunc
-	Error       error
-	Status      TaskStatus
-	StorageName string
-	StoragePath string
-	StartTime   time.Time
-	FileDBID    uint
+	Ctx           context.Context
+	Cancel        context.CancelFunc
+	Error         error
+	UseUserClient bool
+	Status        TaskStatus
+	StorageName   string
+	StoragePath   string
+	StartTime     time.Time
 
+	FileDBID      uint
 	File          *File
 	FileMessageID int
 	FileChatID    int64

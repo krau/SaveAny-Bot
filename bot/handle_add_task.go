@@ -18,6 +18,7 @@ import (
 	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/queue"
 	"github.com/krau/SaveAny-Bot/types"
+	"github.com/krau/SaveAny-Bot/userclient"
 	"gorm.io/gorm"
 )
 
@@ -153,7 +154,14 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 			task.StoragePath = path.Join(dir.Path, record.FileName)
 		}
 	} else {
-		file, err := FileFromMessage(ctx, record.ChatID, record.MessageID, record.FileName)
+		var file *types.File
+		var err error
+		if record.UseUserClient && userclient.UC != nil {
+			uctx := userclient.UC.CreateContext()
+			file, err = FileFromMessage(uctx, record.ChatID, record.MessageID, record.FileName)
+		} else {
+			file, err = FileFromMessage(ctx, record.ChatID, record.MessageID, record.FileName)
+		}
 		if err != nil {
 			common.Log.Errorf("获取消息中的文件失败: %s", err)
 			ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
@@ -168,6 +176,7 @@ func AddToQueue(ctx *ext.Context, update *ext.Update) error {
 		task = types.Task{
 			Ctx:            ctx,
 			Status:         types.Pending,
+			UseUserClient:  record.UseUserClient,
 			FileDBID:       record.ID,
 			File:           file,
 			StorageName:    storageName,

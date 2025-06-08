@@ -22,6 +22,7 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
+	"github.com/krau/SaveAny-Bot/userclient"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -62,8 +63,11 @@ func processPendingTask(task *types.Task) error {
 	if task.File.FileSize == 0 {
 		return processPhoto(task, taskStorage)
 	}
-
-	downloadBuilder := Downloader.Download(bot.Client.API(), task.File.Location).WithThreads(getTaskThreads(task.File.FileSize))
+	api := bot.Client.API()
+	if task.UseUserClient && userclient.UC != nil {
+		api = userclient.UC.API()
+	}
+	downloadBuilder := Downloader.Download(api, task.File.Location).WithThreads(getTaskThreads(task.File.FileSize))
 
 	notsupportStreamStorage, notsupportStream := taskStorage.(storage.StorageNotSupportStream)
 	cancelMarkUp := getCancelTaskMarkup(task)

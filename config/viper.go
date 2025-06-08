@@ -51,13 +51,19 @@ type dbConfig struct {
 }
 
 type telegramConfig struct {
-	Token      string      `toml:"token" mapstructure:"token"`
-	AppID      int         `toml:"app_id" mapstructure:"app_id" json:"app_id"`
-	AppHash    string      `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
-	Timeout    int         `toml:"timeout" mapstructure:"timeout" json:"timeout"`
-	Proxy      proxyConfig `toml:"proxy" mapstructure:"proxy"`
-	FloodRetry int         `toml:"flood_retry" mapstructure:"flood_retry" json:"flood_retry"`
-	RpcRetry   int         `toml:"rpc_retry" mapstructure:"rpc_retry" json:"rpc_retry"`
+	Token      string        `toml:"token" mapstructure:"token"`
+	AppID      int           `toml:"app_id" mapstructure:"app_id" json:"app_id"`
+	AppHash    string        `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
+	Timeout    int           `toml:"timeout" mapstructure:"timeout" json:"timeout"`
+	Proxy      proxyConfig   `toml:"proxy" mapstructure:"proxy"`
+	FloodRetry int           `toml:"flood_retry" mapstructure:"flood_retry" json:"flood_retry"`
+	RpcRetry   int           `toml:"rpc_retry" mapstructure:"rpc_retry" json:"rpc_retry"`
+	Userbot    userbotConfig `toml:"userbot" mapstructure:"userbot" json:"userbot"`
+}
+
+type userbotConfig struct {
+	Enable  bool   `toml:"enable" mapstructure:"enable"`
+	Session string `toml:"session" mapstructure:"session"`
 }
 
 type proxyConfig struct {
@@ -97,6 +103,8 @@ func Init() error {
 	viper.SetDefault("telegram.timeout", 60)
 	viper.SetDefault("telegram.flood_retry", 5)
 	viper.SetDefault("telegram.rpc_retry", 5)
+	viper.SetDefault("telegram.userbot.enable", false)
+	viper.SetDefault("telegram.userbot.session", "data/usersession.db")
 
 	viper.SetDefault("temp.base_path", "cache/")
 	viper.SetDefault("temp.cache_ttl", 30)

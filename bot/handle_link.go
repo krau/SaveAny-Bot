@@ -12,6 +12,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/dao"
 	"github.com/krau/SaveAny-Bot/types"
+	"github.com/krau/SaveAny-Bot/userclient"
 )
 
 var (
@@ -50,6 +51,31 @@ func parseLink(ctx *ext.Context, link string) (chatID int64, messageID int, err 
 	return chatID, messageID, nil
 }
 
+// use passed ctx client to fetch file from message,
+//
+// if failed try using userclient
+func tryFetchFileFromMessage(ctx *ext.Context, chatID int64, messageID int, fileName string) (*types.File, bool, error) {
+	file, err := FileFromMessage(ctx, chatID, messageID, fileName)
+	if err == nil {
+		return file, false, nil
+	}
+	if (strings.Contains(err.Error(), "peer not found") || strings.Contains(err.Error(), "unexpected message type")) && userclient.UC != nil {
+		common.Log.Warnf("无法获取文件 %d:%d, 尝试使用 userbot: %s", chatID, messageID, err)
+		uctx := userclient.GetCtx()
+		// TODO: 群组支持
+		file, err = FileFromMessage(uctx, chatID, messageID, fileName)
+		if err == nil {
+			return file, true, nil
+		}
+		return nil, true, err
+	}
+	return nil, false, err
+}
+
+func tryFetchMessage(ctx *ext.Context, chatID int64, messageID int) (*tg.Message, error) {
+	return GetTGMessage(ctx, chatID, messageID)
+}
+
 func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 	common.Log.Trace("Got link message")
 	link := linkRegex.FindString(update.EffectiveMessage.Text)
@@ -70,26 +96,25 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// storages := storage.GetUserStorages(user.ChatID)
-	// if len(storages) == 0 {
-	// 	ctx.Reply(update, ext.ReplyTextString("无可用的存储"), nil)
-	// 	return dispatcher.EndGroups
-	// }
-
 	replied, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件..."), nil)
 	if err != nil {
 		common.Log.Errorf("回复失败: %s", err)
 		return dispatcher.EndGroups
 	}
 
-	file, err := FileFromMessage(ctx, linkChatID, messageID, "")
+	file, useUserClient, err := tryFetchFileFromMessage(ctx, linkChatID, messageID, "")
 	if err != nil {
 		common.Log.Errorf("获取文件失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}
 	if file.FileName == "" {
-		file.FileName = GenFileNameFromMessage(*update.EffectiveMessage.Message, file)
+		msg, err := tryFetchMessage(ctx, linkChatID, messageID)
+		if err != nil {
+			file.FileName = fmt.Sprintf("%d_%d", linkChatID, messageID)
+		} else {
+			file.FileName = GenFileNameFromMessage(*msg, file)
+		}
 	}
 
 	receivedFile := &dao.ReceivedFile{
@@ -99,6 +124,7 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		MessageID:      messageID,
 		ReplyMessageID: replied.ID,
 		ReplyChatID:    update.GetUserChat().GetID(),
+		UseUserClient:  useUserClient,
 	}
 	record, err := dao.SaveReceivedFile(receivedFile)
 	if err != nil {
@@ -116,6 +142,7 @@ func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
 		Ctx:            ctx,
 		Status:         types.Pending,
 		FileDBID:       record.ID,
+		UseUserClient:  useUserClient,
 		File:           file,
 		StorageName:    user.DefaultStorage,
 		UserID:         user.ChatID,

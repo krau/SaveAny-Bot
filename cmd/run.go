@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -17,6 +18,7 @@ import (
 	"github.com/krau/SaveAny-Bot/i18n"
 	"github.com/krau/SaveAny-Bot/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/SaveAny-Bot/userclient"
 	"github.com/spf13/cobra"
 )
 
@@ -76,5 +78,15 @@ func InitAll() {
 	dao.Init()
 	storage.LoadStorages()
 	common.Init()
+	if config.Cfg.Telegram.Userbot.Enable {
+		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		defer cancel()
+		uc, err := userclient.Login(ctx)
+		if err != nil {
+			common.Log.Errorf("User client login failed: %s", err)
+			os.Exit(1)
+		}
+		common.Log.Infof("User client logged in as %s", uc.Self.FirstName)
+	}
 	bot.Init()
 }

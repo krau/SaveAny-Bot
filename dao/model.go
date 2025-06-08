@@ -16,6 +16,7 @@ type ReceivedFile struct {
 	FileName       string
 	IsTelegraph    bool
 	TelegraphURL   string
+	UseUserClient  bool // Whether to use userbot client to fetch the file
 }
 
 type User struct {
