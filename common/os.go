@@ -4,18 +4,30 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/krau/SaveAny-Bot/i18n"
+	"github.com/krau/SaveAny-Bot/i18n/i18nk"
 )
 
 func RmFileAfter(path string, td time.Duration) {
 	_, err := os.Stat(path)
 	if err != nil {
-		Log.Errorf("Failed to create timer for %s: %s", path, err)
+		Log.Errorf(i18n.T(i18nk.CreateRmTimerFailed, map[string]any{
+			"Path":  path,
+			"Error": err,
+		}))
 		return
 	}
-	Log.Debugf("Remove file after %s: %s", td, path)
+	Log.Debugf(i18n.T(i18nk.RemoveFileAfter, map[string]any{
+		"Duration": td.String(),
+		"Path":     path,
+	}))
 	time.AfterFunc(td, func() {
 		if err := os.Remove(path); err != nil {
-			Log.Errorf("Failed to remove file %s: %s", path, err)
+			Log.Errorf(i18n.T(i18nk.RemoveFileFailed, map[string]any{
+				"Path":  path,
+				"Error": err,
+			}))
 		}
 	})
 }

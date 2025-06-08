@@ -14,3 +14,15 @@ other = "获取缓存绝对路径失败: {{.Error}}"
 other = "正在清理缓存文件夹: {{.Path}}"
 [CleanCacheFailed]
 other = "清理缓存失败: {{.Error}}"
+[CreateRmTimerFailed]
+other = "创建清理定时器失败, 路径: {{.Path}}, 错误: {{.Error}}"
+[RemoveFileAfter]
+other = "将在 {{.Duration}} 后删除文件: {{.Path}}"
+[RemoveFileFailed]
+other = "删除文件失败: {{.Path}}, 错误: {{.Error}}"
+[LoadedStorages]
+other = "已加载 {{.Count}} 个存储"
+[ConfigInvalid.WorkersOrRetry]
+other = "配置无效: workers 或 retry 必须大于 0, 但当前值为: workers={{.Workers}}, retry={{.Retry}}"
+[ConfigInvalid.DuplicateStorageName]
+other = "存储名称重复: {{.Name}}"

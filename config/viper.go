@@ -1,12 +1,15 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/config/storage"
+	"github.com/krau/SaveAny-Bot/i18n"
+	"github.com/krau/SaveAny-Bot/i18n/i18nk"
 	"github.com/spf13/viper"
 )
 
@@ -131,18 +134,25 @@ func Init() error {
 	storageNames := make(map[string]struct{})
 	for _, storage := range Cfg.Storages {
 		if _, ok := storageNames[storage.GetName()]; ok {
-			return fmt.Errorf("重复的存储名: %s", storage.GetName())
+			return errors.New(i18n.TWithoutInit(Cfg.Lang, i18nk.ConfigInvalidDuplicateStorageName, map[string]any{
+				"Name": storage.GetName(),
+			}))
 		}
 		storageNames[storage.GetName()] = struct{}{}
 	}
 
-	fmt.Printf("已加载 %d 个存储:\n", len(Cfg.Storages))
+	fmt.Println(i18n.TWithoutInit(Cfg.Lang, i18nk.LoadedStorages, map[string]any{
+		"Count": len(Cfg.Storages),
+	}))
 	for _, storage := range Cfg.Storages {
 		fmt.Printf("  - %s (%s)\n", storage.GetName(), storage.GetType())
 	}
 
 	if Cfg.Workers < 1 || Cfg.Retry < 1 {
-		return fmt.Errorf("workers 和 retry 必须大于 0, 当前值: workers=%d, retry=%d", Cfg.Workers, Cfg.Retry)
+		return errors.New(i18n.TWithoutInit(Cfg.Lang, i18nk.ConfigInvalidWorkersOrRetry, map[string]any{
+			"Workers": Cfg.Workers,
+			"Retry":   Cfg.Retry,
+		}))
 	}
 
 	for _, storage := range Cfg.Storages {
