@@ -21,9 +21,6 @@ type Config struct {
 	Threads      int    `toml:"threads" mapstructure:"threads" json:"threads"`
 	Stream       bool   `toml:"stream" mapstructure:"stream" json:"stream"`
 
-	// Experimental: 将拷贝媒体文件的功能设为公开可用
-	AsPublicCopyMediaBot bool `toml:"as_public_copy_media_bot" mapstructure:"as_public_copy_media_bot" json:"as_public_copy_media_bot"`
-
 	Users []userConfig `toml:"users" mapstructure:"users" json:"users"`
 
 	Temp     tempConfig              `toml:"temp" mapstructure:"temp"`
