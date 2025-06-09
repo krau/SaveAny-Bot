@@ -23,12 +23,16 @@ body:
       description: "Please provide your config file"
       placeholder: "请自行隐去密钥信息"
       render: toml
+    validations:
+      required: true
   - type: textarea
     attributes:
       label: "🔍 日志"
       description: "Please provide logs"
       placeholder: "可删除隐私信息"
       render: shell
+    validations:
+      required: true
   - type: markdown
     attributes:
       value: |
