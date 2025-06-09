@@ -237,6 +237,8 @@ func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, e
 	return tgMessage, nil
 }
 
+// Userbot only
+//
 // https://github.com/iyear/tdl/blob/fbb396da774ba544e527c3ef41c44921ad74ee98/core/util/tutil/tutil.go#L174
 func GetSingleHistoryMessage(ctx context.Context, client *tg.Client, peer tg.InputPeerClass, msg int) (*tg.Message, error) {
 	it := query.Messages(client).GetHistory(peer).OffsetID(msg + 1).BatchSize(1).Iter()
@@ -254,6 +256,74 @@ func GetSingleHistoryMessage(ctx context.Context, client *tg.Client, peer tg.Inp
 		return nil, fmt.Errorf("the message %d/%d may be deleted", GetInputPeerID(peer), msg)
 	}
 	return m, nil
+}
+
+// Userbot only
+func GetHistoryMessages(ctx context.Context, client *tg.Client, peer tg.InputPeerClass, startID, limit int) ([]*tg.Message, error) {
+	endID := startID + limit - 1
+	msgs, err := client.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
+		Peer:      peer,
+		OffsetID:  startID,
+		Limit:     limit,
+		AddOffset: startID - endID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get history messages: %w", err)
+	}
+	var msgClass []tg.MessageClass
+	switch msgsv := msgs.(type) {
+	case *tg.MessagesMessages:
+		msgClass = msgsv.GetMessages()
+	case *tg.MessagesMessagesSlice:
+		msgClass = msgsv.GetMessages()
+	case *tg.MessagesChannelMessages:
+		msgClass = msgsv.GetMessages()
+	default:
+		return nil, fmt.Errorf("unexpected messages type: %T", msgs)
+	}
+
+	messageBatch := make([]*tg.Message, 0, 100)
+
+	for _, msg := range msgClass {
+		msgNotEmpty, ok := msg.AsNotEmpty()
+		if !ok {
+			continue
+		}
+		switch msgNotEmptyV := msgNotEmpty.(type) {
+		case *tg.Message:
+			messageBatch = append(messageBatch, msgNotEmptyV)
+		default:
+			common.Log.Warnf("Unexpected message type: %T, skipping", msgNotEmptyV)
+			continue
+		}
+	}
+	if len(messageBatch) == 0 {
+		return nil, fmt.Errorf("no messages found for peer %s with startID %d and limit %d", peer, startID, limit)
+	}
+	return messageBatch, nil
+}
+
+func GetMediaGroup(ctx *ext.Context, chatID int64, messageID int, groupID int64) ([]*tg.Message, error) {
+	peer := ctx.PeerStorage.GetInputPeerById(chatID)
+	if peer == nil {
+		return nil, fmt.Errorf("无法获取聊天 %d 的输入 Peer", chatID)
+	}
+	messages, err := GetHistoryMessages(ctx, ctx.Raw, peer, messageID-9, 20)
+	if err != nil {
+		return nil, fmt.Errorf("获取消息失败: %s", err)
+	}
+	var groupMessages []*tg.Message
+	for _, msg := range messages {
+		common.Log.Debugf("Checking message %d in group %d", msg.ID, groupID)
+		gID, isGroup := msg.GetGroupedID()
+		if isGroup && gID == groupID {
+			groupMessages = append(groupMessages, msg)
+		}
+	}
+	if len(groupMessages) == 0 || (len(groupMessages) == 1 && groupMessages[0].ID == messageID) {
+		return nil, fmt.Errorf("未找到媒体组 %d 中的消息", groupID)
+	}
+	return groupMessages, nil
 }
 
 func GetInputPeerID(peer tg.InputPeerClass) int64 {
