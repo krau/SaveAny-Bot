@@ -314,7 +314,6 @@ func GetMediaGroup(ctx *ext.Context, chatID int64, messageID int, groupID int64)
 	}
 	var groupMessages []*tg.Message
 	for _, msg := range messages {
-		common.Log.Debugf("Checking message %d in group %d", msg.ID, groupID)
 		gID, isGroup := msg.GetGroupedID()
 		if isGroup && gID == groupID {
 			groupMessages = append(groupMessages, msg)
@@ -421,6 +420,13 @@ func genFileNameFromMessageText(message tg.Message, file *types.File) string {
 	if len(tags) > 0 {
 		return fmt.Sprintf("%s_%s", strings.Join(tags, "_"), strconv.Itoa(message.GetID()))
 	}
+	// 删除换行和特殊字符
+	text = strings.Map(func(r rune) rune {
+		if r == '\n' || r == '\r' || r == '\t' || r == ' ' {
+			return '_'
+		}
+		return r
+	}, text)
 	runes := []rune(text)
 	return string(runes[:min(128, len(runes))])
 }

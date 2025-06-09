@@ -18,6 +18,7 @@ var ectx *ext.Context
 
 func GetCtx() *ext.Context {
 	if ectx != nil {
+		// UC.RefreshContext(ectx)
 		return ectx
 	}
 	ectx = UC.CreateContext()

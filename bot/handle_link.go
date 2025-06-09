@@ -70,7 +70,7 @@ func parseLink(ctx *ext.Context, link string) (*parseResult, error) {
 	if chatID == 0 || messageID == 0 {
 		return nil, fmt.Errorf("链接中缺少 Chat ID 或 Message ID: %s", link)
 	}
-	msg, err := tryFetchMessage(ctx, chatID, messageID)
+	msg, _, err := tryFetchMessage(ctx, chatID, messageID)
 	if err != nil {
 		return nil, fmt.Errorf("获取消息失败: %s", err)
 	}
@@ -153,8 +153,21 @@ func tryGetMediaGroup(chatID int64, messageID int, mediaGroupID int64) ([]*tg.Me
 	return nil, false, errors.New("userclient is not available, cannot fetch media group")
 }
 
-func tryFetchMessage(ctx *ext.Context, chatID int64, messageID int) (*tg.Message, error) {
-	return GetTGMessage(ctx, chatID, messageID)
+func tryFetchMessage(ctx *ext.Context, chatID int64, messageID int) (*tg.Message, bool, error) {
+	msg, err := GetTGMessage(ctx, chatID, messageID)
+	if err == nil {
+		return msg, false, nil
+	}
+	if  userclient.UC != nil && (strings.Contains(err.Error(), "peer not found") || strings.Contains(err.Error(), "unexpected message type")) {
+		common.Log.Warnf("无法获取消息 %d:%d, 尝试使用 userbot: %s", chatID, messageID, err)
+		uctx := userclient.GetCtx()
+		msg, err := GetTGMessage(uctx, chatID, messageID)
+		if err == nil {
+			return msg, true, nil
+		}
+		return nil, true, fmt.Errorf("获取消息失败: %w", err)
+	}
+	return nil, false, fmt.Errorf("获取消息失败: %s", err)
 }
 
 func handleLinkMessage(ctx *ext.Context, update *ext.Update) error {
