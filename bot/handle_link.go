@@ -62,12 +62,19 @@ func tryFetchFileFromMessage(ctx *ext.Context, chatID int64, messageID int, file
 	if (strings.Contains(err.Error(), "peer not found") || strings.Contains(err.Error(), "unexpected message type")) && userclient.UC != nil {
 		common.Log.Warnf("无法获取文件 %d:%d, 尝试使用 userbot: %s", chatID, messageID, err)
 		uctx := userclient.GetCtx()
-		// TODO: 群组支持
-		file, err = FileFromMessage(uctx, chatID, messageID, fileName)
-		if err == nil {
-			return file, true, nil
+		peer := uctx.PeerStorage.GetInputPeerById(chatID)
+		if peer == nil {
+			return nil, true, fmt.Errorf("failed to get peer for chat %d: %w", chatID, err)
 		}
-		return nil, true, err
+		msg, err := GetSingleHistoryMessage(uctx, uctx.Raw, peer, messageID)
+		if err != nil {
+			return nil, true, err
+		}
+		file, err = FileFromMedia(msg.Media, fileName)
+		if err != nil {
+			return nil, true, fmt.Errorf("failed to get file from userbot message %d:%d: %w", chatID, messageID, err)
+		}
+		return file, true, nil
 	}
 	return nil, false, err
 }

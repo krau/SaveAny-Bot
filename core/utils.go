@@ -21,6 +21,7 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/SaveAny-Bot/types"
+	"github.com/krau/SaveAny-Bot/userclient"
 )
 
 func saveFileWithRetry(ctx context.Context, storagePath string, taskStorage storage.Storage, cacheFilePath string) error {
@@ -61,7 +62,11 @@ func saveFileWithRetry(ctx context.Context, storagePath string, taskStorage stor
 }
 
 func processPhoto(task *types.Task, taskStorage storage.Storage) error {
-	res, err := bot.Client.API().UploadGetFile(task.Ctx, &tg.UploadGetFileRequest{
+	api := bot.Client.API()
+	if task.UseUserClient && userclient.UC != nil {
+		api = userclient.UC.API()
+	}
+	res, err := api.UploadGetFile(task.Ctx, &tg.UploadGetFileRequest{
 		Location: task.File.Location,
 		Offset:   0,
 		Limit:    1024 * 1024,

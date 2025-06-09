@@ -69,6 +69,10 @@ func Login(ctx context.Context) (*gotgproto.Client, error) {
 			return nil, r.err
 		}
 		UC = r.client
+		// disp := UC.Dispatcher
+		// disp.AddHandler(handlers.NewAnyUpdate(func(ctx *ext.Context, u *ext.Update) error {
+		// 	return dispatcher.EndGroups
+		// }))
 		return UC, nil
 	}
 }

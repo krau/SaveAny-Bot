@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
+	"github.com/gotd/td/telegram/query"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/dao"
@@ -233,6 +235,38 @@ func GetTGMessage(ctx *ext.Context, chatId int64, messageID int) (*tg.Message, e
 		common.Log.Errorf("Failed to cache message: %s", err)
 	}
 	return tgMessage, nil
+}
+
+// https://github.com/iyear/tdl/blob/fbb396da774ba544e527c3ef41c44921ad74ee98/core/util/tutil/tutil.go#L174
+func GetSingleHistoryMessage(ctx context.Context, client *tg.Client, peer tg.InputPeerClass, msg int) (*tg.Message, error) {
+	it := query.Messages(client).GetHistory(peer).OffsetID(msg + 1).BatchSize(1).Iter()
+
+	if !it.Next(ctx) {
+		return nil, fmt.Errorf("failed to get message %d from %s: %w", msg, peer, it.Err())
+	}
+
+	m, ok := it.Value().Msg.(*tg.Message)
+	if !ok {
+		return nil, fmt.Errorf("invalid message %d", msg)
+	}
+
+	if m.GetID() != msg {
+		return nil, fmt.Errorf("the message %d/%d may be deleted", GetInputPeerID(peer), msg)
+	}
+	return m, nil
+}
+
+func GetInputPeerID(peer tg.InputPeerClass) int64 {
+	switch p := peer.(type) {
+	case *tg.InputPeerUser:
+		return p.UserID
+	case *tg.InputPeerChat:
+		return p.ChatID
+	case *tg.InputPeerChannel:
+		return p.ChannelID
+	}
+
+	return 0
 }
 
 func ProvideSelectMessage(ctx *ext.Context, update *ext.Update, fileName string, chatID int64, fileMsgID, toEditMsgID int) error {
