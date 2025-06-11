@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/glebarez/sqlite"
 	"github.com/krau/SaveAny-Bot/common"
 	"github.com/krau/SaveAny-Bot/config"
+	_ "github.com/ncruces/go-sqlite3/embed"
+	"github.com/ncruces/go-sqlite3/gormlite"
 	"gorm.io/gorm"
 	glogger "gorm.io/gorm/logger"
 )
@@ -21,7 +22,7 @@ func Init() {
 		common.Log.Panic("Failed to create data directory: ", err)
 	}
 	var err error
-	db, err = gorm.Open(sqlite.Open(config.Cfg.DB.Path), &gorm.Config{
+	db, err = gorm.Open(gormlite.Open(config.Cfg.DB.Path), &gorm.Config{
 		Logger: glogger.New(common.Log, glogger.Config{
 			Colorful:                  true,
 			SlowThreshold:             time.Second * 5,
