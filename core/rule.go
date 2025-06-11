@@ -26,23 +26,30 @@ func getStorageAndPathForTask(task *types.Task) (storage.Storage, string, error)
 		return nil, "", err
 	}
 	storagePath := taskStorage.JoinStoragePath(*task)
-	if !user.ApplyRule || user.Rules == nil {
-		return taskStorage, storagePath, nil
-	}
+
 	var ruleTaskStorage storage.Storage
 	var ruleStoragePath string
-	for _, rule := range user.Rules {
-		matchStorage, matchStoragePath := applyRule(&rule, *task)
-		if matchStorage != nil && matchStoragePath != "" {
-			ruleTaskStorage = matchStorage
-			ruleStoragePath = matchStoragePath
+	if user.ApplyRule && user.Rules != nil {
+		for _, rule := range user.Rules {
+			matchStorage, matchStoragePath := applyRule(&rule, *task)
+			if matchStorage != nil && matchStoragePath != "" {
+				ruleTaskStorage = matchStorage
+				ruleStoragePath = matchStoragePath
+				common.Log.Debugf("Rule matched: %s, %s", ruleTaskStorage.Name(), ruleStoragePath)
+				return ruleTaskStorage, ruleStoragePath, nil
+			}
 		}
 	}
-	if ruleStoragePath == "" || ruleTaskStorage == nil {
-		return taskStorage, storagePath, nil
+
+	if taskStorage.Exists(task.Ctx, storagePath) {
+		ext := path.Ext(task.FileName())
+		name := task.FileName()[:len(task.FileName())-len(ext)]
+		task.File.FileName = fmt.Sprintf("%s_%d%s", name, task.FileDBID, ext)
+		task.StoragePath = task.File.FileName
+		storagePath = taskStorage.JoinStoragePath(*task)
 	}
-	common.Log.Debugf("Rule matched: %s, %s", ruleTaskStorage.Name(), ruleStoragePath)
-	return ruleTaskStorage, ruleStoragePath, nil
+
+	return taskStorage, storagePath, nil
 }
 
 func applyRule(rule *dao.Rule, task types.Task) (storage.Storage, string) {

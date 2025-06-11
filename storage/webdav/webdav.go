@@ -57,3 +57,13 @@ func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) erro
 	}
 	return nil
 }
+
+func (w *Webdav) Exists(ctx context.Context, storagePath string) bool {
+	common.Log.Debugf("Checking if file exists at %s", storagePath)
+	exists, err := w.client.Exists(ctx, storagePath)
+	if err != nil {
+		common.Log.Errorf("Failed to check if file exists at %s: %v", storagePath, err)
+		return false
+	}
+	return exists
+}

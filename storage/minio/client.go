@@ -70,3 +70,17 @@ func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error
 
 	return nil
 }
+
+func (m *Minio) Exists(ctx context.Context, storagePath string) bool {
+	common.Log.Debugf("Checking if file exists at %s", storagePath)
+	// TODO: test it.
+	_, err := m.client.StatObject(ctx, m.config.BucketName, storagePath, minio.StatObjectOptions{})
+	if err != nil {
+		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
+			return false // File does not exist
+		}
+		return false
+	}
+
+	return true
+}

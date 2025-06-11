@@ -63,3 +63,11 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 	_, err = io.Copy(file, r)
 	return err
 }
+
+func (l *Local) Exists(ctx context.Context, storagePath string) bool {
+	absPath, err := filepath.Abs(storagePath)
+	if err != nil {
+		return false
+	}
+	return fileutil.IsExist(absPath)
+}

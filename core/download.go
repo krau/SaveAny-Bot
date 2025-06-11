@@ -27,13 +27,7 @@ import (
 )
 
 func processPendingTask(task *types.Task) error {
-	common.Log.Debugf("Start processing task: %s", task.String())
-
-	if task.FileName() != "" && !task.IsTelegraph && task.File.FileSize != 0 && task.FileDBID != 0 {
-		ext := path.Ext(task.FileName())
-		name := task.FileName()[:len(task.FileName())-len(ext)]
-		task.File.FileName = fmt.Sprintf("%s_%d%s", name, task.FileDBID, ext)
-	}
+	common.Log.Infof("Start processing task: %s", task.String())
 
 	if task.FileName() == "" {
 		task.File.FileName = fmt.Sprintf("%d_%d_%s", task.FileChatID, task.FileMessageID, task.File.Hash())

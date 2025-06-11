@@ -147,3 +147,8 @@ func (a *Alist) NotSupportStream() string {
 func (a *Alist) JoinStoragePath(task types.Task) string {
 	return path.Join(a.config.BasePath, task.StoragePath)
 }
+
+func (a *Alist) Exists(ctx context.Context, storagePath string) bool {
+	// TODO: Implement it.
+	return false
+}

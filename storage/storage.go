@@ -21,6 +21,7 @@ type Storage interface {
 	Name() string
 	JoinStoragePath(task types.Task) string
 	Save(ctx context.Context, reader io.Reader, storagePath string) error
+	Exists(ctx context.Context, storagePath string) bool
 }
 
 type StorageNotSupportStream interface {
