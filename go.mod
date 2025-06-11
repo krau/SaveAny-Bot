@@ -114,6 +114,7 @@ require (
 )
 
 require (
+	github.com/dgraph-io/ristretto/v2 v2.2.0
 	github.com/duke-git/lancet/v2 v2.3.6
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/glebarez/sqlite v1.11.0

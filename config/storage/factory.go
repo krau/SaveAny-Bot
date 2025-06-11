@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/krau/SaveAny-Bot/types"
+	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 )
 
-var storageFactories = map[types.StorageType]func(cfg *BaseConfig) (StorageConfig, error){
-	types.StorageTypeLocal:  createStorageConfig(&LocalStorageConfig{}),
-	types.StorageTypeAlist:  createStorageConfig(&AlistStorageConfig{}),
-	types.StorageTypeWebdav: createStorageConfig(&WebdavStorageConfig{}),
-	types.StorageTypeMinio:  createStorageConfig(&MinioStorageConfig{}),
+var storageFactories = map[storenum.StorageType]func(cfg *BaseConfig) (StorageConfig, error){
+	storenum.Local:  createStorageConfig(&LocalStorageConfig{}),
+	storenum.Alist:  createStorageConfig(&AlistStorageConfig{}),
+	storenum.Webdav: createStorageConfig(&WebdavStorageConfig{}),
+	storenum.Minio:  createStorageConfig(&MinioStorageConfig{}),
 }
 
 func createStorageConfig(configType StorageConfig) func(cfg *BaseConfig) (StorageConfig, error) {
@@ -41,8 +41,12 @@ func LoadStorageConfigs(v *viper.Viper) ([]StorageConfig, error) {
 		if !baseCfg.Enable {
 			continue
 		}
+		st, err := storenum.ParseStorageType(baseCfg.Type)
+		if err != nil {
+			return nil, fmt.Errorf("invalid storage type %s for %s: %w", baseCfg.Type, baseCfg.Name, err)
+		}
 
-		factory, ok := storageFactories[types.StorageType(baseCfg.Type)]
+		factory, ok := storageFactories[st]
 		if !ok {
 			return nil, fmt.Errorf("unsupported storage type: %s", baseCfg.Type)
 		}

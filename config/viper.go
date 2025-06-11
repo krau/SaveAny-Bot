@@ -1,15 +1,16 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/i18n"
-	"github.com/krau/SaveAny-Bot/i18n/i18nk"
 	"github.com/spf13/viper"
 )
 
@@ -79,7 +80,7 @@ func (c Config) GetStorageByName(name string) storage.StorageConfig {
 	return nil
 }
 
-func Init() error {
+func Init(ctx context.Context) error {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/saveany/")
