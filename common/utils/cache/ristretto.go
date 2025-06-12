@@ -22,7 +22,6 @@ func init() {
 }
 
 func Set(key string, value any) error {
-	// 获取 the cost of the value
 	ok := cache.Set(key, value, 1)
 	if !ok {
 		return fmt.Errorf("failed to set value in cache")

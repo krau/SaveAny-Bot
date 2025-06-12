@@ -25,7 +25,7 @@ type TGFileTask struct {
 	WrAt      io.WriterAt
 	Storage   storage.Storage
 	Path      string
-	Progress  Progress
+	Progress  ProgressTracker
 	localPath string
 	client    Client
 }
@@ -33,9 +33,8 @@ type TGFileTask struct {
 func (t *TGFileTask) Execute(ctx context.Context) error {
 	// TODO: STREAM mode
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", t.File.Name()))
-	if t.Progress.OnStart != nil {
-		t.Progress.OnStart(ctx, t)
-	}
+	t.Progress.OnStart(ctx, t)
+
 	logger.Info("Starting file download")
 	if t.WrAt == nil {
 		localFile, err := os.Create(t.localPath)
@@ -50,11 +49,7 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 		}()
 	}
 	var err error
-	defer func() {
-		if t.Progress.OnDone != nil {
-			t.Progress.OnDone(ctx, t, err)
-		}
-	}()
+	defer t.Progress.OnDone(ctx, t, err)
 	dler := downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).Download(t.client, t.File.Location())
 	_, err = dler.WithThreads(BestThreads(t.File.Size(), config.Cfg.Threads)).Parallel(t.Ctx, t.WrAt)
 	if err != nil {
@@ -118,7 +113,7 @@ func NewTGFileTask(
 	client Client,
 	stor storage.Storage,
 	path string,
-	progress Progress,
+	progress ProgressTracker,
 ) (*TGFileTask, error) {
 	// TODO: STREAM mode
 	cachePath, err := filepath.Abs(filepath.Join(config.Cfg.Temp.BasePath, file.Name()))

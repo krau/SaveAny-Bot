@@ -1,6 +1,7 @@
 package queue_test
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -10,7 +11,7 @@ import (
 
 // helper to create a simple Task with integer payload
 func newTask(id string) *queue.Task[int] {
-	return queue.NewTask(id, 0)
+	return queue.NewTask(context.Background(), id, 0)
 }
 
 func TestAddAndLength(t *testing.T) {

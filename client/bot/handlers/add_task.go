@@ -12,6 +12,7 @@ import (
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/utils/cache"
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tftask"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -43,7 +44,8 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 
 	storagePath := selectedStorage.JoinStoragePath(data.File.Name())
 
-	task, err := tftask.NewTGFileTask(ctx, data.File, ctx.Raw, selectedStorage, storagePath, tftask.NewProgressTrack(ctx.Raw,
+	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
+	task, err := tftask.NewTGFileTask(injectCtx, data.File, ctx.Raw, selectedStorage, storagePath, tftask.NewProgressTrack(
 		update.CallbackQuery.GetMsgID(),
 		update.CallbackQuery.GetUserID()))
 	if err != nil {
@@ -55,7 +57,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		})
 		return dispatcher.EndGroups
 	}
-	if err := core.AddTask(ctx, dataid, task); err != nil {
+	if err := core.AddTask(injectCtx, dataid, task); err != nil {
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.GetQueryID(),
 			Alert:     true,
@@ -67,7 +69,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
-	length := core.GetLength(ctx)
+	length := core.GetLength(injectCtx)
 	text := fmt.Sprintf("已添加到任务队列\n文件名: %s\n当前排队任务数: %d", data.File.Name(), length)
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain("已添加到任务队列\n文件名: "),
