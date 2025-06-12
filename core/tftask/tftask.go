@@ -3,7 +3,6 @@ package tftask
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -23,38 +22,38 @@ type TGFileTask struct {
 	ID        string
 	Ctx       context.Context
 	File      tfile.TGFile
-	WrAt      io.WriterAt
 	Storage   storage.Storage
 	Path      string
 	Progress  ProgressTracker
-	localPath string
 	client    Client
+	stream    bool // true if the file should be downloaded in stream mode
+	localPath string
 }
 
 func (t *TGFileTask) Execute(ctx context.Context) error {
-	// TODO: STREAM mode
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", t.File.Name()))
 	t.Progress.OnStart(ctx, t)
+	if t.stream {
+		return executeStream(ctx, t)
+	}
 
 	logger.Info("Starting file download")
-	if t.WrAt == nil {
-		localFile, err := os.Create(t.localPath)
-		if err != nil {
-			return fmt.Errorf("failed to create local file: %w", err)
-		}
-		t.WrAt = newWriterAt(ctx, localFile, t.Progress, t)
-		defer func() {
-			if err := localFile.Close(); err != nil {
-				logger.Errorf("Failed to close local file: %v", err)
-			}
-		}()
+	localFile, err := os.Create(t.localPath)
+	if err != nil {
+		return fmt.Errorf("failed to create local file: %w", err)
 	}
-	var err error
+	wrAt := newWriterAt(ctx, localFile, t.Progress, t)
+	defer func() {
+		if err := localFile.Close(); err != nil {
+			logger.Errorf("Failed to close local file: %v", err)
+		}
+	}()
+
 	defer func() {
 		t.Progress.OnDone(ctx, t, err)
 	}()
 	dler := downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).Download(t.client, t.File.Location())
-	_, err = dler.WithThreads(BestThreads(t.File.Size(), config.Cfg.Threads)).Parallel(ctx, t.WrAt)
+	_, err = dler.WithThreads(BestThreads(t.File.Size(), config.Cfg.Threads)).Parallel(ctx, wrAt)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}
@@ -65,7 +64,6 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 			t.Path = t.Path + ext
 		}
 	}
-	var localFile *os.File
 	localFile, err = fsutil.Open(t.localPath)
 	if err != nil {
 		return fmt.Errorf("failed to open local file: %w", err)
@@ -119,20 +117,33 @@ func NewTGFileTask(
 	progress ProgressTracker,
 ) (*TGFileTask, error) {
 	// TODO: STREAM mode
-	cachePath, err := filepath.Abs(filepath.Join(config.Cfg.Temp.BasePath, file.Name()))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path for cache: %w", err)
+	_, ok := stor.(storage.StorageCannotStream)
+	if !config.Cfg.Stream || ok {
+		cachePath, err := filepath.Abs(filepath.Join(config.Cfg.Temp.BasePath, file.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get absolute path for cache: %w", err)
+		}
+		tftask := &TGFileTask{
+			ID:        id,
+			Ctx:       ctx,
+			client:    client,
+			File:      file,
+			Storage:   stor,
+			Path:      path,
+			Progress:  progress,
+			localPath: cachePath,
+		}
+		return tftask, nil
 	}
-	tftask := &TGFileTask{
-		ID:        id,
-		Ctx:       ctx,
-		client:    client,
-		File:      file,
-		Storage:   stor,
-		WrAt:      nil,
-		Path:      path,
-		Progress:  progress,
-		localPath: cachePath,
+	tfileTask := &TGFileTask{
+		ID:       id,
+		Ctx:      ctx,
+		client:   client,
+		File:     file,
+		Storage:  stor,
+		Path:     path,
+		Progress: progress,
+		stream:   true,
 	}
-	return tftask, nil
+	return tfileTask, nil
 }
