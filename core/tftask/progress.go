@@ -6,7 +6,6 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/message/entity"
@@ -17,18 +16,40 @@ import (
 type Progress struct {
 	MessageID  int
 	ChatID     int64
-	client     *gotgproto.Client
+	client     *tg.Client
 	OnStart    func(ctx context.Context, info TaskInfo)
 	OnProgress func(ctx context.Context, info TaskInfo, downloaded, total int64)
 	OnDone     func(ctx context.Context, info TaskInfo, err error)
 }
 
+type ProgressOption func(*Progress)
+
+func WithProgressOnStart(fn func(ctx context.Context, info TaskInfo)) ProgressOption {
+	return func(p *Progress) {
+		p.OnStart = fn
+	}
+}
+
+func WithProgressOnProgress(fn func(ctx context.Context, info TaskInfo, downloaded, total int64)) ProgressOption {
+	return func(p *Progress) {
+		p.OnProgress = fn
+	}
+}
+
+func WithProgressOnDone(fn func(ctx context.Context, info TaskInfo, err error)) ProgressOption {
+	return func(p *Progress) {
+		p.OnDone = fn
+	}
+}
+
 func NewProgressTrack(
-	client *gotgproto.Client,
+	client *tg.Client,
 	messageID int,
 	chatID int64,
+	opts ...ProgressOption,
 ) Progress {
 	onStart := func(ctx context.Context, info TaskInfo) {
+		log.FromContext(ctx).Debugf("Progress tracking started for message %d in chat %d", messageID, chatID)
 		entityBuilder := entity.Builder{}
 		var entities []tg.MessageEntityClass
 		if err := styling.Perform(&entityBuilder,
@@ -84,6 +105,7 @@ func NewProgressTrack(
 	}
 
 	onDone := func(ctx context.Context, info TaskInfo, err error) {
+		log.FromContext(ctx).Debugf("Progress done for message %d in chat %d, error: %v", messageID, chatID, err)
 		if err != nil {
 			entityBuilder := entity.Builder{}
 			if err := styling.Perform(&entityBuilder,
@@ -131,7 +153,7 @@ func NewProgressTrack(
 		}
 	}
 
-	return Progress{
+	p := &Progress{
 		MessageID:  messageID,
 		ChatID:     chatID,
 		client:     client,
@@ -139,6 +161,10 @@ func NewProgressTrack(
 		OnProgress: onProgress,
 		OnDone:     onDone,
 	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return *p
 }
 
 type ProgressWriterAt struct {
@@ -147,6 +173,7 @@ type ProgressWriterAt struct {
 	progress   Progress
 	downloaded *atomic.Int64
 	total      int64
+	info       TaskInfo
 }
 
 func (w *ProgressWriterAt) WriteAt(p []byte, off int64) (int, error) {
@@ -154,19 +181,25 @@ func (w *ProgressWriterAt) WriteAt(p []byte, off int64) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	w.progress.OnProgress(w.ctx, nil, w.downloaded.Add(int64(at)), w.total)
+	if w.progress.OnProgress == nil {
+		return at, nil
+	}
+	w.progress.OnProgress(w.ctx, w.info, w.downloaded.Add(int64(at)), w.total)
 	return at, nil
 }
 
 func newWriterAt(
+	ctx context.Context,
 	wrAt io.WriterAt,
 	progress Progress,
-	total int64,
+	taskInfo TaskInfo,
 ) *ProgressWriterAt {
 	return &ProgressWriterAt{
+		ctx:        ctx,
 		progress:   progress,
 		downloaded: &atomic.Int64{},
-		total:      total,
+		total:      taskInfo.FileSize(),
 		wrAt:       wrAt,
+		info:       taskInfo,
 	}
 }

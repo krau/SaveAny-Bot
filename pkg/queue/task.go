@@ -15,12 +15,12 @@ type Task[T any] struct {
 	element *list.Element
 }
 
-func NewTask[T any](id string, data T) *Task[T] {
-	ctx, cancel := context.WithCancel(context.Background())
+func NewTask[T any](ctx context.Context, id string, data T) *Task[T] {
+	cancelCtx, cancel := context.WithCancel(ctx)
 	return &Task[T]{
 		ID:      id,
 		Data:    data,
-		ctx:     ctx,
+		ctx:     cancelCtx,
 		cancel:  cancel,
 		created: time.Now(),
 	}

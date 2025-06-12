@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/celestix/gotgproto"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/downloader"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
@@ -28,7 +27,7 @@ type TGFileTask struct {
 	Path      string
 	Progress  Progress
 	localPath string
-	client    *gotgproto.Client
+	client    Client
 }
 
 func (t *TGFileTask) Execute(ctx context.Context) error {
@@ -43,7 +42,7 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to create local file: %w", err)
 		}
-		t.WrAt = newWriterAt(localFile, t.Progress, t.File.Size())
+		t.WrAt = newWriterAt(ctx, localFile, t.Progress, t)
 		defer func() {
 			if err := localFile.Close(); err != nil {
 				logger.Errorf("Failed to close local file: %v", err)
@@ -51,8 +50,12 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 		}()
 	}
 	var err error
-	defer t.Progress.OnDone(ctx, t, err)
-	dler := downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).Download(t.client.API(), t.File.Location())
+	defer func() {
+		if t.Progress.OnDone != nil {
+			t.Progress.OnDone(ctx, t, err)
+		}
+	}()
+	dler := downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).Download(t.client, t.File.Location())
 	_, err = dler.WithThreads(BestThreads(t.File.Size(), config.Cfg.Threads)).Parallel(t.Ctx, t.WrAt)
 	if err != nil {
 		logger.Errorf("Failed to download file: %v", err)
@@ -66,7 +69,7 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 		}
 	}
 	var localFile *os.File
-	localFile, err = os.Open(t.localPath)
+	localFile, err = fsutil.Open(t.localPath)
 	if err != nil {
 		return fmt.Errorf("failed to open local file: %w", err)
 	}
@@ -105,10 +108,14 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 
 }
 
+type Client interface {
+	downloader.Client
+}
+
 func NewTGFileTask(
 	ctx context.Context,
 	file tfile.TGFile,
-	client *gotgproto.Client,
+	client Client,
 	stor storage.Storage,
 	path string,
 	progress Progress,

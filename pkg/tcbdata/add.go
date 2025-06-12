@@ -6,4 +6,5 @@ type Add struct {
 	File        tfile.TGFile
 	StorageName string
 	DirID       int64
+	ChatID      int64 // Where the message was sent to bot
 }

@@ -35,7 +35,7 @@ func worker(ctx context.Context, queue *queue.TaskQueue[Exectable], semaphore ch
 		}
 		log.FromContext(ctx).Infof("Processing task: %s", qtask.ID)
 		task := qtask.Data
-		if err := task.Execute(ctx); err != nil {
+		if err := task.Execute(qtask.Context()); err != nil {
 			log.FromContext(ctx).Errorf("Failed to execute task %s: %v", qtask.ID, err)
 		} else {
 			log.FromContext(ctx).Infof("Task %s completed successfully", qtask.ID)
@@ -57,10 +57,17 @@ func Run(ctx context.Context) {
 }
 
 func AddTask(ctx context.Context, id string, task Exectable) error {
-	return queueInstance.Add(queue.NewTask(id, task))
+	return queueInstance.Add(queue.NewTask(ctx, id, task))
 }
 
 func CancelTask(ctx context.Context, id string) error {
 	err := queueInstance.CancelTask(id)
 	return err
+}
+
+func GetLength(ctx context.Context) int {
+	if queueInstance == nil {
+		return 0
+	}
+	return queueInstance.ActiveLength()
 }

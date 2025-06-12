@@ -7,9 +7,8 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 )
 
-
 func checkPermission(ctx *ext.Context, update *ext.Update) error {
-	userID := update.EffectiveUser().GetID()
+	userID := update.GetUserChat().GetID()
 	if !slice.Contain(config.Cfg.GetUsersID(), userID) {
 		const noPermissionText string = `
 您不在白名单中, 无法使用此 Bot.
@@ -18,11 +17,16 @@ func checkPermission(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(noPermissionText), nil)
 		return dispatcher.EndGroups
 	}
+	// if err := database.CreateUser(ctx, userID); err != nil {
+	// 	log.FromContext(ctx).Errorf("创建用户失败: %s", err)
+	// }
 
 	return dispatcher.ContinueGroups
 }
 
-func silentSave(ctx *ext.Context, update *ext.Update) error {
-	// TODO: implement
-	panic("silentSave not implemented")
+func handleSilentSave(next func(*ext.Context, *ext.Update) error) func(*ext.Context, *ext.Update) error {
+	return func(ctx *ext.Context, update *ext.Update) error {
+		// TODO: implement
+		return next(ctx, update)
+	}
 }

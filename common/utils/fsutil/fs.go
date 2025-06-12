@@ -51,3 +51,14 @@ func DetectFileExt(fp string) string {
 	}
 	return mt.Extension()
 }
+
+func Open(fp string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(fp), os.ModePerm); err != nil {
+		return nil, err
+	}
+	file, err := os.Open(fp)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
+}

@@ -46,7 +46,7 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}
-	userId := update.EffectiveUser().GetID()
+	userId := update.GetUserChat().GetID()
 	stors := storage.GetUserStorages(ctx, userId)
 	req, err := msgelem.BuildSelectStorageMessage(ctx, stors, file, msg.ID)
 	if err != nil {
