@@ -11,25 +11,14 @@ import (
 var queueInstance *queue.TaskQueue[Exectable]
 
 type Exectable interface {
+	TaskID() string
 	Execute(ctx context.Context) error
 }
 
-type exectableImpl struct {
-	execute func(ctx context.Context) error
-}
-
-func (t *exectableImpl) Execute(ctx context.Context) error {
-	return t.execute(ctx)
-}
-
-func NewExectable(ctx context.Context, execute func(ctx context.Context) error) Exectable {
-	return &exectableImpl{execute: execute}
-}
-
-func worker(ctx context.Context, queue *queue.TaskQueue[Exectable], semaphore chan struct{}) {
+func worker(ctx context.Context, qe *queue.TaskQueue[Exectable], semaphore chan struct{}) {
 	for {
 		semaphore <- struct{}{}
-		qtask, err := queue.Get()
+		qtask, err := qe.Get()
 		if err != nil {
 			break // queue closed and empty
 		}
@@ -40,6 +29,7 @@ func worker(ctx context.Context, queue *queue.TaskQueue[Exectable], semaphore ch
 		} else {
 			log.FromContext(ctx).Infof("Task %s completed successfully", qtask.ID)
 		}
+		qe.Done(qtask.ID)
 		<-semaphore
 	}
 }
@@ -56,8 +46,8 @@ func Run(ctx context.Context) {
 
 }
 
-func AddTask(ctx context.Context, id string, task Exectable) error {
-	return queueInstance.Add(queue.NewTask(ctx, id, task))
+func AddTask(ctx context.Context, task Exectable) error {
+	return queueInstance.Add(queue.NewTask(ctx, task.TaskID(), task))
 }
 
 func CancelTask(ctx context.Context, id string) error {

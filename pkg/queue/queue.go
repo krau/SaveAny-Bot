@@ -8,17 +8,19 @@ import (
 )
 
 type TaskQueue[T any] struct {
-	tasks   *list.List
-	taskMap map[string]*Task[T]
-	mu      sync.RWMutex
-	cond    *sync.Cond
-	closed  bool
+	tasks          *list.List
+	taskMap        map[string]*Task[T]
+	runningTaskMap map[string]*Task[T]
+	mu             sync.RWMutex
+	cond           *sync.Cond
+	closed         bool
 }
 
 func NewTaskQueue[T any]() *TaskQueue[T] {
 	tq := &TaskQueue[T]{
-		tasks:   list.New(),
-		taskMap: make(map[string]*Task[T]),
+		tasks:          list.New(),
+		taskMap:        make(map[string]*Task[T]),
+		runningTaskMap: make(map[string]*Task[T]),
 	}
 	tq.cond = sync.NewCond(&tq.mu)
 	return tq
@@ -48,7 +50,6 @@ func (tq *TaskQueue[T]) Add(task *Task[T]) error {
 	return nil
 }
 
-// get and remove the first valid task from the queue
 func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 	tq.mu.Lock()
 	defer tq.mu.Unlock()
@@ -66,9 +67,10 @@ func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 		task := element.Value.(*Task[T])
 
 		tq.tasks.Remove(element)
-		delete(tq.taskMap, task.ID)
+		task.element = nil
 
 		if !task.IsCancelled() {
+			tq.runningTaskMap[task.ID] = task
 			return task, nil
 		}
 	}
@@ -78,6 +80,14 @@ func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 	}
 
 	return nil, fmt.Errorf("queue is closed and empty")
+}
+
+func (tq *TaskQueue[T]) Done(taskID string) {
+	tq.mu.Lock()
+	defer tq.mu.Unlock()
+
+	delete(tq.taskMap, taskID)
+	delete(tq.runningTaskMap, taskID)
 }
 
 func (tq *TaskQueue[T]) Peek() (*Task[T], error) {
@@ -121,6 +131,9 @@ func (tq *TaskQueue[T]) ActiveLength() int {
 func (tq *TaskQueue[T]) CancelTask(taskID string) error {
 	tq.mu.RLock()
 	task, exists := tq.taskMap[taskID]
+	if !exists {
+		task, exists = tq.runningTaskMap[taskID]
+	}
 	tq.mu.RUnlock()
 
 	if !exists {
@@ -137,17 +150,18 @@ func (tq *TaskQueue[T]) RemoveTask(taskID string) error {
 
 	task, exists := tq.taskMap[taskID]
 	if !exists {
-		return fmt.Errorf("task %s does not exist", taskID)
+		_, exists = tq.runningTaskMap[taskID]
+		if exists {
+			delete(tq.runningTaskMap, taskID)
+		}
+		return fmt.Errorf("task %s is already running, cannot remove from queue", taskID)
 	}
 
 	if task.element != nil {
 		tq.tasks.Remove(task.element)
 	}
-
 	delete(tq.taskMap, taskID)
-
 	task.Cancel()
-
 	return nil
 }
 

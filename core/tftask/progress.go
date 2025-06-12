@@ -2,10 +2,10 @@ package tftask
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
@@ -45,6 +45,15 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	}
 	req.SetMessage(text)
 	req.SetEntities(entities)
+	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
+		Rows: []tg.KeyboardButtonRow{
+			{
+				Buttons: []tg.KeyboardButtonClass{
+					tgutil.BuildCancelButton(info.TaskID()),
+				},
+			},
+		}},
+	)
 	ext := tgutil.ExtFromContext(ctx)
 	if ext != nil {
 		ext.EditMessage(p.ChatID, req)
@@ -79,6 +88,15 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo, downloaded, to
 	}
 	req.SetMessage(text)
 	req.SetEntities(entities)
+	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
+		Rows: []tg.KeyboardButtonRow{
+			{
+				Buttons: []tg.KeyboardButtonClass{
+					tgutil.BuildCancelButton(info.TaskID()),
+				},
+			},
+		}},
+	)
 	ext := tgutil.ExtFromContext(ctx)
 	if ext != nil {
 		ext.EditMessage(p.ChatID, req)
@@ -93,51 +111,48 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	} else {
 		log.FromContext(ctx).Debugf("Progress done for file [%s]", info.FileName())
 	}
+
+	entityBuilder := entity.Builder{}
+	var stylingErr error
+
 	if err != nil {
-		entityBuilder := entity.Builder{}
-		if err := styling.Perform(&entityBuilder,
-			styling.Plain("下载失败\n文件名: "),
-			styling.Code(info.FileName()),
-			styling.Plain("\n错误: "),
-			styling.Bold(err.Error()),
-		); err != nil {
-			log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
-			return
-		}
-		text, entities := entityBuilder.Complete()
-		req := &tg.MessagesEditMessageRequest{
-			ID: p.MessageID,
-		}
-		req.SetMessage(text)
-		req.SetEntities(entities)
-		ext, ok := ctx.(*ext.Context)
-		if ok {
-			ext.EditMessage(p.ChatID, req)
-			return
+		if errors.Is(err, context.Canceled) {
+			stylingErr = styling.Perform(&entityBuilder,
+				styling.Plain("任务已取消\n文件名: "),
+				styling.Code(info.FileName()),
+			)
+		} else {
+			stylingErr = styling.Perform(&entityBuilder,
+				styling.Plain("下载失败\n文件名: "),
+				styling.Code(info.FileName()),
+				styling.Plain("\n错误: "),
+				styling.Bold(err.Error()),
+			)
 		}
 	} else {
-		ext := tgutil.ExtFromContext(ctx)
-		if ext == nil {
-			return
-		}
-		entityBuilder := entity.Builder{}
-		if err := styling.Perform(&entityBuilder,
+		stylingErr = styling.Perform(&entityBuilder,
 			styling.Plain("下载完成\n文件名: "),
 			styling.Code(info.FileName()),
 			styling.Plain("\n保存路径: "),
 			styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
-		); err != nil {
-			log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
-			return
-		}
-		text, entities := entityBuilder.Complete()
-		req := &tg.MessagesEditMessageRequest{
-			ID: p.MessageID,
-		}
-		req.SetMessage(text)
-		req.SetEntities(entities)
-		ext.EditMessage(p.ChatID, req)
+		)
+	}
+
+	if stylingErr != nil {
+		log.FromContext(ctx).Errorf("Failed to build entities: %s", stylingErr)
 		return
+	}
+
+	text, entities := entityBuilder.Complete()
+	req := &tg.MessagesEditMessageRequest{
+		ID: p.MessageID,
+	}
+	req.SetMessage(text)
+	req.SetEntities(entities)
+
+	ext := tgutil.ExtFromContext(ctx)
+	if ext != nil {
+		ext.EditMessage(p.ChatID, req)
 	}
 }
 

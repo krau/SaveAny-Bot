@@ -45,7 +45,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	storagePath := selectedStorage.JoinStoragePath(data.File.Name())
 
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
-	task, err := tftask.NewTGFileTask(injectCtx, data.File, ctx.Raw, selectedStorage, storagePath, tftask.NewProgressTrack(
+	task, err := tftask.NewTGFileTask(dataid, injectCtx, data.File, ctx.Raw, selectedStorage, storagePath, tftask.NewProgressTrack(
 		update.CallbackQuery.GetMsgID(),
 		update.CallbackQuery.GetUserID()))
 	if err != nil {
@@ -57,7 +57,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		})
 		return dispatcher.EndGroups
 	}
-	if err := core.AddTask(injectCtx, dataid, task); err != nil {
+	if err := core.AddTask(injectCtx, task); err != nil {
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.GetQueryID(),
 			Alert:     true,

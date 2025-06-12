@@ -20,6 +20,7 @@ import (
 )
 
 type TGFileTask struct {
+	ID        string
 	Ctx       context.Context
 	File      tfile.TGFile
 	WrAt      io.WriterAt
@@ -49,11 +50,12 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 		}()
 	}
 	var err error
-	defer t.Progress.OnDone(ctx, t, err)
+	defer func() {
+		t.Progress.OnDone(ctx, t, err)
+	}()
 	dler := downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).Download(t.client, t.File.Location())
-	_, err = dler.WithThreads(BestThreads(t.File.Size(), config.Cfg.Threads)).Parallel(t.Ctx, t.WrAt)
+	_, err = dler.WithThreads(BestThreads(t.File.Size(), config.Cfg.Threads)).Parallel(ctx, t.WrAt)
 	if err != nil {
-		logger.Errorf("Failed to download file: %v", err)
 		return fmt.Errorf("failed to download file: %w", err)
 	}
 	logger.Infof("File downloaded successfully")
@@ -74,7 +76,7 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
-	vctx := context.WithValue(t.Ctx, key.ContextKeyContentLength, fileStat.Size())
+	vctx := context.WithValue(ctx, key.ContextKeyContentLength, fileStat.Size())
 	for i := range config.Cfg.Retry + 1 {
 		if err = vctx.Err(); err != nil {
 			return fmt.Errorf("context canceled while saving file: %w", err)
@@ -108,6 +110,7 @@ type Client interface {
 }
 
 func NewTGFileTask(
+	id string,
 	ctx context.Context,
 	file tfile.TGFile,
 	client Client,
@@ -121,6 +124,7 @@ func NewTGFileTask(
 		return nil, fmt.Errorf("failed to get absolute path for cache: %w", err)
 	}
 	tftask := &TGFileTask{
+		ID:        id,
 		Ctx:       ctx,
 		client:    client,
 		File:      file,

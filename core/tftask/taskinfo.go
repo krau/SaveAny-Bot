@@ -5,6 +5,11 @@ type TaskInfo interface {
 	FileSize() int64
 	StoragePath() string
 	StorageName() string
+	TaskID() string
+}
+
+func (t *TGFileTask) TaskID() string {
+	return t.ID
 }
 
 func (t *TGFileTask) FileName() string {

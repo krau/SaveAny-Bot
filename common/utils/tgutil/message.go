@@ -48,3 +48,10 @@ func GenFileNameFromMessage(message tg.Message) string {
 	}(message.Media)
 	return filename + ext
 }
+
+func BuildCancelButton(taskID string) tg.KeyboardButtonClass {
+	return &tg.KeyboardButtonCallback{
+		Text: "取消任务",
+		Data: fmt.Appendf(nil, "cancel %s", taskID),
+	}
+}
