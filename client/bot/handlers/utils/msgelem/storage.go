@@ -39,22 +39,6 @@ func BuildSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFile) (*tg
 		row.Buttons = buttons[i:min(i+3, len(buttons))]
 		markup.Rows = append(markup.Rows, row)
 	}
-	data := tcbdata.Add{
-		File: file,
-	}
-	fileCacheId := xid.New().String()
-	err := cache.Set(fileCacheId, data)
-	if err != nil {
-		return nil, err
-	}
-	markup.Rows = append(markup.Rows, tg.KeyboardButtonRow{
-		Buttons: []tg.KeyboardButtonClass{
-			&tg.KeyboardButtonCallback{
-				Text: "发送到当前聊天",
-				Data: fmt.Appendf(nil, "send_here %s", fileCacheId),
-			},
-		},
-	})
 	return markup, nil
 }
 

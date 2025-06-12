@@ -36,6 +36,5 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), handleAddCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cancel"), handleCancelCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("set_default"), handleSetDefaultCallback))
-	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("send_here"), handleSendHereCallback))
 	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleSilentSaveMedia(handleMediaMessage)))
 }
