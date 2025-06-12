@@ -3,25 +3,26 @@ package cache
 import (
 	"fmt"
 
+	"github.com/charmbracelet/log"
 	"github.com/dgraph-io/ristretto/v2"
-	"github.com/gookit/slog"
 )
 
 var cache *ristretto.Cache[string, any]
 
 func init() {
 	c, err := ristretto.NewCache(&ristretto.Config[string, any]{
-		NumCounters: 1e7, // 10M keys
-		MaxCost:     1e8, // 100M values
+		NumCounters: 1e6, // 1M keys
+		MaxCost:     1e7, // 10M values
 		BufferItems: 64,
 	})
 	if err != nil {
-		slog.Panicf("Failed to create cache: %v", err)
+		log.Fatalf("failed to create ristretto cache: %v", err)
 	}
 	cache = c
 }
 
 func Set(key string, value any) error {
+	// 获取 the cost of the value
 	ok := cache.Set(key, value, 1)
 	if !ok {
 		return fmt.Errorf("failed to set value in cache")

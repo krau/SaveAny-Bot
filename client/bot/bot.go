@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/ncruces/go-sqlite3/gormlite"
 	"golang.org/x/net/proxy"
@@ -29,7 +30,7 @@ func Init(ctx context.Context) {
 	log.FromContext(ctx).Info("初始化 Bot...")
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Cfg.Telegram.Timeout)*time.Second)
 	defer cancel()
-	go InitTelegraphClient()
+	// go InitTelegraphClient()
 	resultChan := make(chan struct {
 		client *gotgproto.Client
 		err    error
@@ -96,7 +97,7 @@ func Init(ctx context.Context) {
 			log.FromContext(ctx).Fatalf("初始化 Bot 失败: %s", result.err)
 		}
 		Client = result.client
-		RegisterHandlers(Client.Dispatcher)
+		handlers.Register(Client.Dispatcher)
 		log.FromContext(ctx).Info("Bot 初始化完成")
 	}
 }

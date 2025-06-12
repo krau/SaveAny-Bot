@@ -8,9 +8,9 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/charmbracelet/log"
-	"github.com/glebarez/sqlite"
 	"github.com/krau/SaveAny-Bot/client/user/middlewares"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/ncruces/go-sqlite3/gormlite"
 )
 
 var UC *gotgproto.Client
@@ -40,9 +40,9 @@ func Login(ctx context.Context) (*gotgproto.Client, error) {
 			config.Cfg.Telegram.AppHash,
 			gotgproto.ClientTypePhone(""),
 			&gotgproto.ClientOpts{
-				Session:         sessionMaker.SqlSession(sqlite.Open(config.Cfg.Telegram.Userbot.Session)),
-				AuthConversator: &termialAuthConversator{},
-				// Context:          ctx,
+				Session:          sessionMaker.SqlSession(gormlite.Open(config.Cfg.Telegram.Userbot.Session)),
+				AuthConversator:  &termialAuthConversator{},
+				Context:          ctx,
 				DisableCopyright: true,
 				Middlewares:      middlewares.NewDefaultMiddlewares(ctx, 5*time.Minute),
 			},
