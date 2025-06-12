@@ -20,22 +20,22 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewCommand("help", handleHelpCmd))
 	disp.AddHandler(handlers.NewCommand("silent", handleSilentCmd))
 	disp.AddHandler(handlers.NewCommand("storage", handleStorageCmd))
-	disp.AddHandler(handlers.NewCommand("save", handleSilentSave(handleSaveCmd)))
+	disp.AddHandler(handlers.NewCommand("save", handleSaveCmd))
 	disp.AddHandler(handlers.NewCommand("dir", handleDirCmd))
 	disp.AddHandler(handlers.NewCommand("rule", handleRuleCmd))
 	linkRegexFilter, err := filters.Message.Regex(re.TgMessageLinkRegexString)
 	if err != nil {
 		panic("failed to create regex filter: " + err.Error())
 	}
-	disp.AddHandler(handlers.NewMessage(linkRegexFilter, handleSilentSave(handleMessageLink)))
+	disp.AddHandler(handlers.NewMessage(linkRegexFilter, handleMessageLink))
 	telegraphUrlRegexFilter, err := filters.Message.Regex(re.TelegraphUrlRegexString)
 	if err != nil {
 		panic("failed to create Telegraph URL regex filter: " + err.Error())
 	}
-	disp.AddHandler(handlers.NewMessage(telegraphUrlRegexFilter, handleSilentSave(handleTelegraphUrlMessage)))
+	disp.AddHandler(handlers.NewMessage(telegraphUrlRegexFilter, handleTelegraphUrlMessage))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("add"), handleAddCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cancel"), handleCancelCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("set_default"), handleSetDefaultCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("send_here"), handleSendHereCallback))
-	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleMediaMessage))
+	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleSilentSaveMedia(handleMediaMessage)))
 }

@@ -82,3 +82,28 @@ func BuildSelectStorageMessage(ctx context.Context, stors []storage.Storage, fil
 		ID:          msgId,
 	}, nil
 }
+
+func BuildSetDefaultStorageMarkup(ctx context.Context, userID int64, stors []storage.Storage) (*tg.ReplyInlineMarkup, error) {
+	buttons := make([]tg.KeyboardButtonClass, 0)
+	for _, storage := range stors {
+		data := tcbdata.SetDefaultStorage{
+			StorageName: storage.Name(),
+		}
+		dataid := xid.New().String()
+		err := cache.Set(dataid, data)
+		if err != nil {
+			return nil, err
+		}
+		buttons = append(buttons, &tg.KeyboardButtonCallback{
+			Text: storage.Name(),
+			Data: fmt.Appendf(nil, "set_default %s", dataid),
+		})
+	}
+	markup := &tg.ReplyInlineMarkup{}
+	for i := 0; i < len(buttons); i += 3 {
+		row := tg.KeyboardButtonRow{}
+		row.Buttons = buttons[i:min(i+3, len(buttons))]
+		markup.Rows = append(markup.Rows, row)
+	}
+	return markup, nil
+}

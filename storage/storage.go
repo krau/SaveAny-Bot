@@ -34,7 +34,7 @@ var Storages = make(map[string]Storage)
 var UserStorages = make(map[int64][]Storage)
 
 // GetStorageByName returns storage by name from cache or creates new one
-func GetStorageByName(ctx context.Context, name string) (Storage, error) {
+func getStorageByName(ctx context.Context, name string) (Storage, error) {
 	if name == "" {
 		return nil, ErrStorageNameEmpty
 	}
@@ -66,7 +66,7 @@ func GetStorageByUserIDAndName(ctx context.Context, chatID int64, name string) (
 		return nil, fmt.Errorf("没有找到用户 %d 的存储 %s", chatID, name)
 	}
 
-	return GetStorageByName(ctx, name)
+	return getStorageByName(ctx, name)
 }
 
 func GetUserStorages(ctx context.Context, chatID int64) []Storage {
@@ -78,7 +78,7 @@ func GetUserStorages(ctx context.Context, chatID int64) []Storage {
 	}
 	var storages []Storage
 	for _, name := range config.Cfg.GetStorageNamesByUserID(chatID) {
-		storage, err := GetStorageByName(ctx, name)
+		storage, err := getStorageByName(ctx, name)
 		if err != nil {
 			continue
 		}
@@ -114,7 +114,7 @@ func LoadStorages(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	logger.Info("加载存储...")
 	for _, storage := range config.Cfg.Storages {
-		_, err := GetStorageByName(ctx, storage.GetName())
+		_, err := getStorageByName(ctx, storage.GetName())
 		if err != nil {
 			logger.Errorf("加载存储 %s 失败: %v", storage.GetName(), err)
 		}

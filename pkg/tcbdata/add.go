@@ -8,3 +8,7 @@ type Add struct {
 	DirID       int64
 	ChatID      int64 // Where the message was sent to bot
 }
+
+type SetDefaultStorage struct {
+	StorageName string
+}
