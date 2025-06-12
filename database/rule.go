@@ -1,20 +1,22 @@
 package database
 
-func CreateRule(rule *Rule) error {
-	return db.Create(rule).Error
+import "context"
+
+func CreateRule(ctx context.Context, rule *Rule) error {
+	return db.WithContext(ctx).Create(rule).Error
 }
 
-func DeleteRule(ruleID uint) error {
-	return db.Unscoped().Delete(&Rule{}, ruleID).Error
+func DeleteRule(ctx context.Context, ruleID uint) error {
+	return db.WithContext(ctx).Unscoped().Delete(&Rule{}, ruleID).Error
 }
 
-func UpdateUserApplyRule(chatID int64, applyRule bool) error {
-	return db.Model(&User{}).Where("chat_id = ?", chatID).Update("apply_rule", applyRule).Error
+func UpdateUserApplyRule(ctx context.Context, chatID int64, applyRule bool) error {
+	return db.WithContext(ctx).Model(&User{}).Where("chat_id = ?", chatID).Update("apply_rule", applyRule).Error
 }
 
-func GetRulesByUserChatID(chatID int64) ([]Rule, error) {
+func GetRulesByUserChatID(ctx context.Context, chatID int64) ([]Rule, error) {
 	var rules []Rule
-	err := db.Where("user_id = (SELECT id FROM users WHERE chat_id = ?)", chatID).Find(&rules).Error
+	err := db.WithContext(ctx).Where("user_id = (SELECT id FROM users WHERE chat_id = ?)", chatID).Find(&rules).Error
 	if err != nil {
 		return nil, err
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers"
+	"github.com/krau/SaveAny-Bot/client/middleware"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/ncruces/go-sqlite3/gormlite"
 	"golang.org/x/net/proxy"
@@ -58,7 +59,7 @@ func Init(ctx context.Context) {
 			&gotgproto.ClientOpts{
 				Session:          sessionMaker.SqlSession(gormlite.Open(config.Cfg.DB.Session)),
 				DisableCopyright: true,
-				Middlewares:      FloodWaitMiddleware(),
+				Middlewares:      middleware.NewFloodWaitMiddlewares(uint(config.Cfg.Telegram.FloodRetry)),
 				Resolver:         resolver,
 				Context:          ctx,
 				MaxRetries:       config.Cfg.Telegram.RpcRetry,
@@ -71,6 +72,9 @@ func Init(ctx context.Context) {
 			}{nil, err}
 			return
 		}
+		client.API().BotsSetBotCommands(ctx, &tg.BotsSetBotCommandsRequest{
+			Scope: &tg.BotCommandScopeDefault{},
+		})
 		_, err = client.API().BotsSetBotCommands(ctx, &tg.BotsSetBotCommandsRequest{
 			Scope: &tg.BotCommandScopeDefault{},
 			Commands: []tg.BotCommand{

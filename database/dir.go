@@ -1,47 +1,49 @@
 package database
 
-func CreateDirForUser(userID uint, storageName, path string) error {
+import "context"
+
+func CreateDirForUser(ctx context.Context, userID uint, storageName, path string) error {
 	dir := Dir{
 		UserID:      userID,
 		StorageName: storageName,
 		Path:        path,
 	}
-	return db.Create(&dir).Error
+	return db.WithContext(ctx).Create(&dir).Error
 }
 
-func GetDirByID(id uint) (*Dir, error) {
+func GetDirByID(ctx context.Context, id uint) (*Dir, error) {
 	dir := &Dir{}
-	err := db.First(dir, id).Error
+	err := db.WithContext(ctx).First(dir, id).Error
 	if err != nil {
 		return nil, err
 	}
 	return dir, err
 }
 
-func GetUserDirs(userID uint) ([]Dir, error) {
+func GetUserDirs(ctx context.Context, userID uint) ([]Dir, error) {
 	var dirs []Dir
-	err := db.Where("user_id = ?", userID).Find(&dirs).Error
+	err := db.WithContext(ctx).Where("user_id = ?", userID).Find(&dirs).Error
 	return dirs, err
 }
 
-func GetUserDirsByChatID(chatID int64) ([]Dir, error) {
-	user, err := GetUserByChatID(chatID)
+func GetUserDirsByChatID(ctx context.Context, chatID int64) ([]Dir, error) {
+	user, err := GetUserByChatID(ctx, chatID)
 	if err != nil {
 		return nil, err
 	}
-	return GetUserDirs(user.ID)
+	return GetUserDirs(ctx, user.ID)
 }
 
-func GetDirsByUserIDAndStorageName(userID uint, storageName string) ([]Dir, error) {
+func GetDirsByUserIDAndStorageName(ctx context.Context, userID uint, storageName string) ([]Dir, error) {
 	var dirs []Dir
-	err := db.Where("user_id = ? AND storage_name = ?", userID, storageName).Find(&dirs).Error
+	err := db.WithContext(ctx).Where("user_id = ? AND storage_name = ?", userID, storageName).Find(&dirs).Error
 	return dirs, err
 }
 
-func DeleteDirForUser(userID uint, storageName, path string) error {
-	return db.Unscoped().Where("user_id = ? AND storage_name = ? AND path = ?", userID, storageName, path).Delete(&Dir{}).Error
+func DeleteDirForUser(ctx context.Context, userID uint, storageName, path string) error {
+	return db.WithContext(ctx).Unscoped().Where("user_id = ? AND storage_name = ? AND path = ?", userID, storageName, path).Delete(&Dir{}).Error
 }
 
-func DeleteDirByID(id uint) error {
-	return db.Unscoped().Delete(&Dir{}, id).Error
+func DeleteDirByID(ctx context.Context, id uint) error {
+	return db.WithContext(ctx).Unscoped().Delete(&Dir{}, id).Error
 }

@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,28 +37,19 @@ func Init(ctx context.Context) {
 		logger.Fatal("Failed to open database: ", err)
 	}
 	logger.Debug("Database connected")
-	if err := db.AutoMigrate(&ReceivedFile{}, &User{}, &Dir{}, &CallbackData{}, &Rule{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}); err != nil {
 		logger.Fatal("迁移数据库失败, 如果您从旧版本升级, 建议手动删除数据库文件后重试: ", err)
 	}
 	if err := syncUsers(ctx); err != nil {
 		logger.Fatal("Failed to sync users:", err)
 	}
 	logger.Debug("Database migrated")
-	if config.Cfg.DB.Expire == 0 {
-		return
-	}
-	if err := cleanExpiredData(db); err != nil {
-		logger.Error("Failed to clean expired data: ", err)
-	} else {
-		logger.Debug("Cleaned expired data")
-	}
-	go cleanJob(ctx, db)
-	logger.Debug("Database initialized")
+	logger.Info("Database initialized")
 }
 
 func syncUsers(ctx context.Context) error {
 	logger := log.FromContext(ctx)
-	dbUsers, err := GetAllUsers()
+	dbUsers, err := GetAllUsers(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get users: %w", err)
 	}
@@ -76,7 +66,7 @@ func syncUsers(ctx context.Context) error {
 
 	for cfgID := range cfgUserMap {
 		if _, exists := dbUserMap[cfgID]; !exists {
-			if err := CreateUser(cfgID); err != nil {
+			if err := CreateUser(ctx, cfgID); err != nil {
 				return fmt.Errorf("failed to create user %d: %w", cfgID, err)
 			}
 			logger.Infof("创建用户: %d", cfgID)
@@ -85,7 +75,7 @@ func syncUsers(ctx context.Context) error {
 
 	for dbID, dbUser := range dbUserMap {
 		if _, exists := cfgUserMap[dbID]; !exists {
-			if err := DeleteUser(&dbUser); err != nil {
+			if err := DeleteUser(ctx, &dbUser); err != nil {
 				return fmt.Errorf("failed to delete user %d: %w", dbID, err)
 			}
 			logger.Infof("删除用户: %d", dbID)
@@ -93,28 +83,4 @@ func syncUsers(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func cleanExpiredData(db *gorm.DB) error {
-	var fileErr error
-	if err := db.Where("updated_at < ?", time.Now().Add(-time.Duration(config.Cfg.DB.Expire)*time.Second)).Unscoped().Delete(&ReceivedFile{}).Error; err != nil {
-		fileErr = fmt.Errorf("failed to delete expired files: %w", err)
-	}
-	var cbErr error
-	if err := db.Where("updated_at < ?", time.Now().Add(-time.Duration(config.Cfg.DB.Expire)*time.Second)).Unscoped().Delete(&CallbackData{}).Error; err != nil {
-		cbErr = fmt.Errorf("failed to delete expired callback data: %w", err)
-	}
-	return errors.Join(fileErr, cbErr)
-}
-
-func cleanJob(ctx context.Context, db *gorm.DB) {
-	tick := time.NewTicker(time.Duration(config.Cfg.DB.Expire) * time.Second)
-	defer tick.Stop()
-	for range tick.C {
-		if err := cleanExpiredData(db); err != nil {
-			log.FromContext(ctx).Error("Failed to clean expired data: ", err)
-		} else {
-			log.FromContext(ctx).Debug("Cleaned expired data")
-		}
-	}
 }
