@@ -1,8 +1,6 @@
 package tfile
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
@@ -38,18 +36,6 @@ func NewTGFile(location tg.InputFileLocationClass, size int64, name string) TGFi
 		size:     size,
 		name:     name,
 	}
-}
-
-func Hash(f TGFile) string {
-	lb := []byte(f.Location().String())
-	fb := []byte(f.Name())
-	fsb := []byte(fmt.Sprintf("%d", f.Size()))
-
-	hashBytes := append(lb, fb...)
-	hashBytes = append(hashBytes, fsb...)
-	hash := md5.New()
-	hash.Write(hashBytes)
-	return hex.EncodeToString(hash.Sum(nil))
 }
 
 type FromMediaOptions func(*tgFile)

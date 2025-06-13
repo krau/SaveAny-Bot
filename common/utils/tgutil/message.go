@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/celestix/gotgproto/ext"
+	lcstrutil "github.com/duke-git/lancet/v2/strutil"
+	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
@@ -19,16 +21,38 @@ func GenFileNameFromMessage(message tg.Message) string {
 	filename := func() string {
 		tags := strutil.ExtractTagsFromText(text)
 		if len(tags) > 0 {
-			return fmt.Sprintf("%s_%s", strings.Join(tags, "_"), strconv.Itoa(message.GetID()))
+			tagStrRunes := make([]rune, 0, 64)
+			for i, tag := range tags {
+				if i > 0 {
+					tagStrRunes = append(tagStrRunes, '_')
+				}
+				tagStrRunes = append(tagStrRunes, []rune(tag)...)
+				if len(tagStrRunes) >= 64 {
+					break
+				}
+			}
+			tagStr := string(tagStrRunes)
+			return fmt.Sprintf("%s_%s", tagStr, strconv.Itoa(message.GetID()))
 		}
-		text = strings.Map(func(r rune) rune {
-			if r == '\n' || r == '\r' || r == '\t' || r == ' ' {
+		text = lcstrutil.Substring(strings.Map(func(r rune) rune {
+			if r < 0x20 || r == 0x7F {
 				return '_'
 			}
-			return r
-		}, text)
-		runes := []rune(text)
-		return string(runes[:min(128, len(runes))])
+			switch r {
+			// invalid characters
+			case '/', '\\',
+				':', '*', '?', '"', '<', '>', '|':
+				return '_'
+			// empty
+			case ' ', '\t', '\r', '\n':
+				return '_'
+			}
+			if validator.IsPrintable(string(r)) {
+				return r
+			}
+			return '_'
+		}, text), 0, 64)
+		return text
 	}()
 	ext := func(media tg.MessageMediaClass) string {
 		switch media := media.(type) {

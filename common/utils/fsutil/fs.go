@@ -7,29 +7,7 @@ import (
 	"github.com/gabriel-vasile/mimetype"
 )
 
-// func RmFileAfter(path string, td time.Duration) {
-// 	_, err := os.Stat(path)
-// 	if err != nil {
-// 		Log.Errorf(i18n.T(i18nk.CreateRmTimerFailed, map[string]any{
-// 			"Path":  path,
-// 			"Error": err,
-// 		}))
-// 		return
-// 	}
-// 	Log.Debugf(i18n.T(i18nk.RemoveFileAfter, map[string]any{
-// 		"Duration": td.String(),
-// 		"Path":     path,
-// 	}))
-// 	time.AfterFunc(td, func() {
-// 		if err := os.Remove(path); err != nil {
-// 			Log.Errorf(i18n.T(i18nk.RemoveFileFailed, map[string]any{
-// 				"Path":  path,
-// 				"Error": err,
-// 			}))
-// 		}
-// 	})
-// }
-
+// 删除文件夹内的所有文件和子目录, 但不删除文件夹本身
 func RemoveAllInDir(dirPath string) error {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
@@ -52,13 +30,36 @@ func DetectFileExt(fp string) string {
 	return mt.Extension()
 }
 
-func Open(fp string) (*os.File, error) {
+// 创建文件, 同时路径上创建不存在的目录
+func Create(fp string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(fp), os.ModePerm); err != nil {
 		return nil, err
 	}
-	file, err := os.Open(fp)
+	file, err := os.Create(fp)
 	if err != nil {
 		return nil, err
 	}
 	return file, nil
+}
+
+func RemoveEmptyDirs(dirPath string) error {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		err := os.Remove(dirPath)
+		if err != nil {
+			return err
+		}
+		return RemoveEmptyDirs(filepath.Dir(dirPath))
+	}
+	return nil
+}
+
+func Remove(fp string) error {
+	if err := os.Remove(fp); err != nil {
+		return err
+	}
+	return RemoveEmptyDirs(filepath.Dir(fp))
 }

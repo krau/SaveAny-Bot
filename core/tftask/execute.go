@@ -22,13 +22,16 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 	}
 
 	logger.Info("Starting file download")
-	localFile, err := os.Create(t.localPath)
+	localFile, err := fsutil.Create(t.localPath)
 	if err != nil {
 		return fmt.Errorf("failed to create local file: %w", err)
 	}
 	defer func() {
 		if err := localFile.Close(); err != nil {
 			logger.Errorf("Failed to close local file: %v", err)
+		}
+		if err := os.Remove(t.localPath); err != nil {
+			logger.Errorf("Failed to remove local file: %v", err)
 		}
 	}()
 	wrAt := newWriterAt(ctx, localFile, t.Progress, t)
@@ -47,13 +50,8 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 			t.Path = t.Path + ext
 		}
 	}
-	localFile, err = os.Open(t.localPath)
-	if err != nil {
-		return fmt.Errorf("failed to open local file: %w", err)
-	}
-	defer localFile.Close()
 	var fileStat os.FileInfo
-	fileStat, err = localFile.Stat()
+	fileStat, err = os.Stat(t.localPath)
 	if err != nil {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}

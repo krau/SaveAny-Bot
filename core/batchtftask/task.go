@@ -40,14 +40,15 @@ func NewTaskElement(
 	path string,
 	file tfile.TGFile,
 ) (*TaskElement, error) {
+	id := xid.New().String()
 	_, ok := stor.(storage.StorageCannotStream)
 	if !config.Cfg.Stream || ok {
-		cachePath, err := filepath.Abs(filepath.Join(config.Cfg.Temp.BasePath, file.Name()))
+		cachePath, err := filepath.Abs(filepath.Join(config.Cfg.Temp.BasePath, id, file.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get absolute path for cache: %w", err)
 		}
 		return &TaskElement{
-			ID:        xid.New().String(),
+			ID:        id,
 			Storage:   stor,
 			Path:      path,
 			File:      file,
@@ -55,7 +56,7 @@ func NewTaskElement(
 		}, nil
 	}
 	return &TaskElement{
-		ID:      xid.New().String(),
+		ID:      id,
 		Storage: stor,
 		Path:    path,
 		File:    file,

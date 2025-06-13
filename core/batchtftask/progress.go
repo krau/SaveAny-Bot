@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -23,21 +24,21 @@ type ProgressTracker interface {
 }
 
 type Progress struct {
-	MessageID int
-	ChatID    int64
-	start     time.Time
+	MessageID         int
+	ChatID            int64
+	start             time.Time
+	lastUpdatePercent atomic.Int32
 }
 
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	p.start = time.Now()
+	p.lastUpdatePercent.Store(0)
 	log.FromContext(ctx).Debugf("Batch task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain("开始执行批量下载任务\n总大小: "),
-		styling.Code(strconv.Itoa(int(info.TotalSize()))),
-		styling.Plain("\n文件数: "),
-		styling.Code(strconv.Itoa(info.Count())),
+		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
@@ -65,16 +66,21 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
-	if !shouldUpdateProgress(info.TotalSize(), info.Downloaded()) {
+	if !shouldUpdateProgress(info.TotalSize(), info.Downloaded(), int(p.lastUpdatePercent.Load())) {
 		return
 	}
+	percent := int((info.Downloaded() * 100) / info.TotalSize())
+	if p.lastUpdatePercent.Load() == int32(percent) {
+		return
+	}
+	p.lastUpdatePercent.Store(int32(percent))
 	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.TaskID(), info.Downloaded(), info.TotalSize())
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain("正在处理批量下载任务\n总大小: "),
-		styling.Code(fmt.Sprintf("%.2f MB", float64(info.TotalSize())/(1024*1024))),
-		styling.Plain("\n正在处理: "),
+		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
+		styling.Plain("\n正在处理:\n"),
 		func() styling.StyledTextOption {
 			var lines []string
 			for _, elem := range info.Processing() {

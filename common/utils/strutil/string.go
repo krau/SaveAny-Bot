@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/duke-git/lancet/v2/slice"
 )
 
 func HashString(s string) string {
@@ -25,7 +27,7 @@ func ExtractTagsFromText(text string) []string {
 			tags = append(tags, match[1])
 		}
 	}
-	return tags
+	return slice.Compact(tags)
 }
 
 func ParseIntStrRange(input string, sep string) (int64, int64, error) {
