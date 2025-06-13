@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 	"net/url"
-	"time"
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/sessionMaker"
@@ -29,8 +28,6 @@ func newProxyDialer(proxyUrl string) (proxy.Dialer, error) {
 
 func Init(ctx context.Context) {
 	log.FromContext(ctx).Info("初始化 Bot...")
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Cfg.Telegram.Timeout)*time.Second)
-	defer cancel()
 	// go InitTelegraphClient()
 	resultChan := make(chan struct {
 		client *gotgproto.Client
@@ -63,6 +60,7 @@ func Init(ctx context.Context) {
 				Resolver:         resolver,
 				Context:          ctx,
 				MaxRetries:       config.Cfg.Telegram.RpcRetry,
+				AutoFetchReply:   true,
 			},
 		)
 		if err != nil {
@@ -94,8 +92,8 @@ func Init(ctx context.Context) {
 	}()
 
 	select {
-	case <-timeoutCtx.Done():
-		log.FromContext(ctx).Errorf("初始化 Bot 超时")
+	case <-ctx.Done():
+		log.FromContext(ctx).Errorf("已取消 Bot 初始化: %s", ctx.Err())
 	case result := <-resultChan:
 		if result.err != nil {
 			log.FromContext(ctx).Fatalf("初始化 Bot 失败: %s", result.err)

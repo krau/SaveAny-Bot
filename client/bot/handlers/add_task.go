@@ -1,17 +1,14 @@
 package handlers
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
-	"github.com/gotd/td/telegram/message/entity"
-	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
-	"github.com/krau/SaveAny-Bot/common/utils/cache"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
+	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tftask"
@@ -22,23 +19,16 @@ import (
 func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	dataid := strings.Split(string(update.CallbackQuery.Data), " ")[1]
 	data, ok := cache.Get[tcbdata.Add](dataid)
+	queryID := update.CallbackQuery.GetQueryID()
 	if !ok {
-		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
-			QueryID:   update.CallbackQuery.GetQueryID(),
-			Alert:     true,
-			Message:   "数据已过期",
-			CacheTime: 5,
-		})
+		log.FromContext(ctx).Warnf("Invalid data ID: %s", dataid)
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "数据已过期或无效"))
 		return dispatcher.EndGroups
 	}
 	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, update.CallbackQuery.GetUserID(), data.StorageName)
 	if err != nil {
-		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
-			QueryID:   update.CallbackQuery.GetQueryID(),
-			Alert:     true,
-			Message:   "存储获取失败: " + err.Error(),
-			CacheTime: 5,
-		})
+		log.FromContext(ctx).Errorf("Failed to get storage: %s", err)
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "存储获取失败: "+err.Error()))
 		return dispatcher.EndGroups
 	}
 
@@ -49,38 +39,17 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		update.CallbackQuery.GetMsgID(),
 		update.CallbackQuery.GetUserID()))
 	if err != nil {
-		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
-			QueryID:   update.CallbackQuery.GetQueryID(),
-			Alert:     true,
-			Message:   "任务创建失败: " + err.Error(),
-			CacheTime: 5,
-		})
+		log.FromContext(ctx).Errorf("Failed to create task: %s", err)
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "任务创建失败: "+err.Error()))
 		return dispatcher.EndGroups
 	}
 	if err := core.AddTask(injectCtx, task); err != nil {
-		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
-			QueryID:   update.CallbackQuery.GetQueryID(),
-			Alert:     true,
-			Message:   "任务添加失败: " + err.Error(),
-			CacheTime: 5,
-		})
+		log.FromContext(ctx).Errorf("Failed to add task: %s", err)
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "任务添加失败: "+err.Error()))
 		return dispatcher.EndGroups
 	}
 
-	entityBuilder := entity.Builder{}
-	var entities []tg.MessageEntityClass
-	length := core.GetLength(injectCtx)
-	text := fmt.Sprintf("已添加到任务队列\n文件名: %s\n当前排队任务数: %d", data.File.Name(), length)
-	if err := styling.Perform(&entityBuilder,
-		styling.Plain("已添加到任务队列\n文件名: "),
-		styling.Code(data.File.Name()),
-		styling.Plain("\n当前排队任务数: "),
-		styling.Bold(strconv.Itoa(length)),
-	); err != nil {
-		log.FromContext(ctx).Errorf("Failed to build entity: %s", err)
-	} else {
-		text, entities = entityBuilder.Complete()
-	}
+	text, entities := msgelem.BuildTaskAddedEntities(ctx, data.File.Name(), core.GetLength(injectCtx))
 	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 		ID:       update.CallbackQuery.GetMsgID(),
 		Message:  text,
