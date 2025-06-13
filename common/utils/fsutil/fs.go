@@ -30,8 +30,22 @@ func DetectFileExt(fp string) string {
 	return mt.Extension()
 }
 
-// 创建文件, 同时路径上创建不存在的目录
-func Create(fp string) (*os.File, error) {
+type File struct {
+	*os.File
+}
+
+func (f *File) Remove() error {
+	return os.Remove(f.Name())
+}
+
+func (f *File) CloseAndRemove() error {
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return f.Remove()
+}
+
+func CreateFile(fp string) (*File, error) {
 	if err := os.MkdirAll(filepath.Dir(fp), os.ModePerm); err != nil {
 		return nil, err
 	}
@@ -39,27 +53,5 @@ func Create(fp string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	return file, nil
-}
-
-func RemoveEmptyDirs(dirPath string) error {
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		return err
-	}
-	if len(entries) == 0 {
-		err := os.Remove(dirPath)
-		if err != nil {
-			return err
-		}
-		return RemoveEmptyDirs(filepath.Dir(dirPath))
-	}
-	return nil
-}
-
-func Remove(fp string) error {
-	if err := os.Remove(fp); err != nil {
-		return err
-	}
-	return RemoveEmptyDirs(filepath.Dir(fp))
+	return &File{File: file}, nil
 }

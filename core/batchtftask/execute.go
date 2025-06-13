@@ -75,16 +75,13 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		return nil
 	}
 	logger.Info("Starting file download")
-	localFile, err := fsutil.Create(elem.localPath)
+	localFile, err := fsutil.CreateFile(elem.localPath)
 	if err != nil {
 		return fmt.Errorf("failed to create local file: %w", err)
 	}
 	defer func() {
-		if err := localFile.Close(); err != nil {
+		if err := localFile.CloseAndRemove(); err != nil {
 			logger.Errorf("Failed to close local file: %v", err)
-		}
-		if err := os.Remove(elem.localPath); err != nil {
-			logger.Errorf("Failed to remove local file: %v", err)
 		}
 	}()
 	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
