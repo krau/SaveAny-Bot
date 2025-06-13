@@ -15,7 +15,7 @@ import (
 	"github.com/rs/xid"
 )
 
-func BuildSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFile) (*tg.ReplyInlineMarkup, error) {
+func BuildAddOneSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFile) (*tg.ReplyInlineMarkup, error) {
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range stors {
 		data := tcbdata.Add{
@@ -30,7 +30,7 @@ func BuildSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFile) (*tg
 		}
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
 			Text: storage.Name(),
-			Data: fmt.Appendf(nil, "add %s", dataid),
+			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAddOne, dataid),
 		})
 	}
 	markup := &tg.ReplyInlineMarkup{}
@@ -42,7 +42,7 @@ func BuildSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFile) (*tg
 	return markup, nil
 }
 
-func BuildSelectStorageMessage(ctx context.Context, stors []storage.Storage, file tfile.TGFile, msgId int) (*tg.MessagesEditMessageRequest, error) {
+func BuildAddOneSelectStorageMessage(ctx context.Context, stors []storage.Storage, file tfile.TGFile, msgId int) (*tg.MessagesEditMessageRequest, error) {
 	eb := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	text := fmt.Sprintf("文件名: %s\n请选择存储位置", file.Name())
@@ -55,7 +55,7 @@ func BuildSelectStorageMessage(ctx context.Context, stors []storage.Storage, fil
 	} else {
 		text, entities = eb.Complete()
 	}
-	markup, err := BuildSelectStorageKeyboard(stors, file)
+	markup, err := BuildAddOneSelectStorageKeyboard(stors, file)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build storage keyboard: %w", err)
 	}
@@ -80,7 +80,7 @@ func BuildSetDefaultStorageMarkup(ctx context.Context, userID int64, stors []sto
 		}
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
 			Text: storage.Name(),
-			Data: fmt.Appendf(nil, "set_default %s", dataid),
+			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeSetDefault, dataid),
 		})
 	}
 	markup := &tg.ReplyInlineMarkup{}
@@ -90,4 +90,30 @@ func BuildSetDefaultStorageMarkup(ctx context.Context, userID int64, stors []sto
 		markup.Rows = append(markup.Rows, row)
 	}
 	return markup, nil
+}
+
+func BuildAddBatchSelectStorageKeyboard(stors []storage.Storage, files []tfile.TGFile) *tg.ReplyInlineMarkup {
+	buttons := make([]tg.KeyboardButtonClass, 0)
+	for _, storage := range stors {
+		data := tcbdata.AddBatch{
+			Files:           files,
+			SelectedStorage: storage.Name(),
+		}
+		dataid := xid.New().String()
+		err := cache.Set(dataid, data)
+		if err != nil {
+			return nil
+		}
+		buttons = append(buttons, &tg.KeyboardButtonCallback{
+			Text: storage.Name(),
+			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAddBatch, dataid),
+		})
+	}
+	markup := &tg.ReplyInlineMarkup{}
+	for i := 0; i < len(buttons); i += 3 {
+		row := tg.KeyboardButtonRow{}
+		row.Buttons = buttons[i:min(i+3, len(buttons))]
+		markup.Rows = append(markup.Rows, row)
+	}
+	return markup
 }

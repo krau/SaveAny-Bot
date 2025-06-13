@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/celestix/gotgproto/ext"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
@@ -54,4 +55,49 @@ func BuildCancelButton(taskID string) tg.KeyboardButtonClass {
 		Text: "取消任务",
 		Data: fmt.Appendf(nil, "cancel %s", taskID),
 	}
+}
+
+func InputMessageClassSliceFromRange(min, max int) []tg.InputMessageClass {
+	if min == max {
+		return []tg.InputMessageClass{
+			&tg.InputMessageID{
+				ID: min,
+			},
+		}
+	}
+	result := make([]tg.InputMessageClass, 0, max-min+1)
+	for i := min; i <= max; i++ {
+		result = append(result, &tg.InputMessageID{
+			ID: i,
+		})
+	}
+	return result
+}
+
+func GetMessages(ctx *ext.Context, chatID int64, minId, maxId int) ([]*tg.Message, error) {
+	// TODO: cache
+	result := make([]*tg.Message, 0, maxId-minId+1)
+	for i := minId; i <= maxId; i += 100 {
+		msgs, err := ctx.GetMessages(chatID, InputMessageClassSliceFromRange(i, min(i+100, maxId)))
+		if err != nil {
+			return nil, err
+		}
+		if len(msgs) == 0 {
+			continue
+		}
+		for _, msg := range msgs {
+			if msg == nil {
+				continue
+			}
+			tgMessage, ok := msg.(*tg.Message)
+			if !ok {
+				continue
+			}
+			if tgMessage.GetID() < minId || tgMessage.GetID() > maxId {
+				continue
+			}
+			result = append(result, tgMessage)
+		}
+	}
+	return result, nil
 }

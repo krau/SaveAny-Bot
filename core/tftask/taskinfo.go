@@ -1,11 +1,11 @@
 package tftask
 
 type TaskInfo interface {
+	TaskID() string
 	FileName() string
 	FileSize() int64
 	StoragePath() string
 	StorageName() string
-	TaskID() string
 }
 
 // type taskInfoImpl struct {

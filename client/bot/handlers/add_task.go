@@ -11,12 +11,13 @@ import (
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/core"
+	"github.com/krau/SaveAny-Bot/core/batchtftask"
 	"github.com/krau/SaveAny-Bot/core/tftask"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
-func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
+func handleAddOneCallback(ctx *ext.Context, update *ext.Update) error {
 	dataid := strings.Split(string(update.CallbackQuery.Data), " ")[1]
 	data, ok := cache.Get[tcbdata.Add](dataid)
 	queryID := update.CallbackQuery.GetQueryID()
@@ -56,5 +57,46 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		Entities: entities,
 	})
 
+	return dispatcher.EndGroups
+}
+
+func handleAddBatchCallback(ctx *ext.Context, update *ext.Update) error {
+	dataid := strings.Split(string(update.CallbackQuery.Data), " ")[1]
+	data, ok := cache.Get[tcbdata.AddBatch](dataid)
+	queryID := update.CallbackQuery.GetQueryID()
+	if !ok {
+		log.FromContext(ctx).Warnf("Invalid data ID: %s", dataid)
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "数据已过期或无效"))
+		return dispatcher.EndGroups
+	}
+	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, update.CallbackQuery.GetUserID(), data.SelectedStorage)
+	if err != nil {
+		log.FromContext(ctx).Errorf("Failed to get storage: %s", err)
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "存储获取失败: "+err.Error()))
+		return dispatcher.EndGroups
+	}
+
+	elems := make([]batchtftask.TaskElement, 0, len(data.Files))
+	for _, file := range data.Files {
+		storPath := selectedStorage.JoinStoragePath(file.Name())
+		elem, err := batchtftask.NewTaskElement(selectedStorage, storPath, file)
+		if err != nil {
+			log.FromContext(ctx).Errorf("Failed to create task element: %s", err)
+			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "任务创建失败: "+err.Error()))
+			return dispatcher.EndGroups
+		}
+		elems = append(elems, *elem)
+	}
+	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
+	task := batchtftask.NewBatchTGFileTask(dataid, injectCtx, elems, ctx.Raw, batchtftask.NewProgressTracker(update.CallbackQuery.GetMsgID(), update.CallbackQuery.GetUserID()), true)
+	if err := core.AddTask(injectCtx, task); err != nil {
+		log.FromContext(ctx).Errorf("Failed to add batch task: %s", err)
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "批量任务添加失败: "+err.Error()))
+		return dispatcher.EndGroups
+	}
+	ctx.EditMessage(update.CallbackQuery.GetUserID(), &tg.MessagesEditMessageRequest{
+		ID:      update.CallbackQuery.GetMsgID(),
+		Message: "批量任务已添加",
+	})
 	return dispatcher.EndGroups
 }

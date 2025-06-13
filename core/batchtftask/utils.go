@@ -1,4 +1,4 @@
-package tftask
+package batchtftask
 
 var progressUpdatesLevels = []struct {
 	size        int64 // 文件大小阈值

@@ -6,9 +6,7 @@ import (
 	"io"
 
 	"github.com/charmbracelet/log"
-	"github.com/gotd/td/telegram/downloader"
-	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/pkg/consts/tglimit"
+	"github.com/krau/SaveAny-Bot/common/tdler"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -24,10 +22,7 @@ func executeStream(ctx context.Context, task *TGFileTask) error {
 	wr := newWriter(ctx, pw, task.Progress, task)
 	errg.Go(func() error {
 		logger.Info("Starting file download in stream mode")
-		_, err := downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).
-			Download(task.client, task.File.Location()).
-			WithThreads(BestThreads(task.File.Size(), config.Cfg.Threads)).
-			Stream(uploadCtx, wr)
+		_, err := tdler.NewDownloader(task.client, task.File).Stream(uploadCtx, wr)
 		if closeErr := pw.CloseWithError(err); closeErr != nil {
 			logger.Errorf("Failed to close pipe writer: %v", closeErr)
 		}
