@@ -6,10 +6,14 @@ import (
 	"strings"
 
 	"github.com/celestix/gotgproto/ext"
+	"github.com/duke-git/lancet/v2/maputil"
+	"github.com/duke-git/lancet/v2/mathutil"
+	"github.com/duke-git/lancet/v2/slice"
 	lcstrutil "github.com/duke-git/lancet/v2/strutil"
 	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 )
 
@@ -81,28 +85,39 @@ func BuildCancelButton(taskID string) tg.KeyboardButtonClass {
 	}
 }
 
-func InputMessageClassSliceFromRange(min, max int) []tg.InputMessageClass {
-	if min == max {
-		return []tg.InputMessageClass{
-			&tg.InputMessageID{
-				ID: min,
-			},
-		}
-	}
-	result := make([]tg.InputMessageClass, 0, max-min+1)
-	for i := min; i <= max; i++ {
+func InputMessageClassSliceFromInt(ids []int) []tg.InputMessageClass {
+	result := make([]tg.InputMessageClass, 0, len(ids))
+	for _, id := range ids {
 		result = append(result, &tg.InputMessageID{
-			ID: i,
+			ID: id,
 		})
 	}
 	return result
 }
 
 func GetMessages(ctx *ext.Context, chatID int64, minId, maxId int) ([]*tg.Message, error) {
-	// TODO: cache
-	result := make([]*tg.Message, 0, maxId-minId+1)
-	for i := minId; i <= maxId; i += 100 {
-		msgs, err := ctx.GetMessages(chatID, InputMessageClassSliceFromRange(i, min(i+100, maxId)))
+	if minId > maxId {
+		return nil, fmt.Errorf("minId (%d) cannot be greater than maxId (%d)", minId, maxId)
+	}
+	total := maxId - minId + 1
+	msgIds := mathutil.Range(minId, total)
+	toFetchIds := make([]int, 0, total)
+	cached := make(map[int]*tg.Message, total)
+	for _, id := range msgIds {
+		if msg, ok := cache.Get[*tg.Message](fmt.Sprintf("tgmsg:%d:%d:%d", ctx.Self.ID, chatID, id)); ok {
+			cached[id] = msg
+		} else {
+			toFetchIds = append(toFetchIds, id)
+		}
+	}
+	if len(toFetchIds) == 0 {
+		return maputil.Values(cached), nil
+	}
+
+	result := make([]*tg.Message, 0, total)
+	chunks := slice.Chunk(toFetchIds, 100)
+	for _, chunk := range chunks {
+		msgs, err := ctx.GetMessages(chatID, InputMessageClassSliceFromInt(chunk))
 		if err != nil {
 			return nil, err
 		}
@@ -122,6 +137,16 @@ func GetMessages(ctx *ext.Context, chatID int64, minId, maxId int) ([]*tg.Messag
 			}
 			result = append(result, tgMessage)
 		}
+	}
+
+	for _, msg := range result {
+		cache.Set(fmt.Sprintf("tgmsg:%d:%d:%d", ctx.Self.ID, chatID, msg.GetID()), msg)
+	}
+	for _, msg := range cached {
+		if msg == nil {
+			continue
+		}
+		result = append(result, msg)
 	}
 	return result, nil
 }

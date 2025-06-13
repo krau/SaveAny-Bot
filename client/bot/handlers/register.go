@@ -23,7 +23,7 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewCommand("storage", handleStorageCmd))
 	disp.AddHandler(handlers.NewCommand("dir", handleDirCmd))
 	disp.AddHandler(handlers.NewCommand("rule", handleRuleCmd))
-	disp.AddHandler(handlers.NewCommand("save", handleSilentMode(handleSaveCmd, handleSilentSaveReplied))) // TODO:
+	disp.AddHandler(handlers.NewCommand("save", handleSilentMode(handleSaveCmd, handleSilentSaveReplied)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeAddOne), handleAddOneCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeAddBatch), handleAddBatchCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeSetDefault), handleSetDefaultCallback))
