@@ -19,13 +19,14 @@ func handleAddOneCallback(ctx *ext.Context, update *ext.Update) error {
 		return err
 	}
 	queryID := update.CallbackQuery.GetQueryID()
-	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, update.CallbackQuery.GetUserID(), data.StorageName)
+	userID := update.CallbackQuery.GetUserID()
+	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, data.StorageName)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Failed to get storage: %s", err)
 		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "存储获取失败: "+err.Error()))
 		return dispatcher.EndGroups
 	}
-	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, selectedStorage, data.File, update.CallbackQuery.GetUserID(), update.CallbackQuery.GetMsgID())
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, selectedStorage, data.File, userID, update.CallbackQuery.GetMsgID())
 }
 
 func handleAddBatchCallback(ctx *ext.Context, update *ext.Update) error {
@@ -35,13 +36,13 @@ func handleAddBatchCallback(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, update.CallbackQuery.GetUserID(), data.SelectedStorage)
+	userID := update.CallbackQuery.GetUserID()
+	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, data.SelectedStorage)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Failed to get storage: %s", err)
 		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "存储获取失败: "+err.Error()))
 		return dispatcher.EndGroups
 	}
-	chatID := update.CallbackQuery.GetUserID()
 	trackMsgID := update.CallbackQuery.GetMsgID()
-	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, selectedStorage, data.Files, chatID, trackMsgID)
+	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, selectedStorage, data.Files, userID, trackMsgID)
 }
