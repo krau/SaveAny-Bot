@@ -56,6 +56,9 @@ func GenFileNameFromMessage(message tg.Message) string {
 			}
 			return '_'
 		}, text), 0, 64)
+		text = strings.Join(strings.FieldsFunc(text, func(r rune) bool {
+			return r == '_' || r == ' '
+		}), "_")
 		return text
 	}()
 	ext := func(media tg.MessageMediaClass) string {
@@ -95,7 +98,7 @@ func InputMessageClassSliceFromInt(ids []int) []tg.InputMessageClass {
 	return result
 }
 
-func GetMessages(ctx *ext.Context, chatID int64, minId, maxId int) ([]*tg.Message, error) {
+func GetMessagesRange(ctx *ext.Context, chatID int64, minId, maxId int) ([]*tg.Message, error) {
 	if minId > maxId {
 		return nil, fmt.Errorf("minId (%d) cannot be greater than maxId (%d)", minId, maxId)
 	}
@@ -149,4 +152,27 @@ func GetMessages(ctx *ext.Context, chatID int64, minId, maxId int) ([]*tg.Messag
 		result = append(result, msg)
 	}
 	return result, nil
+}
+
+func GetMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, error) {
+	key := fmt.Sprintf("tgmsg:%d:%d:%d", ctx.Self.ID, chatID, msgID)
+	if msg, ok := cache.Get[*tg.Message](key); ok {
+		return msg, nil
+	}
+	msgs, err := ctx.GetMessages(chatID, []tg.InputMessageClass{
+		&tg.InputMessageID{ID: msgID},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get message by ID: %w", err)
+	}
+	if len(msgs) == 0 {
+		return nil, fmt.Errorf("message not found: chatID=%d, msgID=%d", chatID, msgID)
+	}
+	msg := msgs[0]
+	tgm, ok := msg.(*tg.Message)
+	if !ok {
+		return nil, fmt.Errorf("unexpected message type: %T", msg)
+	}
+	cache.Set(key, tgm)
+	return tgm, nil
 }

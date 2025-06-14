@@ -174,7 +174,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgId
 		return dispatcher.EndGroups
 	}
 
-	msgs, err := tgutil.GetMessages(ctx, chatID, int(startID), int(endID))
+	msgs, err := tgutil.GetMessagesRange(ctx, chatID, int(startID), int(endID))
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString("获取消息失败: "+err.Error()), nil)
 		return dispatcher.EndGroups
