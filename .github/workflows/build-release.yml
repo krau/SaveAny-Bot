@@ -63,9 +63,9 @@ jobs:
             README.md
           ldflags: >-
             -s -w
-            -X "github.com/krau/SaveAny-Bot/common.Version=${{ env.VERSION }}"
-            -X "github.com/krau/SaveAny-Bot/common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
-            -X "github.com/krau/SaveAny-Bot/common.GitCommit=${{ github.sha }}"
+            -X "github.com/krau/SaveAny-Bot/pkg/consts.Version=${{ env.VERSION }}"
+            -X "github.com/krau/SaveAny-Bot/pkg/consts.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
+            -X "github.com/krau/SaveAny-Bot/pkg/consts.GitCommit=${{ github.sha }}"
           binary_name: saveany-bot
         env:
           VERSION: ${{ env.VERSION }}

@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/krau/SaveAny-Bot/types"
+	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 )
 
 type AlistStorageConfig struct {
@@ -29,8 +29,8 @@ func (a *AlistStorageConfig) Validate() error {
 	return nil
 }
 
-func (a *AlistStorageConfig) GetType() types.StorageType {
-	return types.StorageTypeAlist
+func (a *AlistStorageConfig) GetType() storenum.StorageType {
+	return storenum.Alist
 }
 
 func (a *AlistStorageConfig) GetName() string {

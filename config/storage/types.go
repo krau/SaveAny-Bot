@@ -1,10 +1,12 @@
 package storage
 
-import "github.com/krau/SaveAny-Bot/types"
+import (
+	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+)
 
 type StorageConfig interface {
 	Validate() error
-	GetType() types.StorageType
+	GetType() storenum.StorageType
 	GetName() string
 }
 

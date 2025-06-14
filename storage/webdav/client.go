@@ -9,7 +9,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/krau/SaveAny-Bot/types"
+	"github.com/krau/SaveAny-Bot/pkg/enums/key"
 )
 
 type Client struct {
@@ -54,7 +54,7 @@ func (c *Client) doRequest(ctx context.Context, method WebdavMethod, url string,
 		req.Header.Set("Depth", "1")
 	}
 	if method == WebdavMethodPut && ctx != nil {
-		if length := ctx.Value(types.ContextKeyContentLength); length != nil {
+		if length := ctx.Value(key.ContextKeyContentLength); length != nil {
 			if l, ok := length.(int64); ok {
 				req.ContentLength = l
 			}

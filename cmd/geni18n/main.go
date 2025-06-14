@@ -1,4 +1,4 @@
-// cmd/gen_i18n/main.go
+// cmd/geni18n/main.go
 package main
 
 import (
@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	dir := flag.String("dir", "./i18n/locale", "Locales directory path")
-	out := flag.String("out", "i18n/i18nk/keys.go", "Output file path")
+	dir := flag.String("dir", "./common/i18n/locale", "Locales directory path")
+	out := flag.String("out", "common/i18n/i18nk/keys.go", "Output file path")
 	pkg := flag.String("pkg", "i18nk", "Package name for generated file")
 	flag.Parse()
 

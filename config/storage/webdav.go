@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/krau/SaveAny-Bot/types"
+	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 )
 
 type WebdavStorageConfig struct {
@@ -27,8 +27,8 @@ func (w *WebdavStorageConfig) Validate() error {
 	return nil
 }
 
-func (w *WebdavStorageConfig) GetType() types.StorageType {
-	return types.StorageTypeWebdav
+func (w *WebdavStorageConfig) GetType() storenum.StorageType {
+	return storenum.Webdav
 }
 
 func (w *WebdavStorageConfig) GetName() string {

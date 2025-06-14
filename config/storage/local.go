@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/krau/SaveAny-Bot/types"
+	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 )
 
 type LocalStorageConfig struct {
@@ -18,8 +18,8 @@ func (l *LocalStorageConfig) Validate() error {
 	return nil
 }
 
-func (l *LocalStorageConfig) GetType() types.StorageType {
-	return types.StorageTypeLocal
+func (l *LocalStorageConfig) GetType() storenum.StorageType {
+	return storenum.Local
 }
 
 func (l *LocalStorageConfig) GetName() string {
