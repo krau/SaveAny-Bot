@@ -5,20 +5,16 @@ import (
 )
 
 const (
-	TypeAddOne     = "addone"
-	TypeAddBatch   = "addbatch"
+	TypeAdd        = "add"
 	TypeSetDefault = "setdefault"
 )
 
 type Add struct {
-	File        tfile.TGFile
-	StorageName string
-	DirID       int64
-}
-
-type AddBatch struct {
-	Files           []tfile.TGFile
-	SelectedStorage string
+	Files            []tfile.TGFile
+	AsBatch          bool
+	SelectedStorName string
+	DirID            uint
+	SettedDir        bool
 }
 
 type SetDefaultStorage struct {

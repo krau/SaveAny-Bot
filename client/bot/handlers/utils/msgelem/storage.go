@@ -9,6 +9,7 @@ import (
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/cache"
+	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -19,9 +20,9 @@ func BuildAddOneSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFile
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range stors {
 		data := tcbdata.Add{
-			File:        file,
-			StorageName: storage.Name(),
-			DirID:       0,
+			Files:            []tfile.TGFile{file},
+			SelectedStorName: storage.Name(),
+			AsBatch:          false,
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)
@@ -30,7 +31,7 @@ func BuildAddOneSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFile
 		}
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
 			Text: storage.Name(),
-			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAddOne, dataid),
+			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
 		})
 	}
 	markup := &tg.ReplyInlineMarkup{}
@@ -95,9 +96,10 @@ func BuildSetDefaultStorageMarkup(ctx context.Context, userID int64, stors []sto
 func BuildAddBatchSelectStorageKeyboard(stors []storage.Storage, files []tfile.TGFile) *tg.ReplyInlineMarkup {
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range stors {
-		data := tcbdata.AddBatch{
-			Files:           files,
-			SelectedStorage: storage.Name(),
+		data := tcbdata.Add{
+			Files:            files,
+			SelectedStorName: storage.Name(),
+			AsBatch:          true,
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)
@@ -106,7 +108,7 @@ func BuildAddBatchSelectStorageKeyboard(stors []storage.Storage, files []tfile.T
 		}
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
 			Text: storage.Name(),
-			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAddBatch, dataid),
+			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
 		})
 	}
 	markup := &tg.ReplyInlineMarkup{}
@@ -116,4 +118,57 @@ func BuildAddBatchSelectStorageKeyboard(stors []storage.Storage, files []tfile.T
 		markup.Rows = append(markup.Rows, row)
 	}
 	return markup
+}
+
+func BuildSetDirKeyboard(dirs []database.Dir, dataid string) (*tg.ReplyInlineMarkup, error) {
+	data, ok := cache.Get[tcbdata.Add](dataid)
+	if !ok {
+		return nil, fmt.Errorf("failed to get data from cache: %s", dataid)
+	}
+	if data.DirID != 0 || data.SettedDir {
+		log.Warnf("Data already has a directory set: %d, %t", data.DirID, data.SettedDir)
+		return nil, fmt.Errorf("data already has a directory set")
+	}
+	buttons := make([]tg.KeyboardButtonClass, 0)
+	for _, dir := range dirs {
+		dirDataId := xid.New().String()
+		dirData := tcbdata.Add{
+			Files:            data.Files,
+			SelectedStorName: data.SelectedStorName,
+			AsBatch:          data.AsBatch,
+			DirID:            dir.ID,
+			SettedDir:        true,
+		}
+		err := cache.Set(dirDataId, dirData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to set directory data in cache: %w", err)
+		}
+		buttons = append(buttons, &tg.KeyboardButtonCallback{
+			Text: dir.Path,
+			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dirDataId),
+		})
+	}
+	dirDefaultDataId := xid.New().String()
+	dirDefaultData := tcbdata.Add{
+		Files:            data.Files,
+		SelectedStorName: data.SelectedStorName,
+		AsBatch:          data.AsBatch,
+		DirID:            0,
+		SettedDir:        true,
+	}
+	err := cache.Set(dirDefaultDataId, dirDefaultData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set default directory data in cache: %w", err)
+	}
+	buttons = append(buttons, &tg.KeyboardButtonCallback{
+		Text: "默认",
+		Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dirDefaultDataId),
+	})
+	markup := &tg.ReplyInlineMarkup{}
+	for i := 0; i < len(buttons); i += 3 {
+		row := tg.KeyboardButtonRow{}
+		row.Buttons = buttons[i:min(i+3, len(buttons))]
+		markup.Rows = append(markup.Rows, row)
+	}
+	return markup, nil
 }

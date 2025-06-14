@@ -3,6 +3,7 @@ package shortcut
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
@@ -55,9 +56,9 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message t
 }
 
 // 创建一个 tftask.TGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
-func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, stor storage.Storage, file tfile.TGFile, chatID int64, trackMsgID int) error {
+func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, file tfile.TGFile, chatID int64, trackMsgID int) error {
 	logger := log.FromContext(ctx)
-	storagePath := stor.JoinStoragePath(file.Name())
+	storagePath := stor.JoinStoragePath(path.Join(dirPath, file.Name()))
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	taskid := xid.New().String()
 	task, err := tftask.NewTGFileTask(taskid, injectCtx, file, ctx.Raw, stor, storagePath,
@@ -159,11 +160,11 @@ func GetCallbackDataWithAnswer[DataType any](ctx *ext.Context, update *ext.Updat
 }
 
 // 创建一个批量 batchtftask.BatchTGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
-func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, stor storage.Storage, files []tfile.TGFile, chatID int64, trackMsgID int) error {
+func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, files []tfile.TGFile, chatID int64, trackMsgID int) error {
 	logger := log.FromContext(ctx)
 	elems := make([]batchtftask.TaskElement, 0, len(files))
 	for _, file := range files {
-		storPath := stor.JoinStoragePath(file.Name())
+		storPath := stor.JoinStoragePath(path.Join(dirPath, file.Name()))
 		elem, err := batchtftask.NewTaskElement(stor, storPath, file)
 		if err != nil {
 			logger.Errorf("Failed to create task element: %s", err)

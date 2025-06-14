@@ -47,7 +47,7 @@ func handleSilentSaveLink(ctx *ext.Context, update *ext.Update) error {
 		return err
 	}
 	if len(files) == 1 {
-		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, stor, files[0], update.EffectiveChat().GetID(), replied.ID)
+		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, stor, "", files[0], update.EffectiveChat().GetID(), replied.ID)
 	}
-	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, stor, files, update.EffectiveChat().GetID(), replied.ID)
+	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, stor, "", files, update.EffectiveChat().GetID(), replied.ID)
 }

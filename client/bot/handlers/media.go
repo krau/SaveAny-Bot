@@ -44,5 +44,5 @@ func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, stor, file, chatID, msg.ID)
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, stor, "", file, chatID, msg.ID)
 }
