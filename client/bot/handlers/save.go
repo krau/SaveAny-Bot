@@ -10,14 +10,12 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
-	"github.com/krau/SaveAny-Bot/core"
-	"github.com/krau/SaveAny-Bot/core/tftask"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 
 	"github.com/krau/SaveAny-Bot/storage"
-	"github.com/rs/xid"
 )
 
 func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
@@ -26,26 +24,11 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	if len(args) >= 3 {
 		return handleBatchSave(ctx, update, args[1], args[2])
 	}
-
 	replyTo := update.EffectiveMessage.ReplyToMessage
 	if replyTo == nil || replyTo.Message == nil {
 		ctx.Reply(update, ext.ReplyTextString(msgelem.SaveHelpText), nil)
 		return dispatcher.EndGroups
 	}
-
-	media := replyTo.Media
-	supported := mediautil.IsSupported(media)
-	if !supported {
-		ctx.Reply(update, ext.ReplyTextString("不支持的消息类型"), nil)
-		return dispatcher.EndGroups
-	}
-
-	msg, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)
-	if err != nil {
-		logger.Errorf("回复失败: %s", err)
-		return dispatcher.EndGroups
-	}
-
 	genFilename := func() string {
 		if len(args) > 1 {
 			return args[1]
@@ -57,12 +40,9 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	if len(args) > 1 {
 		option = tfile.WithName(genFilename)
 	}
-
-	file, err := tfile.FromMedia(media, option)
+	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, *replyTo.Message, option)
 	if err != nil {
-		logger.Errorf("获取文件失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
-		return dispatcher.EndGroups
+		return err
 	}
 	userId := update.GetUserChat().GetID()
 	stors := storage.GetUserStorages(ctx, userId)
@@ -81,7 +61,6 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	if len(args) >= 3 {
 		return handleBatchSave(ctx, update, args[1], args[2])
 	}
-
 	logger := log.FromContext(ctx)
 	stor := storage.FromContext(ctx)
 	if stor == nil {
@@ -92,19 +71,6 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	replyTo := update.EffectiveMessage.ReplyToMessage
 	if replyTo == nil || replyTo.Message == nil {
 		ctx.Reply(update, ext.ReplyTextString(msgelem.SaveHelpText), nil)
-		return dispatcher.EndGroups
-	}
-
-	media := replyTo.Media
-	supported := mediautil.IsSupported(media)
-	if !supported {
-		ctx.Reply(update, ext.ReplyTextString("不支持的消息类型"), nil)
-		return dispatcher.EndGroups
-	}
-
-	msg, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)
-	if err != nil {
-		logger.Errorf("回复失败: %s", err)
 		return dispatcher.EndGroups
 	}
 	genFilename := func() string {
@@ -118,37 +84,11 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	if len(args) > 1 {
 		option = tfile.WithName(genFilename)
 	}
-
-	file, err := tfile.FromMedia(media, option)
+	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, *replyTo.Message, option)
 	if err != nil {
-		logger.Errorf("获取文件失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
-		return dispatcher.EndGroups
+		return err
 	}
-	storagePath := stor.JoinStoragePath(file.Name())
-	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
-	taskid := xid.New().String()
-	task, err := tftask.NewTGFileTask(taskid, injectCtx, file, ctx.Raw, stor, storagePath, tftask.NewProgressTrack(
-		msg.ID,
-		update.GetUserChat().GetID()))
-	if err != nil {
-		logger.Errorf("创建任务失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("创建任务失败: "+err.Error()), nil)
-		return dispatcher.EndGroups
-	}
-
-	if err := core.AddTask(injectCtx, task); err != nil {
-		logger.Errorf("添加任务失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("添加任务失败: "+err.Error()), nil)
-		return dispatcher.EndGroups
-	}
-	text, entities := msgelem.BuildTaskAddedEntities(ctx, file.Name(), core.GetLength(injectCtx))
-	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-		ID:       msg.ID,
-		Message:  text,
-		Entities: entities,
-	})
-	return dispatcher.EndGroups
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, stor, file, update.EffectiveChat().GetID(), msg.GetID())
 }
 
 func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgIdRangeArg string) error {
@@ -169,6 +109,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgId
 		return dispatcher.EndGroups
 	}
 
+	// TODO: generator istead of get all messages
 	msgs, err := tgutil.GetMessagesRange(ctx, chatID, int(startID), int(endID))
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString("获取消息失败: "+err.Error()), nil)
@@ -199,11 +140,17 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgId
 		ctx.Reply(update, ext.ReplyTextString("没有找到指定范围内的可保存消息"), nil)
 		return dispatcher.EndGroups
 	}
-	stors := storage.GetUserStorages(ctx, update.GetUserChat().GetID())
-	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-		ID:          replied.ID,
-		Message:     fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)),
-		ReplyMarkup: msgelem.BuildAddBatchSelectStorageKeyboard(stors, files),
-	})
-	return dispatcher.EndGroups
+	stor := storage.FromContext(ctx)
+	if stor == nil {
+		// not in silent mode
+		stors := storage.GetUserStorages(ctx, update.GetUserChat().GetID())
+		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
+			ID:          replied.ID,
+			Message:     fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)),
+			ReplyMarkup: msgelem.BuildAddBatchSelectStorageKeyboard(stors, files),
+		})
+		return dispatcher.EndGroups
+	}
+	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, stor, files, update.EffectiveChat().GetID(), replied.ID)
+
 }

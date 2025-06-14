@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -21,13 +22,15 @@ type ProgressTracker interface {
 }
 
 type Progress struct {
-	MessageID int
-	ChatID    int64
-	start     time.Time
+	MessageID         int
+	ChatID            int64
+	start             time.Time
+	lastUpdatePercent atomic.Int32
 }
 
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	p.start = time.Now()
+	p.lastUpdatePercent.Store(0)
 	log.FromContext(ctx).Debugf("Progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
@@ -36,6 +39,8 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 		styling.Code(info.FileName()),
 		styling.Plain("\n保存路径: "),
 		styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
+		styling.Plain("\n文件大小: "),
+		styling.Code(fmt.Sprintf("%.2f MB", float64(info.FileSize())/(1024*1024))),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
@@ -63,9 +68,14 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo, downloaded, total int64) {
-	if !shouldUpdateProgress(total, downloaded) {
+	if !shouldUpdateProgress(total, downloaded, int(p.lastUpdatePercent.Load())) {
 		return
 	}
+	percent := int32((downloaded * 100) / total)
+	if p.lastUpdatePercent.Load() == percent {
+		return
+	}
+	p.lastUpdatePercent.Store(percent)
 	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.FileName(), downloaded, total)
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
@@ -74,6 +84,8 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo, downloaded, to
 		styling.Code(info.FileName()),
 		styling.Plain("\n保存路径: "),
 		styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
+		styling.Plain("\n文件大小: "),
+		styling.Code(fmt.Sprintf("%.2f MB", float64(total)/(1024*1024))),
 		styling.Plain("\n平均速度: "),
 		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(downloaded, p.start)/(1024*1024))),
 		styling.Plain("\n当前进度: "),

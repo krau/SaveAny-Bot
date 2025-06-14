@@ -10,24 +10,23 @@ var progressUpdatesLevels = []struct {
 	{500 << 20, 5},
 }
 
-func shouldUpdateProgress(total, downloaded int64) bool {
+func shouldUpdateProgress(total, downloaded int64, lastUpdatePercent int) bool {
 	if total <= 0 || downloaded <= 0 {
 		return false
 	}
 
 	percent := int((downloaded * 100) / total)
+	if percent <= lastUpdatePercent {
+		return false
+	}
 
-	var step int
-	for _, level := range progressUpdatesLevels {
-		if total < level.size {
-			step = level.stepPercent
+	step := progressUpdatesLevels[len(progressUpdatesLevels)-1].stepPercent
+	for _, lvl := range progressUpdatesLevels {
+		if total < lvl.size {
+			step = lvl.stepPercent
 			break
 		}
 	}
 
-	if step == 0 {
-		step = progressUpdatesLevels[len(progressUpdatesLevels)-1].stepPercent
-	}
-
-	return percent > 0 && percent%step == 0
+	return percent >= lastUpdatePercent+step
 }
