@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
@@ -67,7 +69,7 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 	}
 	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 		ID:          replied.ID,
-		Message:     "请选择存储位置",
+		Message:     fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)),
 		ReplyMarkup: msgelem.BuildAddBatchSelectStorageKeyboard(stors, files),
 	})
 	return dispatcher.EndGroups

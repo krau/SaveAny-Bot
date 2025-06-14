@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
@@ -207,7 +208,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgId
 	stors := storage.GetUserStorages(ctx, update.GetUserChat().GetID())
 	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 		ID:          replied.ID,
-		Message:     "请选择存储位置",
+		Message:     fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)),
 		ReplyMarkup: msgelem.BuildAddBatchSelectStorageKeyboard(stors, files),
 	})
 	return dispatcher.EndGroups
