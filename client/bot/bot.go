@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"net/url"
+	"time"
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/sessionMaker"
@@ -56,7 +57,7 @@ func Init(ctx context.Context) {
 			&gotgproto.ClientOpts{
 				Session:          sessionMaker.SqlSession(gormlite.Open(config.Cfg.DB.Session)),
 				DisableCopyright: true,
-				Middlewares:      middleware.NewFloodWaitMiddlewares(uint(config.Cfg.Telegram.FloodRetry)),
+				Middlewares:      middleware.NewDefaultMiddlewares(ctx, 5*time.Minute),
 				Resolver:         resolver,
 				Context:          ctx,
 				MaxRetries:       config.Cfg.Telegram.RpcRetry,

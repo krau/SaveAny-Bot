@@ -8,7 +8,7 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/charmbracelet/log"
-	"github.com/krau/SaveAny-Bot/client/user/middlewares"
+	"github.com/krau/SaveAny-Bot/client/middleware"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/ncruces/go-sqlite3/gormlite"
 )
@@ -44,7 +44,7 @@ func Login(ctx context.Context) (*gotgproto.Client, error) {
 				AuthConversator:  &termialAuthConversator{},
 				Context:          ctx,
 				DisableCopyright: true,
-				Middlewares:      middlewares.NewDefaultMiddlewares(ctx, 5*time.Minute),
+				Middlewares:      middleware.NewDefaultMiddlewares(ctx, 5*time.Minute),
 			},
 		)
 		if err != nil {

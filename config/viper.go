@@ -54,7 +54,6 @@ type telegramConfig struct {
 	AppHash    string        `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
 	Timeout    int           `toml:"timeout" mapstructure:"timeout" json:"timeout"`
 	Proxy      proxyConfig   `toml:"proxy" mapstructure:"proxy"`
-	FloodRetry int           `toml:"flood_retry" mapstructure:"flood_retry" json:"flood_retry"`
 	RpcRetry   int           `toml:"rpc_retry" mapstructure:"rpc_retry" json:"rpc_retry"`
 	Userbot    userbotConfig `toml:"userbot" mapstructure:"userbot" json:"userbot"`
 }

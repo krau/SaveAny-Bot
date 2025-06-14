@@ -30,13 +30,7 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 		logger.Errorf("回复失败: %s", err)
 		return dispatcher.EndGroups
 	}
-
-	genFilename := tgutil.GenFileNameFromMessage(*message)
-	if genFilename == "" {
-		genFilename = xid.New().String()
-	}
-
-	file, err := tfile.FromMedia(media, tfile.WithNameIfEmpty(genFilename))
+	file, err := tfile.FromMedia(media, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message)))
 	if err != nil {
 		logger.Errorf("获取文件失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
@@ -75,12 +69,7 @@ func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 		logger.Errorf("回复失败: %s", err)
 		return dispatcher.EndGroups
 	}
-	genFilename := tgutil.GenFileNameFromMessage(*message)
-	if genFilename == "" {
-		genFilename = xid.New().String()
-	}
-
-	file, err := tfile.FromMedia(media, tfile.WithNameIfEmpty(genFilename))
+	file, err := tfile.FromMedia(media, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message)))
 	if err != nil {
 		logger.Errorf("获取文件失败: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)

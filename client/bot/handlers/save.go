@@ -51,9 +51,6 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 			return args[1]
 		}
 		filename := tgutil.GenFileNameFromMessage(*replyTo.Message)
-		if filename == "" {
-			return xid.New().String()
-		}
 		return filename
 	}()
 	option := tfile.WithNameIfEmpty(genFilename)
@@ -115,9 +112,6 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 			return args[1]
 		}
 		filename := tgutil.GenFileNameFromMessage(*replyTo.Message)
-		if filename == "" {
-			return xid.New().String()
-		}
 		return filename
 	}()
 	option := tfile.WithNameIfEmpty(genFilename)

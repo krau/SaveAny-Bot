@@ -15,12 +15,30 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
+	"github.com/rs/xid"
 )
 
 func GenFileNameFromMessage(message tg.Message) string {
+	ext := func(media tg.MessageMediaClass) string {
+		switch media := media.(type) {
+		case *tg.MessageMediaDocument:
+			doc, ok := media.Document.AsNotEmpty()
+			if !ok {
+				return ""
+			}
+			ext := mimetype.Lookup(doc.MimeType).Extension()
+			if ext == "" {
+				return ""
+			}
+			return ext
+		case *tg.MessageMediaPhoto:
+			return ".jpg"
+		}
+		return ""
+	}(message.Media)
 	text := strings.TrimSpace(message.GetMessage())
 	if text == "" {
-		return ""
+		return fmt.Sprintf("%d_%s%s", message.GetID(), xid.New().String(), ext)
 	}
 	filename := func() string {
 		tags := strutil.ExtractTagsFromText(text)
@@ -61,23 +79,10 @@ func GenFileNameFromMessage(message tg.Message) string {
 		}), "_")
 		return text
 	}()
-	ext := func(media tg.MessageMediaClass) string {
-		switch media := media.(type) {
-		case *tg.MessageMediaDocument:
-			doc, ok := media.Document.AsNotEmpty()
-			if !ok {
-				return ""
-			}
-			ext := mimetype.Lookup(doc.MimeType).Extension()
-			if ext == "" {
-				return ""
-			}
-			return ext
-		case *tg.MessageMediaPhoto:
-			return ".jpg"
-		}
-		return ""
-	}(message.Media)
+
+	if filename == "" {
+		filename = fmt.Sprintf("%d_%s", message.GetID(), xid.New().String())
+	}
 	return filename + ext
 }
 
