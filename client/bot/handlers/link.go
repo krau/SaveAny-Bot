@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
@@ -29,8 +30,16 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 		ctx.EditMessage(update.EffectiveChat().GetID(), req)
 		return dispatcher.EndGroups
 	}
+	markup, err := msgelem.BuildAddSelectStorageKeyboard(stors, tcbdata.Add{
+		Files: files,
+	})
+	if err != nil {
+		logger.Errorf("构建存储选择键盘失败: %s", err)
+		editReplied("构建存储选择键盘失败: "+err.Error(), nil)
+		return dispatcher.EndGroups
+	}
 	editReplied(fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)),
-		msgelem.BuildAddBatchSelectStorageKeyboard(stors, files))
+		markup)
 	return dispatcher.EndGroups
 }
 

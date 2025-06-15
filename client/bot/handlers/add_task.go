@@ -11,7 +11,11 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
+	"github.com/krau/SaveAny-Bot/core"
+	"github.com/krau/SaveAny-Bot/core/tphtask"
 	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
 	"gorm.io/gorm"
@@ -24,6 +28,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		return err
 	}
 	queryID := update.CallbackQuery.GetQueryID()
+	msgID := update.CallbackQuery.GetMsgID()
 	userID := update.CallbackQuery.GetUserID()
 
 	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, data.SelectedStorName)
@@ -36,34 +41,50 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("获取用户目录失败: %w", err)
 	}
-	if data.SettedDir || len(dirs) == 0 {
-		// create task directly
-		dirPath := ""
-		if data.DirID != 0 {
-			dir, err := database.GetDirByID(ctx, data.DirID)
-			if err != nil {
-				ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "获取目录失败: "+err.Error()))
-				return dispatcher.EndGroups
-			}
-			dirPath = dir.Path
-		}
-		if data.AsBatch {
-			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files, update.CallbackQuery.GetMsgID())
-		}
-		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], update.CallbackQuery.GetMsgID())
-	}
 
-	// ask for directory selection
-	markup, err := msgelem.BuildSetDirKeyboard(dirs, dataid)
-	if err != nil {
-		log.FromContext(ctx).Errorf("Failed to build directory keyboard: %s", err)
-		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "目录键盘构建失败: "+err.Error()))
+	if !data.SettedDir && len(dirs) == 0 {
+		// ask for directory selection
+		markup, err := msgelem.BuildSetDirKeyboard(dirs, dataid)
+		if err != nil {
+			log.FromContext(ctx).Errorf("Failed to build directory keyboard: %s", err)
+			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "目录键盘构建失败: "+err.Error()))
+			return dispatcher.EndGroups
+		}
+		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+			ID:          update.CallbackQuery.GetMsgID(),
+			Message:     "请选择要存储到的目录",
+			ReplyMarkup: markup,
+		})
 		return dispatcher.EndGroups
 	}
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-		ID:          update.CallbackQuery.GetMsgID(),
-		Message:     "请选择要存储到的目录",
-		ReplyMarkup: markup,
-	})
+
+	dirPath := ""
+	if data.DirID != 0 {
+		dir, err := database.GetDirByID(ctx, data.DirID)
+		if err != nil {
+			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "获取目录失败: "+err.Error()))
+			return dispatcher.EndGroups
+		}
+		dirPath = dir.Path
+	}
+
+	switch data.TaskType {
+	case tasktype.TaskTypeTgfiles:
+		if data.AsBatch {
+			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files, msgID)
+		}
+		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], msgID)
+	case tasktype.TaskTypeTphpics:
+		task := tphtask.NewTask(dataid, ctx, data.TphDirPath, data.TphPics, selectedStorage, dirPath, tphutil.DefaultClient(),
+			tphtask.NewProgress(msgID, userID),
+		)
+		if err := core.AddTask(ctx, task); err != nil {
+			log.FromContext(ctx).Errorf("Failed to add task: %s", err)
+			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "任务添加失败: "+err.Error()))
+			return dispatcher.EndGroups
+		}
+	default:
+		log.FromContext(ctx).Errorf("Unsupported task type: %s", data.TaskType)
+	}
 	return dispatcher.EndGroups
 }

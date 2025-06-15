@@ -36,6 +36,6 @@ func Register(disp dispatcher.Dispatcher) {
 	if err != nil {
 		panic("failed to create Telegraph URL regex filter: " + err.Error())
 	}
-	disp.AddHandler(handlers.NewMessage(telegraphUrlRegexFilter, handleTelegraphUrlMessage)) // TODO:
+	disp.AddHandler(handlers.NewMessage(telegraphUrlRegexFilter, handleSilentMode(handleTelegraphUrlMessage, handleSilentSaveTelegraph))) // TODO:
 	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleSilentMode(handleMediaMessage, handleSilentSaveMedia)))
 }

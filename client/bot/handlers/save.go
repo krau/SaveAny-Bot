@@ -13,6 +13,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
+	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 
 	"github.com/krau/SaveAny-Bot/storage"
@@ -144,10 +145,21 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgId
 	if stor == nil {
 		// not in silent mode
 		stors := storage.GetUserStorages(ctx, update.GetUserChat().GetID())
+		markup, err := msgelem.BuildAddSelectStorageKeyboard(stors, tcbdata.Add{
+			Files: files,
+		})
+		if err != nil {
+			log.FromContext(ctx).Errorf("构建存储选择键盘失败: %s", err)
+			ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
+				ID:      replied.ID,
+				Message: "构建存储选择键盘失败: " + err.Error(),
+			})
+			return dispatcher.EndGroups
+		}
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:          replied.ID,
 			Message:     fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)),
-			ReplyMarkup: msgelem.BuildAddBatchSelectStorageKeyboard(stors, files),
+			ReplyMarkup: markup,
 		})
 		return dispatcher.EndGroups
 	}

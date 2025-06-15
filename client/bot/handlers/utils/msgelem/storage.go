@@ -10,19 +10,37 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/rs/xid"
 )
 
-func BuildAddOneSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFileMessage) (*tg.ReplyInlineMarkup, error) {
+func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add) (*tg.ReplyInlineMarkup, error) {
+	taskType := adddata.TaskType
+	if taskType == "" {
+		if len(adddata.Files) > 0 {
+			taskType = tasktype.TaskTypeTgfiles
+		} else if adddata.TphPageNode != nil {
+			taskType = tasktype.TaskTypeTphpics
+		} else {
+			return nil, fmt.Errorf("unknown task type: %s", taskType)
+		}
+	}
+
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range stors {
 		data := tcbdata.Add{
-			Files:            []tfile.TGFileMessage{file},
+			TaskType:         taskType,
 			SelectedStorName: storage.Name(),
-			AsBatch:          false,
+
+			Files:   adddata.Files,
+			AsBatch: len(adddata.Files) > 1,
+
+			TphPageNode: adddata.TphPageNode,
+			TphPics:     adddata.TphPics,
+			TphDirPath:  adddata.TphDirPath,
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)
@@ -56,7 +74,11 @@ func BuildAddOneSelectStorageMessage(ctx context.Context, stors []storage.Storag
 	} else {
 		text, entities = eb.Complete()
 	}
-	markup, err := BuildAddOneSelectStorageKeyboard(stors, file)
+	markup, err := BuildAddSelectStorageKeyboard(stors, tcbdata.Add{
+		TaskType: tasktype.TaskTypeTgfiles,
+		Files:    []tfile.TGFileMessage{file},
+		AsBatch:  false,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to build storage keyboard: %w", err)
 	}
@@ -91,33 +113,6 @@ func BuildSetDefaultStorageMarkup(ctx context.Context, userID int64, stors []sto
 		markup.Rows = append(markup.Rows, row)
 	}
 	return markup, nil
-}
-
-func BuildAddBatchSelectStorageKeyboard(stors []storage.Storage, files []tfile.TGFileMessage) *tg.ReplyInlineMarkup {
-	buttons := make([]tg.KeyboardButtonClass, 0)
-	for _, storage := range stors {
-		data := tcbdata.Add{
-			Files:            files,
-			SelectedStorName: storage.Name(),
-			AsBatch:          true,
-		}
-		dataid := xid.New().String()
-		err := cache.Set(dataid, data)
-		if err != nil {
-			return nil
-		}
-		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: storage.Name(),
-			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
-		})
-	}
-	markup := &tg.ReplyInlineMarkup{}
-	for i := 0; i < len(buttons); i += 3 {
-		row := tg.KeyboardButtonRow{}
-		row.Buttons = buttons[i:min(i+3, len(buttons))]
-		markup.Rows = append(markup.Rows, row)
-	}
-	return markup
 }
 
 func BuildSetDirKeyboard(dirs []database.Dir, dataid string) (*tg.ReplyInlineMarkup, error) {

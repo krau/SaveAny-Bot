@@ -123,7 +123,7 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 
 func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	if err != nil {
-		log.FromContext(ctx).Errorf("Batch task %s failed: %v", info.TaskID(), err)
+		log.FromContext(ctx).Errorf("Batch task %s failed: %s", info.TaskID(), err)
 	} else {
 		log.FromContext(ctx).Debugf("Batch task %s completed successfully", info.TaskID())
 	}
