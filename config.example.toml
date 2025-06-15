@@ -85,6 +85,12 @@ secret_access_key = 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
 bucket_name = 'saveanybot'
 base_path = '/path/telegram'
 
+[[storages]]
+name = "mychannel"
+type = "telegram"
+enable = true
+chat_id = 1820371480
+
 
 # 其他配置
 
