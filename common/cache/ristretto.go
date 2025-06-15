@@ -9,11 +9,16 @@ import (
 
 var cache *ristretto.Cache[string, any]
 
+
+// TODO: maybe we should use simple ttl cache instead of ristretto...
 func init() {
 	c, err := ristretto.NewCache(&ristretto.Config[string, any]{
-		NumCounters: 1e6, // 1M keys
-		MaxCost:     1e7, // 10M values
+		NumCounters: 1e5,
+		MaxCost:     1e6, // 1000000 / 112 ≈ 8928
 		BufferItems: 64,
+		OnReject: func(item *ristretto.Item[any]) {
+			log.Warnf("Cache item rejected: key=%d, value=%v", item.Key, item.Value)
+		},
 	})
 	if err != nil {
 		log.Fatalf("failed to create ristretto cache: %v", err)
@@ -22,7 +27,7 @@ func init() {
 }
 
 func Set(key string, value any) error {
-	ok := cache.Set(key, value, 1)
+	ok := cache.Set(key, value, 0)
 	if !ok {
 		return fmt.Errorf("failed to set value in cache")
 	}

@@ -9,7 +9,7 @@ import (
 
 type RuleFileNameRegex struct {
 	storInfo
-	Regex *regexp.Regexp
+	regex *regexp.Regexp
 }
 
 var _ RuleClass[tfile.TGFile] = (*RuleFileNameRegex)(nil)
@@ -19,15 +19,15 @@ func (r RuleFileNameRegex) Type() ruleenum.RuleType {
 }
 
 func (r RuleFileNameRegex) Match(input tfile.TGFile) (bool, error) {
-	return r.Regex.MatchString(input.Name()), nil
+	return r.regex.MatchString(input.Name()), nil
 }
 
 func (r RuleFileNameRegex) StorageName() string {
-	return r.StorName
+	return r.storName
 }
 
 func (r RuleFileNameRegex) StoragePath() string {
-	return r.StorPath
+	return r.storPath
 }
 
 func NewRuleFileNameRegex(storName, storPath, regexStr string) (*RuleFileNameRegex, error) {
@@ -37,9 +37,9 @@ func NewRuleFileNameRegex(storName, storPath, regexStr string) (*RuleFileNameReg
 	}
 	return &RuleFileNameRegex{
 		storInfo: storInfo{
-			StorName: storName,
-			StorPath: storPath,
+			storName: storName,
+			storPath: storPath,
 		},
-		Regex: regex,
+		regex: regex,
 	}, nil
 }

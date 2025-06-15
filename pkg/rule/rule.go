@@ -12,6 +12,6 @@ type RuleClass[InputType any] interface {
 }
 
 type storInfo struct {
-	StorName string
-	StorPath string
+	storName string
+	storPath string
 }

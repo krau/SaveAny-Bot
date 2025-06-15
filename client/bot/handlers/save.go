@@ -40,7 +40,7 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	if len(args) > 1 {
 		option = tfile.WithName(genFilename)
 	}
-	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, *replyTo.Message, option)
+	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, replyTo.Message, option)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	if len(args) > 1 {
 		option = tfile.WithName(genFilename)
 	}
-	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, *replyTo.Message, option)
+	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, replyTo.Message, option)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgId
 		ctx.Reply(update, ext.ReplyTextString("没有找到指定范围内的消息"), nil)
 		return dispatcher.EndGroups
 	}
-	files := make([]tfile.TGFile, 0, len(msgs))
+	files := make([]tfile.TGFileMessage, 0, len(msgs))
 	for _, msg := range msgs {
 		media, ok := msg.GetMedia()
 		if !ok {
@@ -129,7 +129,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgId
 		if !supported {
 			continue
 		}
-		file, err := tfile.FromMedia(media, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
+		file, err := tfile.FromMediaMessage(media, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
 		if err != nil {
 			log.FromContext(ctx).Errorf("获取文件失败: %s", err)
 			continue

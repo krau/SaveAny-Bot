@@ -16,11 +16,11 @@ import (
 	"github.com/rs/xid"
 )
 
-func BuildAddOneSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFile) (*tg.ReplyInlineMarkup, error) {
+func BuildAddOneSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFileMessage) (*tg.ReplyInlineMarkup, error) {
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range stors {
 		data := tcbdata.Add{
-			Files:            []tfile.TGFile{file},
+			Files:            []tfile.TGFileMessage{file},
 			SelectedStorName: storage.Name(),
 			AsBatch:          false,
 		}
@@ -43,7 +43,7 @@ func BuildAddOneSelectStorageKeyboard(stors []storage.Storage, file tfile.TGFile
 	return markup, nil
 }
 
-func BuildAddOneSelectStorageMessage(ctx context.Context, stors []storage.Storage, file tfile.TGFile, msgId int) (*tg.MessagesEditMessageRequest, error) {
+func BuildAddOneSelectStorageMessage(ctx context.Context, stors []storage.Storage, file tfile.TGFileMessage, msgId int) (*tg.MessagesEditMessageRequest, error) {
 	eb := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	text := fmt.Sprintf("文件名: %s\n请选择存储位置", file.Name())
@@ -93,7 +93,7 @@ func BuildSetDefaultStorageMarkup(ctx context.Context, userID int64, stors []sto
 	return markup, nil
 }
 
-func BuildAddBatchSelectStorageKeyboard(stors []storage.Storage, files []tfile.TGFile) *tg.ReplyInlineMarkup {
+func BuildAddBatchSelectStorageKeyboard(stors []storage.Storage, files []tfile.TGFileMessage) *tg.ReplyInlineMarkup {
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range stors {
 		data := tcbdata.Add{

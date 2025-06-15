@@ -10,7 +10,7 @@ var _ RuleClass[string] = (*RuleMessageRegex)(nil)
 
 type RuleMessageRegex struct {
 	storInfo
-	Regex *regexp.Regexp
+	regex *regexp.Regexp
 }
 
 func (r RuleMessageRegex) Type() ruleenum.RuleType {
@@ -18,14 +18,14 @@ func (r RuleMessageRegex) Type() ruleenum.RuleType {
 }
 
 func (r RuleMessageRegex) Match(input string) (bool, error) {
-	return r.Regex.MatchString(input), nil
+	return r.regex.MatchString(input), nil
 }
 
 func (r RuleMessageRegex) StorageName() string {
-	return r.StorName
+	return r.storName
 }
 func (r RuleMessageRegex) StoragePath() string {
-	return r.StorPath
+	return r.storPath
 }
 
 func NewRuleMessageRegex(storName, storPath, regexStr string) (*RuleMessageRegex, error) {
@@ -35,9 +35,9 @@ func NewRuleMessageRegex(storName, storPath, regexStr string) (*RuleMessageRegex
 	}
 	return &RuleMessageRegex{
 		storInfo: storInfo{
-			StorName: storName,
-			StorPath: storPath,
+			storName: storName,
+			storPath: storPath,
 		},
-		Regex: regex,
+		regex: regex,
 	}, nil
 }

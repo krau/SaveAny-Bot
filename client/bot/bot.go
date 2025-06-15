@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/celestix/gotgproto"
+	"github.com/celestix/gotgproto/dispatcher"
+	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/dcs"
@@ -62,6 +64,10 @@ func Init(ctx context.Context) {
 				Context:          ctx,
 				MaxRetries:       config.Cfg.Telegram.RpcRetry,
 				AutoFetchReply:   true,
+				ErrorHandler: func(ctx *ext.Context, u *ext.Update, s string) error {
+					log.FromContext(ctx).Errorf("Unhandled error: %s", s)
+					return dispatcher.EndGroups
+				},
 			},
 		)
 		if err != nil {

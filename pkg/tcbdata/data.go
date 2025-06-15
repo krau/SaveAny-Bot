@@ -10,7 +10,7 @@ const (
 )
 
 type Add struct {
-	Files            []tfile.TGFile
+	Files            []tfile.TGFileMessage
 	AsBatch          bool
 	SelectedStorName string
 	DirID            uint

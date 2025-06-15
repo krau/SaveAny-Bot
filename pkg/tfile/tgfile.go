@@ -14,47 +14,49 @@ type TGFile interface {
 	Name() string
 }
 
+type TGFileMessage interface {
+	TGFile
+	Message() *tg.Message
+}
+
 type tgFile struct {
 	location tg.InputFileLocationClass
 	size     int64
 	name     string
+	message  *tg.Message
 }
 
 func (f *tgFile) Location() tg.InputFileLocationClass {
 	return f.location
 }
+
 func (f *tgFile) Size() int64 {
 	return f.size
 }
+
 func (f *tgFile) Name() string {
 	return f.name
 }
 
-func NewTGFile(location tg.InputFileLocationClass, size int64, name string) TGFile {
-	return &tgFile{
+func (f *tgFile) Message() *tg.Message {
+	return f.message
+}
+
+func NewTGFile(location tg.InputFileLocationClass, size int64, name string,
+	opts ...TGFileOptions,
+) TGFile {
+	f := &tgFile{
 		location: location,
 		size:     size,
 		name:     name,
 	}
-}
-
-type FromMediaOptions func(*tgFile)
-
-func WithName(name string) FromMediaOptions {
-	return func(f *tgFile) {
-		f.name = name
+	for _, opt := range opts {
+		opt(f)
 	}
+	return f
 }
 
-func WithNameIfEmpty(name string) FromMediaOptions {
-	return func(f *tgFile) {
-		if f.name == "" {
-			f.name = name
-		}
-	}
-}
-
-func FromMedia(media tg.MessageMediaClass, opts ...FromMediaOptions) (TGFile, error) {
+func FromMedia(media tg.MessageMediaClass, opts ...TGFileOptions) (TGFile, error) {
 	switch m := media.(type) {
 	case *tg.MessageMediaDocument:
 		document, ok := m.Document.AsNotEmpty()
@@ -108,4 +110,17 @@ func FromMedia(media tg.MessageMediaClass, opts ...FromMediaOptions) (TGFile, er
 		return file, nil
 	}
 	return nil, fmt.Errorf("unsupported media type: %T", media)
+}
+
+func FromMediaMessage(media tg.MessageMediaClass, msg *tg.Message, opts ...TGFileOptions) (TGFileMessage, error) {
+	file, err := FromMedia(media, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &tgFile{
+		location: file.Location(),
+		size:     file.Size(),
+		name:     file.Name(),
+		message:  msg,
+	}, nil
 }

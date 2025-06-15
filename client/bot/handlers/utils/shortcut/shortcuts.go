@@ -24,8 +24,8 @@ import (
 )
 
 // 获取消息中的文件并回复等待消息, 返回等待消息, 获取到的文件
-func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message tg.Message, tfileopts ...tfile.FromMediaOptions) (replied *types.Message,
-	file tfile.TGFile, err error,
+func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *tg.Message, tfileopts ...tfile.TGFileOptions) (replied *types.Message,
+	file tfile.TGFileMessage, err error,
 ) {
 	logger := log.FromContext(ctx)
 	media := message.Media
@@ -40,13 +40,15 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message t
 		logger.Errorf("Failed to reply: %s", err)
 		return nil, nil, dispatcher.EndGroups
 	}
-	options := make([]tfile.FromMediaOptions, 0, len(tfileopts)+1)
-	if len(tfileopts) > 0 {
-		options = tfileopts
-	} else {
-		options = append(options, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(message)))
+	options := []tfile.TGFileOptions{
+		tfile.WithMessage(message),
 	}
-	file, err = tfile.FromMedia(media, options...)
+	if len(tfileopts) > 0 {
+		options = append(options, tfileopts...)
+	} else {
+		options = append(options, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message)))
+	}
+	file, err = tfile.FromMediaMessage(media, message, options...)
 	if err != nil {
 		logger.Errorf("Failed to get file from media: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
@@ -94,7 +96,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirP
 type EditMessageFunc func(text string, markup tg.ReplyMarkupClass)
 
 // 获取链接中的文件并回复等待消息
-func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Update) (replied *types.Message, files []tfile.TGFile, editReplied EditMessageFunc, err error) {
+func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Update) (replied *types.Message, files []tfile.TGFileMessage, editReplied EditMessageFunc, err error) {
 	logger := log.FromContext(ctx)
 	msgLinks := re.TgMessageLinkRegexp.FindAllString(update.EffectiveMessage.GetMessage(), -1)
 	if len(msgLinks) == 0 {
@@ -116,7 +118,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 		}
 	}
 
-	files = make([]tfile.TGFile, 0, len(msgLinks))
+	files = make([]tfile.TGFileMessage, 0, len(msgLinks))
 	for _, link := range msgLinks {
 		chatId, msgId, err := tgutil.ParseMessageLink(ctx, link)
 		if err != nil {
@@ -133,7 +135,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 			logger.Debugf("message %d has no media", msg.GetID())
 			continue
 		}
-		file, err := tfile.FromMedia(media, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
+		file, err := tfile.FromMediaMessage(media, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
 		if err != nil {
 			logger.Errorf("failed to create file from media: %s", err)
 			continue
@@ -159,8 +161,8 @@ func GetCallbackDataWithAnswer[DataType any](ctx *ext.Context, update *ext.Updat
 	return data, nil
 }
 
-// 创建一个批量 batchtftask.BatchTGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
-func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, files []tfile.TGFile, chatID int64, trackMsgID int) error {
+// 创建一个 batchtftask.BatchTGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
+func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, files []tfile.TGFileMessage, chatID int64, trackMsgID int) error {
 	logger := log.FromContext(ctx)
 	elems := make([]batchtftask.TaskElement, 0, len(files))
 	for _, file := range files {
