@@ -6,18 +6,20 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/fileutil"
-	"github.com/krau/SaveAny-Bot/common"
 	config "github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/types"
+	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 )
 
 type Local struct {
 	config config.LocalStorageConfig
+	logger *log.Logger
 }
 
-func (l *Local) Init(cfg config.StorageConfig) error {
+func (l *Local) Init(ctx context.Context, cfg config.StorageConfig) error {
 	localConfig, ok := cfg.(*config.LocalStorageConfig)
 	if !ok {
 		return fmt.Errorf("failed to cast local config")
@@ -30,25 +32,33 @@ func (l *Local) Init(cfg config.StorageConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to create local storage directory: %w", err)
 	}
+	l.logger = log.FromContext(ctx).WithPrefix(fmt.Sprintf("local[%s]", l.config.Name))
 	return nil
 }
 
-func (l *Local) Type() types.StorageType {
-	return types.StorageTypeLocal
+func (l *Local) Type() storenum.StorageType {
+	return storenum.Local
 }
 
 func (l *Local) Name() string {
 	return l.config.Name
 }
 
-func (l *Local) JoinStoragePath(task types.Task) string {
-	return filepath.Join(l.config.BasePath, task.StoragePath)
+func (l *Local) JoinStoragePath(path string) string {
+	return filepath.Join(l.config.BasePath, path)
 }
 
 func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error {
-	common.Log.Infof("Saving file to %s", storagePath)
+	l.logger.Infof("Saving file to %s", storagePath)
 
-	absPath, err := filepath.Abs(storagePath)
+	ext := filepath.Ext(storagePath)
+	base := strings.TrimSuffix(storagePath, ext)
+	candidate := storagePath
+	for i := 1; l.Exists(ctx, candidate); i++ {
+		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+	}
+
+	absPath, err := filepath.Abs(candidate)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,7 @@ logs/
 tmp/
 data/
 downloads/
-cache/
 session.*
 cache.db
 .vscode/
+temp/

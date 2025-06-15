@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/krau/SaveAny-Bot/types"
+	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 )
 
 type MinioStorageConfig struct {
@@ -32,8 +32,8 @@ func (m *MinioStorageConfig) Validate() error {
 	return nil
 }
 
-func (m *MinioStorageConfig) GetType() types.StorageType {
-	return types.StorageTypeMinio
+func (m *MinioStorageConfig) GetType() storenum.StorageType {
+	return storenum.Minio
 }
 
 func (m *MinioStorageConfig) GetName() string {

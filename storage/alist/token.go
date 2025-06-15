@@ -2,17 +2,17 @@ package alist
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
-	"github.com/krau/SaveAny-Bot/common"
 	config "github.com/krau/SaveAny-Bot/config/storage"
 )
 
-func (a *Alist) getToken() error {
+func (a *Alist) getToken(ctx context.Context) error {
 	loginBody, err := json.Marshal(a.loginInfo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal login request: %w", err)
@@ -51,15 +51,15 @@ func (a *Alist) getToken() error {
 func (a *Alist) refreshToken(cfg config.AlistStorageConfig) {
 	tokenExp := cfg.TokenExp
 	if tokenExp <= 0 {
-		common.Log.Warn("Invalid token expiration time, using default value")
+		a.logger.Warn("Invalid token expiration time, using default value")
 		tokenExp = 3600
 	}
 	for {
 		time.Sleep(time.Duration(tokenExp) * time.Second)
-		if err := a.getToken(); err != nil {
-			common.Log.Errorf("Failed to refresh jwt token: %v", err)
+		if err := a.getToken(context.Background()); err != nil {
+			a.logger.Errorf("Failed to refresh jwt token: %v", err)
 			continue
 		}
-		common.Log.Info("Refreshed Alist jwt token")
+		a.logger.Info("Refreshed Alist jwt token")
 	}
 }

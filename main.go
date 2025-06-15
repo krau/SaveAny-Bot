@@ -1,7 +1,15 @@
 package main
 
-import "github.com/krau/SaveAny-Bot/cmd"
+import (
+	"context"
+	"os"
+	"os/signal"
+
+	"github.com/krau/SaveAny-Bot/cmd"
+)
 
 func main() {
-	cmd.Execute()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+	cmd.Execute(ctx)
 }
