@@ -10,10 +10,11 @@ import (
 )
 
 var storageFactories = map[storenum.StorageType]func(cfg *BaseConfig) (StorageConfig, error){
-	storenum.Local:  createStorageConfig(&LocalStorageConfig{}),
-	storenum.Alist:  createStorageConfig(&AlistStorageConfig{}),
-	storenum.Webdav: createStorageConfig(&WebdavStorageConfig{}),
-	storenum.Minio:  createStorageConfig(&MinioStorageConfig{}),
+	storenum.Local:    createStorageConfig(&LocalStorageConfig{}),
+	storenum.Alist:    createStorageConfig(&AlistStorageConfig{}),
+	storenum.Webdav:   createStorageConfig(&WebdavStorageConfig{}),
+	storenum.Minio:    createStorageConfig(&MinioStorageConfig{}),
+	storenum.Telegram: createStorageConfig(&TelegramStorageConfig{}),
 }
 
 func createStorageConfig(configType StorageConfig) func(cfg *BaseConfig) (StorageConfig, error) {

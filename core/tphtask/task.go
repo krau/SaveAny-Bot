@@ -18,8 +18,9 @@ type Task struct {
 	client   *telegraph.Client
 	progress ProgressTracker
 
-	totalpics  int
-	downloaded atomic.Int64
+	cannotStream bool
+	totalpics    int
+	downloaded   atomic.Int64
 }
 
 func NewTask(
@@ -32,17 +33,19 @@ func NewTask(
 	client *telegraph.Client,
 	progress ProgressTracker,
 ) *Task {
+	_, cannotStream := stor.(storage.StorageCannotStream)
 	tphtask := &Task{
-		ID:         id,
-		Ctx:        ctx,
-		PhPath:     phPath,
-		Pics:       pics,
-		Stor:       stor,
-		StorPath:   storPath,
-		client:     client,
-		progress:   progress,
-		totalpics:  len(pics),
-		downloaded: atomic.Int64{},
+		ID:           id,
+		Ctx:          ctx,
+		PhPath:       phPath,
+		Pics:         pics,
+		Stor:         stor,
+		StorPath:     storPath,
+		client:       client,
+		progress:     progress,
+		cannotStream: cannotStream,
+		totalpics:    len(pics),
+		downloaded:   atomic.Int64{},
 	}
 	return tphtask
 }

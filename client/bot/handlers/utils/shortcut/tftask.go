@@ -145,7 +145,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 	}
 	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 		ID:          trackMsgID,
-		Message:     fmt.Sprintf("已添加批量任务, 共 %d 个文件", len(files)), // TODO: stylng message
+		Message:     fmt.Sprintf("已添加批量任务, 共 %d 个文件", len(files)),
 		ReplyMarkup: nil,
 	})
 	return dispatcher.EndGroups

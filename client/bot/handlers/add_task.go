@@ -39,7 +39,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		return fmt.Errorf("获取用户目录失败: %w", err)
 	}
 
-	if !data.SettedDir && len(dirs) == 0 {
+	if !data.SettedDir && len(dirs) != 0 {
 		// ask for directory selection
 		markup, err := msgelem.BuildSetDirKeyboard(dirs, dataid)
 		if err != nil {

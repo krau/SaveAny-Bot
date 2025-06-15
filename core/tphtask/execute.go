@@ -3,11 +3,15 @@ package tphtask
 import (
 	"context"
 	"fmt"
+	"io"
 	"path"
+	"path/filepath"
 
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/retry"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
+	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -46,14 +50,45 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 		retry.Context(ctx),
 		retry.RetryTimes(uint(config.Cfg.Retry)),
 	}
+	var lastErr error
 	err := retry.Retry(func() error {
-		body, err := t.client.Download(ctx, picUrl)
-		if err != nil {
-			return fmt.Errorf("failed to download picture %s: %w", picUrl, err)
+		var body io.ReadCloser
+		body, lastErr = t.client.Download(ctx, picUrl)
+		if lastErr != nil {
+			lastErr = fmt.Errorf("failed to download picture %s: %w", picUrl, lastErr)
+			return lastErr
 		}
 		defer body.Close()
 		filename := fmt.Sprintf("%d%s", index+1, path.Ext(picUrl))
-		return t.Stor.Save(ctx, body, path.Join(t.StorPath, filename))
+		if t.cannotStream {
+			cacheFile, err := fsutil.CreateFile(filepath.Join(config.Cfg.Temp.BasePath,
+				fmt.Sprintf("tph_%s_%s", t.TaskID(), filename),
+			))
+			if err != nil {
+				lastErr = fmt.Errorf("failed to create cache file for picture %s: %w", filename, err)
+				return lastErr
+			}
+			defer func() {
+				if err := cacheFile.CloseAndRemove(); err != nil {
+					logger := log.FromContext(ctx)
+					logger.Errorf("Failed to close and remove cache file for picture %s: %v", filename, err)
+				}
+			}()
+			_, lastErr = io.Copy(cacheFile, body)
+			if lastErr != nil {
+				lastErr = fmt.Errorf("failed to copy picture %s to cache file: %w", filename, lastErr)
+				return lastErr
+			}
+			lastErr = t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, filename))
+		} else {
+			lastErr = t.Stor.Save(ctx, body, path.Join(t.StorPath, filename))
+		}
+
+		if lastErr != nil {
+			lastErr = fmt.Errorf("failed to save picture %s: %w", filename, lastErr)
+			return lastErr
+		}
+		return nil
 	}, retryOpts...)
-	return err
+	return multierr.Combine(err, lastErr)
 }
