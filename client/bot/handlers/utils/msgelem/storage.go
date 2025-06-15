@@ -127,13 +127,9 @@ func BuildSetDirKeyboard(dirs []database.Dir, dataid string) (*tg.ReplyInlineMar
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, dir := range dirs {
 		dirDataId := xid.New().String()
-		dirData := tcbdata.Add{
-			Files:            data.Files,
-			SelectedStorName: data.SelectedStorName,
-			AsBatch:          data.AsBatch,
-			DirID:            dir.ID,
-			SettedDir:        true,
-		}
+		dirData := data
+		dirData.DirID = dir.ID
+		dirData.SettedDir = true
 		err := cache.Set(dirDataId, dirData)
 		if err != nil {
 			return nil, fmt.Errorf("failed to set directory data in cache: %w", err)
