@@ -11,10 +11,6 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
-	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
-	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
-	"github.com/krau/SaveAny-Bot/core"
-	"github.com/krau/SaveAny-Bot/core/tphtask"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -76,21 +72,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		}
 		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], msgID)
 	case tasktype.TaskTypeTphpics:
-		injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
-		task := tphtask.NewTask(dataid, injectCtx, data.TphDirPath, data.TphPics, selectedStorage, selectedStorage.JoinStoragePath(data.TphDirPath), tphutil.DefaultClient(),
-			tphtask.NewProgress(msgID, userID),
-		)
-		if err := core.AddTask(injectCtx, task); err != nil {
-			log.FromContext(ctx).Errorf("Failed to add task: %s", err)
-			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "任务添加失败: "+err.Error()))
-			return dispatcher.EndGroups
-		}
-		text, entities := msgelem.BuildTaskAddedEntities(ctx, data.TphPageNode.Title, core.GetLength(ctx))
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:       msgID,
-			Message:  text,
-			Entities: entities,
-		})
+		return shortcut.CreateAndAddTphTaskWithEdit(ctx, userID, data.TphPageNode, data.TphDirPath, data.TphPics, selectedStorage, msgID)
 	default:
 		log.FromContext(ctx).Errorf("Unsupported task type: %s", data.TaskType)
 	}
