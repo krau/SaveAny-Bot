@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/pkg/consts"
 	ruleenum "github.com/krau/SaveAny-Bot/pkg/enums/rule"
 	"github.com/krau/SaveAny-Bot/pkg/rule"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -26,7 +27,17 @@ func NewInput(file tfile.TGFileMessage, opts ...ruleInputOption) *ruleInput {
 	return input
 }
 
-func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (matchedStorageName, dirPath string) {
+type matchedStorName string
+
+func (m matchedStorName) String() string {
+	return string(m)
+}
+
+func (m matchedStorName) IsValid() bool {
+	return m != "" && m != consts.RuleStorNameChosen
+}
+
+func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (matchedStorageName matchedStorName, dirPath string) {
 	if inputs == nil || len(rules) == 0 {
 		return "", ""
 	}
@@ -46,7 +57,7 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 			}
 			if ok {
 				dirPath = ru.StoragePath()
-				matchedStorageName = ru.StorageName()
+				matchedStorageName = matchedStorName(ru.StorageName())
 			}
 		case ruleenum.MessageRegex.String():
 			ru, err := rule.NewRuleMessageRegex(ur.StorageName, ur.DirPath, ur.Data)
@@ -61,7 +72,7 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 			}
 			if ok {
 				dirPath = ru.StoragePath()
-				matchedStorageName = ru.StorageName()
+				matchedStorageName = matchedStorName(ru.StorageName())
 			}
 		}
 	}

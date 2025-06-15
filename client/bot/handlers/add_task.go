@@ -48,9 +48,9 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 			dirPath = dir.Path
 		}
 		if data.AsBatch {
-			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, selectedStorage, dirPath, data.Files, userID, update.CallbackQuery.GetMsgID())
+			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files, update.CallbackQuery.GetMsgID())
 		}
-		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, selectedStorage, dirPath, data.Files[0], userID, update.CallbackQuery.GetMsgID())
+		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], update.CallbackQuery.GetMsgID())
 	}
 
 	// ask for directory selection

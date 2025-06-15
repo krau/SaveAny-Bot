@@ -4,12 +4,8 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
-	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
-	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
-	"github.com/krau/SaveAny-Bot/database"
-	"github.com/krau/SaveAny-Bot/pkg/consts"
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
@@ -43,29 +39,10 @@ func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 	}
 	message := update.EffectiveMessage.Message
 	logger.Debugf("Got media: %s", message.Media.TypeName())
-	chatID := update.EffectiveChat().GetID()
+	userID := update.GetUserChat().GetID()
 	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, message)
 	if err != nil {
 		return err
 	}
-	user, err := database.GetUserByChatID(ctx, chatID)
-	if err != nil {
-		return err
-	}
-	var matchedStorageName, dirPath string
-	if user.ApplyRule && user.Rules != nil {
-		matchedStorageName, dirPath = ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
-	}
-	if matchedStorageName != "" && matchedStorageName != consts.RuleStorNameChosen {
-		stor, err = storage.GetStorageByUserIDAndName(ctx, user.ChatID, matchedStorageName)
-		if err != nil {
-			logger.Errorf("Failed to get storage by user ID and name: %s", err)
-			ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
-				ID:      msg.ID,
-				Message: "获取存储失败: " + err.Error(),
-			})
-			return dispatcher.EndGroups
-		}
-	}
-	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, stor, dirPath, file, chatID, msg.ID)
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, stor, "", file, msg.ID)
 }
