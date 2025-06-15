@@ -47,7 +47,6 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 		retry.RetryTimes(uint(config.Cfg.Retry)),
 	}
 	err := retry.Retry(func() error {
-		// main logic
 		body, err := t.client.Download(ctx, picUrl)
 		if err != nil {
 			return fmt.Errorf("failed to download picture %s: %w", picUrl, err)

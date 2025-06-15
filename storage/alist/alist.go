@@ -1,6 +1,7 @@
 package alist
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -102,12 +104,19 @@ func (a *Alist) Name() string {
 func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) error {
 	a.logger.Infof("Saving file to %s", storagePath)
 
+	ext := path.Ext(storagePath)
+	base := strings.TrimSuffix(storagePath, ext)
+	candidate := storagePath
+	for i := 1; a.Exists(ctx, candidate); i++ {
+		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, a.baseURL+"/api/fs/put", reader)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Authorization", a.token)
-	req.Header.Set("File-Path", url.PathEscape(storagePath))
+	req.Header.Set("File-Path", url.PathEscape(candidate))
 	req.Header.Set("Content-Type", "application/octet-stream")
 	if length := ctx.Value(key.ContextKeyContentLength); length != nil {
 		length, ok := length.(int64)
@@ -148,10 +157,59 @@ func (a *Alist) JoinStoragePath(p string) string {
 }
 
 func (a *Alist) Exists(ctx context.Context, storagePath string) bool {
-	// TODO: Implement it.
-	return false
-}
+	// POST  /api/fs/get
+	/*
+		body:
+		{
+		  "path": "/t",
+		  "password": "",
+		  "page": 1,
+		  "per_page": 0,
+		  "refresh": false
+		}
+	*/
+	body := map[string]any{
+		"path":     storagePath,
+		"password": "",
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		a.logger.Errorf("Failed to marshal request body: %v", err)
+		return false
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/api/fs/get", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		a.logger.Errorf("Failed to create request: %v", err)
+		return false
+	}
+	req.Header.Set("Authorization", a.token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := a.client.Do(req)
+	if err != nil {
+		a.logger.Errorf("Failed to send request: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		a.logger.Errorf("Failed to read response body: %v", err)
+		return false
+	}
+	var fsGetResp fsGetResponse
+	if err := json.Unmarshal(data, &fsGetResp); err != nil {
+		a.logger.Errorf("Failed to unmarshal fs get response: %v", err)
+		return false
+	}
+	if fsGetResp.Code != http.StatusOK {
+		a.logger.Errorf("Failed to get file info from Alist: %d, %s", fsGetResp.Code, fsGetResp.Message)
+		return false
+	}
+	return true
 
+}
 
 // Impl StorageCannotStream interface
 func (a *Alist) CannotStream() string {

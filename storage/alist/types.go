@@ -42,3 +42,8 @@ type putResponse struct {
 		} `json:"task"`
 	} `json:"data"`
 }
+
+type fsGetResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}

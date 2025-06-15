@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	config "github.com/krau/SaveAny-Bot/config/storage"
@@ -65,7 +66,14 @@ func (m *Minio) JoinStoragePath(p string) string {
 func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	m.logger.Infof("Saving file from reader to %s", storagePath)
 
-	_, err := m.client.PutObject(ctx, m.config.BucketName, storagePath, r, -1, minio.PutObjectOptions{})
+	ext := path.Ext(storagePath)
+	base := strings.TrimSuffix(storagePath, ext)
+	candidate := storagePath
+	for i := 1; m.Exists(ctx, candidate); i++ {
+		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+	}
+
+	_, err := m.client.PutObject(ctx, m.config.BucketName, candidate, r, -1, minio.PutObjectOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to upload file to minio: %w", err)
 	}
@@ -75,14 +83,6 @@ func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error
 
 func (m *Minio) Exists(ctx context.Context, storagePath string) bool {
 	m.logger.Debugf("Checking if file exists at %s", storagePath)
-	// TODO: test it.
 	_, err := m.client.StatObject(ctx, m.config.BucketName, storagePath, minio.StatObjectOptions{})
-	if err != nil {
-		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
-			return false // File does not exist
-		}
-		return false
-	}
-
-	return true
+	return err == nil
 }

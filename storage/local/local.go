@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/fileutil"
@@ -50,7 +51,14 @@ func (l *Local) JoinStoragePath(path string) string {
 func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	l.logger.Infof("Saving file to %s", storagePath)
 
-	absPath, err := filepath.Abs(storagePath)
+	ext := filepath.Ext(storagePath)
+	base := strings.TrimSuffix(storagePath, ext)
+	candidate := storagePath
+	for i := 1; l.Exists(ctx, candidate); i++ {
+		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+	}
+
+	absPath, err := filepath.Abs(candidate)
 	if err != nil {
 		return err
 	}

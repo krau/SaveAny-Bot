@@ -31,7 +31,6 @@ func newProxyDialer(proxyUrl string) (proxy.Dialer, error) {
 
 func Init(ctx context.Context) {
 	log.FromContext(ctx).Info("初始化 Bot...")
-	// go InitTelegraphClient()
 	resultChan := make(chan struct {
 		client *gotgproto.Client
 		err    error

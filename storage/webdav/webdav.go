@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -49,12 +50,20 @@ func (w *Webdav) JoinStoragePath(p string) string {
 
 func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	w.logger.Infof("Saving file to %s", storagePath)
-	if err := w.client.MkDir(ctx, path.Dir(storagePath)); err != nil {
-		w.logger.Errorf("Failed to create directory %s: %v", path.Dir(storagePath), err)
+
+	ext := path.Ext(storagePath)
+	base := strings.TrimSuffix(storagePath, ext)
+	candidate := storagePath
+	for i := 1; w.Exists(ctx, candidate); i++ {
+		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+	}
+
+	if err := w.client.MkDir(ctx, path.Dir(candidate)); err != nil {
+		w.logger.Errorf("Failed to create directory %s: %v", path.Dir(candidate), err)
 		return ErrFailedToCreateDirectory
 	}
-	if err := w.client.WriteFile(ctx, storagePath, r); err != nil {
-		w.logger.Errorf("Failed to write file %s: %v", storagePath, err)
+	if err := w.client.WriteFile(ctx, candidate, r); err != nil {
+		w.logger.Errorf("Failed to write file %s: %v", candidate, err)
 		return ErrFailedToWriteFile
 	}
 	return nil

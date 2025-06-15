@@ -8,7 +8,7 @@ type User struct {
 	gorm.Model
 	ChatID         int64 `gorm:"uniqueIndex;not null"`
 	Silent         bool
-	DefaultStorage string // Default storage name
+	DefaultStorage string
 	Dirs           []Dir
 	ApplyRule      bool
 	Rules          []Rule
