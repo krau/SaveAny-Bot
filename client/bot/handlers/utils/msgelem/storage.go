@@ -140,13 +140,9 @@ func BuildSetDirKeyboard(dirs []database.Dir, dataid string) (*tg.ReplyInlineMar
 		})
 	}
 	dirDefaultDataId := xid.New().String()
-	dirDefaultData := tcbdata.Add{
-		Files:            data.Files,
-		SelectedStorName: data.SelectedStorName,
-		AsBatch:          data.AsBatch,
-		DirID:            0,
-		SettedDir:        true,
-	}
+	dirDefaultData := data
+	dirDefaultData.DirID = 0
+	dirDefaultData.SettedDir = true
 	err := cache.Set(dirDefaultDataId, dirDefaultData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set default directory data in cache: %w", err)
