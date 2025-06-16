@@ -1,0 +1,141 @@
+---
+title: "配置说明"
+---
+
+# 配置说明
+
+SaveAnyBot 的配置文件使用 toml 格式, 你可以在 [TOML 官方网站](https://toml.io/) 上了解更多关于 toml 的语法.
+
+SaveAnyBot 需要读取工作目录下的 `config.toml` 文件作为配置文件, 若缺少该文件则会创建默认文件, 并尝试从环境变量中加载配置.
+
+以下是一个最简的配置文件示例:
+
+```toml
+[telegram]
+token = "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+[[users]]
+# telegram user id
+id = 777000
+blacklist = true
+
+[[storages]]
+name = "本机存储"
+type = "local"
+enable = true
+base_path = "./downloads"
+```
+
+## 详细配置
+
+### 全局配置
+
+- `stream`: 是否启用 Stream 模式, 默认为 `false`. 启用后 Bot 将直接将文件流式传输到存储端(若存储端支持), 不需要下载到本地
+{{< hint warning >}}
+Stream 模式对于磁盘空间有限的部署环境十分有用, 但也有一些弊端:
+<br />
+<ul>
+<li>无法使用多线程从 Telegram 下载文件, 速度较慢.</li>
+<li>网络不稳定时, 任务失败率高.</li>
+<li>无法在中间层对文件进行处理, 例如自动文件类型识别.</li>
+<li>并非支持所有存储端, 不支持的存储端可能会降级为普通模式或无法上传.</li>
+</ul>
+{{< /hint >}}
+- `workers`: 同时处理任务数量, 默认为 3
+- `threads`: 下载文件时使用的线程数, 默认为 4. 仅在未启用 Stream 模式时生效.
+- `retry`: 任务失败时的重试次数, 默认为 3.
+
+### Telegram 配置
+
+- `token`: 你的 Telegram Bot Token, 可以通过 [BotFather](https://t.me/botfather) 创建 Bot 并获取 Token.
+- `app_id`, `app_hash`: Telegram API ID & Hash, 在 [Telegram API](https://my.telegram.org/apps) 创建应用获取, 若不提供则使用默认值.
+- `flood_retry`: Flood 控制重试次数, 默认为 5.
+- `rpc_retry`: RPC 请求重试次数, 默认为 5.
+- `proxy`: 代理配置, 可选项.
+  - `enable`: 是否启用代理.
+  - `url`: 代理地址, 只支持 `socks5://`
+
+```toml
+[telegram]
+token = "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+app_id = 1025907
+app_hash = "452b0359b988148995f22ff0f4229750"
+flood_retry = 5
+rpc_retry = 5
+[telegram.proxy]
+enable = false
+url = "socks5://127.0.0.1:7890"
+```
+
+### 存储端列表
+
+存储端列表用于定义 Bot 支持的存储位置, 每个存储端需要指定名称、类型和相关配置, 使用双中括号语法 `[[storages]]` 定义.
+
+每一个存储端至少需要以下字段:
+
+- `name`: 存储端名称, 用于在 Bot 中识别, 需要唯一
+- `enable`: 是否启用该存储端, 默认为 `true`
+- `type`: 存储端类型, 目前支持以下类型:
+  - `local`: 本地磁盘
+  - `alist`: Alist
+  - `webdav`: WebDAV
+  - `minio`: MinIO (兼容 S3 API)
+  - `telegram`: 上传到 Telegram
+
+示例, 这是一个包含本地存储和 webdav 存储的配置:
+
+```toml
+[[storages]]
+name = "本地存储"
+type = "local"
+enable = true
+# 以下是 local 类型存储的自定义配置
+base_path = "./downloads"
+
+[[storages]]
+name = "WebDAV"
+type = "webdav"
+enable = true
+# 以下是 webdav 类型存储的自定义配置
+url = "https://example.com/webdav"
+base_path = "/path/to/webdav"
+username = "your_username"
+password = "your_password"
+```
+
+所有存储端的自定义配置项可查看 [存储端配置](./storages) 
+
+### 用户列表
+
+用户列表用于定义对存储端的访问控制, 每个用户需要指定 Telegram 上的用户 ID, 使用双中括号语法 `[[users]]` 定义.
+
+- `id`: 用户的 Telegram User ID
+- `storages`: 过滤的存储端列表, 使用存储端名称定义, 默认为白名单模式 (即只允许访问列表中的存储端)
+- `blacklist`: 是否启用黑名单模式, 默认为 `false`. 若启用黑名单模式, 则仅允许访问**没有**在列表中的存储端.
+
+示例, 这是一个包含三个用户的配置, 用户 `123123` 只能访问本地存储, 用户 `456456` 只能访问除 WebDAV 以外的存储, 用户 `789789` 启用黑名单模式但没有指定存储端, 因此可以访问所有存储:
+
+```toml
+[[users]]
+id = 123123
+storages = ["本地存储"]
+
+[[users]]
+id = 456456
+storages = ["WebDAV"]
+blacklist = true
+
+[[users]]
+id = 789789
+storages = []
+blacklist = true
+```
+
+### 杂项
+
+```toml
+no_clean_cache = false # 是否在退出时不清空缓存文件夹
+# 临时下载文件夹配置
+[temp]
+base_path = "./cache"
+```

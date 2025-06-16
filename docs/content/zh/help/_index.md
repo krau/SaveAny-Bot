@@ -1,3 +1,8 @@
+---
+title: "常见问题"
+weight: 15
+---
+
 # 常见问题
 
 ## 上传 alist 失败也会显示成功
@@ -6,11 +11,8 @@
 
 ## Bot 提示下载成功但是 alist 未显示
 
-alist 缓存了目录结构, 参考文档可以调整缓存时间
-
-https://alist.nn.ci/zh/guide/drivers/common.html#缓存过期
+alist 缓存了目录结构, 参考 <a href="https://alist.nn.ci/zh/guide/drivers/common.html#缓存过期" target="_blank">文档</a> 可以调整缓存时间
 
 ## docker部署配置了代理后仍无法连接 telegram (初始化客户端超时)
 
-docker 不能直接访问宿主机网络, 如果你不熟悉其用法, 请将容器设为 host 模式:
-
+docker 不能直接访问宿主机网络, 如果你不熟悉其用法, 请将容器设为 host 模式.

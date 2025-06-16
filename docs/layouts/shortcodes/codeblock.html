@@ -1,0 +1,3 @@
+{{- $lang := .Get "lang" | default "text" -}}
+{{- $content := .Inner | strings.TrimSpace | htmlEscape -}}
+<pre><code class="language-{{ $lang }}">{{ $content }}</code></pre>
