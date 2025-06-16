@@ -1,6 +1,6 @@
 <div align="center">
 
-# <img src="docs/logo.jpg" width="45" align="center"> Save Any Bot
+# <img src="docs/static/logo.png" width="45" align="center"> Save Any Bot
 
 **简体中文** | [English](https://sabot.unv.app/en/)
 

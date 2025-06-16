@@ -4,6 +4,7 @@ disablePathToLower = true
 enableGitInfo = true
 defaultContentLanguage = 'zh'
 
+
 [module]
 [[module.imports]]
 path = 'github.com/alex-shpak/hugo-book'
@@ -16,15 +17,7 @@ BookSection = '*'
 BookRepo = 'https://github.com/krau/saveany-bot'
 BookCommitPath = 'commit'
 BookEditPath = 'edit/main/docs'
-
-# (Optional, default January 2, 2006) Configure the date format used on the pages
-# - In git information
-# - In blog posts
 BookDateFormat = '2006/01/02'
-
-# (Optional, default true) Enables search function with flexsearch,
-# Index is built on fly, therefore it might slowdown your website.
-# Configuration for indexing can be adjusted in i18n folder per language.
 BookSearch = false
 
 [languages]
@@ -34,10 +27,20 @@ languageName = "简体中文"
 contentDir = "content/zh"
 weight = 1
 
+[[languages.zh.menu.before]]
+name = "🔗 GitHub"
+url = "https://github.com/krau/SaveAny-Bot"
+weight = 10
+
 [languages.en]
 languageName = "English"
 contentDir = "content/en"
 weight = 2
+
+[[languages.en.menu.before]]
+name = "🔗 GitHub"
+url = "https://github.com/krau/SaveAny-Bot"
+weight = 10
 
 [markup]
 [markup.goldmark.renderer]
