@@ -15,7 +15,6 @@ token = ""
 
 # 初始化超时时间, 单位: 秒
 timeout = 60
-
 # flood_retry = 5
 # rpc_retry = 5
 
@@ -91,18 +90,9 @@ type = "telegram"
 enable = true
 chat_id = 1820371480
 
-
-# 其他配置
-
-# [log]
-# # 日志等级
-# level = "DEBUG"
-
 # [temp]
 # # 下载文件临时目录, 请不要在此目录下存放任何其他文件
 # base_path = "cache/"
-# # 临时文件保存时间, 单位: 秒
-# cache_ttl = 30
 
 # [db]
 # path = "data/data.db" # 数据库文件路径

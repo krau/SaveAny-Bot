@@ -25,7 +25,6 @@ type Config struct {
 	Users []userConfig `toml:"users" mapstructure:"users" json:"users"`
 
 	Temp     tempConfig              `toml:"temp" mapstructure:"temp"`
-	Log      logConfig               `toml:"log" mapstructure:"log"`
 	DB       dbConfig                `toml:"db" mapstructure:"db"`
 	Telegram telegramConfig          `toml:"telegram" mapstructure:"telegram"`
 	Storages []storage.StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
@@ -36,16 +35,10 @@ type tempConfig struct {
 	CacheTTL int64  `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl"`
 }
 
-type logConfig struct {
-	Level       string `toml:"level" mapstructure:"level"`
-	File        string `toml:"file" mapstructure:"file"`
-	BackupCount uint   `toml:"backup_count" mapstructure:"backup_count" json:"backup_count"`
-}
 
 type dbConfig struct {
 	Path    string `toml:"path" mapstructure:"path"`
 	Session string `toml:"session" mapstructure:"session"`
-	Expire  int64  `toml:"expire" mapstructure:"expire"`
 }
 
 type telegramConfig struct {
@@ -104,13 +97,9 @@ func Init(ctx context.Context) error {
 	viper.SetDefault("telegram.userbot.session", "data/usersession.db")
 
 	viper.SetDefault("temp.base_path", "cache/")
-	viper.SetDefault("temp.cache_ttl", 30)
-
-	viper.SetDefault("log.level", "INFO")
 
 	viper.SetDefault("db.path", "data/saveany.db")
 	viper.SetDefault("db.session", "data/session.db")
-	viper.SetDefault("db.expire", 86400*5)
 
 	if err := viper.SafeWriteConfigAs("config.toml"); err != nil {
 		if _, ok := err.(viper.ConfigFileAlreadyExistsError); !ok {
