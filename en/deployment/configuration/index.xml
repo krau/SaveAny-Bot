@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Configuration Guide on Save Any Bot</title><link>https://sabot.unv.app/en/deployment/configuration/</link><description>Recent content in Configuration Guide on Save Any Bot</description><generator>Hugo</generator><language>en</language><atom:link href="https://sabot.unv.app/en/deployment/configuration/index.xml" rel="self" type="application/rss+xml"/><item><title>Storage Configuration</title><link>https://sabot.unv.app/en/deployment/configuration/storages/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/deployment/configuration/storages/</guid><description>&lt;h1 id="storage-configuration">
+ Storage Configuration
+ &lt;a class="anchor" href="#storage-configuration">#&lt;/a>
+&lt;/h1>
+&lt;p>Please first read the &lt;a href="../">Configuration Guide&lt;/a> to understand the basic format of the configuration file.&lt;/p>
+&lt;h2 id="alist">
+ Alist
+ &lt;a class="anchor" href="#alist">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=alist&lt;/code>&lt;/p>
+&lt;p>Stream mode is not supported.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">url&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;https://alist.example.com&amp;#34;&lt;/span> &lt;span style="color:#75715e"># URL of Alist&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">username&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_username&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Username for Alist&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">password&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_password&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Password for Alist&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;/path/saveanybot&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Base path in Alist, all files will be stored under this path&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token_exp&lt;/span> = &lt;span style="color:#ae81ff">3600&lt;/span> &lt;span style="color:#75715e"># Auto-refresh time for Alist access token, in seconds&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_token&amp;#34;&lt;/span> 
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Access token for Alist, optional, if not set, username and password will be used for authentication.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># When using token authentication, the token cannot be automatically refreshed&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="local-disk">
+ Local Disk
+ &lt;a class="anchor" href="#local-disk">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=local&lt;/code>&lt;/p></description></item></channel></rss>

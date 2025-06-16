@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Deployment Guide on Save Any Bot</title><link>https://sabot.unv.app/en/deployment/</link><description>Recent content in Deployment Guide on Save Any Bot</description><generator>Hugo</generator><language>en</language><atom:link href="https://sabot.unv.app/en/deployment/index.xml" rel="self" type="application/rss+xml"/><item><title>Installation and Updates</title><link>https://sabot.unv.app/en/deployment/installation/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/deployment/installation/</guid><description>&lt;h1 id="installation-and-updates">
+ Installation and Updates
+ &lt;a class="anchor" href="#installation-and-updates">#&lt;/a>
+&lt;/h1>
+&lt;h2 id="deploy-from-pre-compiled-files">
+ Deploy from Pre-compiled Files
+ &lt;a class="anchor" href="#deploy-from-pre-compiled-files">#&lt;/a>
+&lt;/h2>
+&lt;p>Download the binary file for your platform from the &lt;a href="https://github.com/krau/SaveAny-Bot/releases">Release&lt;/a> page.&lt;/p>
+&lt;p>Create a &lt;code>config.toml&lt;/code> file in the extracted directory, refer to the &lt;a href="../configuration">Configuration Guide&lt;/a> to edit the configuration file.&lt;/p>
+&lt;p>Run:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>chmod +x saveany-bot
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>./saveany-bot
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="process-monitoring">
+ Process Monitoring
+ &lt;a class="anchor" href="#process-monitoring">#&lt;/a>
+&lt;/h3>
+&lt;div class="book-tabs">
+
+
+&lt;input type="radio" class="toggle" name="tabs-daemon" id="tabs-daemon-0" checked="checked" />
+&lt;label for="tabs-daemon-0">systemd (Regular Linux)&lt;/label>
+&lt;div class="book-tabs-content markdown-inner">
+
+Create a file &lt;code>/etc/systemd/system/saveany-bot.service&lt;/code> and write the following content:
+
+&lt;pre>&lt;code class="language-text">[Unit]
+Description=SaveAnyBot
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+WorkingDirectory=/yourpath/
+ExecStart=/yourpath/saveany-bot
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target&lt;/code>&lt;/pre>
+
+Enable startup on boot and start the service:
+
+&lt;pre>&lt;code class="language-text">systemctl enable --now saveany-bot&lt;/code>&lt;/pre>
+
+&lt;/div>
+
+
+
+&lt;input type="radio" class="toggle" name="tabs-daemon" id="tabs-daemon-1" />
+&lt;label for="tabs-daemon-1">procd (OpenWrt)&lt;/label>
+&lt;div class="book-tabs-content markdown-inner">
+
+&lt;h4>Add Boot Autostart Service&lt;/h4>
+
+Create a file &lt;code>/etc/init.d/saveanybot&lt;/code>, refer to &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init" target="_blank">wrt_init&lt;/a> and modify as needed:
+
+&lt;pre>&lt;code class="language-text">#!/bin/sh /etc/rc.common
+
+#This is the OpenWRT init.d script for SaveAnyBot
+
+START=99 
+STOP=10
+description=&amp;amp;#34;SaveAnyBot&amp;amp;#34;
+
+WORKING_DIR=&amp;amp;#34;/mnt/mmc1-1/SaveAnyBot&amp;amp;#34;
+EXEC_PATH=&amp;amp;#34;$WORKING_DIR/saveany-bot&amp;amp;#34;
+start() {
+ echo &amp;amp;#34;Starting SaveAnyBot...&amp;amp;#34;
+ cd $WORKING_DIR
+ $EXEC_PATH &amp;amp;amp;
+}
+stop() {
+ echo &amp;amp;#34;Stopping SaveAnyBot...&amp;amp;#34;
+ killall saveany-bot
+}
+reload() {
+ stop
+ start
+}&lt;/code>&lt;/pre>
+
+Set permissions:
+
+&lt;pre>&lt;code class="language-text">chmod &amp;#43;x /etc/init.d/saveanybot&lt;/code>&lt;/pre>
+
+Then copy the file to &lt;code>/etc/rc.d&lt;/code> and rename it to &lt;code>S99saveanybot&lt;/code>, also set permissions:
+
+&lt;pre>&lt;code class="language-text">chmod &amp;#43;x /etc/rc.d/S99saveanybot&lt;/code>&lt;/pre>
+
+&lt;h4>Add Shortcut Commands&lt;/h4>
+
+Create a file &lt;code>/usr/bin/sabot&lt;/code>, refer to &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_bin" target="_blank">wrt_bin&lt;/a> and modify as needed. Note that the file encoding here only supports ANSI 936.
+
+Then set permissions:
+
+&lt;pre>&lt;code class="language-text">chmod &amp;#43;x /usr/bin/sabot&lt;/code>&lt;/pre>
+
+Usage: &lt;code>sudo sabot start|stop|restart|status|enable|disable&lt;/code>
+
+&lt;/div>
+
+
+&lt;/div>
+
+&lt;h2 id="deploy-using-docker">
+ Deploy Using Docker
+ &lt;a class="anchor" href="#deploy-using-docker">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="docker-compose">
+ Docker Compose
+ &lt;a class="anchor" href="#docker-compose">#&lt;/a>
+&lt;/h3>
+&lt;p>Download the &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml">docker-compose.yml&lt;/a> file, create a new &lt;code>config.toml&lt;/code> file in the same directory, refer to &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml">config.example.toml&lt;/a> to edit the configuration file.&lt;/p></description></item></channel></rss>
