@@ -7,3 +7,4 @@ session.*
 cache.db
 .vscode/
 temp/
+.hugo_build.lock
