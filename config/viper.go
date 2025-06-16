@@ -35,20 +35,19 @@ type tempConfig struct {
 	CacheTTL int64  `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl"`
 }
 
-
 type dbConfig struct {
 	Path    string `toml:"path" mapstructure:"path"`
 	Session string `toml:"session" mapstructure:"session"`
 }
 
 type telegramConfig struct {
-	Token      string        `toml:"token" mapstructure:"token"`
-	AppID      int           `toml:"app_id" mapstructure:"app_id" json:"app_id"`
-	AppHash    string        `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
-	Timeout    int           `toml:"timeout" mapstructure:"timeout" json:"timeout"`
-	Proxy      proxyConfig   `toml:"proxy" mapstructure:"proxy"`
-	RpcRetry   int           `toml:"rpc_retry" mapstructure:"rpc_retry" json:"rpc_retry"`
-	Userbot    userbotConfig `toml:"userbot" mapstructure:"userbot" json:"userbot"`
+	Token    string        `toml:"token" mapstructure:"token"`
+	AppID    int           `toml:"app_id" mapstructure:"app_id" json:"app_id"`
+	AppHash  string        `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
+	Timeout  int           `toml:"timeout" mapstructure:"timeout" json:"timeout"`
+	Proxy    proxyConfig   `toml:"proxy" mapstructure:"proxy"`
+	RpcRetry int           `toml:"rpc_retry" mapstructure:"rpc_retry" json:"rpc_retry"`
+	Userbot  userbotConfig `toml:"userbot" mapstructure:"userbot" json:"userbot"`
 }
 
 type userbotConfig struct {
