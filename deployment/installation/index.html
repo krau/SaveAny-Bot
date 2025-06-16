@@ -1,0 +1,172 @@
+<!doctype html><html lang=zh dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="
+  安装与更新
+  #
+
+
+  从预编译文件部署
+  #
+
+在 Release 页面下载对应平台的二进制文件.
+在解压后目录新建 config.toml 文件, 参考 配置说明 编辑配置文件
+运行:
+chmod +x saveany-bot
+./saveany-bot
+
+  进程守护
+  #
+
+
+
+
+
+systemd (常规 Linux)
+
+
+创建文件 /etc/systemd/system/saveany-bot.service 并写入以下内容:
+
+[Unit]
+Description=SaveAnyBot
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+WorkingDirectory=/yourpath/
+ExecStart=/yourpath/saveany-bot
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+设为开机启动并启动服务:
+
+systemctl enable --now saveany-bot
+
+
+
+
+
+
+procd (OpenWrt)
+
+
+添加开机自启动服务
+
+创建文件 /etc/init.d/saveanybot ，参考 wrt_init 并自行修改:
+
+#!/bin/sh /etc/rc.common
+
+#This is the OpenWRT init.d script for SaveAnyBot
+
+START=99 
+STOP=10
+description=&amp;#34;SaveAnyBot&amp;#34;
+
+WORKING_DIR=&amp;#34;/mnt/mmc1-1/SaveAnyBot&amp;#34;
+EXEC_PATH=&amp;#34;$WORKING_DIR/saveany-bot&amp;#34;
+start() {
+    echo &amp;#34;Starting SaveAnyBot...&amp;#34;
+    cd $WORKING_DIR
+    $EXEC_PATH &amp;amp;
+}
+stop() {
+    echo &amp;#34;Stopping SaveAnyBot...&amp;#34;
+    killall saveany-bot
+}
+reload() {
+    stop
+    start
+}
+
+赋予权限:
+
+chmod +x /etc/init.d/saveanybot
+
+然后将文件复制到 /etc/rc.d 并重命名为 S99saveanybot, 同样赋予权限:
+
+chmod +x /etc/rc.d/S99saveanybot
+
+添加快捷指令
+
+创建文件 /usr/bin/sabot ，参考 wrt_bin  并自行修改，注意此处文件编码仅支持 ANSI 936 .
+
+随后赋予权限:
+
+chmod +x /usr/bin/sabot
+
+使用: sudo sabot start|stop|restart|status|enable|disable
+
+
+
+
+
+
+
+  使用 Docker 部署
+  #
+
+
+  Docker Compose
+  #
+
+下载 docker-compose.yml 文件, 在同目录下新建 config.toml 文件, 参考 config.example.toml 编辑配置文件."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/deployment/installation/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="安装与更新"><meta property="og:description" content="安装与更新 # 从预编译文件部署 # 在 Release 页面下载对应平台的二进制文件.
+在解压后目录新建 config.toml 文件, 参考 配置说明 编辑配置文件
+运行:
+chmod +x saveany-bot ./saveany-bot 进程守护 # systemd (常规 Linux) 创建文件 /etc/systemd/system/saveany-bot.service 并写入以下内容: [Unit] Description=SaveAnyBot After=systemd-user-sessions.service [Service] Type=simple WorkingDirectory=/yourpath/ ExecStart=/yourpath/saveany-bot Restart=on-failure [Install] WantedBy=multi-user.target 设为开机启动并启动服务: systemctl enable --now saveany-bot procd (OpenWrt) 添加开机自启动服务 创建文件 /etc/init.d/saveanybot ，参考 wrt_init 并自行修改: #!/bin/sh /etc/rc.common #This is the OpenWRT init.d script for SaveAnyBot START=99 STOP=10 description=&amp;#34;SaveAnyBot&amp;#34; WORKING_DIR=&amp;#34;/mnt/mmc1-1/SaveAnyBot&amp;#34; EXEC_PATH=&amp;#34;$WORKING_DIR/saveany-bot&amp;#34; start() { echo &amp;#34;Starting SaveAnyBot...&amp;#34; cd $WORKING_DIR $EXEC_PATH &amp;amp; } stop() { echo &amp;#34;Stopping SaveAnyBot...&amp;#34; killall saveany-bot } reload() { stop start } 赋予权限: chmod +x /etc/init.d/saveanybot 然后将文件复制到 /etc/rc.d 并重命名为 S99saveanybot, 同样赋予权限: chmod +x /etc/rc.d/S99saveanybot 添加快捷指令 创建文件 /usr/bin/sabot ，参考 wrt_bin 并自行修改，注意此处文件编码仅支持 ANSI 936 . 随后赋予权限: chmod +x /usr/bin/sabot 使用: sudo sabot start|stop|restart|status|enable|disable 使用 Docker 部署 # Docker Compose # 下载 docker-compose.yml 文件, 在同目录下新建 config.toml 文件, 参考 config.example.toml 编辑配置文件."><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="deployment"><meta property="article:modified_time" content="2025-06-16T15:58:03+08:00"><title>安装与更新 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/deployment/installation/><link rel=stylesheet href=/book.min.27c601ff251cc5c9796bb272aace960013cf351d0c28a7e1301487b32d4800ee.css integrity="sha256-J8YB/yUcxcl5a7Jyqs6WABPPNR0MKKfhMBSHsy1IAO4=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+<label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
+简体中文</a></label><ul><li><a href=/en/>English</a></li></ul></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/ class=active>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/>使用帮助</a><ul></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>安装与更新</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#从预编译文件部署>从预编译文件部署</a><ul><li><a href=#进程守护>进程守护</a></li></ul></li><li><a href=#使用-docker-部署>使用 Docker 部署</a><ul><li><a href=#docker-compose>Docker Compose</a></li><li><a href=#docker>Docker</a></li></ul></li><li><a href=#更新>更新</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=安装与更新>安装与更新
+<a class=anchor href=#%e5%ae%89%e8%a3%85%e4%b8%8e%e6%9b%b4%e6%96%b0>#</a></h1><h2 id=从预编译文件部署>从预编译文件部署
+<a class=anchor href=#%e4%bb%8e%e9%a2%84%e7%bc%96%e8%af%91%e6%96%87%e4%bb%b6%e9%83%a8%e7%bd%b2>#</a></h2><p>在 <a href=https://github.com/krau/SaveAny-Bot/releases>Release</a> 页面下载对应平台的二进制文件.</p><p>在解压后目录新建 <code>config.toml</code> 文件, 参考 <a href=../configuration>配置说明</a> 编辑配置文件</p><p>运行:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>chmod +x saveany-bot
+</span></span><span style=display:flex><span>./saveany-bot
+</span></span></code></pre></div><h3 id=进程守护>进程守护
+<a class=anchor href=#%e8%bf%9b%e7%a8%8b%e5%ae%88%e6%8a%a4>#</a></h3><div class=book-tabs><input type=radio class=toggle name=tabs-daemon id=tabs-daemon-0 checked>
+<label for=tabs-daemon-0>systemd (常规 Linux)</label><div class="book-tabs-content markdown-inner">创建文件 <code>/etc/systemd/system/saveany-bot.service</code> 并写入以下内容:<pre><code class=language-text>[Unit]
+Description=SaveAnyBot
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+WorkingDirectory=/yourpath/
+ExecStart=/yourpath/saveany-bot
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target</code></pre>设为开机启动并启动服务:<pre><code class=language-text>systemctl enable --now saveany-bot</code></pre></div><input type=radio class=toggle name=tabs-daemon id=tabs-daemon-1>
+<label for=tabs-daemon-1>procd (OpenWrt)</label><div class="book-tabs-content markdown-inner"><h4>添加开机自启动服务</h4>创建文件 <code>/etc/init.d/saveanybot</code> ，参考 <a href=https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init target=_blank>wrt_init</a> 并自行修改:<pre><code class=language-text>#!/bin/sh /etc/rc.common
+
+#This is the OpenWRT init.d script for SaveAnyBot
+
+START=99 
+STOP=10
+description=&amp;#34;SaveAnyBot&amp;#34;
+
+WORKING_DIR=&amp;#34;/mnt/mmc1-1/SaveAnyBot&amp;#34;
+EXEC_PATH=&amp;#34;$WORKING_DIR/saveany-bot&amp;#34;
+start() {
+    echo &amp;#34;Starting SaveAnyBot...&amp;#34;
+    cd $WORKING_DIR
+    $EXEC_PATH &amp;amp;
+}
+stop() {
+    echo &amp;#34;Stopping SaveAnyBot...&amp;#34;
+    killall saveany-bot
+}
+reload() {
+    stop
+    start
+}</code></pre>赋予权限:<pre><code class=language-text>chmod &#43;x /etc/init.d/saveanybot</code></pre>然后将文件复制到 <code>/etc/rc.d</code> 并重命名为 <code>S99saveanybot</code>, 同样赋予权限:<pre><code class=language-text>chmod &#43;x /etc/rc.d/S99saveanybot</code></pre><h4>添加快捷指令</h4>创建文件 <code>/usr/bin/sabot</code> ，参考 <a href=https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_bin target=_blank>wrt_bin</a> 并自行修改，注意此处文件编码仅支持 ANSI 936 .
+随后赋予权限:<pre><code class=language-text>chmod &#43;x /usr/bin/sabot</code></pre>使用: <code>sudo sabot start|stop|restart|status|enable|disable</code></div></div><h2 id=使用-docker-部署>使用 Docker 部署
+<a class=anchor href=#%e4%bd%bf%e7%94%a8-docker-%e9%83%a8%e7%bd%b2>#</a></h2><h3 id=docker-compose>Docker Compose
+<a class=anchor href=#docker-compose>#</a></h3><p>下载 <a href=https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml>docker-compose.yml</a> 文件, 在同目录下新建 <code>config.toml</code> 文件, 参考 <a href=https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml>config.example.toml</a> 编辑配置文件.</p><p>启动:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker compose up -d
+</span></span></code></pre></div><h3 id=docker>Docker
+<a class=anchor href=#docker>#</a></h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>docker run -d --name saveany-bot <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    -v /path/to/config.toml:/app/config.toml <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    -v /path/to/downloads:/app/downloads <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    ghcr.io/krau/saveany-bot:latest
+</span></span></code></pre></div><h2 id=更新>更新
+<a class=anchor href=#%e6%9b%b4%e6%96%b0>#</a></h2><p>使用 <code>upgrade</code> 或 <code>up</code> 升级到最新版</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>./saveany-bot upgrade
+</span></span></code></pre></div><p>如果是 Docker 部署, 使用以下命令更新:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker pull ghcr.io/krau/saveany-bot:latest
+</span></span><span style=display:flex><span>docker restart saveany-bot
+</span></span></code></pre></div></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/4206d1fe9658e4f240e426827d65611ea33ab0ed title='最后修改者 krau | 2025/06/16' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2025/06/16</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/deployment/installation.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#从预编译文件部署>从预编译文件部署</a><ul><li><a href=#进程守护>进程守护</a></li></ul></li><li><a href=#使用-docker-部署>使用 Docker 部署</a><ul><li><a href=#docker-compose>Docker Compose</a></li><li><a href=#docker>Docker</a></li></ul></li><li><a href=#更新>更新</a></li></ul></nav></div></aside></main></body></html>

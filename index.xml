@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>介绍 on Save Any Bot</title><link>https://sabot.unv.app/</link><description>Recent content in 介绍 on Save Any Bot</description><generator>Hugo</generator><language>zh</language><atom:link href="https://sabot.unv.app/index.xml" rel="self" type="application/rss+xml"/><item><title>安装与更新</title><link>https://sabot.unv.app/deployment/installation/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/deployment/installation/</guid><description>&lt;h1 id="安装与更新">
+ 安装与更新
+ &lt;a class="anchor" href="#%e5%ae%89%e8%a3%85%e4%b8%8e%e6%9b%b4%e6%96%b0">#&lt;/a>
+&lt;/h1>
+&lt;h2 id="从预编译文件部署">
+ 从预编译文件部署
+ &lt;a class="anchor" href="#%e4%bb%8e%e9%a2%84%e7%bc%96%e8%af%91%e6%96%87%e4%bb%b6%e9%83%a8%e7%bd%b2">#&lt;/a>
+&lt;/h2>
+&lt;p>在 &lt;a href="https://github.com/krau/SaveAny-Bot/releases">Release&lt;/a> 页面下载对应平台的二进制文件.&lt;/p>
+&lt;p>在解压后目录新建 &lt;code>config.toml&lt;/code> 文件, 参考 &lt;a href="../configuration">配置说明&lt;/a> 编辑配置文件&lt;/p>
+&lt;p>运行:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>chmod +x saveany-bot
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>./saveany-bot
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="进程守护">
+ 进程守护
+ &lt;a class="anchor" href="#%e8%bf%9b%e7%a8%8b%e5%ae%88%e6%8a%a4">#&lt;/a>
+&lt;/h3>
+&lt;div class="book-tabs">
+
+
+&lt;input type="radio" class="toggle" name="tabs-daemon" id="tabs-daemon-0" checked="checked" />
+&lt;label for="tabs-daemon-0">systemd (常规 Linux)&lt;/label>
+&lt;div class="book-tabs-content markdown-inner">
+
+创建文件 &lt;code>/etc/systemd/system/saveany-bot.service&lt;/code> 并写入以下内容:
+
+&lt;pre>&lt;code class="language-text">[Unit]
+Description=SaveAnyBot
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+WorkingDirectory=/yourpath/
+ExecStart=/yourpath/saveany-bot
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target&lt;/code>&lt;/pre>
+
+设为开机启动并启动服务:
+
+&lt;pre>&lt;code class="language-text">systemctl enable --now saveany-bot&lt;/code>&lt;/pre>
+
+&lt;/div>
+
+
+
+&lt;input type="radio" class="toggle" name="tabs-daemon" id="tabs-daemon-1" />
+&lt;label for="tabs-daemon-1">procd (OpenWrt)&lt;/label>
+&lt;div class="book-tabs-content markdown-inner">
+
+&lt;h4>添加开机自启动服务&lt;/h4>
+
+创建文件 &lt;code>/etc/init.d/saveanybot&lt;/code> ，参考 &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init" target="_blank">wrt_init&lt;/a> 并自行修改:
+
+&lt;pre>&lt;code class="language-text">#!/bin/sh /etc/rc.common
+
+#This is the OpenWRT init.d script for SaveAnyBot
+
+START=99 
+STOP=10
+description=&amp;amp;#34;SaveAnyBot&amp;amp;#34;
+
+WORKING_DIR=&amp;amp;#34;/mnt/mmc1-1/SaveAnyBot&amp;amp;#34;
+EXEC_PATH=&amp;amp;#34;$WORKING_DIR/saveany-bot&amp;amp;#34;
+start() {
+ echo &amp;amp;#34;Starting SaveAnyBot...&amp;amp;#34;
+ cd $WORKING_DIR
+ $EXEC_PATH &amp;amp;amp;
+}
+stop() {
+ echo &amp;amp;#34;Stopping SaveAnyBot...&amp;amp;#34;
+ killall saveany-bot
+}
+reload() {
+ stop
+ start
+}&lt;/code>&lt;/pre>
+
+赋予权限:
+
+&lt;pre>&lt;code class="language-text">chmod &amp;#43;x /etc/init.d/saveanybot&lt;/code>&lt;/pre>
+
+然后将文件复制到 &lt;code>/etc/rc.d&lt;/code> 并重命名为 &lt;code>S99saveanybot&lt;/code>, 同样赋予权限:
+
+&lt;pre>&lt;code class="language-text">chmod &amp;#43;x /etc/rc.d/S99saveanybot&lt;/code>&lt;/pre>
+
+&lt;h4>添加快捷指令&lt;/h4>
+
+创建文件 &lt;code>/usr/bin/sabot&lt;/code> ，参考 &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_bin" target="_blank">wrt_bin&lt;/a> 并自行修改，注意此处文件编码仅支持 ANSI 936 .
+
+随后赋予权限:
+
+&lt;pre>&lt;code class="language-text">chmod &amp;#43;x /usr/bin/sabot&lt;/code>&lt;/pre>
+
+使用: &lt;code>sudo sabot start|stop|restart|status|enable|disable&lt;/code>
+
+&lt;/div>
+
+
+&lt;/div>
+
+&lt;h2 id="使用-docker-部署">
+ 使用 Docker 部署
+ &lt;a class="anchor" href="#%e4%bd%bf%e7%94%a8-docker-%e9%83%a8%e7%bd%b2">#&lt;/a>
+&lt;/h2>
+&lt;h3 id="docker-compose">
+ Docker Compose
+ &lt;a class="anchor" href="#docker-compose">#&lt;/a>
+&lt;/h3>
+&lt;p>下载 &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml">docker-compose.yml&lt;/a> 文件, 在同目录下新建 &lt;code>config.toml&lt;/code> 文件, 参考 &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml">config.example.toml&lt;/a> 编辑配置文件.&lt;/p></description></item><item><title>存储端配置</title><link>https://sabot.unv.app/deployment/configuration/storages/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/deployment/configuration/storages/</guid><description>&lt;h1 id="存储端配置">
+ 存储端配置
+ &lt;a class="anchor" href="#%e5%ad%98%e5%82%a8%e7%ab%af%e9%85%8d%e7%bd%ae">#&lt;/a>
+&lt;/h1>
+&lt;p>请先阅读 &lt;a href="../">配置说明&lt;/a> 了解配置文件的基本格式.&lt;/p>
+&lt;h2 id="alist">
+ Alist
+ &lt;a class="anchor" href="#alist">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=alist&lt;/code>&lt;/p>
+&lt;p>不支持 Stream 模式.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">url&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;https://alist.example.com&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 的 URL&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">username&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_username&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 的用户名&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">password&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_password&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 的密码&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;/path/saveanybot&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 中的基础路径, 所有文件将存储在此路径下&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token_exp&lt;/span> = &lt;span style="color:#ae81ff">3600&lt;/span> &lt;span style="color:#75715e"># Alist 访问令牌的自动刷新时间, 单位秒&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_token&amp;#34;&lt;/span> 
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. &lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 使用 token 验证时无法自动刷新 token&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="本地磁盘">
+ 本地磁盘
+ &lt;a class="anchor" href="#%e6%9c%ac%e5%9c%b0%e7%a3%81%e7%9b%98">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=local&lt;/code>&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;./downloads&amp;#34;&lt;/span> &lt;span style="color:#75715e"># 本地存储的基础路径, 所有文件将存储在此路径下&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="webdav">
+ WebDAV
+ &lt;a class="anchor" href="#webdav">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=webdav&lt;/code>&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">url&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;https://webdav.example.com&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 的 URL&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">username&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_username&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">password&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_password&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 的密码&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;/path/to/webdav&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 中的基础路径, 所有文件将存储在此路径下&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="minio-s3">
+ MinIO (S3)
+ &lt;a class="anchor" href="#minio-s3">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=minio&lt;/code>&lt;/p></description></item></channel></rss>

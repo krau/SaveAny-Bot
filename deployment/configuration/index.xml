@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>配置说明 on Save Any Bot</title><link>https://sabot.unv.app/deployment/configuration/</link><description>Recent content in 配置说明 on Save Any Bot</description><generator>Hugo</generator><language>zh</language><atom:link href="https://sabot.unv.app/deployment/configuration/index.xml" rel="self" type="application/rss+xml"/><item><title>存储端配置</title><link>https://sabot.unv.app/deployment/configuration/storages/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/deployment/configuration/storages/</guid><description>&lt;h1 id="存储端配置">
+ 存储端配置
+ &lt;a class="anchor" href="#%e5%ad%98%e5%82%a8%e7%ab%af%e9%85%8d%e7%bd%ae">#&lt;/a>
+&lt;/h1>
+&lt;p>请先阅读 &lt;a href="../">配置说明&lt;/a> 了解配置文件的基本格式.&lt;/p>
+&lt;h2 id="alist">
+ Alist
+ &lt;a class="anchor" href="#alist">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=alist&lt;/code>&lt;/p>
+&lt;p>不支持 Stream 模式.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">url&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;https://alist.example.com&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 的 URL&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">username&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_username&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 的用户名&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">password&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_password&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 的密码&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;/path/saveanybot&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 中的基础路径, 所有文件将存储在此路径下&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token_exp&lt;/span> = &lt;span style="color:#ae81ff">3600&lt;/span> &lt;span style="color:#75715e"># Alist 访问令牌的自动刷新时间, 单位秒&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_token&amp;#34;&lt;/span> 
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. &lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 使用 token 验证时无法自动刷新 token&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="本地磁盘">
+ 本地磁盘
+ &lt;a class="anchor" href="#%e6%9c%ac%e5%9c%b0%e7%a3%81%e7%9b%98">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=local&lt;/code>&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;./downloads&amp;#34;&lt;/span> &lt;span style="color:#75715e"># 本地存储的基础路径, 所有文件将存储在此路径下&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="webdav">
+ WebDAV
+ &lt;a class="anchor" href="#webdav">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=webdav&lt;/code>&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">url&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;https://webdav.example.com&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 的 URL&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">username&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_username&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">password&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_password&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 的密码&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;/path/to/webdav&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 中的基础路径, 所有文件将存储在此路径下&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="minio-s3">
+ MinIO (S3)
+ &lt;a class="anchor" href="#minio-s3">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>type=minio&lt;/code>&lt;/p></description></item></channel></rss>
