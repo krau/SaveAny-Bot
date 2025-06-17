@@ -11,7 +11,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/pkg/enums/key"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 )
 
 func (t *TGFileTask) Execute(ctx context.Context) error {
@@ -52,7 +52,7 @@ func (t *TGFileTask) Execute(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
-	vctx := context.WithValue(ctx, key.ContextKeyContentLength, fileStat.Size())
+	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
 	for i := range config.Cfg.Retry + 1 {
 		if err = vctx.Err(); err != nil {
 			return fmt.Errorf("context canceled while saving file: %w", err)

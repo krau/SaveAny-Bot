@@ -13,7 +13,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/pkg/enums/key"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -104,7 +104,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	if err != nil {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
-	vctx := context.WithValue(ctx, key.ContextKeyContentLength, fileStat.Size())
+	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
 	err = retry.Retry(func() error {
 		var file *os.File
 		file, err = os.Open(elem.localPath)

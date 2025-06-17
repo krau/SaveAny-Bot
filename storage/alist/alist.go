@@ -14,7 +14,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	config "github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/pkg/enums/key"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 )
 
@@ -118,7 +118,7 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 	req.Header.Set("Authorization", a.token)
 	req.Header.Set("File-Path", url.PathEscape(candidate))
 	req.Header.Set("Content-Type", "application/octet-stream")
-	if length := ctx.Value(key.ContextKeyContentLength); length != nil {
+	if length := ctx.Value(ctxkey.ContentLength); length != nil {
 		length, ok := length.(int64)
 		if ok {
 			req.ContentLength = length

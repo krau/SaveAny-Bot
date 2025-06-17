@@ -9,7 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	config "github.com/krau/SaveAny-Bot/config/storage"
-	"github.com/krau/SaveAny-Bot/pkg/enums/key"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -74,7 +74,7 @@ func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
 	}
 	size := int64(-1)
-	if length := ctx.Value(key.ContextKeyContentLength); length != nil {
+	if length := ctx.Value(ctxkey.ContentLength); length != nil {
 		length, ok := length.(int64)
 		if ok && length > 0 {
 			size = length

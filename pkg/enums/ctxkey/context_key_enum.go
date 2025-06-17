@@ -4,7 +4,7 @@
 // Build Date: 2025-03-18T23:42:14Z
 // Built By: goreleaser
 
-package key
+package ctxkey
 
 import (
 	"fmt"
@@ -12,14 +12,14 @@ import (
 )
 
 const (
-	// ContextKeyContentLength is a ContextKey of type content-length.
-	ContextKeyContentLength ContextKey = "content-length"
+	// ContentLength is a ContextKey of type content-length.
+	ContentLength ContextKey = "content-length"
 )
 
 var ErrInvalidContextKey = fmt.Errorf("not a valid ContextKey, try [%s]", strings.Join(_ContextKeyNames, ", "))
 
 var _ContextKeyNames = []string{
-	string(ContextKeyContentLength),
+	string(ContentLength),
 }
 
 // ContextKeyNames returns a list of possible string values of ContextKey.
@@ -32,7 +32,7 @@ func ContextKeyNames() []string {
 // ContextKeyValues returns a list of the values for ContextKey
 func ContextKeyValues() []ContextKey {
 	return []ContextKey{
-		ContextKeyContentLength,
+		ContentLength,
 	}
 }
 
@@ -49,7 +49,7 @@ func (x ContextKey) IsValid() bool {
 }
 
 var _ContextKeyValue = map[string]ContextKey{
-	"content-length": ContextKeyContentLength,
+	"content-length": ContentLength,
 }
 
 // ParseContextKey attempts to convert a string to a ContextKey.
