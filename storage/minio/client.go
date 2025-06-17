@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	config "github.com/krau/SaveAny-Bot/config/storage"
+	"github.com/krau/SaveAny-Bot/pkg/enums/key"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -72,8 +73,14 @@ func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error
 	for i := 1; m.Exists(ctx, candidate); i++ {
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
 	}
-
-	_, err := m.client.PutObject(ctx, m.config.BucketName, candidate, r, -1, minio.PutObjectOptions{})
+	size := int64(-1)
+	if length := ctx.Value(key.ContextKeyContentLength); length != nil {
+		length, ok := length.(int64)
+		if ok && length > 0 {
+			size = length
+		}
+	}
+	_, err := m.client.PutObject(ctx, m.config.BucketName, candidate, r, size, minio.PutObjectOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to upload file to minio: %w", err)
 	}
