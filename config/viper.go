@@ -15,12 +15,13 @@ import (
 )
 
 type Config struct {
-	Lang         string `toml:"lang" mapstructure:"lang" json:"lang"`
-	Workers      int    `toml:"workers" mapstructure:"workers"`
-	Retry        int    `toml:"retry" mapstructure:"retry"`
-	NoCleanCache bool   `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
-	Threads      int    `toml:"threads" mapstructure:"threads" json:"threads"`
-	Stream       bool   `toml:"stream" mapstructure:"stream" json:"stream"`
+	Lang         string      `toml:"lang" mapstructure:"lang" json:"lang"`
+	Workers      int         `toml:"workers" mapstructure:"workers"`
+	Retry        int         `toml:"retry" mapstructure:"retry"`
+	NoCleanCache bool        `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
+	Threads      int         `toml:"threads" mapstructure:"threads" json:"threads"`
+	Stream       bool        `toml:"stream" mapstructure:"stream" json:"stream"`
+	Cache        cacheConfig `toml:"cache" mapstructure:"cache" json:"cache"`
 
 	Users []userConfig `toml:"users" mapstructure:"users" json:"users"`
 
@@ -28,6 +29,12 @@ type Config struct {
 	DB       dbConfig                `toml:"db" mapstructure:"db"`
 	Telegram telegramConfig          `toml:"telegram" mapstructure:"telegram"`
 	Storages []storage.StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
+}
+
+type cacheConfig struct {
+	TTL         int64 `toml:"ttl" mapstructure:"ttl" json:"ttl"`
+	NumCounters int64 `toml:"num_counters" mapstructure:"num_counters" json:"num_counters"`
+	MaxCost     int64 `toml:"max_cost" mapstructure:"max_cost" json:"max_cost"`
 }
 
 type tempConfig struct {
@@ -86,6 +93,10 @@ func Init(ctx context.Context) error {
 	viper.SetDefault("workers", 3)
 	viper.SetDefault("retry", 3)
 	viper.SetDefault("threads", 4)
+
+	viper.SetDefault("cache.ttl", 86400)
+	viper.SetDefault("cache.num_counters", 1e5)
+	viper.SetDefault("cache.max_cost", 1e6)
 
 	viper.SetDefault("telegram.app_id", 1025907)
 	viper.SetDefault("telegram.app_hash", "452b0359b988148995f22ff0f4229750")

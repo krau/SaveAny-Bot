@@ -2,19 +2,19 @@ package cache
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/dgraph-io/ristretto/v2"
+	"github.com/krau/SaveAny-Bot/config"
 )
 
 var cache *ristretto.Cache[string, any]
 
-
-// TODO: maybe we should use simple ttl cache instead of ristretto...
 func init() {
 	c, err := ristretto.NewCache(&ristretto.Config[string, any]{
-		NumCounters: 1e5,
-		MaxCost:     1e6, // 1000000 / 112 ≈ 8928
+		NumCounters: config.Cfg.Cache.NumCounters,
+		MaxCost:     config.Cfg.Cache.MaxCost,
 		BufferItems: 64,
 		OnReject: func(item *ristretto.Item[any]) {
 			log.Warnf("Cache item rejected: key=%d, value=%v", item.Key, item.Value)
@@ -27,7 +27,7 @@ func init() {
 }
 
 func Set(key string, value any) error {
-	ok := cache.Set(key, value, 0)
+	ok := cache.SetWithTTL(key, value, 0, time.Duration(config.Cfg.Cache.TTL)*time.Second)
 	if !ok {
 		return fmt.Errorf("failed to set value in cache")
 	}
