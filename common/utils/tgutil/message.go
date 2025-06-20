@@ -272,3 +272,31 @@ func GetMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, err
 	cache.Set(key, tgm)
 	return tgm, nil
 }
+
+func GetGroupedMessages(ctx *ext.Context, chatID int64, msg *tg.Message) ([]*tg.Message, error) {
+	groupID, isGroup := msg.GetGroupedID()
+	if !isGroup || groupID == 0 {
+		return nil, fmt.Errorf("message %d is not grouped", msg.GetID())
+	}
+	msgID := msg.GetID()
+	minID := msgID - 10
+	maxID := msgID + 10
+	if minID < 1 {
+		minID = 1
+	}
+	msgs, err := GetMessagesRange(ctx, chatID, minID, maxID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get grouped messages: %w", err)
+	}
+	groupedMessages := make([]*tg.Message, 0, len(msgs))
+	for _, m := range msgs {
+		if m == nil {
+			continue
+		}
+		mgid, isGroup := m.GetGroupedID()
+		if isGroup && mgid == groupID {
+			groupedMessages = append(groupedMessages, m)
+		}
+	}
+	return groupedMessages, nil
+}

@@ -81,7 +81,29 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 	}
 
 	files = make([]tfile.TGFileMessage, 0, len(msgLinks))
+	addFile := func(msg *tg.Message) {
+		if msg == nil {
+			logger.Warn("message is nil, skipping")
+			return
+		}
+		media, ok := msg.GetMedia()
+		if !ok {
+			logger.Debugf("message %d has no media", msg.GetID())
+			return
+		}
+		file, err := tfile.FromMediaMessage(media, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
+		if err != nil {
+			logger.Errorf("failed to create file from media: %s", err)
+			return
+		}
+		files = append(files, file)
+	}
 	for _, link := range msgLinks {
+		linkUrl, err := url.Parse(link)
+		if err != nil {
+			logger.Errorf("failed to parse message link %s: %s", link, err)
+			continue
+		}
 		chatId, msgId, err := tgutil.ParseMessageLink(ctx, link)
 		if err != nil {
 			logger.Errorf("failed to parse message link %s: %s", link, err)
@@ -92,17 +114,19 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 			logger.Errorf("failed to get message by ID: %s", err)
 			continue
 		}
-		media, ok := msg.GetMedia()
-		if !ok {
-			logger.Debugf("message %d has no media", msg.GetID())
-			continue
+		groupID, isGroup := msg.GetGroupedID()
+		if isGroup && groupID != 0 && !linkUrl.Query().Has("single") {
+			gmsgs, err := tgutil.GetGroupedMessages(ctx, chatId, msg)
+			if err != nil {
+				logger.Errorf("failed to get grouped messages: %s", err)
+			} else {
+				for _, gmsg := range gmsgs {
+					addFile(gmsg)
+				}
+			}
+		} else {
+			addFile(msg)
 		}
-		file, err := tfile.FromMediaMessage(media, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
-		if err != nil {
-			logger.Errorf("failed to create file from media: %s", err)
-			continue
-		}
-		files = append(files, file)
 	}
 	if len(files) == 0 {
 		editReplied("没有找到可保存的文件", nil)
