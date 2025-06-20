@@ -2,12 +2,13 @@
   使用帮助
   #
 
+这里介绍 Save Any Bot 的一些功能和使用方法, 如果你没有在这里找到你需要的内容, 另请参阅 配置说明 或前往 Github Discussions 提问.
 
   转存文件
   #
 
 Bot 接受两种消息: 文件和链接.
-支持以下链接:
+对于链接, 目前支持以下类型的链接:
 
 Telegram 消息链接, 例如: https://t.me/acherkrau/1097. 即使频道禁止了转发和保存, Bot 依然可以下载其文件.
 Telegra.ph 的文章链接, Bot 将下载其中的所有图片
@@ -33,10 +34,9 @@ MESSAGE-REGEX
 
 添加规则的基本语法:
 &ldquo;规则类型 规则内容 存储名 路径&rdquo;
-注意空格的使用, 语法正确 bot 才能解析, 以下是一条合法的添加规则命令:
-/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /视频
-此外, 规则中的存储名若使用 &ldquo;CHOSEN&rdquo; , 则表示存储到点击按钮选择的存储端的路径下"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="使用帮助"><meta property="og:description" content="使用帮助 # 转存文件 # Bot 接受两种消息: 文件和链接.
-支持以下链接:
+注意空格的使用, 语法正确 bot 才能解析, 以下是一条合法的添加规则命令:"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="使用帮助"><meta property="og:description" content="使用帮助 # 这里介绍 Save Any Bot 的一些功能和使用方法, 如果你没有在这里找到你需要的内容, 另请参阅 配置说明 或前往 Github Discussions 提问.
+转存文件 # Bot 接受两种消息: 文件和链接.
+对于链接, 目前支持以下类型的链接:
 Telegram 消息链接, 例如: https://t.me/acherkrau/1097. 即使频道禁止了转发和保存, Bot 依然可以下载其文件. Telegra.ph 的文章链接, Bot 将下载其中的所有图片 静默模式 (silent) # 使用 /silent 命令可以开关静默模式.
 默认情况下不开启静默模式, Bot 会询问你每个文件的保存位置.
 开启静默模式后, Bot 会直接保存文件到默认位置, 无需确认.
@@ -46,18 +46,17 @@ Telegram 消息链接, 例如: https://t.me/acherkrau/1097. 即使频道禁止�
 目前支持的规则类型:
 FILENAME-REGEX MESSAGE-REGEX 添加规则的基本语法:
 “规则类型 规则内容 存储名 路径”
-注意空格的使用, 语法正确 bot 才能解析, 以下是一条合法的添加规则命令:
-/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /视频 此外, 规则中的存储名若使用 “CHOSEN” , 则表示存储到点击按钮选择的存储端的路径下"><meta property="og:locale" content="zh"><meta property="og:type" content="website"><title>使用帮助 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/ title=Usage><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous><link rel=alternate type=application/rss+xml href=https://sabot.unv.app/usage/index.xml title="Save Any Bot"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+注意空格的使用, 语法正确 bot 才能解析, 以下是一条合法的添加规则命令:"><meta property="og:locale" content="zh"><meta property="og:type" content="website"><title>使用帮助 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/ title=Usage><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous><link rel=alternate type=application/rss+xml href=https://sabot.unv.app/usage/index.xml title="Save Any Bot"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
 <input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
 <label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
 简体中文</a></label><ul><li><a href=/en/usage/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/ class=active>使用帮助</a><ul></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>使用帮助</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#转存文件>转存文件</a></li><li><a href=#静默模式-silent>静默模式 (silent)</a></li><li><a href=#存储规则>存储规则</a><ul><li><a href=#filename-regex>FILENAME-REGEX</a></li><li><a href=#message-regex>MESSAGE-REGEX</a></li></ul></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=使用帮助>使用帮助
-<a class=anchor href=#%e4%bd%bf%e7%94%a8%e5%b8%ae%e5%8a%a9>#</a></h1><h2 id=转存文件>转存文件
-<a class=anchor href=#%e8%bd%ac%e5%ad%98%e6%96%87%e4%bb%b6>#</a></h2><p>Bot 接受两种消息: 文件和链接.</p><p>支持以下链接:</p><ol><li>Telegram 消息链接, 例如: <code>https://t.me/acherkrau/1097</code>. <strong>即使频道禁止了转发和保存, Bot 依然可以下载其文件.</strong></li><li>Telegra.ph 的文章链接, Bot 将下载其中的所有图片</li></ol><h2 id=静默模式-silent>静默模式 (silent)
+<a class=anchor href=#%e4%bd%bf%e7%94%a8%e5%b8%ae%e5%8a%a9>#</a></h1><p>这里介绍 Save Any Bot 的一些功能和使用方法, 如果你没有在这里找到你需要的内容, 另请参阅 <a href=../deployment/configuration>配置说明</a> 或前往 Github <a href=https://github.com/krau/SaveAny-Bot/discussions>Discussions</a> 提问.</p><h2 id=转存文件>转存文件
+<a class=anchor href=#%e8%bd%ac%e5%ad%98%e6%96%87%e4%bb%b6>#</a></h2><p>Bot 接受两种消息: 文件和链接.</p><p>对于链接, 目前支持以下类型的链接:</p><ol><li>Telegram 消息链接, 例如: <code>https://t.me/acherkrau/1097</code>. <strong>即使频道禁止了转发和保存, Bot 依然可以下载其文件.</strong></li><li>Telegra.ph 的文章链接, Bot 将下载其中的所有图片</li></ol><h2 id=静默模式-silent>静默模式 (silent)
 <a class=anchor href=#%e9%9d%99%e9%bb%98%e6%a8%a1%e5%bc%8f-silent>#</a></h2><p>使用 <code>/silent</code> 命令可以开关静默模式.</p><p>默认情况下不开启静默模式, Bot 会询问你每个文件的保存位置.</p><p>开启静默模式后, Bot 会直接保存文件到默认位置, 无需确认.</p><p>在开启静默模式之前, 需要使用 <code>/storage</code> 命令设置默认保存位置.</p><h2 id=存储规则>存储规则
 <a class=anchor href=#%e5%ad%98%e5%82%a8%e8%a7%84%e5%88%99>#</a></h2><p>允许你为 Bot 在上传文件到存储时设置一些重定向规则, 用于自动整理所保存的文件.</p><p>见: <a href=https://github.com/krau/SaveAny-Bot/issues/28 target=_blank>#28</a></p><p>目前支持的规则类型:</p><ol><li>FILENAME-REGEX</li><li>MESSAGE-REGEX</li></ol><p>添加规则的基本语法:</p><p>&ldquo;规则类型 规则内容 存储名 路径&rdquo;</p><p>注意空格的使用, 语法正确 bot 才能解析, 以下是一条合法的添加规则命令:</p><pre tabindex=0><code>/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /视频
 </code></pre><p>此外, 规则中的存储名若使用 &ldquo;CHOSEN&rdquo; , 则表示存储到点击按钮选择的存储端的路径下</p><p>规则介绍:</p><h3 id=filename-regex>FILENAME-REGEX
 <a class=anchor href=#filename-regex>#</a></h3><p>根据文件名正则匹配, 规则内容要求为一个合法的正则表达式, 如</p><pre tabindex=0><code>FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /视频
 </code></pre><p>表示将文件名后缀为 mp4,mkv,ts,avi,flv 的文件放到名为 MyAlist 存储下的 /视频 目录内 (同时受配置文件中的 <code>base_path</code> 影响)</p><h3 id=message-regex>MESSAGE-REGEX
-<a class=anchor href=#message-regex>#</a></h3><p>同上, 但是是根据消息本身的文本内容正则匹配</p></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/4206d1fe9658e4f240e426827d65611ea33ab0ed title='最后修改者 krau | 2025/06/16' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
-<span>2025/06/16</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/_index.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<a class=anchor href=#message-regex>#</a></h3><p>同上, 但是是根据消息本身的文本内容正则匹配</p></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/2979628cf762750e1d0e76239e9a83807d646cf0 title='最后修改者 krau | 2025/06/20' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2025/06/20</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/_index.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
 <span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#转存文件>转存文件</a></li><li><a href=#静默模式-silent>静默模式 (silent)</a></li><li><a href=#存储规则>存储规则</a><ul><li><a href=#filename-regex>FILENAME-REGEX</a></li><li><a href=#message-regex>MESSAGE-REGEX</a></li></ul></li></ul></nav></div></aside></main></body></html>
