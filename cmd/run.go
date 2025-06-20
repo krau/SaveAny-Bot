@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
+	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
@@ -46,6 +47,7 @@ func initAll(ctx context.Context) {
 		fmt.Println("Failed to load config:", err)
 		os.Exit(1)
 	}
+	cache.Init()
 	logger := log.FromContext(ctx)
 	i18n.Init(config.Cfg.Lang)
 	logger.Info(i18n.T(i18nk.Initing))

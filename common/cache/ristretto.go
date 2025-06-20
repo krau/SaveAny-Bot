@@ -11,7 +11,10 @@ import (
 
 var cache *ristretto.Cache[string, any]
 
-func init() {
+func Init() {
+	if cache != nil {
+		panic("cache already initialized")
+	}
 	c, err := ristretto.NewCache(&ristretto.Config[string, any]{
 		NumCounters: config.Cfg.Cache.NumCounters,
 		MaxCost:     config.Cfg.Cache.MaxCost,
