@@ -131,6 +131,27 @@ storages = []
 blacklist = true
 ```
 
+### 事件触发
+
+事件触发提供了在 Bot 处理任务时根据任务状态执行自定义操作的能力, 目前仅支持任意命令执行. 使用 `[hook.exec]` 配置.
+
+目前具有以下几种事件类型:
+
+- `task_before_start`: 任务即将开始前
+- `task_success`: 任务成功完成后
+- `task_fail`: 任务失败后
+- `task_cancel`: 任务被取消后
+
+提供的配置值需要为完整的命令行命令, Bot 会在事件发生时执行该命令. 示例:
+
+```toml
+[hook.exec]
+task_before_start = "echo '任务即将开始'"
+task_success = "bash /path/to/success_script.sh"
+task_fail = "curl -X POST https://example.com/api/notify -d '任务失败'"
+task_cancel = "bash /path/to/cancel_script.sh"
+```
+
 ### 杂项
 
 ```toml
