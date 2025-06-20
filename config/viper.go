@@ -15,59 +15,23 @@ import (
 )
 
 type Config struct {
-	Lang         string      `toml:"lang" mapstructure:"lang" json:"lang"`
-	Workers      int         `toml:"workers" mapstructure:"workers"`
-	Retry        int         `toml:"retry" mapstructure:"retry"`
-	NoCleanCache bool        `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
-	Threads      int         `toml:"threads" mapstructure:"threads" json:"threads"`
-	Stream       bool        `toml:"stream" mapstructure:"stream" json:"stream"`
-	Cache        cacheConfig `toml:"cache" mapstructure:"cache" json:"cache"`
+	Lang         string `toml:"lang" mapstructure:"lang" json:"lang"`
+	Workers      int    `toml:"workers" mapstructure:"workers"`
+	Retry        int    `toml:"retry" mapstructure:"retry"`
+	NoCleanCache bool   `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
+	Threads      int    `toml:"threads" mapstructure:"threads" json:"threads"`
+	Stream       bool   `toml:"stream" mapstructure:"stream" json:"stream"`
 
-	Users []userConfig `toml:"users" mapstructure:"users" json:"users"`
-
+	Cache    cacheConfig             `toml:"cache" mapstructure:"cache" json:"cache"`
+	Users    []userConfig            `toml:"users" mapstructure:"users" json:"users"`
 	Temp     tempConfig              `toml:"temp" mapstructure:"temp"`
 	DB       dbConfig                `toml:"db" mapstructure:"db"`
 	Telegram telegramConfig          `toml:"telegram" mapstructure:"telegram"`
 	Storages []storage.StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
+	Hook     hookConfig              `toml:"hook" mapstructure:"hook" json:"hook"`
 }
 
-type cacheConfig struct {
-	TTL         int64 `toml:"ttl" mapstructure:"ttl" json:"ttl"`
-	NumCounters int64 `toml:"num_counters" mapstructure:"num_counters" json:"num_counters"`
-	MaxCost     int64 `toml:"max_cost" mapstructure:"max_cost" json:"max_cost"`
-}
-
-type tempConfig struct {
-	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
-	CacheTTL int64  `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl"`
-}
-
-type dbConfig struct {
-	Path    string `toml:"path" mapstructure:"path"`
-	Session string `toml:"session" mapstructure:"session"`
-}
-
-type telegramConfig struct {
-	Token    string        `toml:"token" mapstructure:"token"`
-	AppID    int           `toml:"app_id" mapstructure:"app_id" json:"app_id"`
-	AppHash  string        `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
-	Timeout  int           `toml:"timeout" mapstructure:"timeout" json:"timeout"`
-	Proxy    proxyConfig   `toml:"proxy" mapstructure:"proxy"`
-	RpcRetry int           `toml:"rpc_retry" mapstructure:"rpc_retry" json:"rpc_retry"`
-	Userbot  userbotConfig `toml:"userbot" mapstructure:"userbot" json:"userbot"`
-}
-
-type userbotConfig struct {
-	Enable  bool   `toml:"enable" mapstructure:"enable"`
-	Session string `toml:"session" mapstructure:"session"`
-}
-
-type proxyConfig struct {
-	Enable bool   `toml:"enable" mapstructure:"enable"`
-	URL    string `toml:"url" mapstructure:"url"`
-}
-
-var Cfg *Config
+var Cfg *Config = &Config{}
 
 func (c Config) GetStorageByName(name string) storage.StorageConfig {
 	for _, storage := range c.Storages {
@@ -88,28 +52,36 @@ func Init(ctx context.Context) error {
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
 
-	viper.SetDefault("lang", "zh-Hans")
+	defaultConfigs := map[string]any{
+		// 基础配置
+		"lang":    "zh-Hans",
+		"workers": 3,
+		"retry":   3,
+		"threads": 4,
 
-	viper.SetDefault("workers", 3)
-	viper.SetDefault("retry", 3)
-	viper.SetDefault("threads", 4)
+		// 缓存配置
+		"cache.ttl":          86400,
+		"cache.num_counters": 1e5,
+		"cache.max_cost":     1e6,
 
-	viper.SetDefault("cache.ttl", 86400)
-	viper.SetDefault("cache.num_counters", 1e5)
-	viper.SetDefault("cache.max_cost", 1e6)
+		// Telegram
+		"telegram.app_id":          1025907,
+		"telegram.app_hash":        "452b0359b988148995f22ff0f4229750",
+		"telegram.rpc_retry":       5,
+		"telegram.userbot.enable":  false,
+		"telegram.userbot.session": "data/usersession.db",
 
-	viper.SetDefault("telegram.app_id", 1025907)
-	viper.SetDefault("telegram.app_hash", "452b0359b988148995f22ff0f4229750")
-	viper.SetDefault("telegram.timeout", 60)
-	viper.SetDefault("telegram.flood_retry", 5)
-	viper.SetDefault("telegram.rpc_retry", 5)
-	viper.SetDefault("telegram.userbot.enable", false)
-	viper.SetDefault("telegram.userbot.session", "data/usersession.db")
+		// 临时目录
+		"temp.base_path": "cache/",
 
-	viper.SetDefault("temp.base_path", "cache/")
+		// 数据库
+		"db.path":    "data/saveany.db",
+		"db.session": "data/session.db",
+	}
 
-	viper.SetDefault("db.path", "data/saveany.db")
-	viper.SetDefault("db.session", "data/session.db")
+	for key, value := range defaultConfigs {
+		viper.SetDefault(key, value)
+	}
 
 	if err := viper.SafeWriteConfigAs("config.toml"); err != nil {
 		if _, ok := err.(viper.ConfigFileAlreadyExistsError); !ok {
@@ -121,8 +93,6 @@ func Init(ctx context.Context) error {
 		fmt.Println("Error reading config file, ", err)
 		os.Exit(1)
 	}
-
-	Cfg = &Config{}
 
 	if err := viper.Unmarshal(Cfg); err != nil {
 		fmt.Println("Error unmarshalling config file, ", err)
@@ -170,7 +140,6 @@ func Init(ctx context.Context) error {
 			userStorages[user.ID] = user.Storages
 		}
 	}
-
 	return nil
 }
 

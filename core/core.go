@@ -2,32 +2,54 @@ package core
 
 import (
 	"context"
+	"errors"
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/queue"
 )
 
 var queueInstance *queue.TaskQueue[Exectable]
 
 type Exectable interface {
+	Type() tasktype.TaskType
 	TaskID() string
 	Execute(ctx context.Context) error
 }
 
 func worker(ctx context.Context, qe *queue.TaskQueue[Exectable], semaphore chan struct{}) {
+	logger := log.FromContext(ctx)
+	execHooks := config.Cfg.Hook.Exec
 	for {
 		semaphore <- struct{}{}
 		qtask, err := qe.Get()
 		if err != nil {
+			logger.Error("Failed to get task from queue:", err)
 			break // queue closed and empty
 		}
-		log.FromContext(ctx).Infof("Processing task: %s", qtask.ID)
 		task := qtask.Data
+		logger.Infof("Processing task: %s", task.TaskID())
+		if err := ExecCommandString(qtask.Context(), execHooks.TaskBeforeStart); err != nil {
+			logger.Errorf("Failed to execute before start hook for task %s: %v", task.TaskID(), err)
+		}
 		if err := task.Execute(qtask.Context()); err != nil {
-			log.FromContext(ctx).Errorf("Failed to execute task %s: %v", qtask.ID, err)
+			if errors.Is(err, context.Canceled) {
+				logger.Infof("Task %s was canceled", task.TaskID())
+				if err := ExecCommandString(ctx, execHooks.TaskCancel); err != nil {
+					logger.Errorf("Failed to execute cancel hook for task %s: %v", task.TaskID(), err)
+				}
+			} else {
+				logger.Errorf("Failed to execute task %s: %v", task.TaskID(), err)
+				if err := ExecCommandString(ctx, execHooks.TaskFail); err != nil {
+					logger.Errorf("Failed to execute fail hook for task %s: %v", task.TaskID(), err)
+				}
+			}
 		} else {
-			log.FromContext(ctx).Infof("Task %s completed successfully", qtask.ID)
+			logger.Infof("Task %s completed successfully", task.TaskID())
+			if err := ExecCommandString(ctx, execHooks.TaskSuccess); err != nil {
+				logger.Errorf("Failed to execute success hook for task %s: %v", task.TaskID(), err)
+			}
 		}
 		qe.Done(qtask.ID)
 		<-semaphore

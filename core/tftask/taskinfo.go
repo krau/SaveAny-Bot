@@ -8,22 +8,22 @@ type TaskInfo interface {
 	StorageName() string
 }
 
-func (t *TGFileTask) TaskID() string {
+func (t *Task) TaskID() string {
 	return t.ID
 }
 
-func (t *TGFileTask) FileName() string {
+func (t *Task) FileName() string {
 	return t.File.Name()
 }
 
-func (t *TGFileTask) FileSize() int64 {
+func (t *Task) FileSize() int64 {
 	return t.File.Size()
 }
 
-func (t *TGFileTask) StoragePath() string {
+func (t *Task) StoragePath() string {
 	return t.Path
 }
 
-func (t *TGFileTask) StorageName() string {
+func (t *Task) StorageName() string {
 	return t.Storage.Name()
 }

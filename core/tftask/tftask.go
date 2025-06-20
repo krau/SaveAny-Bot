@@ -7,11 +7,12 @@ import (
 
 	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
-type TGFileTask struct {
+type Task struct {
 	ID        string
 	Ctx       context.Context
 	File      tfile.TGFile
@@ -23,6 +24,10 @@ type TGFileTask struct {
 	localPath string
 }
 
+func (t *Task) Type() tasktype.TaskType {
+	return tasktype.TaskTypeTgfiles
+}
+
 func NewTGFileTask(
 	id string,
 	ctx context.Context,
@@ -31,14 +36,14 @@ func NewTGFileTask(
 	stor storage.Storage,
 	path string,
 	progress ProgressTracker,
-) (*TGFileTask, error) {
+) (*Task, error) {
 	_, ok := stor.(storage.StorageCannotStream)
 	if !config.Cfg.Stream || ok {
 		cachePath, err := filepath.Abs(filepath.Join(config.Cfg.Temp.BasePath, fmt.Sprintf("%s_%s", id, file.Name())))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get absolute path for cache: %w", err)
 		}
-		tftask := &TGFileTask{
+		tftask := &Task{
 			ID:        id,
 			Ctx:       ctx,
 			client:    client,
@@ -50,7 +55,7 @@ func NewTGFileTask(
 		}
 		return tftask, nil
 	}
-	tfileTask := &TGFileTask{
+	tfileTask := &Task{
 		ID:       id,
 		Ctx:      ctx,
 		client:   client,

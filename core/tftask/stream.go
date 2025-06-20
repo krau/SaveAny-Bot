@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func executeStream(ctx context.Context, task *TGFileTask) error {
+func executeStream(ctx context.Context, task *Task) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", task.File.Name()))
 
 	pr, pw := io.Pipe()

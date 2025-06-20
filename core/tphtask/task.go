@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync/atomic"
 
+	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/storage"
 )
@@ -21,6 +22,10 @@ type Task struct {
 	cannotStream bool
 	totalpics    int
 	downloaded   atomic.Int64
+}
+
+func (t *Task) Type() tasktype.TaskType {
+	return tasktype.TaskTypeTphpics
 }
 
 func NewTask(

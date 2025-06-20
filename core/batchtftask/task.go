@@ -8,6 +8,7 @@ import (
 
 	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/rs/xid"
@@ -33,6 +34,10 @@ type Task struct {
 	totalSize    int64
 	processing   map[string]TaskElementInfo
 	failed       map[string]error // errors for each element
+}
+
+func (t *Task) Type() tasktype.TaskType {
+	return tasktype.TaskTypeTgfiles
 }
 
 func NewTaskElement(

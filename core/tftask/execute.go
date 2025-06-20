@@ -14,7 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 )
 
-func (t *TGFileTask) Execute(ctx context.Context) error {
+func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", t.File.Name()))
 	t.Progress.OnStart(ctx, t)
 	if t.stream {
