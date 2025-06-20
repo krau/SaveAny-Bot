@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/gotgproto/functions"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
@@ -23,7 +25,7 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	args := strings.Split(string(update.EffectiveMessage.Text), " ")
 	if len(args) >= 3 {
-		return handleBatchSave(ctx, update, args[1], args[2])
+		return handleBatchSave(ctx, update, args[1:])
 	}
 	replyTo := update.EffectiveMessage.ReplyToMessage
 	if replyTo == nil || replyTo.Message == nil {
@@ -60,7 +62,7 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	args := strings.Split(string(update.EffectiveMessage.Text), " ")
 	if len(args) >= 3 {
-		return handleBatchSave(ctx, update, args[1], args[2])
+		return handleBatchSave(ctx, update, args[1:])
 	}
 	logger := log.FromContext(ctx)
 	stor := storage.FromContext(ctx)
@@ -92,7 +94,21 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, "", file, msg.GetID())
 }
 
-func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgIdRangeArg string) error {
+// func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgIdRangeArg string) error {
+func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error {
+	chatArg := args[0]
+	msgIdRangeArg := args[1]
+	var filterStr string
+	var filter *regexp.Regexp
+	if len(args) > 2 {
+		filterStr = args[2]
+		var err error
+		filter, err = regexp.Compile(filterStr)
+		if err != nil {
+			ctx.Reply(update, ext.ReplyTextString("无效的正则表达式: "+err.Error()), nil)
+			return dispatcher.EndGroups
+		}
+	}
 	startID, endID, err := strutil.ParseIntStrRange(msgIdRangeArg, "-")
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString("无效的消息ID范围: "+err.Error()), nil)
@@ -121,7 +137,11 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgId
 		return dispatcher.EndGroups
 	}
 	files := make([]tfile.TGFileMessage, 0, len(msgs))
+	sb := strings.Builder{}
 	for _, msg := range msgs {
+		if msg == nil {
+			continue
+		}
 		media, ok := msg.GetMedia()
 		if !ok {
 			continue
@@ -134,6 +154,17 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgId
 		if err != nil {
 			log.FromContext(ctx).Errorf("获取文件失败: %s", err)
 			continue
+		}
+		if filter != nil {
+			sb.Reset()
+			sb.WriteString(msg.GetMessage())
+			sb.WriteString(" ")
+			fn, _ := functions.GetMediaFileNameWithId(media)
+			sb.WriteString(fn)
+			log.FromContext(ctx).Debugf("正在检查消息内容: %s", sb.String())
+			if !filter.MatchString(sb.String()) {
+				continue
+			}
 		}
 		files = append(files, file)
 	}
