@@ -82,7 +82,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 
 	files = make([]tfile.TGFileMessage, 0, len(msgLinks))
 	addFile := func(msg *tg.Message) {
-		if msg == nil {
+		if msg == nil || msg.Media == nil {
 			logger.Warn("message is nil, skipping")
 			return
 		}

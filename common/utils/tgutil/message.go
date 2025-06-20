@@ -27,11 +27,11 @@ func GenFileNameFromMessage(message tg.Message) string {
 			if !ok {
 				return ""
 			}
-			ext := mimetype.Lookup(doc.MimeType).Extension()
-			if ext == "" {
+			mmt := mimetype.Lookup(doc.MimeType)
+			if mmt == nil || mmt.Extension() == "" {
 				return ""
 			}
-			return ext
+			return mmt.Extension()
 		case *tg.MessageMediaPhoto:
 			return ".jpg"
 		}
