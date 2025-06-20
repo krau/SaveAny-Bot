@@ -94,7 +94,6 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, "", file, msg.GetID())
 }
 
-// func handleBatchSave(ctx *ext.Context, update *ext.Update, chatArg string, msgIdRangeArg string) error {
 func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error {
 	chatArg := args[0]
 	msgIdRangeArg := args[1]
