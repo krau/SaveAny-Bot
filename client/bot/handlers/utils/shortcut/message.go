@@ -14,9 +14,11 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/re"
+	"github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
@@ -81,7 +83,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 	}
 
 	files = make([]tfile.TGFileMessage, 0, len(msgLinks))
-	addFile := func(msg *tg.Message) {
+	addFile := func(client tfile.DlerClient, msg *tg.Message) {
 		if msg == nil || msg.Media == nil {
 			logger.Warn("message is nil, skipping")
 			return
@@ -91,25 +93,31 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 			logger.Debugf("message %d has no media", msg.GetID())
 			return
 		}
-		file, err := tfile.FromMediaMessage(media, ctx.Raw, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
+		file, err := tfile.FromMediaMessage(media, client, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
 		if err != nil {
 			logger.Errorf("failed to create file from media: %s", err)
 			return
 		}
 		files = append(files, file)
 	}
+
+	tctx := ctx
+	if config.Cfg.Telegram.Userbot.Enable {
+		tctx = user.GetCtx()
+	}
+
 	for _, link := range msgLinks {
 		linkUrl, err := url.Parse(link)
 		if err != nil {
 			logger.Errorf("failed to parse message link %s: %s", link, err)
 			continue
 		}
-		chatId, msgId, err := tgutil.ParseMessageLink(ctx, link)
+		chatId, msgId, err := tgutil.ParseMessageLink(tctx, link)
 		if err != nil {
 			logger.Errorf("failed to parse message link %s: %s", link, err)
 			continue
 		}
-		msg, err := tgutil.GetMessageByID(ctx, chatId, msgId)
+		msg, err := tgutil.GetMessageByID(tctx, chatId, msgId)
 		if err != nil {
 			logger.Errorf("failed to get message by ID: %s", err)
 			continue
@@ -121,11 +129,11 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 				logger.Errorf("failed to get grouped messages: %s", err)
 			} else {
 				for _, gmsg := range gmsgs {
-					addFile(gmsg)
+					addFile(tctx.Raw, gmsg)
 				}
 			}
 		} else {
-			addFile(msg)
+			addFile(tctx.Raw, msg)
 		}
 	}
 	if len(files) == 0 {
