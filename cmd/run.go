@@ -51,16 +51,14 @@ func initAll(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	i18n.Init(config.Cfg.Lang)
 	logger.Info(i18n.T(i18nk.Initing))
+	database.Init(ctx)
+	storage.LoadStorages(ctx)
 	if config.Cfg.Telegram.Userbot.Enable {
-		uc, err := userclient.Login(ctx)
+		_, err := userclient.Login(ctx)
 		if err != nil {
 			logger.Fatalf("User client login failed: %s", err)
 		}
-		logger.Infof("User client logged in as %s", uc.Self.FirstName)
 	}
-	database.Init(ctx)
-	storage.LoadStorages(ctx)
-
 	bot.Init(ctx)
 }
 

@@ -38,8 +38,7 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 		editReplied("构建存储选择键盘失败: "+err.Error(), nil)
 		return dispatcher.EndGroups
 	}
-	editReplied(fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)),
-		markup)
+	editReplied(fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)), markup)
 	return dispatcher.EndGroups
 }
 

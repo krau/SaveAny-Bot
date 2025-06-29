@@ -9,9 +9,9 @@ import (
 	"github.com/fatih/color"
 )
 
-type termialAuthConversator struct{}
+type terminalAuthConversator struct{}
 
-func (t *termialAuthConversator) AskPhoneNumber() (string, error) {
+func (t *terminalAuthConversator) AskPhoneNumber() (string, error) {
 	phone := ""
 	err := huh.NewInput().Title("Your Phone Number").
 		Placeholder("+44 123456").
@@ -29,7 +29,7 @@ func (t *termialAuthConversator) AskPhoneNumber() (string, error) {
 	return strings.TrimSpace(phone), nil
 }
 
-func (t *termialAuthConversator) AskCode() (string, error) {
+func (t *terminalAuthConversator) AskCode() (string, error) {
 	code := ""
 	err := huh.NewInput().Title("Your Code").
 		Placeholder("123456").
@@ -45,7 +45,7 @@ func (t *termialAuthConversator) AskCode() (string, error) {
 	return strings.TrimSpace(code), nil
 }
 
-func (t *termialAuthConversator) AskPassword() (string, error) {
+func (t *terminalAuthConversator) AskPassword() (string, error) {
 	pwd := ""
 
 	err := huh.NewInput().Title("Your 2FA Password").
@@ -61,7 +61,7 @@ func (t *termialAuthConversator) AskPassword() (string, error) {
 	return strings.TrimSpace(pwd), nil
 }
 
-func (t *termialAuthConversator) AuthStatus(authStatus gotgproto.AuthStatus) {
+func (t *terminalAuthConversator) AuthStatus(authStatus gotgproto.AuthStatus) {
 	switch authStatus.Event {
 	case gotgproto.AuthStatusPhoneRetrial:
 		color.Red("The phone number you just entered seems to be incorrect,")

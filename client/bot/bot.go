@@ -2,7 +2,6 @@ package bot
 
 import (
 	"context"
-	"net/url"
 	"time"
 
 	"github.com/celestix/gotgproto"
@@ -14,20 +13,11 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers"
 	"github.com/krau/SaveAny-Bot/client/middleware"
+	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/ncruces/go-sqlite3/gormlite"
 	"golang.org/x/net/proxy"
 )
-
-var Client *gotgproto.Client
-
-func newProxyDialer(proxyUrl string) (proxy.Dialer, error) {
-	url, err := url.Parse(proxyUrl)
-	if err != nil {
-		return nil, err
-	}
-	return proxy.FromURL(url, proxy.Direct)
-}
 
 func Init(ctx context.Context) {
 	log.FromContext(ctx).Info("初始化 Bot...")
@@ -38,7 +28,7 @@ func Init(ctx context.Context) {
 	go func() {
 		var resolver dcs.Resolver
 		if config.Cfg.Telegram.Proxy.Enable && config.Cfg.Telegram.Proxy.URL != "" {
-			dialer, err := newProxyDialer(config.Cfg.Telegram.Proxy.URL)
+			dialer, err := netutil.NewProxyDialer(config.Cfg.Telegram.Proxy.URL)
 			if err != nil {
 				resultChan <- struct {
 					client *gotgproto.Client
@@ -52,7 +42,8 @@ func Init(ctx context.Context) {
 		} else {
 			resolver = dcs.DefaultResolver()
 		}
-		client, err := gotgproto.NewClient(config.Cfg.Telegram.AppID,
+		client, err := gotgproto.NewClient(
+			config.Cfg.Telegram.AppID,
 			config.Cfg.Telegram.AppHash,
 			gotgproto.ClientTypeBot(config.Cfg.Telegram.Token),
 			&gotgproto.ClientOpts{
@@ -104,8 +95,7 @@ func Init(ctx context.Context) {
 		if result.err != nil {
 			log.FromContext(ctx).Fatalf("初始化 Bot 失败: %s", result.err)
 		}
-		Client = result.client
-		handlers.Register(Client.Dispatcher)
+		handlers.Register(result.client.Dispatcher)
 		log.FromContext(ctx).Info("Bot 初始化完成")
 	}
 }
