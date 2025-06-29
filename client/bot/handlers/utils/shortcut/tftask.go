@@ -51,7 +51,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 	storagePath := stor.JoinStoragePath(path.Join(dirPath, file.Name()))
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	taskid := xid.New().String()
-	task, err := tftask.NewTGFileTask(taskid, injectCtx, file, ctx.Raw, stor, storagePath,
+	task, err := tftask.NewTGFileTask(taskid, injectCtx, file, stor, storagePath,
 		tftask.NewProgressTrack(
 			trackMsgID,
 			userID))
@@ -134,7 +134,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 	}
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	taskid := xid.New().String()
-	task := batchtftask.NewBatchTGFileTask(taskid, injectCtx, elems, ctx.Raw, batchtftask.NewProgressTracker(trackMsgID, userID), true)
+	task := batchtftask.NewBatchTGFileTask(taskid, injectCtx, elems, batchtftask.NewProgressTracker(trackMsgID, userID), true)
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("Failed to add batch task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{

@@ -9,11 +9,11 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/retry"
-	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -62,7 +62,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		})
 		errg.Go(func() error {
 			logger.Info("Starting file download in stream mode")
-			_, err := tdler.NewDownloader(t.client, elem.File).Stream(uploadCtx, wr)
+			_, err := tfile.NewDownloader(elem.File).Stream(uploadCtx, wr)
 			if closeErr := pw.CloseWithError(err); closeErr != nil {
 				logger.Errorf("Failed to close pipe writer: %v", closeErr)
 			}
@@ -88,7 +88,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		t.downloaded.Add(int64(n))
 		t.Progress.OnProgress(ctx, t)
 	})
-	_, err = tdler.NewDownloader(t.client, elem.File).Parallel(ctx, wrAt)
+	_, err = tfile.NewDownloader(elem.File).Parallel(ctx, wrAt)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}

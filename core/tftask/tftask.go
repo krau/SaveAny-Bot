@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -19,7 +18,6 @@ type Task struct {
 	Storage   storage.Storage
 	Path      string
 	Progress  ProgressTracker
-	client    tdler.Client
 	stream    bool // true if the file should be downloaded in stream mode
 	localPath string
 }
@@ -32,7 +30,6 @@ func NewTGFileTask(
 	id string,
 	ctx context.Context,
 	file tfile.TGFile,
-	client tdler.Client,
 	stor storage.Storage,
 	path string,
 	progress ProgressTracker,
@@ -46,7 +43,6 @@ func NewTGFileTask(
 		tftask := &Task{
 			ID:        id,
 			Ctx:       ctx,
-			client:    client,
 			File:      file,
 			Storage:   stor,
 			Path:      path,
@@ -58,7 +54,6 @@ func NewTGFileTask(
 	tfileTask := &Task{
 		ID:       id,
 		Ctx:      ctx,
-		client:   client,
 		File:     file,
 		Storage:  stor,
 		Path:     path,

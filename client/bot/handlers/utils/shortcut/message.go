@@ -46,7 +46,7 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *
 	} else {
 		options = append(options, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message)))
 	}
-	file, err = tfile.FromMediaMessage(media, message, options...)
+	file, err = tfile.FromMediaMessage(media, ctx.Raw, message, options...)
 	if err != nil {
 		logger.Errorf("Failed to get file from media: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
@@ -91,7 +91,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 			logger.Debugf("message %d has no media", msg.GetID())
 			return
 		}
-		file, err := tfile.FromMediaMessage(media, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
+		file, err := tfile.FromMediaMessage(media, ctx.Raw, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
 		if err != nil {
 			logger.Errorf("failed to create file from media: %s", err)
 			return

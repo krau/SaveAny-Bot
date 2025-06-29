@@ -149,7 +149,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		if !supported {
 			continue
 		}
-		file, err := tfile.FromMediaMessage(media, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
+		file, err := tfile.FromMediaMessage(media, ctx.Raw, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
 		if err != nil {
 			log.FromContext(ctx).Errorf("获取文件失败: %s", err)
 			continue

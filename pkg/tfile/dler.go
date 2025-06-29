@@ -1,18 +1,17 @@
-package tdler
+package tfile
 
 import (
 	"github.com/gotd/td/telegram/downloader"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/consts/tglimit"
-	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
 
-type Client interface {
+type DlerClient interface {
 	downloader.Client
 }
 
-func NewDownloader(client Client, file tfile.TGFile) *downloader.Builder {
+func NewDownloader(file TGFile) *downloader.Builder {
 	return downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).
-		Download(client, file.Location()).WithThreads(dlutil.BestThreads(file.Size(), config.Cfg.Threads))
+		Download(file.Dler(), file.Location()).WithThreads(dlutil.BestThreads(file.Size(), config.Cfg.Threads))
 }

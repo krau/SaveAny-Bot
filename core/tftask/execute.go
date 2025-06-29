@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
 
 func (t *Task) Execute(ctx context.Context) error {
@@ -36,7 +36,7 @@ func (t *Task) Execute(ctx context.Context) error {
 	defer func() {
 		t.Progress.OnDone(ctx, t, err)
 	}()
-	_, err = tdler.NewDownloader(t.client, t.File).Parallel(ctx, wrAt)
+	_, err = tfile.NewDownloader(t.File).Parallel(ctx, wrAt)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}

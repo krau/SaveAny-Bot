@@ -10,6 +10,7 @@ import (
 
 type TGFile interface {
 	Location() tg.InputFileLocationClass
+	Dler() DlerClient // witch client to use for downloading
 	Size() int64
 	Name() string
 }
@@ -24,6 +25,7 @@ type tgFile struct {
 	size     int64
 	name     string
 	message  *tg.Message
+	dler     DlerClient
 }
 
 func (f *tgFile) Location() tg.InputFileLocationClass {
@@ -42,11 +44,20 @@ func (f *tgFile) Message() *tg.Message {
 	return f.message
 }
 
-func NewTGFile(location tg.InputFileLocationClass, size int64, name string,
+func (f *tgFile) Dler() DlerClient {
+	return f.dler
+}
+
+func NewTGFile(
+	location tg.InputFileLocationClass,
+	dler DlerClient,
+	size int64,
+	name string,
 	opts ...TGFileOptions,
 ) TGFile {
 	f := &tgFile{
 		location: location,
+		dler:     dler,
 		size:     size,
 		name:     name,
 	}
@@ -56,7 +67,7 @@ func NewTGFile(location tg.InputFileLocationClass, size int64, name string,
 	return f
 }
 
-func FromMedia(media tg.MessageMediaClass, opts ...TGFileOptions) (TGFile, error) {
+func FromMedia(media tg.MessageMediaClass, client DlerClient, opts ...TGFileOptions) (TGFile, error) {
 	switch m := media.(type) {
 	case *tg.MessageMediaDocument:
 		document, ok := m.Document.AsNotEmpty()
@@ -70,14 +81,13 @@ func FromMedia(media tg.MessageMediaClass, opts ...TGFileOptions) (TGFile, error
 				break
 			}
 		}
-		file := &tgFile{
-			location: document.AsInputDocumentFileLocation(),
-			size:     document.Size,
-			name:     fileName,
-		}
-		for _, opt := range opts {
-			opt(file)
-		}
+		file := NewTGFile(
+			document.AsInputDocumentFileLocation(),
+			client,
+			document.Size,
+			fileName,
+			opts...,
+		)
 		return file, nil
 	case *tg.MessageMediaPhoto:
 		photo, ok := m.Photo.AsNotEmpty()
@@ -99,26 +109,26 @@ func FromMedia(media tg.MessageMediaClass, opts ...TGFileOptions) (TGFile, error
 		location.FileReference = photo.GetFileReference()
 		location.ThumbSize = size.GetType()
 		fileName := fmt.Sprintf("photo_%s_%d.jpg", time.Now().Format("2006-01-02_15-04-05"), photo.GetID())
-		file := &tgFile{
-			location: location,
-			size:     0,
-			name:     fileName,
-		}
-		for _, opt := range opts {
-			opt(file)
-		}
+		file := NewTGFile(
+			location,
+			client,
+			0, // Photo size is not available in InputPhotoFileLocation
+			fileName,
+			opts...,
+		)
 		return file, nil
 	}
 	return nil, fmt.Errorf("unsupported media type: %T", media)
 }
 
-func FromMediaMessage(media tg.MessageMediaClass, msg *tg.Message, opts ...TGFileOptions) (TGFileMessage, error) {
-	file, err := FromMedia(media, opts...)
+func FromMediaMessage(media tg.MessageMediaClass, client DlerClient, msg *tg.Message, opts ...TGFileOptions) (TGFileMessage, error) {
+	file, err := FromMedia(media, client, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return &tgFile{
 		location: file.Location(),
+		dler:     file.Dler(),
 		size:     file.Size(),
 		name:     file.Name(),
 		message:  msg,

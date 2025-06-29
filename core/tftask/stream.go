@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/charmbracelet/log"
-	"github.com/krau/SaveAny-Bot/common/tdler"
+	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,7 +22,7 @@ func executeStream(ctx context.Context, task *Task) error {
 	wr := newWriter(ctx, pw, task.Progress, task)
 	errg.Go(func() error {
 		logger.Info("Starting file download in stream mode")
-		_, err := tdler.NewDownloader(task.client, task.File).Stream(uploadCtx, wr)
+		_, err := tfile.NewDownloader(task.File).Stream(uploadCtx, wr)
 		if closeErr := pw.CloseWithError(err); closeErr != nil {
 			logger.Errorf("Failed to close pipe writer: %v", closeErr)
 		}

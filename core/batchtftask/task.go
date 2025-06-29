@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
-	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -30,7 +29,6 @@ type Task struct {
 	Progress     ProgressTracker
 	IgnoreErrors bool // if true, errors during processing will be ignored
 	downloaded   atomic.Int64
-	client       tdler.Client
 	totalSize    int64
 	processing   map[string]TaskElementInfo
 	failed       map[string]error // errors for each element
@@ -73,14 +71,12 @@ func NewBatchTGFileTask(
 	id string,
 	ctx context.Context,
 	files []TaskElement,
-	client tdler.Client,
 	progress ProgressTracker,
 	ignoreErrors bool,
 ) *Task {
 	task := &Task{
 		ID:         id,
 		Ctx:        ctx,
-		client:     client,
 		Elems:      files,
 		Progress:   progress,
 		downloaded: atomic.Int64{},
