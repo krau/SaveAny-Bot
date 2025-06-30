@@ -61,7 +61,7 @@ func (m *Minio) Name() string {
 }
 
 func (m *Minio) JoinStoragePath(p string) string {
-	return path.Join(m.config.BasePath, p)
+	return strings.TrimPrefix(path.Join(m.config.BasePath, p), "/")
 }
 
 func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error {
