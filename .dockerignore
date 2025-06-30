@@ -6,6 +6,6 @@
 downloads/
 data/
 cache/
-docs
+docs/
 config.example.toml
 docker-compose.*
