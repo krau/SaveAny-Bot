@@ -13,6 +13,7 @@ import (
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/rs/xid"
 )
 
 type Minio struct {
@@ -72,6 +73,11 @@ func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error
 	candidate := storagePath
 	for i := 1; m.Exists(ctx, candidate); i++ {
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+		if i > 1000 {
+			m.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
+			candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
+			break
+		}
 	}
 	size := int64(-1)
 	if length := ctx.Value(ctxkey.ContentLength); length != nil {

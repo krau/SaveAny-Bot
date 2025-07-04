@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/log"
 	config "github.com/krau/SaveAny-Bot/config/storage"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+	"github.com/rs/xid"
 )
 
 type Webdav struct {
@@ -56,6 +57,11 @@ func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) erro
 	candidate := storagePath
 	for i := 1; w.Exists(ctx, candidate); i++ {
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+		if i > 1000 {
+			w.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
+			candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
+			break
+		}
 	}
 
 	if err := w.client.MkDir(ctx, path.Dir(candidate)); err != nil {
