@@ -79,6 +79,10 @@ func TestWriteFile(t *testing.T) {
 			content:    "Hello webdav",
 		},
 		{
+			remotePath: "//nested/dir/test.txt",
+			content:    "Nested file",
+		},
+		{
 			remotePath: "nested/dir/test.txt",
 			content:    "Nested file",
 		},
