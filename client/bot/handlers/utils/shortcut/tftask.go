@@ -3,6 +3,7 @@ package shortcut
 import (
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
@@ -34,8 +35,8 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 	}
 	if user.ApplyRule && user.Rules != nil {
 		matchedStorageName, matchedDirPath := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
-		dirPath = matchedDirPath
-		if matchedStorageName.IsValid() {
+		dirPath = matchedDirPath.String()
+		if matchedStorageName.IsUsable() {
 			stor, err = storage.GetStorageByUserIDAndName(ctx, user.ChatID, matchedStorageName.String())
 			if err != nil {
 				logger.Errorf("Failed to get storage by user ID and name: %s", err)
@@ -93,19 +94,28 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		})
 		return dispatcher.EndGroups
 	}
+
 	useRule := user.ApplyRule && user.Rules != nil
-	applyRule := func(file tfile.TGFileMessage) (string, string) {
+
+	applyRule := func(file tfile.TGFileMessage) (string, ruleutil.MatchedDirPath) {
 		if !useRule {
-			return stor.Name(), dirPath
+			return stor.Name(), ruleutil.MatchedDirPath(dirPath)
 		}
 		storName, dirP := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
-		if !storName.IsValid() {
-			return stor.Name(), dirP
+
+		storname := storName.String()
+		if !storName.IsUsable() {
+			storname = stor.Name()
 		}
-		return storName.String(), dirP
+		return storname, dirP
 	}
 
 	elems := make([]batchtftask.TaskElement, 0, len(files))
+	type albumFile struct {
+		file    tfile.TGFileMessage
+		storage storage.Storage
+	}
+	albumFiles := make(map[int64][]albumFile, 0)
 	for _, file := range files {
 		storName, dirPath := applyRule(file)
 		fileStor := stor
@@ -120,18 +130,56 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 				return dispatcher.EndGroups
 			}
 		}
-		storPath := fileStor.JoinStoragePath(path.Join(dirPath, file.Name()))
-		elem, err := batchtftask.NewTaskElement(fileStor, storPath, file)
-		if err != nil {
-			logger.Errorf("Failed to create task element: %s", err)
-			ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-				ID:      trackMsgID,
-				Message: "任务创建失败: " + err.Error(),
+		if !dirPath.NeedNewForAlbum() {
+			storPath := fileStor.JoinStoragePath(path.Join(dirPath.String(), file.Name()))
+			elem, err := batchtftask.NewTaskElement(fileStor, storPath, file)
+			if err != nil {
+				logger.Errorf("Failed to create task element: %s", err)
+				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+					ID:      trackMsgID,
+					Message: "任务创建失败: " + err.Error(),
+				})
+				return dispatcher.EndGroups
+			}
+			elems = append(elems, *elem)
+		} else {
+			groupId, isGroup := file.Message().GetGroupedID()
+			if !isGroup || groupId == 0 {
+				logger.Warnf("File %s is not in a group, skipping album handling", file.Name())
+				continue
+			}
+			if _, ok := albumFiles[groupId]; !ok {
+				albumFiles[groupId] = make([]albumFile, 0)
+			}
+			albumFiles[groupId] = append(albumFiles[groupId], albumFile{
+				file:    file,
+				storage: fileStor,
 			})
-			return dispatcher.EndGroups
 		}
-		elems = append(elems, *elem)
 	}
+	for _, afiles := range albumFiles {
+		if len(afiles) <= 1 {
+			continue
+		}
+		// 对于需要新建目录的文件, 将第一个文件的文件名(去除扩展名)作为目录名
+		// 存储以第一个文件的存储为准
+		albumDir := strings.TrimSuffix(path.Base(afiles[0].file.Name()), path.Ext(afiles[0].file.Name()))
+		albumStor := afiles[0].storage
+		for _, af := range afiles {
+			afstorPath := af.storage.JoinStoragePath(path.Join(dirPath, albumDir, af.file.Name()))
+			elem, err := batchtftask.NewTaskElement(albumStor, afstorPath, af.file)
+			if err != nil {
+				logger.Errorf("Failed to create task element for album file: %s", err)
+				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+					ID:      trackMsgID,
+					Message: "任务创建失败: " + err.Error(),
+				})
+				return dispatcher.EndGroups
+			}
+			elems = append(elems, *elem)
+		}
+	}
+
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	taskid := xid.New().String()
 	task := batchtftask.NewBatchTGFileTask(taskid, injectCtx, elems, batchtftask.NewProgressTracker(trackMsgID, userID), true)

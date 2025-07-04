@@ -3,6 +3,8 @@ package ruleutil
 import (
 	"context"
 
+	"github.com/duke-git/lancet/v2/convertor"
+
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/consts"
@@ -33,11 +35,22 @@ func (m matchedStorName) String() string {
 	return string(m)
 }
 
-func (m matchedStorName) IsValid() bool {
+// can we use this storage name directly?
+func (m matchedStorName) IsUsable() bool {
 	return m != "" && m != consts.RuleStorNameChosen
 }
 
-func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (matchedStorageName matchedStorName, dirPath string) {
+type MatchedDirPath string
+
+func (m MatchedDirPath) String() string {
+	return string(m)
+}
+
+func (m MatchedDirPath) NeedNewForAlbum() bool {
+	return m != "" && m == consts.RuleDirPathNewForAlbum
+}
+
+func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (matchedStorageName matchedStorName, dirPath MatchedDirPath) {
 	if inputs == nil || len(rules) == 0 {
 		return "", ""
 	}
@@ -56,7 +69,7 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 				continue
 			}
 			if ok {
-				dirPath = ru.StoragePath()
+				dirPath = MatchedDirPath(ru.StoragePath())
 				matchedStorageName = matchedStorName(ru.StorageName())
 			}
 		case ruleenum.MessageRegex.String():
@@ -71,7 +84,26 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 				continue
 			}
 			if ok {
-				dirPath = ru.StoragePath()
+				dirPath = MatchedDirPath(ru.StoragePath())
+				matchedStorageName = matchedStorName(ru.StorageName())
+			}
+		case ruleenum.IsAlbum.String():
+			matchAlbum, err := convertor.ToBool(ur.Data)
+			if err != nil {
+				matchAlbum = false
+			}
+			ru, err := rule.NewRuleMediaType(ur.StorageName, ur.DirPath, matchAlbum)
+			if err != nil {
+				logger.Errorf("Failed to create rule: %s", err)
+				continue
+			}
+			ok, err := ru.Match(inputs.File.Message().GroupedID != 0)
+			if err != nil {
+				logger.Errorf("Failed to match rule: %s", err)
+				continue
+			}
+			if ok {
+				dirPath = MatchedDirPath(ru.StoragePath())
 				matchedStorageName = matchedStorName(ru.StorageName())
 			}
 		}
