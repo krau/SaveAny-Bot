@@ -14,7 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/re"
-	"github.com/krau/SaveAny-Bot/client/user"
+	uc "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
@@ -103,7 +103,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 
 	tctx := ctx
 	if config.Cfg.Telegram.Userbot.Enable {
-		tctx = user.GetCtx()
+		tctx = uc.GetCtx()
 	}
 
 	for _, link := range msgLinks {

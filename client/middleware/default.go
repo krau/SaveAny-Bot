@@ -9,13 +9,14 @@ import (
 	"github.com/gotd/td/telegram"
 	"github.com/krau/SaveAny-Bot/client/middleware/recovery"
 	"github.com/krau/SaveAny-Bot/client/middleware/retry"
+	"github.com/krau/SaveAny-Bot/config"
 )
 
 // https://github.com/iyear/tdl/blob/master/core/tclient/tclient.go
 func NewDefaultMiddlewares(ctx context.Context, timeout time.Duration) []telegram.Middleware {
 	return []telegram.Middleware{
 		recovery.New(ctx, newBackoff(timeout)),
-		retry.New(5),
+		retry.New(config.Cfg.Telegram.RpcRetry),
 		floodwait.NewSimpleWaiter(),
 	}
 }
