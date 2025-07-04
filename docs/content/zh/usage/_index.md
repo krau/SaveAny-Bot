@@ -26,7 +26,6 @@ Bot 接受两种消息: 文件和链接.
 
 在开启静默模式之前, 需要使用 `/storage` 命令设置默认保存位置.
 
-
 ## 存储规则
 
 允许你为 Bot 在上传文件到存储时设置一些重定向规则, 用于自动整理所保存的文件.
@@ -37,6 +36,7 @@ Bot 接受两种消息: 文件和链接.
 
 1. FILENAME-REGEX
 2. MESSAGE-REGEX
+3. IS-ALBUM
 
 添加规则的基本语法:
 
@@ -65,3 +65,17 @@ FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /视频
 ### MESSAGE-REGEX
 
 同上, 但是是根据消息本身的文本内容正则匹配
+
+### IS-ALBUM
+
+匹配相册消息 (media group), 规则内容只能为 `true` 或 `false`.
+
+规则中的路径若使用 "NEW-FOR-ALBUM" , 则表示为该组消息新建一个文件夹来存储它们. 见: https://github.com/krau/SaveAny-Bot/issues/87
+
+例如:
+
+```
+IS-ALBUM true MyWebdav NEW-FOR-ALBUM
+```
+
+这将会把以 media group 形式发送的消息保存到名为 MyWebdav 的存储下, 并为每个相册新建一个文件夹(由第一个文件生成)来存储它们.
