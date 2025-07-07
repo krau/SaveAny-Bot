@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/gotgproto/functions"
 	"github.com/duke-git/lancet/v2/maputil"
 
 	"github.com/duke-git/lancet/v2/mathutil"
@@ -19,6 +20,9 @@ import (
 	"github.com/rs/xid"
 )
 
+// generate a file name from the message content and media type
+//
+// it will never return an empty string
 func GenFileNameFromMessage(message tg.Message) string {
 	ext := func(media tg.MessageMediaClass) string {
 		switch media := media.(type) {
@@ -82,7 +86,13 @@ func GenFileNameFromMessage(message tg.Message) string {
 	}()
 
 	if filename == "" {
-		filename = fmt.Sprintf("%d_%s", message.GetID(), xid.New().String())
+		mname, err := functions.GetMediaFileNameWithId(message.Media)
+		if err != nil {
+			filename = fmt.Sprintf("%d_%s", message.GetID(), xid.New().String())
+		} else {
+			filename = mname
+		}
+
 	}
 	return filename + ext
 }
