@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/log"
-	"github.com/go-faster/errors"
 	"github.com/gotd/td/bin"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
@@ -37,7 +36,8 @@ func (r retry) Handle(next tg.Invoker) telegram.InvokeFunc {
 					retries++
 					continue
 				}
-				return errors.Wrap(err, "retry middleware skip")
+				// retry middleware skip
+				return err
 			}
 
 			return nil
