@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/duke-git/lancet/v2/convertor"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/styling"
@@ -70,9 +73,17 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if tctx == nil {
 		return fmt.Errorf("failed to get telegram context")
 	}
-	peer := tctx.PeerStorage.GetInputPeerById(t.config.ChatID)
+	chatID := t.config.ChatID
+	if after, ok0 := strings.CutPrefix(convertor.ToString(chatID), "-100"); ok0 {
+		cid, err := strconv.ParseInt(after, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse chat ID: %w", err)
+		}
+		chatID = cid
+	}
+	peer := tctx.PeerStorage.GetInputPeerById(chatID)
 	if peer == nil {
-		return fmt.Errorf("failed to get input peer for chat ID %d", t.config.ChatID)
+		return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
 	}
 	mtype, err := mimetype.DetectReader(rs)
 	if err != nil {
