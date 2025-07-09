@@ -23,8 +23,14 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM alpine:latest
 
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 COPY --from=builder /app/saveany-bot .
+COPY entrypoint.sh .
 
-ENTRYPOINT  ["/app/saveany-bot"]
+RUN chmod +x /app/saveany-bot && \
+    chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
