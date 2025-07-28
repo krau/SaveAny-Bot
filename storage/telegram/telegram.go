@@ -108,12 +108,11 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	caption := styling.Plain(filename)
 	docb := message.UploadedDocument(file, caption).
 		Filename(filename).
-		ForceFile(true).
+		ForceFile(false).
 		MIME(mtype.String())
 
-	var mediaOpt message.MediaOption = docb
 	sender := tctx.Sender
-	_, err = sender.WithUploader(upler).To(peer).Media(ctx, mediaOpt)
+	_, err = sender.WithUploader(upler).To(peer).Media(ctx, docb)
 	return err
 }
 
