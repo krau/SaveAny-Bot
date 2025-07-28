@@ -61,10 +61,12 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			t.Progress.OnProgress(ctx, t)
 		})
 		errg.Go(func() error {
+			defer pw.Close()
 			logger.Info("Starting file download in stream mode")
 			_, err := tfile.NewDownloader(elem.File).Stream(uploadCtx, wr)
-			if closeErr := pw.CloseWithError(err); closeErr != nil {
-				logger.Errorf("Failed to close pipe writer: %v", closeErr)
+			if err != nil {
+				logger.Errorf("Failed to download file: %v", err)
+				pw.CloseWithError(err)
 			}
 			return err
 		})
