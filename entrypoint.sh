@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# 自动创建数据库目录，防止 SQLite 初始化失败
 mkdir -p /app/data
 
 # Download config from URL if provided
