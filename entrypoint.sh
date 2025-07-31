@@ -1,5 +1,7 @@
 #!/bin/sh
 
+mkdir -p /app/data
+
 # Download config from URL if provided
 if [ -n "$CONFIG_URL" ]; then
     echo "[INFO] Downloading config from $CONFIG_URL"
