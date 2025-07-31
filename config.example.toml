@@ -13,6 +13,7 @@ session = "data/session.db"
 
 # Redis 数据库配置（可选，如果配置了 redis_addr 则使用 Redis 替代 SQLite）
 # redis_addr = "localhost:6379"      # Redis 服务器地址
+# redis_user = ""                    # Redis ACL 用户名（可选，适用于 Redis 6+ ACL 认证）
 # redis_password = ""                # Redis 密码（可选）
 # redis_db = 0                       # Redis 数据库编号，默认为 0
 

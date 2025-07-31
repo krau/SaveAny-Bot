@@ -30,6 +30,15 @@ if [ -n "$REDIS_ADDR" ]; then
     fi
 fi
 
+if [ -n "$REDIS_USER" ]; then
+    echo "[INFO] Setting Redis username from environment"
+    if grep -q "redis_user" /app/config.toml; then
+        sed -i "s|redis_user = .*|redis_user = \"$REDIS_USER\"|" /app/config.toml
+    else
+        sed -i '/^\[db\]/a redis_user = "'"$REDIS_USER"'"' /app/config.toml
+    fi
+fi
+
 if [ -n "$REDIS_PASSWORD" ]; then
     echo "[INFO] Setting Redis password from environment"
     if grep -q "redis_password" /app/config.toml; then
