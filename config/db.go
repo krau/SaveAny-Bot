@@ -9,6 +9,7 @@ type dbConfig struct {
 	// Redis configuration (new)
 	// If RedisAddr is set, Redis will be used instead of SQLite
 	RedisAddr     string `toml:"redis_addr" mapstructure:"redis_addr"`         // Redis server address (e.g., "localhost:6379")
+	RedisUser     string `toml:"redis_user" mapstructure:"redis_user"`         // Redis ACL username (optional, for Redis 6+ ACL support)
 	RedisPassword string `toml:"redis_password" mapstructure:"redis_password"` // Redis password (optional)
 	RedisDB       int    `toml:"redis_db" mapstructure:"redis_db"`             // Redis database number (default: 0)
 }

@@ -66,12 +66,21 @@ type RedisRule struct {
 func initRedis(ctx context.Context) error {
 	logger := log.FromContext(ctx)
 	
-	// Create Redis client with configuration from config
-	rdb = redis.NewClient(&redis.Options{
+	// Create Redis client options with configuration from config
+	opts := &redis.Options{
 		Addr:     config.Cfg.DB.RedisAddr,
 		Password: config.Cfg.DB.RedisPassword,
 		DB:       config.Cfg.DB.RedisDB,
-	})
+	}
+	
+	// Set username for Redis ACL authentication if provided
+	if config.Cfg.DB.RedisUser != "" {
+		opts.Username = config.Cfg.DB.RedisUser
+		logger.Debug("Redis ACL username configured", "username", config.Cfg.DB.RedisUser)
+	}
+	
+	// Create Redis client with the configured options
+	rdb = redis.NewClient(opts)
 
 	// Test the connection
 	pong, err := rdb.Ping(ctx).Result()
