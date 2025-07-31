@@ -16,9 +16,32 @@ import (
 )
 
 var db *gorm.DB
+var useRedis bool // Flag to determine whether to use Redis or SQLite
 
+// Init initializes the database (SQLite or Redis based on configuration)
 func Init(ctx context.Context) {
 	logger := log.FromContext(ctx)
+	
+	// Check if Redis is configured
+	if config.Cfg.DB.RedisAddr != "" {
+		// Initialize Redis
+		useRedis = true
+		if err := initRedis(ctx); err != nil {
+			logger.Fatal("Failed to initialize Redis: ", err)
+		}
+		
+		// Sync users to Redis if needed
+		if err := syncUsers(ctx); err != nil {
+			logger.Fatal("Failed to sync users:", err)
+		}
+		logger.Debug("Redis database migrated")
+		return
+	}
+	
+	// Initialize SQLite (original logic)
+	useRedis = false
+	logger.Debug("Redis not configured, using SQLite database")
+	
 	if err := os.MkdirAll(filepath.Dir(config.Cfg.DB.Path), 0755); err != nil {
 		logger.Fatal("Failed to create data directory: ", err)
 	}
@@ -47,6 +70,7 @@ func Init(ctx context.Context) {
 	logger.Info("Database initialized")
 }
 
+// syncUsers synchronizes users between configuration and database (works with both SQLite and Redis)
 func syncUsers(ctx context.Context) error {
 	logger := log.FromContext(ctx)
 	dbUsers, err := GetAllUsers(ctx)

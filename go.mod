@@ -14,6 +14,7 @@ require (
 	github.com/gotd/contrib v0.21.0
 	github.com/gotd/td v0.129.0
 	github.com/minio/minio-go/v7 v7.0.95
+	github.com/redis/go-redis/v9 v9.11.0
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/rs/xid v1.6.0
 	github.com/spf13/cobra v1.9.1
@@ -37,6 +38,7 @@ require (
 	github.com/charmbracelet/x/exp/strings v0.0.0-20250725211024-d60e1b0112b2 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/coder/websocket v1.8.13 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
