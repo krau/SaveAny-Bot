@@ -14,6 +14,7 @@ require (
 	github.com/gotd/contrib v0.21.0
 	github.com/gotd/td v0.129.0
 	github.com/minio/minio-go/v7 v7.0.95
+	github.com/redis/go-redis/v9 v9.11.0
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/rs/xid v1.6.0
 	github.com/spf13/cobra v1.9.1
@@ -76,7 +77,6 @@ require (
 	github.com/onsi/gomega v1.36.2 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/redis/go-redis/v9 v9.11.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
