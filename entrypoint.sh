@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# 自动创建数据库目录，防止 SQLite 初始化失败
-mkdir -p /app/data
-
 # Download config from URL if provided
 if [ -n "$CONFIG_URL" ]; then
     echo "[INFO] 正在从下载配置 $CONFIG_URL"
