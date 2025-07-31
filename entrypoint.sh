@@ -5,11 +5,11 @@ mkdir -p /app/data
 
 # Download config from URL if provided
 if [ -n "$CONFIG_URL" ]; then
-    echo "[INFO] Downloading config from $CONFIG_URL"
+    echo "[INFO] 正在从下载配置 $CONFIG_URL"
     if curl -sSLo /app/config.toml "$CONFIG_URL"; then
-        echo "[INFO] Configuration downloaded successfully"
+        echo "[INFO] 配置下载成功"
     else
-        echo "[ERROR] Failed to download config from $CONFIG_URL"
+        echo "[ERROR] 无法从下载配置 $CONFIG_URL"
         exit 1
     fi
 fi
@@ -20,10 +20,10 @@ if [ ! -f /app/config.toml ]; then
     exit 1
 fi
 
-# Update Redis environment variables in config file if they are set
-# This allows Docker environment variables to override config file settings
+# 更新配置文件中的Redis环境变量（如果已设置）
+# 允许Docker环境变量覆盖配置文件设置
 if [ -n "$REDIS_ADDR" ]; then
-    echo "[INFO] Setting Redis address from environment: $REDIS_ADDR"
+    echo "[INFO] 从环境设置Redis地址: $REDIS_ADDR"
     # Use sed to update or add redis_addr in the [db] section
     if grep -q "redis_addr" /app/config.toml; then
         sed -i "s|redis_addr = .*|redis_addr = \"$REDIS_ADDR\"|" /app/config.toml
@@ -34,7 +34,7 @@ if [ -n "$REDIS_ADDR" ]; then
 fi
 
 if [ -n "$REDIS_USER" ]; then
-    echo "[INFO] Setting Redis username from environment"
+    echo "[INFO] 从环境设置Redis用户名"
     if grep -q "redis_user" /app/config.toml; then
         sed -i "s|redis_user = .*|redis_user = \"$REDIS_USER\"|" /app/config.toml
     else
@@ -43,7 +43,7 @@ if [ -n "$REDIS_USER" ]; then
 fi
 
 if [ -n "$REDIS_PASSWORD" ]; then
-    echo "[INFO] Setting Redis password from environment"
+    echo "[INFO] 从环境设置Redis密码"
     if grep -q "redis_password" /app/config.toml; then
         sed -i "s|redis_password = .*|redis_password = \"$REDIS_PASSWORD\"|" /app/config.toml
     else
@@ -52,7 +52,7 @@ if [ -n "$REDIS_PASSWORD" ]; then
 fi
 
 if [ -n "$REDIS_DB" ]; then
-    echo "[INFO] Setting Redis database from environment: $REDIS_DB"
+    echo "[INFO] 从环境设置Redis数据库: $REDIS_DB"
     if grep -q "redis_db" /app/config.toml; then
         sed -i "s|redis_db = .*|redis_db = $REDIS_DB|" /app/config.toml
     else
@@ -62,9 +62,9 @@ fi
 
 # Display database configuration info
 if [ -n "$REDIS_ADDR" ]; then
-    echo "[INFO] Using Redis database at: $REDIS_ADDR"
+    echo "[INFO] 使用Redis数据库: $REDIS_ADDR"
 else
-    echo "[INFO] Using SQLite database (Redis not configured)"
+    echo "[INFO] 使用SQLite数据库（未配置Redis）"
 fi
 
 # Start the application
