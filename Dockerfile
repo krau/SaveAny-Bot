@@ -27,6 +27,12 @@ RUN apk add --no-cache curl
 
 WORKDIR /app
 
+# 创建数据目录，防止 SQLite session.db 初始化失败
+RUN mkdir -p /app/data && \
+    mkdir -p /app/cache && \
+    mkdir -p /app/downloads && \
+    chmod 755 /app/data /app/cache /app/downloads
+
 COPY --from=builder /app/saveany-bot .
 COPY entrypoint.sh .
 
