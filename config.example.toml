@@ -5,6 +5,17 @@ retry = 3      # 下载失败重试次数
 threads = 4    # 单个任务下载使用的最大线程数
 stream = false # 使用流式传输模式, 建议仅在硬盘空间十分有限时使用.
 
+# 数据库配置
+[db]
+# SQLite 数据库配置（当未配置 Redis 时使用）
+path = "data/saveany.db"
+session = "data/session.db"
+
+# Redis 数据库配置（可选，如果配置了 redis_addr 则使用 Redis 替代 SQLite）
+# redis_addr = "localhost:6379"      # Redis 服务器地址
+# redis_password = ""                # Redis 密码（可选）
+# redis_db = 0                       # Redis 数据库编号，默认为 0
+
 [telegram]
 # Bot Token
 # 更换 Bot Token 后请删除会话数据库文件 (默认路径为 data/session.db )

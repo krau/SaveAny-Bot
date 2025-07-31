@@ -37,6 +37,7 @@ require (
 	github.com/charmbracelet/x/exp/strings v0.0.0-20250725211024-d60e1b0112b2 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/coder/websocket v1.8.13 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
@@ -75,6 +76,7 @@ require (
 	github.com/onsi/gomega v1.36.2 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/redis/go-redis/v9 v9.11.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect

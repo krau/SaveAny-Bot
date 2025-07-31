@@ -8,3 +8,7 @@ cache.db
 .vscode/
 temp/
 .hugo_build.lock
+
+# Binary executable
+SaveAny-Bot
+saveany-bot
