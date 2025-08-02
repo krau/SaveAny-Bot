@@ -132,6 +132,8 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		media = docb.Video().SupportsStreaming()
 	case strings.HasPrefix(mtypeStr, "audio/"):
 		media = docb.Audio().Title(filename)
+	case strings.HasPrefix(mtypeStr, "image/") && !strings.HasSuffix(mtypeStr, "webp"):
+		media = message.UploadedPhoto(file, caption)
 	}
 
 	sender := tctx.Sender
