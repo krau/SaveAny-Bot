@@ -7,10 +7,6 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/consts/tglimit"
 )
 
-type DlerClient interface {
-	downloader.Client
-}
-
 func NewDownloader(file TGFile) *downloader.Builder {
 	return downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).
 		Download(file.Dler(), file.Location()).WithThreads(dlutil.BestThreads(file.Size(), config.Cfg.Threads))

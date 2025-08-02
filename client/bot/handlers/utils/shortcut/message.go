@@ -10,6 +10,7 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/types"
 	"github.com/charmbracelet/log"
+	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
@@ -83,7 +84,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 	}
 
 	files = make([]tfile.TGFileMessage, 0, len(msgLinks))
-	addFile := func(client tfile.DlerClient, msg *tg.Message) {
+	addFile := func(client downloader.Client, msg *tg.Message) {
 		if msg == nil || msg.Media == nil {
 			logger.Warn("message is nil, skipping")
 			return

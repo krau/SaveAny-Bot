@@ -3,14 +3,15 @@ package tfile
 import (
 	"errors"
 	"fmt"
-	"time"
 
+	"github.com/celestix/gotgproto/functions"
+	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/tg"
 )
 
 type TGFile interface {
 	Location() tg.InputFileLocationClass
-	Dler() DlerClient // witch client to use for downloading
+	Dler() downloader.Client // witch client to use for downloading
 	Size() int64
 	Name() string
 }
@@ -25,7 +26,7 @@ type tgFile struct {
 	size     int64
 	name     string
 	message  *tg.Message
-	dler     DlerClient
+	dler     downloader.Client
 }
 
 func (f *tgFile) Location() tg.InputFileLocationClass {
@@ -44,13 +45,13 @@ func (f *tgFile) Message() *tg.Message {
 	return f.message
 }
 
-func (f *tgFile) Dler() DlerClient {
+func (f *tgFile) Dler() downloader.Client {
 	return f.dler
 }
 
 func NewTGFile(
 	location tg.InputFileLocationClass,
-	dler DlerClient,
+	dler downloader.Client,
 	size int64,
 	name string,
 	opts ...TGFileOptions,
@@ -67,7 +68,7 @@ func NewTGFile(
 	return f
 }
 
-func FromMedia(media tg.MessageMediaClass, client DlerClient, opts ...TGFileOptions) (TGFile, error) {
+func FromMedia(media tg.MessageMediaClass, client downloader.Client, opts ...TGFileOptions) (TGFile, error) {
 	switch m := media.(type) {
 	case *tg.MessageMediaDocument:
 		document, ok := m.Document.AsNotEmpty()
@@ -108,7 +109,10 @@ func FromMedia(media tg.MessageMediaClass, client DlerClient, opts ...TGFileOpti
 		location.AccessHash = photo.GetAccessHash()
 		location.FileReference = photo.GetFileReference()
 		location.ThumbSize = size.GetType()
-		fileName := fmt.Sprintf("photo_%s_%d.jpg", time.Now().Format("2006-01-02_15-04-05"), photo.GetID())
+		fileName, err := functions.GetMediaFileName(m)
+		if err != nil {
+			fileName = fmt.Sprintf("photo_%d.png", photo.GetID())
+		}
 		file := NewTGFile(
 			location,
 			client,
@@ -121,7 +125,7 @@ func FromMedia(media tg.MessageMediaClass, client DlerClient, opts ...TGFileOpti
 	return nil, fmt.Errorf("unsupported media type: %T", media)
 }
 
-func FromMediaMessage(media tg.MessageMediaClass, client DlerClient, msg *tg.Message, opts ...TGFileOptions) (TGFileMessage, error) {
+func FromMediaMessage(media tg.MessageMediaClass, client downloader.Client, msg *tg.Message, opts ...TGFileOptions) (TGFileMessage, error) {
 	file, err := FromMedia(media, client, opts...)
 	if err != nil {
 		return nil, err
