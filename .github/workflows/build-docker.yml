@@ -44,6 +44,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract Dockerfile args
+        id: args
+        run: |
+          echo "git_commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(git show -s --format=%cI)" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v6
@@ -59,5 +65,5 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ steps.meta.outputs.version }}
-            GitCommit=${{ github.sha }}
-            BuildTime=${{ fromJson(toJSON(github.event.repository.pushed_at)) }}
+            GitCommit=${{ steps.args.outputs.git_commit }}
+            BuildTime=${{ steps.args.outputs.build_time }}
