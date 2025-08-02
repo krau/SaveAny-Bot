@@ -14,10 +14,12 @@ import (
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/telegram/uploader"
+	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	storconfig "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/pkg/consts/tglimit"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/rs/xid"
 	"golang.org/x/time/rate"
@@ -100,19 +102,40 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		WithPartSize(tglimit.MaxUploadPartSize).
 		WithThreads(config.Cfg.Threads)
 
-	file, err := upler.FromReader(ctx, filename, rs)
+	var file tg.InputFileClass
+	size := func() int64 {
+		if length := ctx.Value(ctxkey.ContentLength); length != nil {
+			if l, ok := length.(int64); ok {
+				return l
+			}
+		}
+		return -1 // unknown size
+	}()
+	if size < 0 {
+		file, err = upler.FromReader(ctx, filename, rs)
+	} else {
+		file, err = upler.Upload(ctx, uploader.NewUpload(filename, rs, size))
+	}
 	if err != nil {
 		return fmt.Errorf("failed to upload file to telegram: %w", err)
 	}
-
 	caption := styling.Plain(filename)
 	docb := message.UploadedDocument(file, caption).
 		Filename(filename).
 		ForceFile(false).
 		MIME(mtype.String())
 
+	var media message.MediaOption = docb
+
+	switch mtypeStr := mtype.String(); {
+	case strings.HasPrefix(mtypeStr, "video/"):
+		media = docb.Video().SupportsStreaming()
+	case strings.HasPrefix(mtypeStr, "audio/"):
+		media = docb.Audio().Title(filename)
+	}
+
 	sender := tctx.Sender
-	_, err = sender.WithUploader(upler).To(peer).Media(ctx, docb)
+	_, err = sender.WithUploader(upler).To(peer).Media(ctx, media)
 	return err
 }
 
