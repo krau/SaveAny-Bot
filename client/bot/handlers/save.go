@@ -7,7 +7,6 @@ import (
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/functions"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
@@ -158,9 +157,8 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 			sb.Reset()
 			sb.WriteString(msg.GetMessage())
 			sb.WriteString(" ")
-			fn, _ := functions.GetMediaFileNameWithId(media)
+			fn, _ := tgutil.GetMediaFileName(media)
 			sb.WriteString(fn)
-			log.FromContext(ctx).Debugf("正在检查消息内容: %s", sb.String())
 			if !filter.MatchString(sb.String()) {
 				continue
 			}
@@ -194,5 +192,4 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		return dispatcher.EndGroups
 	}
 	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, "", files, replied.ID)
-
 }

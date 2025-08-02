@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/functions"
 	"github.com/duke-git/lancet/v2/maputil"
 
 	"github.com/duke-git/lancet/v2/mathutil"
@@ -86,7 +85,7 @@ func GenFileNameFromMessage(message tg.Message) string {
 	}()
 
 	if filename == "" {
-		mname, err := functions.GetMediaFileNameWithId(message.Media)
+		mname, err := GetMediaFileName(message.Media)
 		if err != nil {
 			filename = fmt.Sprintf("%d_%s", message.GetID(), xid.New().String())
 		} else {
