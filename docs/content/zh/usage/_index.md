@@ -50,7 +50,7 @@ Bot 接受两种消息: 文件和链接.
 
 此外, 规则中的存储名若使用 "CHOSEN" , 则表示存储到点击按钮选择的存储端的路径下
 
-规则介绍:
+规则类型:
 
 ### FILENAME-REGEX
 
@@ -79,3 +79,36 @@ IS-ALBUM true MyWebdav NEW-FOR-ALBUM
 ```
 
 这将会把以 media group 形式发送的消息保存到名为 MyWebdav 的存储下, 并为每个相册新建一个文件夹(由第一个文件生成)来存储它们.
+
+
+## 监听聊天
+
+{{< hint warning >}}
+该功能需开启 UserBot 集成.
+{{< /hint >}}
+
+监听指定聊天的消息, 并自动保存到默认存储中, 遵从存储规则, 并且可以设置过滤器来只保存匹配的消息.
+
+监听聊天:
+
+```
+/watch <chat_id/username> [filter] 
+```
+
+取消监听:
+
+```
+/unwatch <chat_id/username>
+```
+
+过滤器类型:
+
+### msgre
+
+正则匹配消息文本, 例如:
+
+```
+/watch 12345678 msgre:.*hello.*
+```
+
+这将会监听 ID 为 12345678 的聊天, 并且只保存消息文本中包含 "hello" 的消息.

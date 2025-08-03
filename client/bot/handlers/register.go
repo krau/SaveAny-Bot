@@ -81,7 +81,7 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 				filterType := filter[0]
 				filterData := filter[1]
 				switch filterType {
-				case "msgre":
+				case "msgre": // [TODO] enums for filter types
 					if ok, err := regexp.MatchString(filterData, msgText); err != nil {
 						continue
 					} else if !ok {
