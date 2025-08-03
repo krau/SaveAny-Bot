@@ -20,7 +20,9 @@ func (w *ProgressWriterAt) WriteAt(p []byte, off int64) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	w.progress.OnProgress(w.ctx, w.info, w.downloaded.Add(int64(at)), w.total)
+	if w.progress != nil {
+		w.progress.OnProgress(w.ctx, w.info, w.downloaded.Add(int64(at)), w.total)
+	}
 	return at, nil
 }
 
@@ -54,7 +56,9 @@ func (w *ProgressWriter) Write(p []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	w.progress.OnProgress(w.ctx, w.info, w.downloaded.Add(int64(at)), w.total)
+	if w.progress != nil {
+		w.progress.OnProgress(w.ctx, w.info, w.downloaded.Add(int64(at)), w.total)
+	}
 	return at, nil
 }
 

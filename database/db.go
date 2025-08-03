@@ -37,7 +37,7 @@ func Init(ctx context.Context) {
 		logger.Fatal("Failed to open database: ", err)
 	}
 	logger.Debug("Database connected")
-	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}, &WatchChat{}); err != nil {
 		logger.Fatal("迁移数据库失败, 如果您从旧版本升级, 建议手动删除数据库文件后重试: ", err)
 	}
 	if err := syncUsers(ctx); err != nil {

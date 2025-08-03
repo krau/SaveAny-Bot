@@ -6,13 +6,17 @@ import (
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher"
+	"github.com/celestix/gotgproto/dispatcher/handlers"
+	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/sessionMaker"
+
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/dcs"
 	"github.com/krau/SaveAny-Bot/client/middleware"
 	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/database"
 	"github.com/ncruces/go-sqlite3/gormlite"
 	"golang.org/x/net/proxy"
 )
@@ -106,6 +110,15 @@ func Login(ctx context.Context) (*gotgproto.Client, error) {
 			return nil, r.err
 		}
 		uc = r.client
+		uc.Dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, func(ctx *ext.Context, u *ext.Update) error {
+			chatId := u.EffectiveChat().GetID()
+			watchChats, err := database.GetWatchChatsByChatID(ctx, chatId)
+			if err != nil || watchChats == nil {
+				return dispatcher.EndGroups
+			}
+			return dispatcher.ContinueGroups
+		}))
+		uc.Dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, handleMediaMessage))
 		log.FromContext(ctx).Infof("User client logged in successfully: %s", uc.Self.FirstName+" "+uc.Self.LastName)
 		return uc, nil
 	}

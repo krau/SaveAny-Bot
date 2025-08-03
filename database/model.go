@@ -12,6 +12,14 @@ type User struct {
 	Dirs           []Dir
 	ApplyRule      bool
 	Rules          []Rule
+	WatchChats     []WatchChat
+}
+
+type WatchChat struct {
+	gorm.Model
+	UserID uint // User's database ID (not chat ID)
+	ChatID int64
+	Filter string
 }
 
 type Dir struct {

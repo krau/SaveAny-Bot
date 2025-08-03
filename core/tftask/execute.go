@@ -16,7 +16,9 @@ import (
 
 func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", t.File.Name()))
-	t.Progress.OnStart(ctx, t)
+	if t.Progress != nil {
+		t.Progress.OnStart(ctx, t)
+	}
 	if t.stream {
 		return executeStream(ctx, t)
 	}
@@ -34,7 +36,9 @@ func (t *Task) Execute(ctx context.Context) error {
 	wrAt := newWriterAt(ctx, localFile, t.Progress, t)
 
 	defer func() {
-		t.Progress.OnDone(ctx, t, err)
+		if t.Progress != nil {
+			t.Progress.OnDone(ctx, t, err)
+		}
 	}()
 	_, err = tfile.NewDownloader(t.File).Parallel(ctx, wrAt)
 	if err != nil {
