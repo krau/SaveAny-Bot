@@ -113,7 +113,7 @@ func Login(ctx context.Context) (*gotgproto.Client, error) {
 		uc.Dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, func(ctx *ext.Context, u *ext.Update) error {
 			chatId := u.EffectiveChat().GetID()
 			watchChats, err := database.GetWatchChatsByChatID(ctx, chatId)
-			if err != nil || watchChats == nil {
+			if err != nil || len(watchChats) == 0 {
 				return dispatcher.EndGroups
 			}
 			return dispatcher.ContinueGroups

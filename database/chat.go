@@ -3,7 +3,7 @@ package database
 import "context"
 
 func (user *User) WatchChat(ctx context.Context, chat WatchChat) error {
-	if user.WatchChats == nil {
+	if len(user.WatchChats) == 0 {
 		user.WatchChats = make([]WatchChat, 0)
 	}
 

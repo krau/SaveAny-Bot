@@ -62,6 +62,7 @@ func Register(disp dispatcher.Dispatcher) {
 func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 	logger := log.FromContext(userclient.GetCtx())
 	for event := range ch {
+		logger.Debug("Received media message event", "chat_id", event.ChatID, "file_name", event.File.Name())
 		ctx := event.Ctx
 		file := event.File
 		chats, err := database.GetWatchChatsByChatID(ctx, event.ChatID)
@@ -81,7 +82,9 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 				filterData := filter[1]
 				switch filterType {
 				case "msgre":
-					if _, err := regexp.MatchString(filterData, msgText); err != nil {
+					if ok, err := regexp.MatchString(filterData, msgText); err != nil {
+						continue
+					} else if !ok {
 						continue
 					}
 				default:
