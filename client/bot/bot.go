@@ -70,17 +70,22 @@ func Init(ctx context.Context) {
 		client.API().BotsSetBotCommands(ctx, &tg.BotsSetBotCommandsRequest{
 			Scope: &tg.BotCommandScopeDefault{},
 		})
+		commands := []tg.BotCommand{
+			{Command: "start", Description: "开始使用"},
+			{Command: "help", Description: "显示帮助"},
+			{Command: "silent", Description: "开启/关闭静默模式"},
+			{Command: "storage", Description: "设置默认存储端"},
+			{Command: "save", Description: "保存文件"},
+			{Command: "dir", Description: "管理存储文件夹"},
+			{Command: "rule", Description: "管理规则"},
+		}
+		if config.Cfg.Telegram.Userbot.Enable {
+			commands = append(commands, tg.BotCommand{Command: "watch", Description: "监听聊天"})
+			commands = append(commands, tg.BotCommand{Command: "unwatch", Description: "取消监听聊天"})
+		}
 		_, err = client.API().BotsSetBotCommands(ctx, &tg.BotsSetBotCommandsRequest{
-			Scope: &tg.BotCommandScopeDefault{},
-			Commands: []tg.BotCommand{
-				{Command: "start", Description: "开始使用"},
-				{Command: "help", Description: "显示帮助"},
-				{Command: "silent", Description: "开启/关闭静默模式"},
-				{Command: "storage", Description: "设置默认存储端"},
-				{Command: "save", Description: "保存所回复的文件"},
-				{Command: "dir", Description: "管理存储文件夹"},
-				{Command: "rule", Description: "管理规则"},
-			},
+			Scope:    &tg.BotCommandScopeDefault{},
+			Commands: commands,
 		})
 		resultChan <- struct {
 			client *gotgproto.Client

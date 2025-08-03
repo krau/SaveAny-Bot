@@ -19,6 +19,8 @@ Save Any Bot - 转存你的 Telegram 文件
 /silent - 开关静默模式
 /storage - 设置默认存储位置
 /save [自定义文件名] - 保存文件
+/dir - 管理存储目录
+/rule - 管理规则
 
 使用帮助: https://sabot.unv.app/usage/
 `
