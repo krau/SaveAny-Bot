@@ -1,6 +1,9 @@
 package user
 
 import (
+	"sync"
+	"time"
+
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
@@ -9,15 +12,58 @@ import (
 )
 
 type MediaMessageEvent struct {
-	Ctx    *ext.Context
-	ChatID int64 // from witch the media message was sent
-	File   tfile.TGFileMessage
+	Ctx       *ext.Context
+	ChatID    int64 // from witch the media message was sent
+	MessageID int
+	File      tfile.TGFileMessage
 }
 
-var mediaMessageCh = make(chan MediaMessageEvent, 100)
+type messageKey struct {
+	ChatID    int64
+	MessageID int
+}
+
+type MediaMessageHandler struct {
+	events   map[messageKey]MediaMessageEvent
+	timers   map[messageKey]*time.Timer
+	mu       sync.Mutex
+	debounce time.Duration
+}
+
+var (
+	mediaMessageCh      = make(chan MediaMessageEvent, 100)
+	mediaMessageHandler = &MediaMessageHandler{
+		events:   make(map[messageKey]MediaMessageEvent),
+		timers:   make(map[messageKey]*time.Timer),
+		debounce: 5 * time.Second,
+	}
+)
 
 func GetMediaMessageCh() chan MediaMessageEvent {
 	return mediaMessageCh
+}
+
+func sendMediaMessageEvent(event MediaMessageEvent) {
+	key := messageKey{ChatID: event.ChatID, MessageID: event.MessageID}
+
+	mediaMessageHandler.mu.Lock()
+	defer mediaMessageHandler.mu.Unlock()
+
+	if timer, exists := mediaMessageHandler.timers[key]; exists {
+		timer.Stop()
+	} else {
+		mediaMessageHandler.events[key] = event
+	}
+
+	mediaMessageHandler.timers[key] = time.AfterFunc(mediaMessageHandler.debounce, func() {
+		mediaMessageHandler.mu.Lock()
+		event := mediaMessageHandler.events[key]
+		delete(mediaMessageHandler.events, key)
+		delete(mediaMessageHandler.timers, key)
+		mediaMessageHandler.mu.Unlock()
+
+		mediaMessageCh <- event
+	})
 }
 
 func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
@@ -44,10 +90,11 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 		return err
 	}
 	chatId := update.EffectiveChat().GetID()
-	mediaMessageCh <- MediaMessageEvent{
-		Ctx:    ctx,
-		ChatID: chatId,
-		File:   file,
-	}
+	sendMediaMessageEvent(MediaMessageEvent{
+		Ctx:       ctx,
+		ChatID:    chatId,
+		MessageID: message.ID,
+		File:      file,
+	})
 	return dispatcher.EndGroups
 }

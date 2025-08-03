@@ -13,6 +13,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/dcs"
+	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/middleware"
 	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 	"github.com/krau/SaveAny-Bot/config"
@@ -111,6 +112,10 @@ func Login(ctx context.Context) (*gotgproto.Client, error) {
 		}
 		uc = r.client
 		uc.Dispatcher.AddHandler(handlers.NewMessage(filters.Message.Media, func(ctx *ext.Context, u *ext.Update) error {
+			switch u.UpdateClass.(type) {
+			case *tg.UpdateEditChannelMessage, *tg.UpdateEditMessage, *tg.UpdateDeleteChannelMessages, *tg.UpdateDeleteMessages:
+				return dispatcher.EndGroups
+			}
 			chatId := u.EffectiveChat().GetID()
 			watchChats, err := database.GetWatchChatsByChatID(ctx, chatId)
 			if err != nil || len(watchChats) == 0 {
