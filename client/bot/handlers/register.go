@@ -14,6 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tftask"
 	"github.com/krau/SaveAny-Bot/database"
@@ -54,7 +55,7 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewMessage(telegraphUrlRegexFilter, handleSilentMode(handleTelegraphUrlMessage, handleSilentSaveTelegraph)))
 	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleSilentMode(handleMediaMessage, handleSilentSaveMedia)))
 
-	if userclient.GetClient() != nil {
+	if config.Cfg.Telegram.Userbot.Enable {
 		go listenMediaMessageEvent(userclient.GetMediaMessageCh())
 	}
 }
