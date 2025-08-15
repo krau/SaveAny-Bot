@@ -128,4 +128,4 @@ require (
 	gorm.io/gorm v1.30.1
 )
 
-replace github.com/celestix/gotgproto v1.0.0-beta21 => github.com/krau/gotgproto v0.0.0-20250730080659-caaadb4b1f35
+replace github.com/celestix/gotgproto v1.0.0-beta21 => github.com/krau/gotgproto v0.0.0-20250815074212-7fbd56c33c00
