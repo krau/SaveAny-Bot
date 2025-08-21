@@ -11,10 +11,13 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/core"
+	"github.com/krau/SaveAny-Bot/core/tasks/parsed"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/rs/xid"
 	"gorm.io/gorm"
 )
 
@@ -74,7 +77,21 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	case tasktype.TaskTypeTphpics:
 		return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, data.TphPageNode, data.TphDirPath, data.TphPics, selectedStorage, msgID)
 	case tasktype.TaskTypeParseditem:
-		// [TODO]
+		task := parsed.NewTask(xid.New().String(), ctx, selectedStorage, selectedStorage.JoinStoragePath(dirPath), data.ParsedItem)
+		if err := core.AddTask(ctx, task); err != nil {
+			log.FromContext(ctx).Errorf("Failed to add task: %s", err)
+			ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+				ID:      msgID,
+				Message: "任务添加失败: " + err.Error(),
+			})
+			return dispatcher.EndGroups
+		}
+		text, entities := msgelem.BuildTaskAddedEntities(ctx, data.ParsedItem.Title, core.GetLength(ctx))
+		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+			ID:       msgID,
+			Message:  text,
+			Entities: entities,
+		})
 	default:
 		log.FromContext(ctx).Errorf("Unsupported task type: %s", data.TaskType)
 	}

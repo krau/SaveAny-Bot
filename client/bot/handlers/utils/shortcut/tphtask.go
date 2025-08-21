@@ -15,13 +15,15 @@ import (
 	"github.com/rs/xid"
 )
 
-func CreateAndAddtelegraphWithEdit(ctx *ext.Context,
+func CreateAndAddtelegraphWithEdit(
+	ctx *ext.Context,
 	userID int64,
 	tphpage *telegraph.Page,
 	dirPath string, // unescaped ph path for file storage
 	pics []string,
 	stor storage.Storage,
 	trackMsgID int) error {
+		
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	task := tphtask.NewTask(xid.New().String(),
 		injectCtx,

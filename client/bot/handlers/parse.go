@@ -59,7 +59,7 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 		}())),
 		styling.Plain("\n请选择存储位置"),
 	); err != nil {
-		log.FromContext(ctx).Errorf("Failed to build entity: %s", err)
+		logger.Errorf("Failed to build entity: %s", err)
 		return dispatcher.EndGroups
 	}
 	text, entities := eb.Complete()

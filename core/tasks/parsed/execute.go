@@ -76,5 +76,9 @@ func (t *Task) processResource(ctx context.Context, resource parser.Resource) er
 	if err != nil {
 		return fmt.Errorf("failed to copy resource %s to cache file: %w", resource.URL, err)
 	}
+	_, err = cacheFile.Seek(0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to seek cache file for resource %s: %w", resource.URL, err)
+	}
 	return t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, resource.Filename))
 }

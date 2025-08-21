@@ -26,6 +26,10 @@ func (t *Task) Type() tasktype.TaskType {
 	return tasktype.TaskTypeParseditem
 }
 
+func (t *Task) TaskID() string {
+	return t.ID
+}
+
 func NewTask(
 	id string,
 	ctx context.Context,
