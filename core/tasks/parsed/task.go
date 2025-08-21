@@ -17,6 +17,7 @@ type Task struct {
 	StorPath   string
 	item       *parser.Item
 	httpClient *http.Client
+	progress   ProgressTracker
 
 	totalResources int64
 	downloaded     atomic.Int64 // downloaded resources count
@@ -36,6 +37,7 @@ func NewTask(
 	stor storage.Storage,
 	storPath string,
 	item *parser.Item,
+	progressTracker ProgressTracker,
 ) *Task {
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -52,5 +54,6 @@ func NewTask(
 		totalResources: int64(len(item.Resources)),
 		downloaded:     atomic.Int64{},
 		httpClient:     client,
+		progress:       progressTracker,
 	}
 }

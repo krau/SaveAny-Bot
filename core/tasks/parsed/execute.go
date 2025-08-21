@@ -18,7 +18,9 @@ import (
 func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx)
 	logger.Infof("Starting Parsed item task %s", t.item.Title)
-	// t.progress.OnStart(ctx, t)
+	if t.progress != nil {
+		t.progress.OnStart(ctx, t)
+	}
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(config.Cfg.Workers)
 	for _, resource := range t.item.Resources {
@@ -29,7 +31,9 @@ func (t *Task) Execute(ctx context.Context) error {
 				return fmt.Errorf("failed to process resource %s: %w", resource.URL, err)
 			}
 			t.downloaded.Add(1)
-			// t.progress.OnProgress(gctx, t)
+			if t.progress != nil {
+				t.progress.OnProgress(gctx, t)
+			}
 			return nil
 		})
 	}
@@ -39,7 +43,9 @@ func (t *Task) Execute(ctx context.Context) error {
 	} else {
 		logger.Infof("Parsed item task %s completed successfully", t.item.Title)
 	}
-	// t.progress.OnDone(ctx, t, err)
+	if t.progress != nil {
+		t.progress.OnDone(ctx, t, err)
+	}
 	return err
 }
 
