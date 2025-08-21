@@ -180,7 +180,7 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 
 	entityBuilder := entity.Builder{}
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("处理完成\n资源数量: "),
+		styling.Plain("处理完成, 资源数量: "),
 		styling.Code(fmt.Sprintf("%d", info.TotalResources())),
 		styling.Plain("\n保存路径: "),
 		styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),

@@ -50,6 +50,10 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 		Message:     text,
 		ReplyMarkup: markup,
 		Entities:    entities,
+		ReplyTo: &tg.InputReplyToMessage{
+			ReplyToMsgID:  u.EffectiveMessage.ID,
+			ReplyToPeerID: u.GetUserChat().AsInputPeer(),
+		},
 	})
 
 	return dispatcher.EndGroups
@@ -87,6 +91,10 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 	msg, err := ctx.SendMessage(userID, &tg.MessagesSendMessageRequest{
 		Message:  text,
 		Entities: entities,
+		ReplyTo: &tg.InputReplyToMessage{
+			ReplyToMsgID:  u.EffectiveMessage.ID,
+			ReplyToPeerID: u.GetUserChat().AsInputPeer(),
+		},
 	})
 	if err != nil {
 		logger.Errorf("Failed to send message: %s", err)

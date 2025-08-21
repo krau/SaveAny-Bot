@@ -12,10 +12,13 @@ import (
 func BuildParsedTextEntity(item parser.Item) (string, []tg.MessageEntityClass, error) {
 	eb := entity.Builder{}
 	if err := styling.Perform(&eb,
-		styling.Plain("解析成功, 标题: "),
-		styling.Code(item.Title),
+		styling.Bold(fmt.Sprintf("[%s]%s", item.Site, item.Title)),
 		styling.Plain("\n链接: "),
 		styling.Code(item.URL),
+		styling.Plain("\n作者: "),
+		styling.Code(item.Author),
+		styling.Plain("\n描述: "),
+		styling.Code(item.Description),
 		styling.Plain("\n文件数量: "),
 		styling.Code(fmt.Sprintf("%d", len(item.Resources))),
 		styling.Plain("\n预计总大小: "),
