@@ -56,7 +56,7 @@ func initAll(ctx context.Context) {
 	storage.LoadStorages(ctx)
 	if config.Cfg.Parser.PluginEnable {
 		for _, dir := range config.Cfg.Parser.PluginDirs {
-			if err := parser.LoadPlugins(dir); err != nil {
+			if err := parser.LoadPlugins(ctx, dir); err != nil {
 				logger.Error("Failed to load parser plugins", "dir", dir, "error", err)
 			} else {
 				logger.Debug("Loaded parser plugins", "dir", dir)

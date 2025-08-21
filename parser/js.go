@@ -1,10 +1,13 @@
 package parser
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/charmbracelet/log"
 	"github.com/dop251/goja"
 )
 
@@ -65,8 +68,19 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value) *jsParse
 				}
 
 				var item Item
-				if err := p.vm.ExportTo(result, &item); err != nil {
-					req.respCh <- jsParserResp{err: fmt.Errorf("failed to export result: %w", err)}
+				if exported := result.Export(); exported != nil {
+					data, err := json.Marshal(exported)
+					if err != nil {
+						req.respCh <- jsParserResp{err: fmt.Errorf("failed to marshal result to JSON: %w", err)}
+						continue
+					}
+
+					if err := json.Unmarshal(data, &item); err != nil {
+						req.respCh <- jsParserResp{err: fmt.Errorf("failed to unmarshal JSON to Item: %w", err)}
+						continue
+					}
+				} else {
+					req.respCh <- jsParserResp{err: fmt.Errorf("JS function returned null or undefined")}
 					continue
 				}
 				req.respCh <- jsParserResp{item: &item}
@@ -80,15 +94,18 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value) *jsParse
 func registerParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value {
 	return func(call goja.FunctionCall) goja.Value {
 		jsObj := call.Argument(0)
-		if jsObj.ExportType().Kind() != 0 && jsObj.ToObject(vm) == nil {
+		if jsObj == nil || goja.IsUndefined(jsObj) || goja.IsNull(jsObj) {
 			panic("registerParser expects an object { canHandle, parse }")
 		}
 
 		obj := jsObj.ToObject(vm)
+		if obj == nil {
+			panic("registerParser: cannot convert argument to object")
+		}
 
 		handleFn := obj.Get("canHandle")
 		parseFn := obj.Get("parse")
-		if parseFn == nil {
+		if parseFn == nil || goja.IsUndefined(parseFn) {
 			panic("parser must provide a parse function")
 		}
 
@@ -97,7 +114,7 @@ func registerParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value {
 	}
 }
 
-func LoadPlugins(dir string) error {
+func LoadPlugins(ctx context.Context, dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err
@@ -114,7 +131,13 @@ func LoadPlugins(dir string) error {
 		}
 
 		vm := goja.New()
+		logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("plugin/parser: %s", e.Name()))
 		vm.Set("registerParser", registerParser(vm))
+		vm.Set("console", map[string]any{
+			"log": func(args ...any) {
+				logger.Info(fmt.Sprint(args...))
+			},
+		})
 
 		if _, err := vm.RunString(string(code)); err != nil {
 			return fmt.Errorf("error loading plugin %s: %w", e.Name(), err)
