@@ -1,4 +1,4 @@
-package tphtask
+package telegraph
 
 import (
 	"context"
@@ -22,8 +22,6 @@ func (t *Task) Execute(ctx context.Context) error {
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(config.Cfg.Workers)
 	for i, pic := range t.Pics {
-		pic := pic
-		i := i
 		eg.Go(func() error {
 			err := t.processPic(gctx, pic, i)
 			if err != nil {

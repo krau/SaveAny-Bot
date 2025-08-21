@@ -13,15 +13,15 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/core"
-	"github.com/krau/SaveAny-Bot/core/batchtftask"
-	"github.com/krau/SaveAny-Bot/core/tftask"
+	"github.com/krau/SaveAny-Bot/core/tasks/batchtfile"
+	tftask "github.com/krau/SaveAny-Bot/core/tasks/tfile"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/rs/xid"
 )
 
-// 创建一个 tftask.TGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
+// 创建一个 tfile.TGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
 func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage.Storage, dirPath string, file tfile.TGFileMessage, trackMsgID int) error {
 	logger := log.FromContext(ctx)
 	user, err := database.GetUserByChatID(ctx, userID)
@@ -82,7 +82,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 	return dispatcher.EndGroups
 }
 
-// 创建一个 batchtftask.BatchTGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
+// 创建一个 batchtfile.BatchTGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
 func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage.Storage, dirPath string, files []tfile.TGFileMessage, trackMsgID int) error {
 	logger := log.FromContext(ctx)
 	user, err := database.GetUserByChatID(ctx, userID)
@@ -110,7 +110,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		return storname, dirP
 	}
 
-	elems := make([]batchtftask.TaskElement, 0, len(files))
+	elems := make([]batchtfile.TaskElement, 0, len(files))
 	type albumFile struct {
 		file    tfile.TGFileMessage
 		storage storage.Storage
@@ -132,7 +132,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		}
 		if !dirPath.NeedNewForAlbum() {
 			storPath := fileStor.JoinStoragePath(path.Join(dirPath.String(), file.Name()))
-			elem, err := batchtftask.NewTaskElement(fileStor, storPath, file)
+			elem, err := batchtfile.NewTaskElement(fileStor, storPath, file)
 			if err != nil {
 				logger.Errorf("Failed to create task element: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
@@ -167,7 +167,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		albumStor := afiles[0].storage
 		for _, af := range afiles {
 			afstorPath := af.storage.JoinStoragePath(path.Join(dirPath, albumDir, af.file.Name()))
-			elem, err := batchtftask.NewTaskElement(albumStor, afstorPath, af.file)
+			elem, err := batchtfile.NewTaskElement(albumStor, afstorPath, af.file)
 			if err != nil {
 				logger.Errorf("Failed to create task element for album file: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
@@ -182,7 +182,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	taskid := xid.New().String()
-	task := batchtftask.NewBatchTGFileTask(taskid, injectCtx, elems, batchtftask.NewProgressTracker(trackMsgID, userID), true)
+	task := batchtfile.NewBatchTGFileTask(taskid, injectCtx, elems, batchtfile.NewProgressTracker(trackMsgID, userID), true)
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("Failed to add batch task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{

@@ -1,15 +1,13 @@
-package batchtftask
+package tfile
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync/atomic"
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
@@ -19,7 +17,7 @@ import (
 
 type ProgressTracker interface {
 	OnStart(ctx context.Context, info TaskInfo)
-	OnProgress(ctx context.Context, info TaskInfo)
+	OnProgress(ctx context.Context, info TaskInfo, downloaded, total int64)
 	OnDone(ctx context.Context, info TaskInfo, err error)
 }
 
@@ -33,12 +31,16 @@ type Progress struct {
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	p.start = time.Now()
 	p.lastUpdatePercent.Store(0)
-	log.FromContext(ctx).Debugf("Batch task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
+	log.FromContext(ctx).Debugf("Progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("开始执行批量下载任务\n总大小: "),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
+		styling.Plain("开始下载\n文件名: "),
+		styling.Code(info.FileName()),
+		styling.Plain("\n保存路径: "),
+		styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
+		styling.Plain("\n文件大小: "),
+		styling.Code(fmt.Sprintf("%.2f MB", float64(info.FileSize())/(1024*1024))),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
@@ -65,36 +67,29 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	}
 }
 
-func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
-	if !shouldUpdateProgress(info.TotalSize(), info.Downloaded(), int(p.lastUpdatePercent.Load())) {
+func (p *Progress) OnProgress(ctx context.Context, info TaskInfo, downloaded, total int64) {
+	if !shouldUpdateProgress(total, downloaded, int(p.lastUpdatePercent.Load())) {
 		return
 	}
-	percent := int((info.Downloaded() * 100) / info.TotalSize())
-	if p.lastUpdatePercent.Load() == int32(percent) {
+	percent := int32((downloaded * 100) / total)
+	if p.lastUpdatePercent.Load() == percent {
 		return
 	}
-	p.lastUpdatePercent.Store(int32(percent))
-	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.TaskID(), info.Downloaded(), info.TotalSize())
+	p.lastUpdatePercent.Store(percent)
+	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.FileName(), downloaded, total)
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("正在处理批量下载任务\n总大小: "),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
-		styling.Plain("\n正在处理:\n"),
-		func() styling.StyledTextOption {
-			var lines []string
-			for _, elem := range info.Processing() {
-				lines = append(lines, fmt.Sprintf("  - %s (%.2f MB)", elem.FileName(), float64(elem.FileSize())/(1024*1024)))
-			}
-			if len(lines) == 0 {
-				lines = append(lines, "  - 无")
-			}
-			return styling.Plain(slice.Join(lines, "\n"))
-		}(),
+		styling.Plain("正在处理下载任务\n文件名: "),
+		styling.Code(info.FileName()),
+		styling.Plain("\n保存路径: "),
+		styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
+		styling.Plain("\n文件大小: "),
+		styling.Code(fmt.Sprintf("%.2f MB", float64(total)/(1024*1024))),
 		styling.Plain("\n平均速度: "),
-		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(info.Downloaded(), p.start)/(1024*1024))),
+		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(downloaded, p.start)/(1024*1024))),
 		styling.Plain("\n当前进度: "),
-		styling.Bold(fmt.Sprintf("%.2f%%", float64(info.Downloaded())/float64(info.TotalSize())*100)),
+		styling.Bold(fmt.Sprintf("%.2f%%", float64(downloaded)/float64(total)*100)),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
@@ -119,34 +114,39 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 		ext.EditMessage(p.ChatID, req)
 		return
 	}
+
 }
 
 func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	if err != nil {
-		log.FromContext(ctx).Errorf("Batch task %s failed: %s", info.TaskID(), err)
+		log.FromContext(ctx).Errorf("Progress error for file [%s]: %v", info.FileName(), err)
 	} else {
-		log.FromContext(ctx).Debugf("Batch task %s completed successfully", info.TaskID())
+		log.FromContext(ctx).Debugf("Progress done for file [%s]", info.FileName())
 	}
+
 	entityBuilder := entity.Builder{}
 	var stylingErr error
 
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			stylingErr = styling.Perform(&entityBuilder,
-				styling.Plain("任务已取消"),
+				styling.Plain("任务已取消\n文件名: "),
+				styling.Code(info.FileName()),
 			)
 		} else {
 			stylingErr = styling.Perform(&entityBuilder,
-				styling.Plain("处理失败, 错误:\n "),
-				styling.Code(err.Error()),
+				styling.Plain("下载失败\n文件名: "),
+				styling.Code(info.FileName()),
+				styling.Plain("\n错误: "),
+				styling.Bold(err.Error()),
 			)
 		}
 	} else {
 		stylingErr = styling.Perform(&entityBuilder,
-			styling.Plain("处理完成\n文件数: "),
-			styling.Code(strconv.Itoa(info.Count())),
-			styling.Plain("\n总大小: "),
-			styling.Code(fmt.Sprintf("%.2f MB", float64(info.TotalSize())/(1024*1024))),
+			styling.Plain("下载完成\n文件名: "),
+			styling.Code(info.FileName()),
+			styling.Plain("\n保存路径: "),
+			styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
 		)
 	}
 
@@ -168,9 +168,19 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	}
 }
 
-func NewProgressTracker(messageID int, chatID int64) ProgressTracker {
-	return &Progress{
+type ProgressOption func(*Progress)
+
+func NewProgressTrack(
+	messageID int,
+	chatID int64,
+	opts ...ProgressOption,
+) ProgressTracker {
+	p := &Progress{
 		MessageID: messageID,
 		ChatID:    chatID,
 	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }

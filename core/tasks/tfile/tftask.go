@@ -1,4 +1,4 @@
-package tftask
+package tfile
 
 import (
 	"context"
@@ -40,7 +40,7 @@ func NewTGFileTask(
 		if err != nil {
 			return nil, fmt.Errorf("failed to get absolute path for cache: %w", err)
 		}
-		tftask := &Task{
+		tfile := &Task{
 			ID:        id,
 			Ctx:       ctx,
 			File:      file,
@@ -49,7 +49,7 @@ func NewTGFileTask(
 			Progress:  progress,
 			localPath: cachePath,
 		}
-		return tftask, nil
+		return tfile, nil
 	}
 	tfileTask := &Task{
 		ID:       id,

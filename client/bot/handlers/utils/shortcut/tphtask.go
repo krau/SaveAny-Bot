@@ -9,13 +9,13 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
 	"github.com/krau/SaveAny-Bot/core"
-	"github.com/krau/SaveAny-Bot/core/tphtask"
+	tphtask "github.com/krau/SaveAny-Bot/core/tasks/telegraph"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/rs/xid"
 )
 
-func CreateAndAddTphTaskWithEdit(ctx *ext.Context,
+func CreateAndAddtelegraphWithEdit(ctx *ext.Context,
 	userID int64,
 	tphpage *telegraph.Page,
 	dirPath string, // unescaped ph path for file storage

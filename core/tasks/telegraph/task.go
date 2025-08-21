@@ -1,4 +1,4 @@
-package tphtask
+package telegraph
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func NewTask(
 	progress ProgressTracker,
 ) *Task {
 	_, cannotStream := stor.(storage.StorageCannotStream)
-	tphtask := &Task{
+	telegraph := &Task{
 		ID:           id,
 		Ctx:          ctx,
 		PhPath:       phPath,
@@ -52,5 +52,5 @@ func NewTask(
 		totalpics:    len(pics),
 		downloaded:   atomic.Int64{},
 	}
-	return tphtask
+	return telegraph
 }

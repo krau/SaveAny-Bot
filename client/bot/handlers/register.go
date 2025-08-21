@@ -16,7 +16,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
-	"github.com/krau/SaveAny-Bot/core/tftask"
+	"github.com/krau/SaveAny-Bot/core/tasks/tfile"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -123,7 +123,7 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 			storagePath := stor.JoinStoragePath(path.Join(dirPath, file.Name()))
 			injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 			taskid := xid.New().String()
-			task, err := tftask.NewTGFileTask(taskid, injectCtx, file, stor, storagePath, nil)
+			task, err := tfile.NewTGFileTask(taskid, injectCtx, file, stor, storagePath, nil)
 			if err != nil {
 				logger.Errorf("create task failed: %s", err)
 				continue

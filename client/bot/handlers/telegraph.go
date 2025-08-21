@@ -71,6 +71,6 @@ func handleSilentSaveTelegraph(ctx *ext.Context, update *ext.Update) error {
 		return err
 	}
 	userID := update.GetUserChat().GetID()
-	return shortcut.CreateAndAddTphTaskWithEdit(ctx, userID, result.Page, result.TphDir, result.Pics, stor, msg.ID)
+	return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, result.Page, result.TphDir, result.Pics, stor, msg.ID)
 
 }

@@ -1,4 +1,4 @@
-package batchtftask
+package batchtfile
 
 import (
 	"context"
