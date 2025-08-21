@@ -2,6 +2,7 @@ package parsed
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,13 +27,13 @@ func (t *Task) Execute(ctx context.Context) error {
 	eg.SetLimit(config.Cfg.Workers)
 	for _, resource := range t.item.Resources {
 		eg.Go(func() error {
-			// t.processingMu.RLock()
-			// if t.processing[resource.URL] != nil {
-			// 	return fmt.Errorf("resource %s is already being processed", resource.URL)
-			// }
-			// t.processingMu.RUnlock()
+			t.processingMu.RLock()
+			if t.processing[resource.ID()] != nil {
+				return fmt.Errorf("resource %s is already being processed", resource.ID())
+			}
+			t.processingMu.RUnlock()
 			t.processingMu.Lock()
-			t.processing[resource.URL] = &resource
+			t.processing[resource.ID()] = &resource
 			t.processingMu.Unlock()
 			defer func() {
 				t.processingMu.Lock()
@@ -41,6 +42,10 @@ func (t *Task) Execute(ctx context.Context) error {
 			}()
 			err := t.processResource(gctx, resource)
 			t.downloaded.Add(1)
+			if errors.Is(err, context.Canceled) {
+				logger.Debug("Resource processing canceled")
+				return err
+			}
 			if err != nil {
 				logger.Errorf("Error processing resource %s: %v", resource.URL, err)
 				return fmt.Errorf("failed to process resource %s: %w", resource.URL, err)
@@ -95,9 +100,19 @@ func (t *Task) processResource(ctx context.Context, resource parser.Resource) er
 			t.progress.OnProgress(ctx, t)
 		}
 	})
-	_, err = io.Copy(wr, resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to copy resource %s to cache file: %w", resource.URL, err)
+
+	copyResultCh := make(chan error, 1)
+	go func() {
+		_, err := io.Copy(wr, resp.Body)
+		copyResultCh <- err
+	}()
+	select {
+	case err := <-copyResultCh:
+		if err != nil {
+			return fmt.Errorf("failed to copy resource %s to cache file: %w", resource.URL, err)
+		}
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 	_, err = cacheFile.Seek(0, 0)
 	if err != nil {

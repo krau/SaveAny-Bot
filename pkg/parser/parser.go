@@ -1,5 +1,10 @@
 package parser
 
+import (
+	"crypto/md5"
+	"fmt"
+)
+
 type Parser interface {
 	CanHandle(url string) bool
 	Parse(url string) (*Item, error)
@@ -23,6 +28,27 @@ func (r *Resource) FileName() string {
 
 func (r *Resource) FileSize() int64 {
 	return r.Size
+}
+
+func (r *Resource) ID() string {
+	h := md5.New()
+	h.Write([]byte(r.URL))
+	h.Write([]byte(r.Filename))
+	h.Write([]byte(r.MimeType))
+	h.Write([]byte(r.Extension))
+	h.Write([]byte(fmt.Sprintf("%d", r.Size)))
+
+	for k, v := range r.Hash {
+		h.Write([]byte(k))
+		h.Write([]byte(v))
+	}
+
+	for k, v := range r.Headers {
+		h.Write([]byte(k))
+		h.Write([]byte(v))
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 type Item struct {
