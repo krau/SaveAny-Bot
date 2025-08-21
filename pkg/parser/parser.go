@@ -22,6 +22,17 @@ type Resource struct {
 	Extra     map[string]any    `json:"extra"`
 }
 
+type Item struct {
+	Site        string         `json:"site"`
+	URL         string         `json:"url"` // original URL of the item
+	Title       string         `json:"title"`
+	Author      string         `json:"author"`
+	Description string         `json:"description"`
+	Tags        []string       `json:"tags"`
+	Resources   []Resource     `json:"resources"`
+	Extra       map[string]any `json:"extra"`
+}
+
 func (r *Resource) FileName() string {
 	return r.Filename
 }
@@ -49,15 +60,4 @@ func (r *Resource) ID() string {
 	}
 
 	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
-type Item struct {
-	Site        string         `json:"site"`
-	URL         string         `json:"url"` // original URL of the item
-	Title       string         `json:"title"`
-	Author      string         `json:"author"`
-	Description string         `json:"description"`
-	Tags        []string       `json:"tags"`
-	Resources   []Resource     `json:"resources"`
-	Extra       map[string]any `json:"extra"`
 }
