@@ -72,7 +72,9 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		}
 		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], msgID)
 	case tasktype.TaskTypeTphpics:
-		return shortcut.CreateAndAddTphTaskWithEdit(ctx, userID, data.TphPageNode, data.TphDirPath, data.TphPics, selectedStorage, msgID)
+		return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, data.TphPageNode, data.TphDirPath, data.TphPics, selectedStorage, msgID)
+	case tasktype.TaskTypeParseditem:
+		shortcut.CreateAndAddParsedTaskWithEdit(ctx, selectedStorage, dirPath, data.ParsedItem, msgID, userID)
 	default:
 		log.FromContext(ctx).Errorf("Unsupported task type: %s", data.TaskType)
 	}

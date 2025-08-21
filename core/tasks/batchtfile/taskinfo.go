@@ -1,4 +1,4 @@
-package batchtftask
+package batchtfile
 
 type TaskElementInfo interface {
 	FileName() string

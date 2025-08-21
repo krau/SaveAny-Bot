@@ -1,4 +1,4 @@
-package batchtftask
+package batchtfile
 
 import (
 	"context"
@@ -25,14 +25,19 @@ func (t *Task) Execute(ctx context.Context) error {
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(workers)
 	for _, elem := range t.Elems {
-		elem := elem
 		eg.Go(func() error {
+			t.processingMu.RLock()
 			if t.processing[elem.ID] != nil {
 				return fmt.Errorf("element with ID %s is already being processed", elem.ID)
 			}
+			t.processingMu.RUnlock()
+			t.processingMu.Lock()
 			t.processing[elem.ID] = &elem
+			t.processingMu.Unlock()
 			defer func() {
+				t.processingMu.Lock()
 				delete(t.processing, elem.ID)
+				t.processingMu.Unlock()
 			}()
 			return t.processElement(gctx, elem)
 		})

@@ -6,7 +6,7 @@ type telegramConfig struct {
 	AppHash  string        `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
 	Proxy    tgProxyConfig `toml:"proxy" mapstructure:"proxy"`
 	RpcRetry int           `toml:"rpc_retry" mapstructure:"rpc_retry" json:"rpc_retry"`
-	Userbot  userbotConfig `toml:"userbot" mapstructure:"userbot" json:"userbot"` // [TODO]
+	Userbot  userbotConfig `toml:"userbot" mapstructure:"userbot" json:"userbot"`
 }
 
 type userbotConfig struct {

@@ -1,4 +1,4 @@
-package tphtask
+package telegraph
 
 import (
 	"context"
@@ -22,8 +22,6 @@ func (t *Task) Execute(ctx context.Context) error {
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(config.Cfg.Workers)
 	for i, pic := range t.Pics {
-		pic := pic
-		i := i
 		eg.Go(func() error {
 			err := t.processPic(gctx, pic, i)
 			if err != nil {
@@ -77,6 +75,11 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 			_, lastErr = io.Copy(cacheFile, body)
 			if lastErr != nil {
 				lastErr = fmt.Errorf("failed to copy picture %s to cache file: %w", filename, lastErr)
+				return lastErr
+			}
+			_, err = cacheFile.Seek(0, 0)
+			if err != nil {
+				lastErr = fmt.Errorf("failed to seek cache file for picture %s: %w", filename, err)
 				return lastErr
 			}
 			lastErr = t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, filename))

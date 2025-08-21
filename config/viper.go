@@ -28,6 +28,7 @@ type Config struct {
 	DB       dbConfig                `toml:"db" mapstructure:"db"`
 	Telegram telegramConfig          `toml:"telegram" mapstructure:"telegram"`
 	Storages []storage.StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
+	Parser   parserConfig            `toml:"parser" mapstructure:"parser" json:"parser"`
 	Hook     hookConfig              `toml:"hook" mapstructure:"hook" json:"hook"`
 }
 

@@ -32,8 +32,7 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *
 	media := message.Media
 	supported := mediautil.IsSupported(media)
 	if !supported {
-		ctx.Reply(update, ext.ReplyTextString("不支持的消息类型"), nil)
-		return nil, nil, dispatcher.EndGroups
+		return nil, nil, dispatcher.ContinueGroups
 	}
 
 	replied, err = ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)

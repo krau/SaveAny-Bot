@@ -1,4 +1,4 @@
-package tphtask
+package telegraph
 
 type TaskInfo interface {
 	TaskID() string

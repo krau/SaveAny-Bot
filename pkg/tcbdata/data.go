@@ -2,6 +2,7 @@ package tcbdata
 
 import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
+	"github.com/krau/SaveAny-Bot/pkg/parser"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
@@ -26,6 +27,7 @@ const (
 // }
 
 type Add struct {
+	// [TODO] maybe we should to spilit this into different types...
 	TaskType         tasktype.TaskType
 	SelectedStorName string
 	DirID            uint
@@ -37,6 +39,8 @@ type Add struct {
 	TphPageNode *telegraph.Page
 	TphPics     []string
 	TphDirPath  string // unescaped telegraph.Page.Path
+	// parseditem
+	ParsedItem *parser.Item
 }
 
 type SetDefaultStorage struct {

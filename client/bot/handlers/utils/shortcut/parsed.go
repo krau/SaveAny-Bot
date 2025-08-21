@@ -7,44 +7,27 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
-	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
 	"github.com/krau/SaveAny-Bot/core"
-	tphtask "github.com/krau/SaveAny-Bot/core/tasks/telegraph"
-	"github.com/krau/SaveAny-Bot/pkg/telegraph"
+	"github.com/krau/SaveAny-Bot/core/tasks/parsed"
+	"github.com/krau/SaveAny-Bot/pkg/parser"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/rs/xid"
 )
 
-func CreateAndAddtelegraphWithEdit(
-	ctx *ext.Context,
-	userID int64,
-	tphpage *telegraph.Page,
-	dirPath string, // unescaped ph path for file storage
-	pics []string,
-	stor storage.Storage,
-	trackMsgID int) error {
-		
+func CreateAndAddParsedTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, item *parser.Item, msgID int, userID int64) error {
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
-	task := tphtask.NewTask(xid.New().String(),
-		injectCtx,
-		tphpage.Path,
-		pics,
-		stor,
-		stor.JoinStoragePath(dirPath),
-		tphutil.DefaultClient(),
-		tphtask.NewProgress(trackMsgID, userID),
-	)
+	task := parsed.NewTask(xid.New().String(), injectCtx, stor, stor.JoinStoragePath(dirPath), item, parsed.NewProgress(msgID, userID))
 	if err := core.AddTask(injectCtx, task); err != nil {
 		log.FromContext(ctx).Errorf("Failed to add task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:      trackMsgID,
+			ID:      msgID,
 			Message: "任务添加失败: " + err.Error(),
 		})
 		return dispatcher.EndGroups
 	}
-	text, entities := msgelem.BuildTaskAddedEntities(ctx, tphpage.Title, core.GetLength(ctx))
+	text, entities := msgelem.BuildTaskAddedEntities(ctx, item.Title, core.GetLength(ctx))
 	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-		ID:       trackMsgID,
+		ID:       msgID,
 		Message:  text,
 		Entities: entities,
 	})

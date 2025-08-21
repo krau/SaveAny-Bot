@@ -1,4 +1,4 @@
-package tftask
+package tfile
 
 type TaskInfo interface {
 	TaskID() string

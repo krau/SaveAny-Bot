@@ -24,6 +24,8 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 			taskType = tasktype.TaskTypeTgfiles
 		} else if adddata.TphPageNode != nil {
 			taskType = tasktype.TaskTypeTphpics
+		} else if adddata.ParsedItem != nil {
+			taskType = tasktype.TaskTypeParseditem
 		} else {
 			return nil, fmt.Errorf("unknown task type: %s", taskType)
 		}
@@ -41,6 +43,8 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 			TphPageNode: adddata.TphPageNode,
 			TphPics:     adddata.TphPics,
 			TphDirPath:  adddata.TphDirPath,
+
+			ParsedItem: adddata.ParsedItem,
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)
