@@ -117,26 +117,6 @@ type FxTwitterApiResp struct {
 				URL  string `json:"url"`
 				Type string `json:"type"`
 			} `json:"all"`
-			Photos []struct {
-				Type   string `json:"type"`
-				URL    string `json:"url"`
-				Width  int    `json:"width"`
-				Height int    `json:"height"`
-			} `json:"photos"`
-			Videos []struct {
-				URL          string `json:"url"`
-				ThumbnailURL string `json:"thumbnail_url"`
-				Duration     int    `json:"duration"`
-				Width        int    `json:"width"`
-				Height       int    `json:"height"`
-				Format       string `json:"format"`
-				Type         string `json:"type"`
-				Variants     []struct {
-					Bitrate     int    `json:"bitrate"`
-					ContentType string `json:"content_type"`
-					URL         string `json:"url"`
-				} `json:"variants"`
-			} `json:"videos"`
 		} `json:"media"`
 	} `json:"tweet"`
 }

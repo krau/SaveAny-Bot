@@ -5,11 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"path"
+	"regexp"
 	"strings"
 
-	"github.com/krau/SaveAny-Bot/common/op"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
@@ -21,12 +20,25 @@ const (
 	FxTwitterApi = "api.fxtwitter.com"
 )
 
+var _ parser.Parser = (*TwitterParser)(nil)
+
+var (
+	twitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
+)
+
+func getTweetID(sourceURL string) string {
+	matches := twitterSourceURLRegexp.FindStringSubmatch(sourceURL)
+	if len(matches) < 3 {
+		return ""
+	}
+	return matches[2]
+}
+
 func (p *TwitterParser) Parse(u string) (*parser.Item, error) {
-	parts := strings.Split(u, "/")
-	if len(parts) < 4 || parts[3] != "status" {
+	id := getTweetID(u)
+	if id == "" {
 		return nil, errors.New("invalid Twitter URL")
 	}
-	id := parts[4]
 	apiUrl := fmt.Sprintf("https://%s/_/status/%s", FxTwitterApi, id)
 	resp, err := p.client.Get(apiUrl)
 	if err != nil {
@@ -67,28 +79,5 @@ func (p *TwitterParser) Parse(u string) (*parser.Item, error) {
 }
 
 func (p *TwitterParser) CanHandle(u string) bool {
-	url1, err := url.Parse(u)
-	if err != nil {
-		return false
-	}
-	if url1.Host == "twitter.com" || url1.Host == "x.com" {
-		path := strings.TrimPrefix(url1.Path, "/")
-		parts := strings.Split(path, "/")
-		if len(parts) >= 3 && parts[1] == "status" {
-			return true
-		}
-	}
-	return false
-}
-
-func init() {
-	op.RegisterParser(func() parser.Parser {
-		return &TwitterParser{
-			client: http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyFromEnvironment,
-				},
-			},
-		}
-	})
+	return twitterSourceURLRegexp.MatchString(u)
 }

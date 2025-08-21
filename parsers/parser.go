@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/krau/SaveAny-Bot/parsers/twitter"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
@@ -23,6 +24,10 @@ func AddParser(p parser.Parser) {
 	parsersMu.Lock()
 	defer parsersMu.Unlock()
 	parsers = append(parsers, p)
+}
+
+func init() {
+	AddParser(new(twitter.TwitterParser))
 }
 
 var (
