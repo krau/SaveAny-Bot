@@ -168,7 +168,7 @@ func LoadPlugins(ctx context.Context, dir string) error {
 		}
 
 		vm := goja.New()
-		logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("plugin/parser: %s", e.Name()))
+		logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("[plugin|parser]/%s", e.Name()))
 		vm.Set("registerParser", registerParser(vm))
 		vm.Set("console", map[string]any{
 			"log": func(args ...any) {

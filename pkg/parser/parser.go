@@ -16,7 +16,7 @@ type Resource struct {
 	Filename  string            `json:"filename"` // with ext
 	MimeType  string            `json:"mime_type"`
 	Extension string            `json:"extension"`
-	Size      int64             `json:"size"`    // -1 when unknown
+	Size      int64             `json:"size"`    // 0 when unknown
 	Hash      map[string]string `json:"hash"`    // {"md5": "...", "sha256": "..."}
 	Headers   map[string]string `json:"headers"` // HTTP headers when downloading
 	Extra     map[string]any    `json:"extra"`

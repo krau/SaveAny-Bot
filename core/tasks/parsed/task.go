@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -19,6 +20,7 @@ type Task struct {
 	item       *parser.Item
 	httpClient *http.Client
 	progress   ProgressTracker
+	stream     bool
 
 	totalResources  int64
 	downloaded      atomic.Int64 // downloaded resources count
@@ -51,6 +53,8 @@ func NewTask(
 			Proxy: http.ProxyFromEnvironment,
 		},
 	}
+	_, ok := stor.(storage.StorageCannotStream)
+	stream := config.Cfg.Stream && !ok
 	return &Task{
 		ID:             id,
 		Ctx:            ctx,
@@ -69,6 +73,7 @@ func NewTask(
 			}
 			return total
 		}(),
+		stream:          stream,
 		downloadedBytes: atomic.Int64{},
 		httpClient:      client,
 		progress:        progressTracker,
