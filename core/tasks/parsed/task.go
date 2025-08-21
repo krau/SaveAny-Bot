@@ -3,6 +3,7 @@ package parsed
 import (
 	"context"
 	"net/http"
+	"sync"
 	"sync/atomic"
 
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
@@ -19,8 +20,13 @@ type Task struct {
 	httpClient *http.Client
 	progress   ProgressTracker
 
-	totalResources int64
-	downloaded     atomic.Int64 // downloaded resources count
+	totalResources  int64
+	downloaded      atomic.Int64 // downloaded resources count
+	totalBytes      int64        // total bytes to download
+	downloadedBytes atomic.Int64 // downloaded bytes count
+	processing      map[string]ResourceInfo
+	processingMu    sync.RWMutex
+	failed          map[string]error // [TODO] errors for each resource
 }
 
 func (t *Task) Type() tasktype.TaskType {
@@ -53,7 +59,21 @@ func NewTask(
 		item:           item,
 		totalResources: int64(len(item.Resources)),
 		downloaded:     atomic.Int64{},
-		httpClient:     client,
-		progress:       progressTracker,
+		totalBytes: func() int64 {
+			var total int64
+			for _, res := range item.Resources {
+				if res.Size < 0 {
+					continue // skip resources with unknown size
+				}
+				total += res.Size
+			}
+			return total
+		}(),
+		downloadedBytes: atomic.Int64{},
+		httpClient:      client,
+		progress:        progressTracker,
+		processing:      make(map[string]ResourceInfo),
+		processingMu:    sync.RWMutex{},
+		failed:          make(map[string]error),
 	}
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
+	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 	"golang.org/x/sync/errgroup"
@@ -25,14 +26,24 @@ func (t *Task) Execute(ctx context.Context) error {
 	eg.SetLimit(config.Cfg.Workers)
 	for _, resource := range t.item.Resources {
 		eg.Go(func() error {
+			// t.processingMu.RLock()
+			// if t.processing[resource.URL] != nil {
+			// 	return fmt.Errorf("resource %s is already being processed", resource.URL)
+			// }
+			// t.processingMu.RUnlock()
+			t.processingMu.Lock()
+			t.processing[resource.URL] = &resource
+			t.processingMu.Unlock()
+			defer func() {
+				t.processingMu.Lock()
+				delete(t.processing, resource.URL)
+				t.processingMu.Unlock()
+			}()
 			err := t.processResource(gctx, resource)
+			t.downloaded.Add(1)
 			if err != nil {
 				logger.Errorf("Error processing resource %s: %v", resource.URL, err)
 				return fmt.Errorf("failed to process resource %s: %w", resource.URL, err)
-			}
-			t.downloaded.Add(1)
-			if t.progress != nil {
-				t.progress.OnProgress(gctx, t)
 			}
 			return nil
 		})
@@ -78,7 +89,13 @@ func (t *Task) processResource(ctx context.Context, resource parser.Resource) er
 			logger.Errorf("Failed to close and remove cache file: %v", err)
 		}
 	}()
-	_, err = io.Copy(cacheFile, resp.Body)
+	wr := ioutil.NewProgressWriter(cacheFile, func(n int) {
+		t.downloadedBytes.Add(int64(n))
+		if t.progress != nil {
+			t.progress.OnProgress(ctx, t)
+		}
+	})
+	_, err = io.Copy(wr, resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to copy resource %s to cache file: %w", resource.URL, err)
 	}

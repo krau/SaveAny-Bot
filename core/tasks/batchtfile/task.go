@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 
 	"github.com/krau/SaveAny-Bot/config"
@@ -31,7 +32,8 @@ type Task struct {
 	downloaded   atomic.Int64
 	totalSize    int64
 	processing   map[string]TaskElementInfo
-	failed       map[string]error // errors for each element
+	processingMu sync.RWMutex
+	failed       map[string]error // [TODO] errors for each element
 }
 
 func (t *Task) Type() tasktype.TaskType {
@@ -89,6 +91,7 @@ func NewBatchTGFileTask(
 		}(),
 		processing:   make(map[string]TaskElementInfo),
 		IgnoreErrors: ignoreErrors,
+		processingMu: sync.RWMutex{},
 		failed:       make(map[string]error),
 	}
 	return task

@@ -4,24 +4,47 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
+	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
 
-func shouldUpdateProgress(downloaded int64, total int64) bool {
+var progressUpdatesLevels = []struct {
+	size        int64 // 文件大小阈值
+	stepPercent int   // 每多少 % 更新一次
+}{
+	{10 << 20, 100},
+	{50 << 20, 50},
+	{200 << 20, 20},
+	{500 << 20, 10},
+}
+
+func shouldUpdateProgress(total, downloaded int64, lastUpdatePercent int) bool {
 	if total <= 0 || downloaded <= 0 {
 		return false
 	}
 
-	step := int64(10)
-	if downloaded < step {
-		return downloaded == total
+	percent := int((downloaded * 100) / total)
+	if percent <= lastUpdatePercent {
+		return false
 	}
-	return downloaded%step == 0 || downloaded == total
+
+	step := progressUpdatesLevels[len(progressUpdatesLevels)-1].stepPercent
+	for _, lvl := range progressUpdatesLevels {
+		if total < lvl.size {
+			step = lvl.stepPercent
+			break
+		}
+	}
+
+	return percent >= lastUpdatePercent+step
 }
 
 type ProgressTracker interface {
@@ -31,18 +54,22 @@ type ProgressTracker interface {
 }
 
 type Progress struct {
-	MessageID int
-	ChatID    int64
+	MessageID         int
+	ChatID            int64
+	start             time.Time
+	lastUpdatePercent atomic.Int32
 }
 
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	logger := log.FromContext(ctx)
+	p.start = time.Now()
+	p.lastUpdatePercent.Store(0)
 	logger.Debugf("Parsed task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain(fmt.Sprintf("开始下载 %s 的资源\n文件数量: ", info.Site())),
-		styling.Code(fmt.Sprintf("%d", info.TotalResources())),
+		styling.Plain(fmt.Sprintf("开始下载 %s 的资源\n总大小: ", info.Site())),
+		styling.Code(fmt.Sprintf("%.2f MB (%d个资源)", float64(info.TotalBytes())/(1024*1024), info.TotalResources())),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
@@ -70,15 +97,35 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
-	if !shouldUpdateProgress(info.Downloaded(), int64(info.TotalResources())) {
+	if !shouldUpdateProgress(info.TotalBytes(), info.DownloadedBytes(), int(p.lastUpdatePercent.Load())) {
 		return
 	}
-	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.TaskID(), info.Downloaded(), info.TotalResources())
+	percent := int((info.DownloadedBytes() * 100) / info.TotalBytes())
+	if p.lastUpdatePercent.Load() == int32(percent) {
+		return
+	}
+	p.lastUpdatePercent.Store(int32(percent))
+	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.TaskID(), info.DownloadedBytes(), info.TotalBytes())
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("正在下载\n当前进度: "),
-		styling.Code(fmt.Sprintf("%d/%d", info.Downloaded(), info.TotalResources())),
+		styling.Plain("正在下载\n总大小: "),
+		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalBytes())/(1024*1024), info.TotalResources())),
+		styling.Plain("\n正在处理:\n"),
+		func() styling.StyledTextOption {
+			var lines []string
+			for _, elem := range info.Processing() {
+				lines = append(lines, fmt.Sprintf("  - %s (%.2f MB)", elem.FileName(), float64(elem.FileSize())/(1024*1024)))
+			}
+			if len(lines) == 0 {
+				lines = append(lines, "  - 无")
+			}
+			return styling.Plain(slice.Join(lines, "\n"))
+		}(),
+		styling.Plain("\n平均速度: "),
+		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(info.DownloadedBytes(), p.start)/(1024*1024))),
+		styling.Plain("\n当前进度: "),
+		styling.Bold(fmt.Sprintf("%.2f%%", float64(info.DownloadedBytes())/float64(info.TotalBytes())*100)),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
