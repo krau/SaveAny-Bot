@@ -77,6 +77,11 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 				lastErr = fmt.Errorf("failed to copy picture %s to cache file: %w", filename, lastErr)
 				return lastErr
 			}
+			_, err = cacheFile.Seek(0, 0)
+			if err != nil {
+				lastErr = fmt.Errorf("failed to seek cache file for picture %s: %w", filename, err)
+				return lastErr
+			}
 			lastErr = t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, filename))
 		} else {
 			lastErr = t.Stor.Save(ctx, body, path.Join(t.StorPath, filename))
