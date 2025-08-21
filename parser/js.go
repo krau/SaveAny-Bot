@@ -7,11 +7,25 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/blang/semver"
 	"github.com/charmbracelet/log"
 	"github.com/dop251/goja"
 )
 
+var (
+	LatestParserVersion  = semver.MustParse("1.0.0")
+	MinimumParserVersion = semver.MustParse("1.0.0")
+)
+
+type PluginMeta struct {
+	Name        string `json:"name"`
+	Version     string `json:"version"` // [TODO] 分版本解析, 但是我们现在只有 v1 所以先不写
+	Description string `json:"description"`
+	Author      string `json:"author"`
+}
+
 type jsParser struct {
+	meta  PluginMeta
 	vm    *goja.Runtime
 	reqCh chan jsParserReq
 }
@@ -42,10 +56,11 @@ func (p *jsParser) Parse(url string) (*Item, error) {
 	return resp.item, resp.err
 }
 
-func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value) *jsParser {
+func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata PluginMeta) *jsParser {
 	p := &jsParser{
 		vm:    vm,
 		reqCh: make(chan jsParserReq, 10),
+		meta:  metadata,
 	}
 
 	go func() {
@@ -102,6 +117,27 @@ func registerParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value {
 		if obj == nil {
 			panic("registerParser: cannot convert argument to object")
 		}
+		metaValue := obj.Get("metadata")
+		if metaValue == nil || goja.IsUndefined(metaValue) {
+			panic("parser must provide metadata")
+		}
+		var metadata PluginMeta
+		if exported := metaValue.Export(); exported != nil {
+			data, err := json.Marshal(exported)
+			if err != nil {
+				panic(fmt.Sprintf("failed to marshal metadata to JSON: %v", err))
+			}
+			if err := json.Unmarshal(data, &metadata); err != nil {
+				panic(fmt.Sprintf("failed to unmarshal JSON to PluginMeta: %v", err))
+			}
+		} else {
+			panic("metadata cannot be null or undefined")
+		}
+
+		pluginV := semver.MustParse(metadata.Version)
+		if pluginV.LT(MinimumParserVersion) || pluginV.GT(LatestParserVersion) {
+			panic(fmt.Sprintf("parser version %s is not supported, must be between %s and %s", metadata.Version, MinimumParserVersion, LatestParserVersion))
+		}
 
 		handleFn := obj.Get("canHandle")
 		parseFn := obj.Get("parse")
@@ -109,7 +145,7 @@ func registerParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value {
 			panic("parser must provide a parse function")
 		}
 
-		parsers = append(parsers, newJSParser(vm, handleFn, parseFn))
+		parsers = append(parsers, newJSParser(vm, handleFn, parseFn, metadata))
 		return goja.Undefined()
 	}
 }
