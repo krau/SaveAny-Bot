@@ -10,7 +10,6 @@ require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/fatih/color v1.18.0
 	github.com/gabriel-vasile/mimetype v1.4.9
-	github.com/go-faster/errors v0.7.1
 	github.com/gotd/contrib v0.21.0
 	github.com/gotd/td v0.129.0
 	github.com/minio/minio-go/v7 v7.0.95
@@ -42,15 +41,18 @@ require (
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/glebarez/go-sqlite v1.22.0 // indirect
+	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-faster/jx v1.1.0 // indirect
 	github.com/go-faster/xor v1.0.0 // indirect
 	github.com/go-faster/yaml v0.4.6 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/pprof v0.0.0-20250317173921-a4b03ec1a45e // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gotd/ige v0.2.2 // indirect
 	github.com/gotd/neo v0.1.5 // indirect
@@ -102,6 +104,7 @@ require (
 
 require (
 	github.com/dgraph-io/ristretto/v2 v2.2.0
+	github.com/dop251/goja v0.0.0-20250630131328-58d95d85e994
 	github.com/duke-git/lancet/v2 v2.3.7
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/glebarez/sqlite v1.11.0 // indirect

@@ -19,6 +19,7 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/parser"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/spf13/cobra"
 )
@@ -53,6 +54,15 @@ func initAll(ctx context.Context) {
 	logger.Info(i18n.T(i18nk.Initing))
 	database.Init(ctx)
 	storage.LoadStorages(ctx)
+	if config.Cfg.Parser.PluginEnable {
+		for _, dir := range config.Cfg.Parser.PluginDirs {
+			if err := parser.LoadPlugins(dir); err != nil {
+				logger.Error("Failed to load parser plugins", "dir", dir, "error", err)
+			} else {
+				logger.Debug("Loaded parser plugins", "dir", dir)
+			}
+		}
+	}
 	if config.Cfg.Telegram.Userbot.Enable {
 		_, err := userclient.Login(ctx)
 		if err != nil {

@@ -54,6 +54,7 @@ func Register(disp dispatcher.Dispatcher) {
 	}
 	disp.AddHandler(handlers.NewMessage(telegraphUrlRegexFilter, handleSilentMode(handleTelegraphUrlMessage, handleSilentSaveTelegraph)))
 	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleSilentMode(handleMediaMessage, handleSilentSaveMedia)))
+	disp.AddHandler(handlers.NewMessage(filters.Message.Text, handleSilentMode(handleTextMessage, handleSilentSaveText)))
 
 	if config.Cfg.Telegram.Userbot.Enable {
 		go listenMediaMessageEvent(userclient.GetMediaMessageCh())
