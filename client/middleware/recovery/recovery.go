@@ -2,11 +2,11 @@ package recovery
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/charmbracelet/log"
-	"github.com/go-faster/errors"
 	"github.com/gotd/td/bin"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
@@ -31,7 +31,7 @@ func (r *recovery) Handle(next tg.Invoker) telegram.InvokeFunc {
 		return backoff.RetryNotify(func() error {
 			if err := next.Invoke(ctx, input, output); err != nil {
 				if r.shouldRecover(ctx, err) {
-					return errors.Wrap(err, "recover")
+					return fmt.Errorf("recovery: %w", err)
 				}
 
 				return backoff.Permanent(err)
