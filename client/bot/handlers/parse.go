@@ -6,13 +6,13 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
-	"github.com/krau/SaveAny-Bot/parser"
+	"github.com/krau/SaveAny-Bot/parsers"
 )
 
 func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 	logger := log.FromContext(ctx)
 	text := u.EffectiveMessage.Text
-	item, err := parser.ParseWithContext(ctx, text)
+	item, err := parsers.ParseWithContext(ctx, text)
 	if err == nil {
 		logger.Debug("Parsed item from text", "item", item)
 		ctx.Reply(u, ext.ReplyTextString("Parsed item: "+item.Title), nil)

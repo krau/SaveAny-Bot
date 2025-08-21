@@ -1,4 +1,4 @@
-package parser
+package parsers
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/charmbracelet/log"
 	"github.com/dop251/goja"
+	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
 var (
@@ -37,7 +38,7 @@ type jsParserReq struct {
 }
 
 type jsParserResp struct {
-	item *Item
+	item *parser.Item
 	ok   bool
 	err  error
 }
@@ -49,7 +50,7 @@ func (p *jsParser) CanHandle(url string) bool {
 	return resp.ok && resp.err == nil
 }
 
-func (p *jsParser) Parse(url string) (*Item, error) {
+func (p *jsParser) Parse(url string) (*parser.Item, error) {
 	respCh := make(chan jsParserResp, 1)
 	p.reqCh <- jsParserReq{method: "parse", url: url, respCh: respCh}
 	resp := <-respCh
@@ -82,7 +83,7 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata
 					continue
 				}
 
-				var item Item
+				var item parser.Item
 				if exported := result.Export(); exported != nil {
 					data, err := json.Marshal(exported)
 					if err != nil {

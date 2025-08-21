@@ -19,7 +19,7 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/database"
-	"github.com/krau/SaveAny-Bot/parser"
+	"github.com/krau/SaveAny-Bot/parsers"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/spf13/cobra"
 )
@@ -56,7 +56,7 @@ func initAll(ctx context.Context) {
 	storage.LoadStorages(ctx)
 	if config.Cfg.Parser.PluginEnable {
 		for _, dir := range config.Cfg.Parser.PluginDirs {
-			if err := parser.LoadPlugins(ctx, dir); err != nil {
+			if err := parsers.LoadPlugins(ctx, dir); err != nil {
 				logger.Error("Failed to load parser plugins", "dir", dir, "error", err)
 			} else {
 				logger.Debug("Loaded parser plugins", "dir", dir)

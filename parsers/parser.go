@@ -1,27 +1,36 @@
-package parser
+package parsers
 
 import (
 	"context"
 	"fmt"
+	"sync"
+
+	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
-type Parser interface {
-	CanHandle(url string) bool
-	Parse(url string) (*Item, error)
+var (
+	parsers   []parser.Parser
+	parsersMu sync.Mutex
+)
+
+func GetParsers() []parser.Parser {
+	parsersMu.Lock()
+	defer parsersMu.Unlock()
+	return parsers
 }
 
-var parsers []Parser
-
-func GetParsers() []Parser {
-	return parsers
+func AddParser(p parser.Parser) {
+	parsersMu.Lock()
+	defer parsersMu.Unlock()
+	parsers = append(parsers, p)
 }
 
 var (
 	ErrNoParserFound = fmt.Errorf("no parser found for the given URL")
 )
 
-func ParseWithContext(ctx context.Context, url string) (*Item, error) {
-	ch := make(chan *Item, 1)
+func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
+	ch := make(chan *parser.Item, 1)
 	errCh := make(chan error, 1)
 
 	go func() {

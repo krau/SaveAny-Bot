@@ -1,5 +1,10 @@
 package parser
 
+type Parser interface {
+	CanHandle(url string) bool
+	Parse(url string) (*Item, error)
+}
+
 // Resource is a single downloadable resource with metadata.
 type Resource struct {
 	URL       string            `json:"url"`
