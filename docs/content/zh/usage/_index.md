@@ -9,12 +9,11 @@ weight: 10
 
 ## 转存文件
 
-Bot 接受两种消息: 文件和链接.
+要使用 Bot 的转存 Telegram 文件功能, 需要向 Bot 发送或转发以下类型的消息.
 
-对于链接, 目前支持以下类型的链接:
-
-1. Telegram 消息链接, 例如: `https://t.me/acherkrau/1097`. **即使频道禁止了转发和保存, Bot 依然可以下载其文件.**
-2. Telegra.ph 的文章链接, Bot 将下载其中的所有图片
+1. 文件或媒体消息, 如图片, 视频, 文档等
+2. Telegram 消息链接, 例如: `https://t.me/acherkrau/1097`. **即使频道禁止了转发和保存, Bot 依然可以下载其文件.**
+3. Telegra.ph 的文章链接, Bot 将下载其中的所有图片
 
 ## 静默模式 (silent)
 
@@ -112,3 +111,13 @@ IS-ALBUM true MyWebdav NEW-FOR-ALBUM
 ```
 
 这将会监听 ID 为 12345678 的聊天, 并且只保存消息文本中包含 "hello" 的消息.
+
+## 转存 Telegram 之外的文件
+
+除了 Telegram 上的文件, Bot 还可通过 JavaScript 插件或内置解析器来支持转存其他网站的文件.
+
+> 查看[贡献解析器](../contribute)文档了解详情
+
+只需向 Bot 发送符合解析器要求的链接即可使用, 当前内置的解析器:
+
+- Twitter
