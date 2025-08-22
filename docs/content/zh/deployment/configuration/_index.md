@@ -164,6 +164,18 @@ task_fail = "curl -X POST https://example.com/api/notify -d '任务失败'"
 task_cancel = "bash /path/to/cancel_script.sh"
 ```
 
+### 解析器
+
+解析器为 Bot 提供了处理非 Telegram 文件的能力, 例如从其他网站下载文件. 使用 `[parsers]` 配置.
+
+```toml
+[parsers]
+plugin_enable = true # 是否启用解析器插件
+plugin_dirs = ["./plugins"] # 插件目录, 可以是多个目录
+```
+
+上述两个配置项只用于控制以 JavaScript 编写的解析器插件, Bot 还有内置的使用 Go 实现的解析器, 目前默认开启.
+
 ### 杂项
 
 ```toml
