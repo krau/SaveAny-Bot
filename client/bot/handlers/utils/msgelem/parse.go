@@ -3,6 +3,7 @@ package msgelem
 import (
 	"fmt"
 
+	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
@@ -18,7 +19,7 @@ func BuildParsedTextEntity(item parser.Item) (string, []tg.MessageEntityClass, e
 		styling.Plain("\n作者: "),
 		styling.Code(item.Author),
 		styling.Plain("\n描述: "),
-		styling.Code(item.Description),
+		styling.Code(strutil.Ellipsis(item.Description, 233)),
 		styling.Plain("\n文件数量: "),
 		styling.Code(fmt.Sprintf("%d", len(item.Resources))),
 		styling.Plain("\n预计总大小: "),
