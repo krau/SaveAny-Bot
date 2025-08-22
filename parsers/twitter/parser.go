@@ -60,9 +60,16 @@ func (p *TwitterParser) Parse(u string) (*parser.Item, error) {
 	}
 	resources := make([]parser.Resource, 0, len(fxResp.Tweet.Media.All))
 	for _, media := range fxResp.Tweet.Media.All {
+		var size int64
+		resp, err := p.client.Get(media.URL)
+		if err == nil {
+			size = resp.ContentLength
+			resp.Body.Close()
+		}
 		resources = append(resources, parser.Resource{
 			URL:      media.URL,
 			Filename: path.Base(strings.Split(media.URL, "?")[0]),
+			Size:     size,
 		})
 	}
 	item := &parser.Item{

@@ -20,10 +20,10 @@ func GetParsers() []parser.Parser {
 	return parsers
 }
 
-func AddParser(p parser.Parser) {
+func AddParser(p ...parser.Parser) {
 	parsersMu.Lock()
 	defer parsersMu.Unlock()
-	parsers = append(parsers, p)
+	parsers = append(parsers, p...)
 }
 
 func init() {
