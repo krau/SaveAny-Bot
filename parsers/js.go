@@ -15,18 +15,6 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
-var (
-	LatestParserVersion  = semver.MustParse("1.0.0")
-	MinimumParserVersion = semver.MustParse("1.0.0")
-)
-
-type PluginMeta struct {
-	Name        string `json:"name"`
-	Version     string `json:"version"` // [TODO] 分版本解析, 但是我们现在只有 v1 所以先不写
-	Description string `json:"description"`
-	Author      string `json:"author"`
-}
-
 type jsParser struct {
 	meta  PluginMeta
 	vm    *goja.Runtime
@@ -34,7 +22,7 @@ type jsParser struct {
 }
 
 type jsParserReq struct {
-	method string
+	method ParserMethod
 	url    string
 	respCh chan jsParserResp
 }
@@ -47,14 +35,14 @@ type jsParserResp struct {
 
 func (p *jsParser) CanHandle(url string) bool {
 	respCh := make(chan jsParserResp, 1)
-	p.reqCh <- jsParserReq{method: "canHandle", url: url, respCh: respCh}
+	p.reqCh <- jsParserReq{method: ParserMethodCanHandle, url: url, respCh: respCh}
 	resp := <-respCh
 	return resp.ok && resp.err == nil
 }
 
 func (p *jsParser) Parse(ctx context.Context, url string) (*parser.Item, error) {
 	respCh := make(chan jsParserResp, 1)
-	p.reqCh <- jsParserReq{method: "parse", url: url, respCh: respCh}
+	p.reqCh <- jsParserReq{method: ParserMethodParse, url: url, respCh: respCh}
 	select {
 	case resp := <-respCh:
 		return resp.item, resp.err
@@ -73,7 +61,7 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata
 	go func() {
 		for req := range p.reqCh {
 			switch req.method {
-			case "canHandle":
+			case ParserMethodCanHandle:
 				fn, _ := goja.AssertFunction(canHandleFunc)
 				res, err := fn(goja.Undefined(), p.vm.ToValue(req.url))
 				if err != nil {
@@ -81,7 +69,7 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata
 					continue
 				}
 				req.respCh <- jsParserResp{ok: res.ToBoolean()}
-			case "parse":
+			case ParserMethodParse:
 				fn, _ := goja.AssertFunction(parseFunc)
 				result, err := fn(goja.Undefined(), p.vm.ToValue(req.url))
 				if err != nil {

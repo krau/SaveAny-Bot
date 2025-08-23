@@ -32,8 +32,6 @@ var (
 
 func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
 	doConfig.Do(func() {
-		parsersMu.Lock()
-		defer parsersMu.Unlock()
 		if len(parsers) == 0 {
 			return
 		}
