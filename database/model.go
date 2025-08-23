@@ -6,13 +6,14 @@ import (
 
 type User struct {
 	gorm.Model
-	ChatID         int64 `gorm:"uniqueIndex;not null"`
-	Silent         bool
-	DefaultStorage string
-	Dirs           []Dir
-	ApplyRule      bool
-	Rules          []Rule
-	WatchChats     []WatchChat
+	ChatID           int64 `gorm:"uniqueIndex;not null"`
+	Silent           bool
+	DefaultStorage   string
+	Dirs             []Dir
+	ApplyRule        bool
+	Rules            []Rule
+	WatchChats       []WatchChat
+	FilenameStrategy string
 }
 
 type WatchChat struct {

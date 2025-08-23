@@ -5,7 +5,7 @@ import (
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
-	"github.com/krau/SaveAny-Bot/pkg/consts"
+	"github.com/krau/SaveAny-Bot/config"
 )
 
 func handleHelpCmd(ctx *ext.Context, update *ext.Update) error {
@@ -24,10 +24,10 @@ Save Any Bot - 转存你的 Telegram 文件
 
 使用帮助: https://sabot.unv.app/usage/
 `
-	shortHash := consts.GitCommit
+	shortHash := config.GitCommit
 	if len(shortHash) > 7 {
 		shortHash = shortHash[:7]
 	}
-	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf(helpText, consts.Version, shortHash)), nil)
+	ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf(helpText, config.Version, shortHash)), nil)
 	return dispatcher.EndGroups
 }
