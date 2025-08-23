@@ -101,6 +101,11 @@ func (p *TwitterParser) Name() string {
 }
 
 func (p *TwitterParser) Configure(config map[string]any) error {
+	if config == nil {
+		p.apiDomain = fxTwitterApi
+		p.client = *netutil.DefaultParserHTTPClient()
+		return nil
+	}
 	if domain, ok := config["api_domain"].(string); ok && domain != "" {
 		p.apiDomain = domain
 	} else {

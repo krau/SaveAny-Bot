@@ -22,10 +22,8 @@ var (
 		for _, pser := range parsers {
 			if configurable, ok := pser.(parser.ConfigurableParser); ok {
 				cfg := config.C().GetParserConfigByName(configurable.Name())
-				if cfg != nil {
-					if err := configurable.Configure(cfg); err != nil {
-						fmt.Printf("Error configuring parser %s: %v\n", configurable.Name(), err)
-					}
+				if err := configurable.Configure(cfg); err != nil {
+					fmt.Printf("Error configuring parser %s: %v\n", configurable.Name(), err)
 				}
 			}
 		}
