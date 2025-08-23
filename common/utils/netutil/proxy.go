@@ -6,7 +6,10 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 
+	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/config"
 	"golang.org/x/net/proxy"
 )
 
@@ -20,7 +23,11 @@ func NewProxyDialer(proxyUrl string) (proxy.Dialer, error) {
 
 func NewProxyHTTPClient(proxyUrl string) (*http.Client, error) {
 	if proxyUrl == "" {
-		return http.DefaultClient, nil
+		return &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+			},
+		}, nil
 	}
 
 	u, err := url.Parse(proxyUrl)
@@ -51,4 +58,22 @@ func NewProxyHTTPClient(proxyUrl string) (*http.Client, error) {
 	default:
 		return nil, fmt.Errorf("unsupported proxy scheme: %s", u.Scheme)
 	}
+}
+
+var (
+	defaultProxyHttpClient         *http.Client
+	onceLoadDefaultProxyHttpClient sync.Once
+)
+
+func DefaultParserHTTPClient() *http.Client {
+	onceLoadDefaultProxyHttpClient.Do(func() {
+		client, err := NewProxyHTTPClient(config.C().Parser.Proxy)
+		if err != nil {
+			log.Warn("Failed to create default proxy HTTP client, using http.DefaultClient", "error", err)
+			defaultProxyHttpClient = http.DefaultClient
+		} else {
+			defaultProxyHttpClient = client
+		}
+	})
+	return defaultProxyHttpClient
 }
