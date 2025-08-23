@@ -52,11 +52,15 @@ func (p *jsParser) CanHandle(url string) bool {
 	return resp.ok && resp.err == nil
 }
 
-func (p *jsParser) Parse(url string) (*parser.Item, error) {
+func (p *jsParser) Parse(ctx context.Context, url string) (*parser.Item, error) {
 	respCh := make(chan jsParserResp, 1)
 	p.reqCh <- jsParserReq{method: "parse", url: url, respCh: respCh}
-	resp := <-respCh
-	return resp.item, resp.err
+	select {
+	case resp := <-respCh:
+		return resp.item, resp.err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata PluginMeta) *jsParser {

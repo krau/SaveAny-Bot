@@ -11,7 +11,7 @@ SaveAnyBot 可通过插件扩展功能, 目前仅支持 Parser (解析器)插件
 ```go
 type Parser interface {
 	CanHandle(url string) bool // 判断是否能处理给定的 URL
-	Parse(url string) (*Item, error) // 解析 URL, 返回 Item
+	Parse(ctx context.Context, url string) (*Item, error) // 解析 URL, 返回 Item
 }
 
 // Resource is a single downloadable resource with metadata.

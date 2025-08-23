@@ -43,7 +43,7 @@ func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
 			if !pser.CanHandle(url) {
 				continue
 			}
-			item, err := pser.Parse(url)
+			item, err := pser.Parse(ctx, url)
 			if err != nil {
 				errCh <- err
 				return

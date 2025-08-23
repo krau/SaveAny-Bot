@@ -1,13 +1,14 @@
 package parser
 
 import (
+	"context"
 	"crypto/md5"
 	"fmt"
 )
 
 type Parser interface {
 	CanHandle(url string) bool
-	Parse(url string) (*Item, error)
+	Parse(ctx context.Context, url string) (*Item, error)
 }
 
 // Resource is a single downloadable resource with metadata.

@@ -1,6 +1,7 @@
 package twitter
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,13 +35,17 @@ func getTweetID(sourceURL string) string {
 	return matches[2]
 }
 
-func (p *TwitterParser) Parse(u string) (*parser.Item, error) {
+func (p *TwitterParser) Parse(ctx context.Context, u string) (*parser.Item, error) {
 	id := getTweetID(u)
 	if id == "" {
 		return nil, errors.New("invalid Twitter URL")
 	}
 	apiUrl := fmt.Sprintf("https://%s/_/status/%s", FxTwitterApi, id)
-	resp, err := p.client.Get(apiUrl)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiUrl, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request to Twitter API: %w", err)
+	}
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch Twitter API: %w", err)
 	}
