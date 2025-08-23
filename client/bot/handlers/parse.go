@@ -20,7 +20,16 @@ import (
 func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 	logger := log.FromContext(ctx)
 	text := u.EffectiveMessage.Text
-	item, err := parsers.ParseWithContext(ctx, text)
+	ok, pser := parsers.CanHandle(text)
+	if !ok {
+		return dispatcher.EndGroups
+	}
+	msg, err := ctx.Reply(u, ext.ReplyTextString("正在解析..."), nil)
+	if err != nil {
+		return err
+	}
+
+	item, err := pser.Parse(ctx, text)
 	if errors.Is(err, parsers.ErrNoParserFound) {
 		return dispatcher.EndGroups
 	}
@@ -29,7 +38,7 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 		ctx.Reply(u, ext.ReplyTextString("Failed to parse text: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}
-	logger.Debug("Parsed item from text message", "text", text, "item", item)
+	logger.Debug("Parsed item from text message", "title", item.Title, "url", item.URL)
 	userID := u.GetUserChat().GetID()
 	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, userID), tcbdata.Add{
 		TaskType:   tasktype.TaskTypeParseditem,
@@ -46,14 +55,11 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 		ctx.Reply(u, ext.ReplyTextString("Failed to build parsed text entity: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}
-	ctx.SendMessage(userID, &tg.MessagesSendMessageRequest{
+	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 		Message:     text,
 		ReplyMarkup: markup,
 		Entities:    entities,
-		ReplyTo: &tg.InputReplyToMessage{
-			ReplyToMsgID:  u.EffectiveMessage.ID,
-			ReplyToPeerID: u.GetUserChat().AsInputPeer(),
-		},
+		ID:          msg.ID,
 	})
 
 	return dispatcher.EndGroups
@@ -80,7 +86,7 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 		ctx.Reply(u, ext.ReplyTextString("Failed to parse text: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}
-	logger.Debug("Parsed item from text message", "text", text, "item", item)
+	logger.Debug("Parsed item from text message", "title", item.Title, "url", item.URL)
 	userID := u.GetUserChat().GetID()
 	text, entities, err := msgelem.BuildParsedTextEntity(*item)
 	if err != nil {

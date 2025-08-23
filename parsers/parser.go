@@ -6,32 +6,16 @@ import (
 	"sync"
 
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/parsers/kemono"
 	"github.com/krau/SaveAny-Bot/parsers/twitter"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
 var (
-	parsers   []parser.Parser
-	parsersMu sync.Mutex
-	doConfig  sync.Once
-)
-
-func AddParser(p ...parser.Parser) {
-	parsersMu.Lock()
-	defer parsersMu.Unlock()
-	parsers = append(parsers, p...)
-}
-
-func init() {
-	AddParser(new(twitter.TwitterParser))
-}
-
-var (
-	ErrNoParserFound = fmt.Errorf("no parser found for the given URL")
-)
-
-func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
-	doConfig.Do(func() {
+	parsers       []parser.Parser
+	parsersMu     sync.Mutex
+	doConfig      sync.Once
+	configParsers = func() {
 		if len(parsers) == 0 {
 			return
 		}
@@ -45,7 +29,25 @@ func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
 				}
 			}
 		}
-	})
+	}
+)
+
+func AddParser(p ...parser.Parser) {
+	parsersMu.Lock()
+	defer parsersMu.Unlock()
+	parsers = append(parsers, p...)
+}
+
+func init() {
+	AddParser(new(twitter.TwitterParser), new(kemono.KemonoParser))
+}
+
+var (
+	ErrNoParserFound = fmt.Errorf("no parser found for the given URL")
+)
+
+func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
+	doConfig.Do(configParsers)
 	ch := make(chan *parser.Item, 1)
 	errCh := make(chan error, 1)
 
@@ -73,4 +75,14 @@ func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+
+func CanHandle(url string) (bool, parser.Parser) {
+	doConfig.Do(configParsers)
+	for _, pser := range parsers {
+		if pser.CanHandle(url) {
+			return true, pser
+		}
+	}
+	return false, nil
 }
