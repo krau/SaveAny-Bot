@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -168,13 +170,79 @@ func LoadPlugins(ctx context.Context, dir string) error {
 		}
 
 		vm := goja.New()
-		logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("[plugin|parser]/%s", e.Name()))
 		vm.Set("registerParser", registerParser(vm))
+		// Inject some utils to vm
+		logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("[plugin|parser]/%s", e.Name()))
 		vm.Set("console", map[string]any{
 			"log": func(args ...any) {
-				logger.Info(fmt.Sprint(args...))
+				if len(args) == 0 {
+					return
+				}
+				if len(args) > 1 {
+					logger.Info(args[0], args[1:]...)
+				} else {
+					logger.Info(args[0])
+				}
 			},
 		})
+		// http fetch funcs
+		ghttp := vm.NewObject()
+		ghttp.Set("get", func(call goja.FunctionCall) goja.Value {
+			url := call.Argument(0).String()
+			resp, err := http.Get(url)
+			if err != nil {
+				return vm.ToValue(map[string]any{
+					"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
+				})
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return vm.ToValue(map[string]any{
+					"error":  fmt.Sprintf("failed to fetch %s: %s", url, resp.Status),
+					"status": resp.StatusCode,
+				})
+			}
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return vm.ToValue(map[string]any{
+					"error": fmt.Errorf("failed to read response body: %w", err).Error(),
+				})
+			}
+			return vm.ToValue(string(body))
+		})
+		ghttp.Set("getJSON", func(call goja.FunctionCall) goja.Value {
+			url := call.Argument(0).String()
+
+			resp, err := http.Get(url)
+			if err != nil {
+				return vm.ToValue(map[string]any{
+					"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
+				})
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return vm.ToValue(map[string]any{
+					"error":  fmt.Sprintf("failed to fetch %s: %s", url, resp.Status),
+					"status": resp.StatusCode,
+				})
+			}
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return vm.ToValue(map[string]any{
+					"error": fmt.Errorf("failed to read response body: %w", err).Error(),
+				})
+			}
+			var jsonData map[string]any
+			if err := json.Unmarshal(body, &jsonData); err != nil {
+				return vm.ToValue(map[string]any{
+					"error": fmt.Errorf("failed to unmarshal JSON: %w", err).Error(),
+				})
+			}
+			return vm.ToValue(map[string]any{
+				"data": jsonData,
+			})
+		})
+		vm.Set("ghttp", ghttp)
 
 		if _, err := vm.RunString(string(code)); err != nil {
 			return fmt.Errorf("error loading plugin %s: %w", e.Name(), err)
