@@ -1,7 +1,5 @@
-// 这是一个示例解析器插件, 模拟处理 YouTube 的视频链接
-
-// 你可以使用 console.log 来在终端中使用 go 的 logger 打印信息
-console.log("Example parser loaded");
+// 这是一个最简示例解析器插件, 用于展示插件所需实现的基本功能
+// 此插件将会模拟处理 YouTube 的视频链接
 
 /**
  * 插件元数据
@@ -14,6 +12,9 @@ const metadata = {
     author: "Krau", // 插件作者
 }
 
+// 你可以使用 console.log 来在终端中使用 go 的 logger 打印信息
+console.log("Parser loaded", "name", metadata.name);
+
 /**
  * canHandle 函数用于判断当前解析器能否解析给定的 URL
  */
@@ -21,7 +22,6 @@ const canHandle = function (url) {
     // 这里我们简单地检查 URL 是否包含 "youtube.com/watch?v"
     return url.includes("youtube.com/watch?v");
 }
-
 
 /**
  * 解析 url 并返回一个 Item 对象, 类型定义在 pkg/parser.go 中
@@ -63,8 +63,11 @@ const parse = function (url) {
     return result;
 }
 
+// 最后需要调用 registerParser 来注册这个解析器
 registerParser({
     metadata,
     canHandle,
     parse
 });
+
+// 更进一步的插件编写信息, 请查看 plugins/example_parser_danbooru.js
