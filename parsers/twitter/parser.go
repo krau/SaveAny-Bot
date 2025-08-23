@@ -10,18 +10,20 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
 type TwitterParser struct {
-	client http.Client
+	client    http.Client
+	apiDomain string
 }
 
 const (
-	FxTwitterApi = "api.fxtwitter.com"
+	fxTwitterApi = "api.fxtwitter.com"
 )
 
-var _ parser.Parser = (*TwitterParser)(nil)
+var _ parser.ConfigurableParser = (*TwitterParser)(nil)
 
 var (
 	twitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
@@ -40,7 +42,7 @@ func (p *TwitterParser) Parse(ctx context.Context, u string) (*parser.Item, erro
 	if id == "" {
 		return nil, errors.New("invalid Twitter URL")
 	}
-	apiUrl := fmt.Sprintf("https://%s/_/status/%s", FxTwitterApi, id)
+	apiUrl := fmt.Sprintf("https://%s/_/status/%s", p.apiDomain, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiUrl, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request to Twitter API: %w", err)
@@ -92,4 +94,24 @@ func (p *TwitterParser) Parse(ctx context.Context, u string) (*parser.Item, erro
 
 func (p *TwitterParser) CanHandle(u string) bool {
 	return twitterSourceURLRegexp.MatchString(u)
+}
+
+func (p *TwitterParser) Name() string {
+	return "twitter"
+}
+
+func (p *TwitterParser) Configure(config map[string]any) error {
+	if domain, ok := config["api_domain"].(string); ok && domain != "" {
+		p.apiDomain = domain
+	} else {
+		p.apiDomain = fxTwitterApi
+	}
+	if proxyUrl, ok := config["proxy"].(string); ok && proxyUrl != "" {
+		proxyClient, err := netutil.NewProxyHTTPClient(proxyUrl)
+		if err != nil {
+			return fmt.Errorf("failed to create proxy client: %w", err)
+		}
+		p.client = *proxyClient
+	}
+	return nil
 }

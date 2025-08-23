@@ -57,7 +57,7 @@ func (t *Task) Execute(ctx context.Context) error {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
-	for i := range config.Cfg.Retry + 1 {
+	for i := range config.C().Retry + 1 {
 		if err = vctx.Err(); err != nil {
 			return fmt.Errorf("context canceled while saving file: %w", err)
 		}
@@ -68,7 +68,7 @@ func (t *Task) Execute(ctx context.Context) error {
 		}
 		defer file.Close()
 		if err = t.Storage.Save(vctx, file, t.Path); err != nil {
-			if i == config.Cfg.Retry {
+			if i == config.C().Retry {
 				return fmt.Errorf("failed to save file: %w", err)
 			}
 			logger.Errorf("Failed to save file: %s, retrying...", err)

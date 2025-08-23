@@ -54,8 +54,8 @@ func Login(ctx context.Context) (*gotgproto.Client, error) {
 	})
 	go func() {
 		var resolver dcs.Resolver
-		if config.Cfg.Telegram.Proxy.Enable && config.Cfg.Telegram.Proxy.URL != "" {
-			dialer, err := netutil.NewProxyDialer(config.Cfg.Telegram.Proxy.URL)
+		if config.C().Telegram.Proxy.Enable && config.C().Telegram.Proxy.URL != "" {
+			dialer, err := netutil.NewProxyDialer(config.C().Telegram.Proxy.URL)
 			if err != nil {
 				res <- struct {
 					client *gotgproto.Client
@@ -70,16 +70,16 @@ func Login(ctx context.Context) (*gotgproto.Client, error) {
 			resolver = dcs.DefaultResolver()
 		}
 		tclient, err := gotgproto.NewClient(
-			config.Cfg.Telegram.AppID,
-			config.Cfg.Telegram.AppHash,
+			config.C().Telegram.AppID,
+			config.C().Telegram.AppHash,
 			gotgproto.ClientTypePhone(""),
 			&gotgproto.ClientOpts{
-				Session:          sessionMaker.SqlSession(gormlite.Open(config.Cfg.Telegram.Userbot.Session)),
+				Session:          sessionMaker.SqlSession(gormlite.Open(config.C().Telegram.Userbot.Session)),
 				AuthConversator:  &terminalAuthConversator{},
 				Context:          ctx,
 				DisableCopyright: true,
 				Resolver:         resolver,
-				MaxRetries:       config.Cfg.Telegram.RpcRetry,
+				MaxRetries:       config.C().Telegram.RpcRetry,
 				AutoFetchReply:   true,
 				Middlewares:      middleware.NewDefaultMiddlewares(ctx, 5*time.Minute),
 				ErrorHandler: func(ctx *ext.Context, u *ext.Update, s string) error {

@@ -11,12 +11,18 @@ type Parser interface {
 	Parse(ctx context.Context, url string) (*Item, error)
 }
 
+type ConfigurableParser interface {
+	Parser
+	Configure(config map[string]any) error
+	Name() string
+}
+
 // Resource is a single downloadable resource with metadata.
 type Resource struct {
 	URL       string            `json:"url"`
 	Filename  string            `json:"filename"` // with ext
 	MimeType  string            `json:"mime_type"`
-	Extension string            `json:"extension"`
+	Extension string            `json:"extension"` // e.g. "mp4"
 	Size      int64             `json:"size"`    // 0 when unknown
 	Hash      map[string]string `json:"hash"`    // {"md5": "...", "sha256": "..."}
 	Headers   map[string]string `json:"headers"` // HTTP headers when downloading

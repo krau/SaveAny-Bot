@@ -19,11 +19,11 @@ var db *gorm.DB
 
 func Init(ctx context.Context) {
 	logger := log.FromContext(ctx)
-	if err := os.MkdirAll(filepath.Dir(config.Cfg.DB.Path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(config.C().DB.Path), 0755); err != nil {
 		logger.Fatal("Failed to create data directory: ", err)
 	}
 	var err error
-	db, err = gorm.Open(gormlite.Open(config.Cfg.DB.Path), &gorm.Config{
+	db, err = gorm.Open(gormlite.Open(config.C().DB.Path), &gorm.Config{
 		Logger: glogger.New(logger, glogger.Config{
 			Colorful:                  true,
 			SlowThreshold:             time.Second * 5,
@@ -60,7 +60,7 @@ func syncUsers(ctx context.Context) error {
 	}
 
 	cfgUserMap := make(map[int64]struct{})
-	for _, u := range config.Cfg.Users {
+	for _, u := range config.C().Users {
 		cfgUserMap[u.ID] = struct{}{}
 	}
 

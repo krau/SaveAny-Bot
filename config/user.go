@@ -14,7 +14,7 @@ var userIDs []int64
 var storages []string
 var userStorages = make(map[int64][]string)
 
-func (c *Config) GetStorageNamesByUserID(userID int64) []string {
+func (c Config) GetStorageNamesByUserID(userID int64) []string {
 	us, ok := userStorages[userID]
 	if ok {
 		return us
@@ -22,11 +22,11 @@ func (c *Config) GetStorageNamesByUserID(userID int64) []string {
 	return nil
 }
 
-func (c *Config) GetUsersID() []int64 {
+func (c Config) GetUsersID() []int64 {
 	return userIDs
 }
 
-func (c *Config) HasStorage(userID int64, storageName string) bool {
+func (c Config) HasStorage(userID int64, storageName string) bool {
 	us, ok := userStorages[userID]
 	if !ok {
 		return false

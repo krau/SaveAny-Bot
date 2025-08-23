@@ -35,8 +35,8 @@ func NewTGFileTask(
 	progress ProgressTracker,
 ) (*Task, error) {
 	_, ok := stor.(storage.StorageCannotStream)
-	if !config.Cfg.Stream || ok {
-		cachePath, err := filepath.Abs(filepath.Join(config.Cfg.Temp.BasePath, fmt.Sprintf("%s_%s", id, file.Name())))
+	if !config.C().Stream || ok {
+		cachePath, err := filepath.Abs(filepath.Join(config.C().Temp.BasePath, fmt.Sprintf("%s_%s", id, file.Name())))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get absolute path for cache: %w", err)
 		}

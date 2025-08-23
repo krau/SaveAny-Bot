@@ -54,7 +54,7 @@ func NewTask(
 		},
 	}
 	_, ok := stor.(storage.StorageCannotStream)
-	stream := config.Cfg.Stream && !ok
+	stream := config.C().Stream && !ok
 	return &Task{
 		ID:             id,
 		Ctx:            ctx,

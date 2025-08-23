@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/parsers/twitter"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
@@ -12,13 +13,8 @@ import (
 var (
 	parsers   []parser.Parser
 	parsersMu sync.Mutex
+	doConfig  sync.Once
 )
-
-func GetParsers() []parser.Parser {
-	parsersMu.Lock()
-	defer parsersMu.Unlock()
-	return parsers
-}
 
 func AddParser(p ...parser.Parser) {
 	parsersMu.Lock()
@@ -35,6 +31,23 @@ var (
 )
 
 func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
+	doConfig.Do(func() {
+		parsersMu.Lock()
+		defer parsersMu.Unlock()
+		if len(parsers) == 0 {
+			return
+		}
+		for _, pser := range parsers {
+			if configurable, ok := pser.(parser.ConfigurableParser); ok {
+				cfg := config.C().GetParserConfigByName(configurable.Name())
+				if cfg != nil {
+					if err := configurable.Configure(cfg); err != nil {
+						fmt.Printf("Error configuring parser %s: %v\n", configurable.Name(), err)
+					}
+				}
+			}
+		}
+	})
 	ch := make(chan *parser.Item, 1)
 	errCh := make(chan error, 1)
 

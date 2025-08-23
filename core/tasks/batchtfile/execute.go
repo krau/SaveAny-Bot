@@ -21,7 +21,7 @@ func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("batch_file[%s]", t.ID))
 	logger.Info("Starting batch file task")
 	t.Progress.OnStart(ctx, t)
-	workers := config.Cfg.Workers
+	workers := config.C().Workers
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(workers)
 	for _, elem := range t.Elems {
@@ -124,6 +124,6 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			return err
 		}
 		return nil
-	}, retry.Context(vctx), retry.RetryTimes(uint(config.Cfg.Retry)))
+	}, retry.Context(vctx), retry.RetryTimes(uint(config.C().Retry)))
 	return err
 }

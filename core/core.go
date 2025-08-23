@@ -20,7 +20,7 @@ type Exectable interface {
 
 func worker(ctx context.Context, qe *queue.TaskQueue[Exectable], semaphore chan struct{}) {
 	logger := log.FromContext(ctx)
-	execHooks := config.Cfg.Hook.Exec
+	execHooks := config.C().Hook.Exec
 	for {
 		semaphore <- struct{}{}
 		qtask, err := qe.Get()
@@ -58,11 +58,11 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Exectable], semaphore chan 
 
 func Run(ctx context.Context) {
 	log.FromContext(ctx).Info("Start processing tasks...")
-	semaphore := make(chan struct{}, config.Cfg.Workers)
+	semaphore := make(chan struct{}, config.C().Workers)
 	if queueInstance == nil {
 		queueInstance = queue.NewTaskQueue[Exectable]()
 	}
-	for range config.Cfg.Workers {
+	for range config.C().Workers {
 		go worker(ctx, queueInstance, semaphore)
 	}
 

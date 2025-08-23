@@ -32,7 +32,11 @@ type Config struct {
 	Hook     hookConfig              `toml:"hook" mapstructure:"hook" json:"hook"`
 }
 
-var Cfg *Config = &Config{}
+var cfg = &Config{}
+
+func C() Config {
+	return *cfg
+}
 
 func (c Config) GetStorageByName(name string) storage.StorageConfig {
 	for _, storage := range c.Storages {
@@ -95,7 +99,7 @@ func Init(ctx context.Context) error {
 		os.Exit(1)
 	}
 
-	if err := viper.Unmarshal(Cfg); err != nil {
+	if err := viper.Unmarshal(cfg); err != nil {
 		fmt.Println("Error unmarshalling config file, ", err)
 		os.Exit(1)
 	}
@@ -104,59 +108,42 @@ func Init(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error loading storage configs: %w", err)
 	}
-	Cfg.Storages = storagesConfig
+	cfg.Storages = storagesConfig
 
 	storageNames := make(map[string]struct{})
-	for _, storage := range Cfg.Storages {
+	for _, storage := range cfg.Storages {
 		if _, ok := storageNames[storage.GetName()]; ok {
-			return errors.New(i18n.TWithoutInit(Cfg.Lang, i18nk.ConfigInvalidDuplicateStorageName, map[string]any{
+			return errors.New(i18n.TWithoutInit(cfg.Lang, i18nk.ConfigInvalidDuplicateStorageName, map[string]any{
 				"Name": storage.GetName(),
 			}))
 		}
 		storageNames[storage.GetName()] = struct{}{}
 	}
 
-	fmt.Println(i18n.TWithoutInit(Cfg.Lang, i18nk.LoadedStorages, map[string]any{
-		"Count": len(Cfg.Storages),
+	fmt.Println(i18n.TWithoutInit(cfg.Lang, i18nk.LoadedStorages, map[string]any{
+		"Count": len(cfg.Storages),
 	}))
-	for _, storage := range Cfg.Storages {
+	for _, storage := range cfg.Storages {
 		fmt.Printf("  - %s (%s)\n", storage.GetName(), storage.GetType())
 	}
 
-	if Cfg.Workers < 1 || Cfg.Retry < 1 {
-		return errors.New(i18n.TWithoutInit(Cfg.Lang, i18nk.ConfigInvalidWorkersOrRetry, map[string]any{
-			"Workers": Cfg.Workers,
-			"Retry":   Cfg.Retry,
+	if cfg.Workers < 1 || cfg.Retry < 1 {
+		return errors.New(i18n.TWithoutInit(cfg.Lang, i18nk.ConfigInvalidWorkersOrRetry, map[string]any{
+			"Workers": cfg.Workers,
+			"Retry":   cfg.Retry,
 		}))
 	}
 
-	for _, storage := range Cfg.Storages {
+	for _, storage := range cfg.Storages {
 		storages = append(storages, storage.GetName())
 	}
-	for _, user := range Cfg.Users {
+	for _, user := range cfg.Users {
 		userIDs = append(userIDs, user.ID)
 		if user.Blacklist {
 			userStorages[user.ID] = slice.Compact(slice.Difference(storages, user.Storages))
 		} else {
 			userStorages[user.ID] = user.Storages
 		}
-	}
-	return nil
-}
-
-func Set(key string, value any) {
-	viper.Set(key, value)
-}
-
-func ReloadConfig() error {
-	if err := viper.WriteConfig(); err != nil {
-		return err
-	}
-	if err := viper.ReadInConfig(); err != nil {
-		return err
-	}
-	if error := viper.Unmarshal(Cfg); error != nil {
-		return error
 	}
 	return nil
 }

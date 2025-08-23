@@ -20,7 +20,7 @@ func (t *Task) Execute(ctx context.Context) error {
 	logger.Infof("Starting Telegraph task %s", t.PhPath)
 	t.progress.OnStart(ctx, t)
 	eg, gctx := errgroup.WithContext(ctx)
-	eg.SetLimit(config.Cfg.Workers)
+	eg.SetLimit(config.C().Workers)
 	for i, pic := range t.Pics {
 		eg.Go(func() error {
 			err := t.processPic(gctx, pic, i)
@@ -46,7 +46,7 @@ func (t *Task) Execute(ctx context.Context) error {
 func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 	retryOpts := []retry.Option{
 		retry.Context(ctx),
-		retry.RetryTimes(uint(config.Cfg.Retry)),
+		retry.RetryTimes(uint(config.C().Retry)),
 	}
 	var lastErr error
 	err := retry.Retry(func() error {
@@ -59,7 +59,7 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 		defer body.Close()
 		filename := fmt.Sprintf("%d%s", index+1, path.Ext(picUrl))
 		if t.cannotStream {
-			cacheFile, err := fsutil.CreateFile(filepath.Join(config.Cfg.Temp.BasePath,
+			cacheFile, err := fsutil.CreateFile(filepath.Join(config.C().Temp.BasePath,
 				fmt.Sprintf("tph_%s_%s", t.TaskID(), filename),
 			))
 			if err != nil {

@@ -13,8 +13,8 @@ func DefaultClient() *telegraph.Client {
 	if tphClient != nil {
 		return tphClient
 	}
-	if config.Cfg.Telegram.Proxy.Enable && config.Cfg.Telegram.Proxy.URL != "" {
-		proxyUrl := config.Cfg.Telegram.Proxy.URL
+	if config.C().Telegram.Proxy.Enable && config.C().Telegram.Proxy.URL != "" {
+		proxyUrl := config.C().Telegram.Proxy.URL
 		var err error
 		tphClient, err = telegraph.NewClientWithProxy(proxyUrl)
 		if err != nil {

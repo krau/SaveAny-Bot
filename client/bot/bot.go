@@ -27,8 +27,8 @@ func Init(ctx context.Context) {
 	})
 	go func() {
 		var resolver dcs.Resolver
-		if config.Cfg.Telegram.Proxy.Enable && config.Cfg.Telegram.Proxy.URL != "" {
-			dialer, err := netutil.NewProxyDialer(config.Cfg.Telegram.Proxy.URL)
+		if config.C().Telegram.Proxy.Enable && config.C().Telegram.Proxy.URL != "" {
+			dialer, err := netutil.NewProxyDialer(config.C().Telegram.Proxy.URL)
 			if err != nil {
 				resultChan <- struct {
 					client *gotgproto.Client
@@ -43,16 +43,16 @@ func Init(ctx context.Context) {
 			resolver = dcs.DefaultResolver()
 		}
 		client, err := gotgproto.NewClient(
-			config.Cfg.Telegram.AppID,
-			config.Cfg.Telegram.AppHash,
-			gotgproto.ClientTypeBot(config.Cfg.Telegram.Token),
+			config.C().Telegram.AppID,
+			config.C().Telegram.AppHash,
+			gotgproto.ClientTypeBot(config.C().Telegram.Token),
 			&gotgproto.ClientOpts{
-				Session:          sessionMaker.SqlSession(gormlite.Open(config.Cfg.DB.Session)),
+				Session:          sessionMaker.SqlSession(gormlite.Open(config.C().DB.Session)),
 				DisableCopyright: true,
 				Middlewares:      middleware.NewDefaultMiddlewares(ctx, 5*time.Minute),
 				Resolver:         resolver,
 				Context:          ctx,
-				MaxRetries:       config.Cfg.Telegram.RpcRetry,
+				MaxRetries:       config.C().Telegram.RpcRetry,
 				AutoFetchReply:   true,
 				ErrorHandler: func(ctx *ext.Context, u *ext.Update, s string) error {
 					log.FromContext(ctx).Errorf("Unhandled error: %s", s)
@@ -79,7 +79,7 @@ func Init(ctx context.Context) {
 			{Command: "dir", Description: "管理存储文件夹"},
 			{Command: "rule", Description: "管理规则"},
 		}
-		if config.Cfg.Telegram.Userbot.Enable {
+		if config.C().Telegram.Userbot.Enable {
 			commands = append(commands, tg.BotCommand{Command: "watch", Description: "监听聊天"})
 			commands = append(commands, tg.BotCommand{Command: "unwatch", Description: "取消监听聊天"})
 		}

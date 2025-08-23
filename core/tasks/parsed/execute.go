@@ -26,7 +26,7 @@ func (t *Task) Execute(ctx context.Context) error {
 		t.progress.OnStart(ctx, t)
 	}
 	eg, gctx := errgroup.WithContext(ctx)
-	eg.SetLimit(config.Cfg.Workers)
+	eg.SetLimit(config.C().Workers)
 	for _, resource := range t.item.Resources {
 		eg.Go(func() error {
 			t.processingMu.RLock()
@@ -96,7 +96,7 @@ func (t *Task) processResource(ctx context.Context, resource parser.Resource) er
 		if t.stream {
 			return t.Stor.Save(ctx, resp.Body, path.Join(t.StorPath, resource.Filename))
 		}
-		cacheFile, err := fsutil.CreateFile(filepath.Join(config.Cfg.Temp.BasePath,
+		cacheFile, err := fsutil.CreateFile(filepath.Join(config.C().Temp.BasePath,
 			fmt.Sprintf("resource_%s_%s", t.ID, resource.Filename)))
 		if err != nil {
 			return fmt.Errorf("failed to create cache file for resource %s: %w", resource.URL, err)
@@ -131,7 +131,7 @@ func (t *Task) processResource(ctx context.Context, resource parser.Resource) er
 			return fmt.Errorf("failed to seek cache file for resource %s: %w", resource.URL, err)
 		}
 		return t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, resource.Filename))
-	}, retry.Context(ctx), retry.RetryTimes(uint(config.Cfg.Retry)))
+	}, retry.Context(ctx), retry.RetryTimes(uint(config.C().Retry)))
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

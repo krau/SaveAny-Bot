@@ -102,7 +102,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 	}
 
 	tctx := ctx
-	if config.Cfg.Telegram.Userbot.Enable {
+	if config.C().Telegram.Userbot.Enable {
 		tctx = uc.GetCtx()
 	}
 

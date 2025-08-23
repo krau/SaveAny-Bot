@@ -20,7 +20,7 @@ func getStorageByName(ctx context.Context, name string) (Storage, error) {
 	if ok {
 		return storage, nil
 	}
-	cfg := config.Cfg.GetStorageByName(name)
+	cfg := config.C().GetStorageByName(name)
 	if cfg == nil {
 		return nil, fmt.Errorf("未找到存储 %s", name)
 	}
@@ -39,7 +39,7 @@ func GetStorageByUserIDAndName(ctx context.Context, chatID int64, name string) (
 		return nil, ErrStorageNameEmpty
 	}
 
-	if !config.Cfg.HasStorage(chatID, name) {
+	if !config.C().HasStorage(chatID, name) {
 		return nil, fmt.Errorf("没有找到用户 %d 的存储 %s", chatID, name)
 	}
 
@@ -54,7 +54,7 @@ func GetUserStorages(ctx context.Context, chatID int64) []Storage {
 		return storages
 	}
 	var storages []Storage
-	for _, name := range config.Cfg.GetStorageNamesByUserID(chatID) {
+	for _, name := range config.C().GetStorageNamesByUserID(chatID) {
 		storage, err := getStorageByName(ctx, name)
 		if err != nil {
 			continue
@@ -67,14 +67,14 @@ func GetUserStorages(ctx context.Context, chatID int64) []Storage {
 func LoadStorages(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	logger.Info("加载存储...")
-	for _, storage := range config.Cfg.Storages {
+	for _, storage := range config.C().Storages {
 		_, err := getStorageByName(ctx, storage.GetName())
 		if err != nil {
 			logger.Errorf("加载存储 %s 失败: %v", storage.GetName(), err)
 		}
 	}
 	logger.Infof("成功加载 %d 个存储", len(Storages))
-	for user := range config.Cfg.GetUsersID() {
+	for user := range config.C().GetUsersID() {
 		UserStorages[int64(user)] = GetUserStorages(ctx, int64(user))
 	}
 }

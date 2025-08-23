@@ -16,8 +16,8 @@ func Init() {
 		panic("cache already initialized")
 	}
 	c, err := ristretto.NewCache(&ristretto.Config[string, any]{
-		NumCounters: config.Cfg.Cache.NumCounters,
-		MaxCost:     config.Cfg.Cache.MaxCost,
+		NumCounters: config.C().Cache.NumCounters,
+		MaxCost:     config.C().Cache.MaxCost,
 		BufferItems: 64,
 		OnReject: func(item *ristretto.Item[any]) {
 			log.Warnf("Cache item rejected: key=%d, value=%v", item.Key, item.Value)
@@ -30,7 +30,7 @@ func Init() {
 }
 
 func Set(key string, value any) error {
-	ok := cache.SetWithTTL(key, value, 0, time.Duration(config.Cfg.Cache.TTL)*time.Second)
+	ok := cache.SetWithTTL(key, value, 0, time.Duration(config.C().Cache.TTL)*time.Second)
 	if !ok {
 		return fmt.Errorf("failed to set value in cache")
 	}

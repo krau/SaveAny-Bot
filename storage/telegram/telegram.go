@@ -100,7 +100,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	}
 	upler := uploader.NewUploader(tctx.Raw).
 		WithPartSize(tglimit.MaxUploadPartSize).
-		WithThreads(config.Cfg.Threads)
+		WithThreads(config.C().Threads)
 
 	var file tg.InputFileClass
 	size := func() int64 {
