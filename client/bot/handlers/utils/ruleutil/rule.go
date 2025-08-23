@@ -7,8 +7,6 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/database"
-	"github.com/krau/SaveAny-Bot/pkg/consts"
-	ruleenum "github.com/krau/SaveAny-Bot/pkg/enums/rule"
 	"github.com/krau/SaveAny-Bot/pkg/rule"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
@@ -37,7 +35,7 @@ func (m matchedStorName) String() string {
 
 // can we use this storage name directly?
 func (m matchedStorName) IsUsable() bool {
-	return m != "" && m != consts.RuleStorNameChosen
+	return m != "" && m != rule.RuleStorNameChosen
 }
 
 type MatchedDirPath string
@@ -47,7 +45,7 @@ func (m MatchedDirPath) String() string {
 }
 
 func (m MatchedDirPath) NeedNewForAlbum() bool {
-	return m != "" && m == consts.RuleDirPathNewForAlbum
+	return m != "" && m == rule.RuleDirPathNewForAlbum
 }
 
 func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (matchedStorageName matchedStorName, dirPath MatchedDirPath) {
@@ -57,7 +55,7 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 	logger := log.FromContext(ctx)
 	for _, ur := range rules {
 		switch ur.Type {
-		case ruleenum.FileNameRegex.String():
+		case rule.FileNameRegex.String():
 			ru, err := rule.NewRuleFileNameRegex(ur.StorageName, ur.DirPath, ur.Data)
 			if err != nil {
 				logger.Errorf("Failed to create rule: %s", err)
@@ -72,7 +70,7 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 				dirPath = MatchedDirPath(ru.StoragePath())
 				matchedStorageName = matchedStorName(ru.StorageName())
 			}
-		case ruleenum.MessageRegex.String():
+		case rule.MessageRegex.String():
 			ru, err := rule.NewRuleMessageRegex(ur.StorageName, ur.DirPath, ur.Data)
 			if err != nil {
 				logger.Errorf("Failed to create rule: %s", err)
@@ -87,7 +85,7 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 				dirPath = MatchedDirPath(ru.StoragePath())
 				matchedStorageName = matchedStorName(ru.StorageName())
 			}
-		case ruleenum.IsAlbum.String():
+		case rule.IsAlbum.String():
 			matchAlbum, err := convertor.ToBool(ur.Data)
 			if err != nil {
 				matchAlbum = false

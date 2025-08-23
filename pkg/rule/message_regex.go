@@ -2,8 +2,6 @@ package rule
 
 import (
 	"regexp"
-
-	ruleenum "github.com/krau/SaveAny-Bot/pkg/enums/rule"
 )
 
 var _ RuleClass[string] = (*RuleMessageRegex)(nil)
@@ -13,8 +11,8 @@ type RuleMessageRegex struct {
 	regex *regexp.Regexp
 }
 
-func (r RuleMessageRegex) Type() ruleenum.RuleType {
-	return ruleenum.MessageRegex
+func (r RuleMessageRegex) Type() RuleType {
+	return MessageRegex
 }
 
 func (r RuleMessageRegex) Match(input string) (bool, error) {

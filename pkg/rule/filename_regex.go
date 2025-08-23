@@ -3,7 +3,6 @@ package rule
 import (
 	"regexp"
 
-	ruleenum "github.com/krau/SaveAny-Bot/pkg/enums/rule"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
 
@@ -14,8 +13,8 @@ type RuleFileNameRegex struct {
 
 var _ RuleClass[tfile.TGFile] = (*RuleFileNameRegex)(nil)
 
-func (r RuleFileNameRegex) Type() ruleenum.RuleType {
-	return ruleenum.FileNameRegex
+func (r RuleFileNameRegex) Type() RuleType {
+	return FileNameRegex
 }
 
 func (r RuleFileNameRegex) Match(input tfile.TGFile) (bool, error) {

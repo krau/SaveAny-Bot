@@ -1,9 +1,5 @@
 package rule
 
-import (
-	ruleenum "github.com/krau/SaveAny-Bot/pkg/enums/rule"
-)
-
 var _ RuleClass[bool] = (*RuleMediaType)(nil)
 
 type RuleMediaType struct {
@@ -11,8 +7,8 @@ type RuleMediaType struct {
 	matchAlbum bool
 }
 
-func (r RuleMediaType) Type() ruleenum.RuleType {
-	return ruleenum.IsAlbum
+func (r RuleMediaType) Type() RuleType {
+	return IsAlbum
 }
 
 func (r RuleMediaType) Match(input bool) (bool, error) {
