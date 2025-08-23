@@ -68,7 +68,7 @@ func (p *TwitterParser) Parse(ctx context.Context, u string) (*parser.Item, erro
 	resources := make([]parser.Resource, 0, len(fxResp.Tweet.Media.All))
 	for _, media := range fxResp.Tweet.Media.All {
 		var size int64
-		resp, err := p.client.Get(media.URL)
+		resp, err := p.client.Head(media.URL)
 		if err == nil {
 			size = resp.ContentLength
 			resp.Body.Close()
