@@ -29,6 +29,6 @@ weight: 20
 1. 在 `parsers` 目录下新建一个包, 编写解析器实现
 2. 在 `parsers/parser.go` 的 `init` 中注册解析器
 
-如果使用 JavaScript 编写, 请参考 `plugins/example_parser.js` 的实现, 并在该文件夹下新建一个 js 文件, 实现你的解析逻辑.
+如果使用 JavaScript 编写, 请参考 `plugins/example_parser_basic.js` 的实现, 并在该文件夹下新建一个 js 文件, 实现你的解析逻辑.
 
 需要注意, `plugins` 目录下解析器默认不会被编译到二进制文件中, 用户需要手动下载它们并放到本地指定目录下以启用它们.

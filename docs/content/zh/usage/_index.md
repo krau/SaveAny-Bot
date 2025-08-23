@@ -121,3 +121,4 @@ IS-ALBUM true MyWebdav NEW-FOR-ALBUM
 只需向 Bot 发送符合解析器要求的链接即可使用, 当前内置的解析器:
 
 - Twitter
+- Kemono
