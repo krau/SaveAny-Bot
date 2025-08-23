@@ -13,6 +13,8 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
+	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/pkg/enums/fnamest"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -26,12 +28,22 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 		return handleGroupMediaMessage(ctx, update, message, groupID)
 	}
 	logger.Debugf("Got media: %s", message.Media.TypeName())
-
-	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, message)
+	userId := update.GetUserChat().GetID()
+	userDB, err := database.GetUserByChatID(ctx, userId)
 	if err != nil {
 		return err
 	}
-	userId := update.GetUserChat().GetID()
+	tfOpts := make([]tfile.TGFileOption, 0)
+	switch userDB.FilenameStrategy {
+	case fnamest.Message.String():
+		tfOpts = append(tfOpts, tfile.WithName(tgutil.GenFileNameFromMessage(*message)))
+	default:
+	}
+	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, message, tfOpts...)
+	if err != nil {
+		return err
+	}
+
 	stors := storage.GetUserStorages(ctx, userId)
 	req, err := msgelem.BuildAddOneSelectStorageMessage(ctx, stors, file, msg.ID)
 	if err != nil {
@@ -58,7 +70,17 @@ func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 	}
 	logger.Debugf("Got media: %s", message.Media.TypeName())
 	userID := update.GetUserChat().GetID()
-	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, message)
+	userDB, err := database.GetUserByChatID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	tfOpts := make([]tfile.TGFileOption, 0)
+	switch userDB.FilenameStrategy {
+	case fnamest.Message.String():
+		tfOpts = append(tfOpts, tfile.WithName(tgutil.GenFileNameFromMessage(*message)))
+	default:
+	}
+	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, message, tfOpts...)
 	if err != nil {
 		return err
 	}

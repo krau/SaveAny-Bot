@@ -14,7 +14,7 @@ import (
 
 func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
-	args := strings.Split(string(update.EffectiveMessage.Text), " ")
+	args := strings.Split(update.EffectiveMessage.Text, " ")
 	if len(args) < 2 {
 		ctx.Reply(update, ext.ReplyTextString(msgelem.WatchHelpText), nil)
 		return dispatcher.EndGroups
@@ -82,7 +82,7 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 
 func handleUnwatchCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
-	args := strings.Split(string(update.EffectiveMessage.Text), " ")
+	args := strings.Split(update.EffectiveMessage.Text, " ")
 	if len(args) < 2 {
 		ctx.Reply(update, ext.ReplyTextString("请提供要取消监听的聊天ID或用户名"), nil)
 		return dispatcher.EndGroups

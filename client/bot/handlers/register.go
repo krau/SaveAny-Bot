@@ -40,9 +40,11 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewCommand("watch", handleWatchCmd))
 	disp.AddHandler(handlers.NewCommand("unwatch", handleUnwatchCmd))
 	disp.AddHandler(handlers.NewCommand("save", handleSilentMode(handleSaveCmd, handleSilentSaveReplied)))
+	disp.AddHandler(handlers.NewCommand("config", handleConfigCmd))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeAdd), handleAddCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeSetDefault), handleSetDefaultCallback))
-	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cancel"), handleCancelCallback))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeCancel), handleCancelCallback))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeConfig), handleConfigCallback))
 	linkRegexFilter, err := filters.Message.Regex(re.TgMessageLinkRegexString)
 	if err != nil {
 		panic("failed to create regex filter: " + err.Error())

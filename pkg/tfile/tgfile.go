@@ -54,7 +54,7 @@ func NewTGFile(
 	dler downloader.Client,
 	size int64,
 	name string,
-	opts ...TGFileOptions,
+	opts ...TGFileOption,
 ) TGFile {
 	f := &tgFile{
 		location: location,
@@ -68,7 +68,7 @@ func NewTGFile(
 	return f
 }
 
-func FromMedia(media tg.MessageMediaClass, client downloader.Client, opts ...TGFileOptions) (TGFile, error) {
+func FromMedia(media tg.MessageMediaClass, client downloader.Client, opts ...TGFileOption) (TGFile, error) {
 	switch m := media.(type) {
 	case *tg.MessageMediaDocument:
 		document, ok := m.Document.AsNotEmpty()
@@ -125,7 +125,7 @@ func FromMedia(media tg.MessageMediaClass, client downloader.Client, opts ...TGF
 	return nil, fmt.Errorf("unsupported media type: %T", media)
 }
 
-func FromMediaMessage(media tg.MessageMediaClass, client downloader.Client, msg *tg.Message, opts ...TGFileOptions) (TGFileMessage, error) {
+func FromMediaMessage(media tg.MessageMediaClass, client downloader.Client, msg *tg.Message, opts ...TGFileOption) (TGFileMessage, error) {
 	file, err := FromMedia(media, client, opts...)
 	if err != nil {
 		return nil, err

@@ -10,6 +10,8 @@ import (
 const (
 	TypeAdd        = "add"
 	TypeSetDefault = "setdefault"
+	TypeConfig  = "config"
+	TypeCancel     = "cancel"
 )
 
 // type TaskDataTGFiles struct {

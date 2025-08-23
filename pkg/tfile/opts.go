@@ -2,20 +2,21 @@ package tfile
 
 import "github.com/gotd/td/tg"
 
-type TGFileOptions func(*tgFile)
+type TGFileOption func(*tgFile)
 
-func WithMessage(msg *tg.Message) TGFileOptions {
+func WithMessage(msg *tg.Message) TGFileOption {
 	return func(f *tgFile) {
 		f.message = msg
 	}
 }
-func WithName(name string) TGFileOptions {
+
+func WithName(name string) TGFileOption {
 	return func(f *tgFile) {
 		f.name = name
 	}
 }
 
-func WithNameIfEmpty(name string) TGFileOptions {
+func WithNameIfEmpty(name string) TGFileOption {
 	return func(f *tgFile) {
 		if f.name == "" {
 			f.name = name
@@ -23,13 +24,13 @@ func WithNameIfEmpty(name string) TGFileOptions {
 	}
 }
 
-func WithSize(size int64) TGFileOptions {
+func WithSize(size int64) TGFileOption {
 	return func(f *tgFile) {
 		f.size = size
 	}
 }
 
-func WithSizeIfZero(size int64) TGFileOptions {
+func WithSizeIfZero(size int64) TGFileOption {
 	return func(f *tgFile) {
 		if f.size == 0 {
 			f.size = size
