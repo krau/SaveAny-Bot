@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/constant"
 	"github.com/gotd/td/telegram/message"
@@ -87,7 +88,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if len(parts) >= 1 {
 		filename = parts[len(parts)-1]
 	}
-	if len(parts) >= 2 {
+	if len(parts) >= 2 && validator.IsAlphaNumeric(parts[0]) {
 		cid, err := tgutil.ParseChatID(tctx, parts[0])
 		if err != nil {
 			// id不合法时使用配置文件中的 chat_id
@@ -141,9 +142,13 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		return fmt.Errorf("failed to upload file to telegram: %w", err)
 	}
 	caption := styling.Plain(filename)
+	forceFile := t.config.ForceFile
+	if strings.HasPrefix(mtype.String(), "image/") && size >= tglimit.MaxPhotoSize {
+		forceFile = true
+	}
 	docb := message.UploadedDocument(file, caption).
 		Filename(filename).
-		ForceFile(t.config.ForceFile).
+		ForceFile(forceFile).
 		MIME(mtype.String())
 
 	var media message.MediaOption = docb
