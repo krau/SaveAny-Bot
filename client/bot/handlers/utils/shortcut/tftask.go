@@ -34,8 +34,13 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 		return dispatcher.EndGroups
 	}
 	if user.ApplyRule && user.Rules != nil {
-		matchedStorageName, matchedDirPath := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
-		dirPath = matchedDirPath.String()
+		matched, matchedStorageName, matchedDirPath := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
+		if !matched {
+			goto startCreateTask
+		}
+		if matchedDirPath != "" {
+			dirPath = matchedDirPath.String()
+		}
 		if matchedStorageName.IsUsable() {
 			stor, err = storage.GetStorageByUserIDAndName(ctx, user.ChatID, matchedStorageName.String())
 			if err != nil {
@@ -48,7 +53,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 			}
 		}
 	}
-
+startCreateTask:
 	storagePath := stor.JoinStoragePath(path.Join(dirPath, file.Name()))
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	taskid := xid.New().String()
@@ -101,8 +106,10 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		if !useRule {
 			return stor.Name(), ruleutil.MatchedDirPath(dirPath)
 		}
-		storName, dirP := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
-
+		matched, storName, dirP := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
+		if !matched {
+			return stor.Name(), ruleutil.MatchedDirPath(dirPath)
+		}
 		storname := storName.String()
 		if !storName.IsUsable() {
 			storname = stor.Name()

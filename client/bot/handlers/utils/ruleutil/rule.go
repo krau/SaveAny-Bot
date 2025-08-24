@@ -48,9 +48,9 @@ func (m MatchedDirPath) NeedNewForAlbum() bool {
 	return m != "" && m == rule.RuleDirPathNewForAlbum
 }
 
-func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (matchedStorageName matchedStorName, dirPath MatchedDirPath) {
+func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (matched bool, matchedStorageName matchedStorName, dirPath MatchedDirPath) {
 	if inputs == nil || len(rules) == 0 {
-		return "", ""
+		return false, "", ""
 	}
 	logger := log.FromContext(ctx)
 	for _, ur := range rules {
@@ -106,5 +106,8 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 			}
 		}
 	}
-	return
+	if matchedStorageName != "" || dirPath != "" {
+		return true, matchedStorageName, dirPath
+	}
+	return false, "", ""
 }

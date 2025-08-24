@@ -112,7 +112,10 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 			}
 			var dirPath string
 			if user.ApplyRule && user.Rules != nil {
-				matchedStorageName, matchedDirPath := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
+				matched, matchedStorageName, matchedDirPath := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
+				if !matched {
+					goto startCreateTask
+				}
 				dirPath = matchedDirPath.String()
 				if matchedStorageName.IsUsable() {
 					stor, err = storage.GetStorageByUserIDAndName(ctx, user.ChatID, matchedStorageName.String())
@@ -122,6 +125,7 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 					}
 				}
 			}
+		startCreateTask:
 			storagePath := stor.JoinStoragePath(path.Join(dirPath, file.Name()))
 			injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 			taskid := xid.New().String()
