@@ -4,7 +4,7 @@ title: "安装与更新"
 
 # 安装与更新
 
-## 从预编译文件部署
+## 从预编译文件部署(推荐)
 
 在 [Release](https://github.com/krau/SaveAny-Bot/releases) 页面下载对应平台的二进制文件.
 
@@ -131,13 +131,13 @@ docker run -d --name saveany-bot \
 
 ## 更新
 
-使用 `upgrade` 或 `up` 升级到最新版
+向 Bot 发送 `/update` 指令检查更新并升级, 或者使用 CLI 命令更新:
 
 ```bash
-./saveany-bot upgrade
+./saveany-bot up
 ```
 
-如果是 Docker 部署, 使用以下命令更新:
+如果是 Docker 部署, 还可以使用以下命令更新:
 
 ```bash
 docker pull ghcr.io/krau/saveany-bot:latest
