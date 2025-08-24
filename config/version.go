@@ -7,3 +7,7 @@ var (
 	BuildTime string = "unknown"
 	GitCommit string = "unknown"
 )
+
+const (
+	GitRepo = "krau/SaveAny-Bot"
+)

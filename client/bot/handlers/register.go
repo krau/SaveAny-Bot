@@ -41,6 +41,8 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewCommand("unwatch", handleUnwatchCmd))
 	disp.AddHandler(handlers.NewCommand("save", handleSilentMode(handleSaveCmd, handleSilentSaveReplied)))
 	disp.AddHandler(handlers.NewCommand("config", handleConfigCmd))
+	disp.AddHandler(handlers.NewCommand("update", handleUpdateCmd))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("update"), handleUpdateCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeAdd), handleAddCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeSetDefault), handleSetDefaultCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeCancel), handleCancelCallback))

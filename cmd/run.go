@@ -25,7 +25,7 @@ import (
 )
 
 func Run(cmd *cobra.Command, _ []string) {
-	ctx := cmd.Context()
+	ctx, cancel := context.WithCancel(cmd.Context())
 	logger := log.NewWithOptions(os.Stdout, log.Options{
 		Level:           log.DebugLevel,
 		ReportTimestamp: true,
@@ -34,7 +34,15 @@ func Run(cmd *cobra.Command, _ []string) {
 	})
 	ctx = log.WithContext(ctx, logger)
 
-	initAll(ctx)
+	exitChan, err := initAll(ctx)
+	if err != nil {
+		logger.Fatal("Failed to initialize", "error", err)
+	}
+	go func() {
+		<-exitChan
+		cancel()
+	}()
+
 	core.Run(ctx)
 
 	<-ctx.Done()
@@ -43,10 +51,10 @@ func Run(cmd *cobra.Command, _ []string) {
 	cleanCache()
 }
 
-func initAll(ctx context.Context) {
+func initAll(ctx context.Context) (<-chan struct{}, error) {
 	if err := config.Init(ctx); err != nil {
 		fmt.Println("Failed to load config:", err)
-		os.Exit(1)
+		return nil, err
 	}
 	cache.Init()
 	logger := log.FromContext(ctx)
@@ -69,7 +77,7 @@ func initAll(ctx context.Context) {
 			logger.Fatalf("User client login failed: %s", err)
 		}
 	}
-	bot.Init(ctx)
+	return bot.Init(ctx), nil
 }
 
 func cleanCache() {

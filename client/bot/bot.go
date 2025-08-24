@@ -19,12 +19,13 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-func Init(ctx context.Context) {
+func Init(ctx context.Context) (<-chan struct{}) {
 	log.FromContext(ctx).Info("初始化 Bot...")
 	resultChan := make(chan struct {
 		client *gotgproto.Client
 		err    error
 	})
+	shouldRestart := make(chan struct{})
 	go func() {
 		var resolver dcs.Resolver
 		if config.C().Telegram.Proxy.Enable && config.C().Telegram.Proxy.URL != "" {
@@ -55,7 +56,11 @@ func Init(ctx context.Context) {
 				MaxRetries:       config.C().Telegram.RpcRetry,
 				AutoFetchReply:   true,
 				ErrorHandler: func(ctx *ext.Context, u *ext.Update, s string) error {
-					log.FromContext(ctx).Errorf("Unhandled error: %s", s)
+					if s == "SAVEANTBOT-RESTART" {
+						shouldRestart <- struct{}{}
+						return dispatcher.EndGroups
+					}
+					log.FromContext(ctx).Errorf("unhandled error: %s", s)
 					return dispatcher.EndGroups
 				},
 			},
@@ -103,4 +108,5 @@ func Init(ctx context.Context) {
 		handlers.Register(result.client.Dispatcher)
 		log.FromContext(ctx).Info("Bot 初始化完成")
 	}
+	return shouldRestart
 }

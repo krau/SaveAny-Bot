@@ -26,7 +26,7 @@ var upgradeCmd = &cobra.Command{
 	Short:   "Upgrade saveany-bot to the latest version",
 	Run: func(cmd *cobra.Command, args []string) {
 		v := semver.MustParse(config.Version)
-		latest, err := selfupdate.UpdateSelf(v, "krau/SaveAny-Bot")
+		latest, err := selfupdate.UpdateSelf(v, config.GitRepo)
 		if err != nil {
 			fmt.Println("Binary update failed:", err)
 			return
