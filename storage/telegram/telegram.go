@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/constant"
@@ -89,7 +90,13 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if len(parts) >= 2 {
 		cid, err := tgutil.ParseChatID(tctx, parts[0])
 		if err != nil {
-			return fmt.Errorf("failed to parse chat ID: %w", err)
+			// id不合法时使用配置文件中的 chat_id
+			log.FromContext(ctx).Warnf("Failed to parse chat ID from path, using configured chat_id: %s", err)
+			cid = chatID
+		} else {
+			if cid > constant.MaxTDLibChannelID || cid > constant.MaxTDLibChatID || cid > constant.MaxTDLibUserID {
+				cid = chatID
+			}
 		}
 		chatID = cid
 	}
