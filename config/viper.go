@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
@@ -96,12 +95,12 @@ func Init(ctx context.Context) error {
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Error reading config file, ", err)
-		os.Exit(1)
+		return err
 	}
 
 	if err := viper.Unmarshal(cfg); err != nil {
 		fmt.Println("Error unmarshalling config file, ", err)
-		os.Exit(1)
+		return err
 	}
 
 	storagesConfig, err := storage.LoadStorageConfigs(viper.GetViper())
