@@ -4,12 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/blang/semver"
 	"github.com/charmbracelet/log"
 	"github.com/dop251/goja"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
@@ -101,50 +98,6 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata
 	return p
 }
 
-func registerParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value {
-	return func(call goja.FunctionCall) goja.Value {
-		jsObj := call.Argument(0)
-		if jsObj == nil || goja.IsUndefined(jsObj) || goja.IsNull(jsObj) {
-			panic("registerParser expects an object { canHandle, parse }")
-		}
-
-		obj := jsObj.ToObject(vm)
-		if obj == nil {
-			panic("registerParser: cannot convert argument to object")
-		}
-		metaValue := obj.Get("metadata")
-		if metaValue == nil || goja.IsUndefined(metaValue) {
-			panic("parser must provide metadata")
-		}
-		var metadata PluginMeta
-		if exported := metaValue.Export(); exported != nil {
-			data, err := json.Marshal(exported)
-			if err != nil {
-				panic(fmt.Sprintf("failed to marshal metadata to JSON: %v", err))
-			}
-			if err := json.Unmarshal(data, &metadata); err != nil {
-				panic(fmt.Sprintf("failed to unmarshal JSON to PluginMeta: %v", err))
-			}
-		} else {
-			panic("metadata cannot be null or undefined")
-		}
-
-		pluginV := semver.MustParse(metadata.Version)
-		if pluginV.LT(MinimumParserVersion) || pluginV.GT(LatestParserVersion) {
-			panic(fmt.Sprintf("parser version %s is not supported, must be between %s and %s", metadata.Version, MinimumParserVersion, LatestParserVersion))
-		}
-
-		handleFn := obj.Get("canHandle")
-		parseFn := obj.Get("parse")
-		if parseFn == nil || goja.IsUndefined(parseFn) {
-			panic("parser must provide a parse function")
-		}
-
-		parsers = append(parsers, newJSParser(vm, handleFn, parseFn, metadata))
-		return goja.Undefined()
-	}
-}
-
 func LoadPlugins(ctx context.Context, dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -162,80 +115,13 @@ func LoadPlugins(ctx context.Context, dir string) error {
 		}
 
 		vm := goja.New()
-		vm.Set("registerParser", registerParser(vm))
+		vm.Set("registerParser", jsRegisterParser(vm))
 		// Inject some utils to vm
 		logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("[plugin|parser]/%s", e.Name()))
-		vm.Set("console", map[string]any{
-			"log": func(args ...any) {
-				if len(args) == 0 {
-					return
-				}
-				if len(args) > 1 {
-					logger.Info(args[0], args[1:]...)
-				} else {
-					logger.Info(args[0])
-				}
-			},
-		})
+		vm.Set("console", jsConsole(logger))
 		// http fetch funcs
-		ghttp := vm.NewObject()
-		ghttp.Set("get", func(call goja.FunctionCall) goja.Value {
-			url := call.Argument(0).String()
-			resp, err := http.Get(url)
-			if err != nil {
-				return vm.ToValue(map[string]any{
-					"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
-				})
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				return vm.ToValue(map[string]any{
-					"error":  fmt.Sprintf("failed to fetch %s: %s", url, resp.Status),
-					"status": resp.StatusCode,
-				})
-			}
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return vm.ToValue(map[string]any{
-					"error": fmt.Errorf("failed to read response body: %w", err).Error(),
-				})
-			}
-			return vm.ToValue(string(body))
-		})
-		ghttp.Set("getJSON", func(call goja.FunctionCall) goja.Value {
-			url := call.Argument(0).String()
-
-			resp, err := http.Get(url)
-			if err != nil {
-				return vm.ToValue(map[string]any{
-					"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
-				})
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				return vm.ToValue(map[string]any{
-					"error":  fmt.Sprintf("failed to fetch %s: %s", url, resp.Status),
-					"status": resp.StatusCode,
-				})
-			}
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return vm.ToValue(map[string]any{
-					"error": fmt.Errorf("failed to read response body: %w", err).Error(),
-				})
-			}
-			var jsonData map[string]any
-			if err := json.Unmarshal(body, &jsonData); err != nil {
-				return vm.ToValue(map[string]any{
-					"error": fmt.Errorf("failed to unmarshal JSON: %w", err).Error(),
-				})
-			}
-			return vm.ToValue(map[string]any{
-				"data": jsonData,
-			})
-		})
-		vm.Set("ghttp", ghttp)
-
+		vm.Set("ghttp", jsGhttp(vm))
+		
 		if _, err := vm.RunString(string(code)); err != nil {
 			return fmt.Errorf("error loading plugin %s: %w", e.Name(), err)
 		}
