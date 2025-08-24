@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/duke-git/lancet/v2/convertor"
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/gotd/td/constant"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/telegram/uploader"
@@ -75,26 +75,40 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if tctx == nil {
 		return fmt.Errorf("failed to get telegram context")
 	}
+	// 去除前导斜杠并分隔路径, 当 len(parts):
+	// ==0, 存储到配置文件中的 chat_id, 随机文件名
+	// ==1, 视作只有文件名, 存储到配置文件中的 chat_id
+	// ==2, parts[0]: 视作要存储到的 chat_id, parts[1]: filename
+
+	parts := slice.Compact(strings.SplitN(strings.TrimPrefix(storagePath, "/"), "/", 4))
+	filename := ""
 	chatID := t.config.ChatID
-	if after, ok0 := strings.CutPrefix(convertor.ToString(chatID), "-100"); ok0 {
-		cid, err := strconv.ParseInt(after, 10, 64)
+	if len(parts) >= 1 {
+		filename = parts[len(parts)-1]
+	}
+	if len(parts) >= 2 {
+		cid, err := tgutil.ParseChatID(tctx, parts[0])
 		if err != nil {
 			return fmt.Errorf("failed to parse chat ID: %w", err)
 		}
 		chatID = cid
 	}
-	peer := tctx.PeerStorage.GetInputPeerById(chatID)
-	if peer == nil {
-		return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
-	}
 	mtype, err := mimetype.DetectReader(rs)
 	if err != nil {
 		return fmt.Errorf("failed to detect mimetype: %w", err)
 	}
-	filename := path.Base(storagePath)
 	if filename == "" {
 		filename = xid.New().String() + mtype.Extension()
 	}
+
+	if chatID < 0 {
+		chatID = chatID - constant.ZeroTDLibChannelID
+	}
+	peer := tctx.PeerStorage.GetInputPeerById(chatID)
+	if peer == nil {
+		return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
+	}
+
 	if _, err := rs.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("failed to seek reader: %w", err)
 	}
@@ -135,7 +149,6 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	case strings.HasPrefix(mtypeStr, "image/") && !strings.HasSuffix(mtypeStr, "webp"):
 		media = message.UploadedPhoto(file, caption)
 	}
-
 	sender := tctx.Sender
 	_, err = sender.WithUploader(upler).To(peer).Media(ctx, media)
 	return err

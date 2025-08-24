@@ -86,7 +86,7 @@ func ParseMessageLink(ctx *ext.Context, link string) (int64, int, error) {
 		return chatID, msgID, nil
 	case 3:
 		// https://t.me/c/123456789/123
-		// https://t.me/acherkrau/123/456 , 456: message thread ID
+		// https://t.me/acherkrau/123/456 , 123: topic id
 		chatPart, msgPart := paths[1], paths[2]
 		if paths[0] != "c" {
 			chatPart = paths[0]
