@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
@@ -47,12 +48,7 @@ func NewTask(
 	item *parser.Item,
 	progressTracker ProgressTracker,
 ) *Task {
-	client := &http.Client{
-		Transport: &http.Transport{
-			// [TODO] configure it via config
-			Proxy: http.ProxyFromEnvironment,
-		},
-	}
+	client := netutil.DefaultParserHTTPClient()
 	_, ok := stor.(storage.StorageCannotStream)
 	stream := config.C().Stream && !ok
 	return &Task{
