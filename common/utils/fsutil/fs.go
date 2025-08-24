@@ -3,6 +3,8 @@ package fsutil
 import (
 	"os"
 	"path/filepath"
+	"strings"
+	"unicode"
 
 	"github.com/gabriel-vasile/mimetype"
 )
@@ -54,4 +56,22 @@ func CreateFile(fp string) (*File, error) {
 		return nil, err
 	}
 	return &File{File: file}, nil
+}
+
+func NormalizePathname(s string) string {
+	specials := `\/:*?"<>|` + "\n\r\t"
+	var builder strings.Builder
+	for _, ch := range s {
+		if strings.ContainsRune(specials, ch) || unicode.IsControl(ch) {
+			builder.WriteRune('_')
+		} else {
+			builder.WriteRune(ch)
+		}
+	}
+
+	result := strings.TrimRightFunc(builder.String(), func(r rune) bool {
+		return r == '.' || r == '_' || unicode.IsSpace(r)
+	})
+
+	return result
 }

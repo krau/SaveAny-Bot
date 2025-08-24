@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
@@ -11,6 +12,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -74,6 +76,9 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	case tasktype.TaskTypeTphpics:
 		return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, data.TphPageNode, data.TphDirPath, data.TphPics, selectedStorage, msgID)
 	case tasktype.TaskTypeParseditem:
+		if len(data.ParsedItem.Resources) > 1 {
+			dirPath = path.Join(dirPath, fsutil.NormalizePathname(data.ParsedItem.Title))
+		}
 		shortcut.CreateAndAddParsedTaskWithEdit(ctx, selectedStorage, dirPath, data.ParsedItem, msgID, userID)
 	default:
 		log.FromContext(ctx).Errorf("Unsupported task type: %s", data.TaskType)

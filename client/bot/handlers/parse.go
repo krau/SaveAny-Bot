@@ -11,6 +11,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/parsers"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -106,5 +107,9 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 		logger.Errorf("Failed to send message: %s", err)
 		return dispatcher.EndGroups
 	}
-	return shortcut.CreateAndAddParsedTaskWithEdit(ctx, stor, "", item, msg.ID, userID)
+	dirPath := ""
+	if len(item.Resources) > 1 {
+		dirPath = fsutil.NormalizePathname(item.Title)
+	}
+	return shortcut.CreateAndAddParsedTaskWithEdit(ctx, stor, dirPath, item, msg.ID, userID)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/maputil"
@@ -61,16 +62,12 @@ func GenFileNameFromMessage(message tg.Message) string {
 			return fmt.Sprintf("%s_%s", tagStr, strconv.Itoa(message.GetID()))
 		}
 		text = lcstrutil.Substring(strings.Map(func(r rune) rune {
-			if r < 0x20 || r == 0x7F {
-				return '_'
-			}
 			switch r {
-			// invalid characters
 			case '/', '\\',
 				':', '*', '?', '"', '<', '>', '|':
 				return '_'
-			// empty
-			case ' ', '\t', '\r', '\n':
+			}
+			if unicode.IsControl(r) || unicode.IsSpace(r) {
 				return '_'
 			}
 			if validator.IsPrintable(string(r)) {
