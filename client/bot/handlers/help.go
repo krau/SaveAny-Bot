@@ -21,8 +21,10 @@ Save Any Bot - 转存你的 Telegram 文件
 /save [自定义文件名] - 保存文件
 /dir - 管理存储目录
 /rule - 管理规则
+/update - 检查更新并升级
 
-使用帮助: https://sabot.unv.app/usage/
+使用帮助: https://sabot.unv.app/usage
+反馈群组: https://t.me/ProjectSaveAny
 `
 	shortHash := config.GitCommit
 	if len(shortHash) > 7 {
