@@ -30,9 +30,6 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 		ctx.Reply(u, ext.ReplyTextString("没有找到版本信息"), nil)
 		return dispatcher.EndGroups
 	}
-	if latest.Version.Equals(currentV) {
-		return dispatcher.EndGroups
-	}
 	if latest.Version.LT(currentV) || latest.Version.Equals(currentV) {
 		ctx.Reply(u, ext.ReplyTextString(fmt.Sprintf("当前已经是最新版本: %s", config.Version)), nil)
 		return dispatcher.EndGroups
