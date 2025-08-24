@@ -80,7 +80,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	// ==1, 视作只有文件名, 存储到配置文件中的 chat_id
 	// ==2, parts[0]: 视作要存储到的 chat_id, parts[1]: filename
 
-	parts := slice.Compact(strings.SplitN(strings.TrimPrefix(storagePath, "/"), "/", 4))
+	parts := slice.Compact(strings.Split(strings.TrimPrefix(storagePath, "/"), "/"))
 	filename := ""
 	chatID := t.config.ChatID
 	if len(parts) >= 1 {
@@ -136,7 +136,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	caption := styling.Plain(filename)
 	docb := message.UploadedDocument(file, caption).
 		Filename(filename).
-		ForceFile(false).
+		ForceFile(t.config.ForceFile).
 		MIME(mtype.String())
 
 	var media message.MediaOption = docb

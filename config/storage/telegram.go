@@ -9,6 +9,7 @@ import (
 type TelegramStorageConfig struct {
 	BaseConfig
 	ChatID    int64 `toml:"chat_id" mapstructure:"chat_id" json:"chat_id"`
+	ForceFile bool  `toml:"force_file" mapstructure:"force_file" json:"force_file"`
 	RateLimit int   `toml:"rate_limit" mapstructure:"rate_limit" json:"rate_limit"`
 	RateBurst int   `toml:"rate_burst" mapstructure:"rate_burst" json:"rate_burst"`
 }
