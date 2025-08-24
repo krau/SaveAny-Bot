@@ -32,7 +32,7 @@ After=systemd-user-sessions.service
 Type=simple
 WorkingDirectory=/yourpath/
 ExecStart=/yourpath/saveany-bot
-Restart=on-failure
+Restart=always
 
 [Install]
 WantedBy=multi-user.target&lt;/code>&lt;/pre>
