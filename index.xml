@@ -2,9 +2,9 @@
  安装与更新
  &lt;a class="anchor" href="#%e5%ae%89%e8%a3%85%e4%b8%8e%e6%9b%b4%e6%96%b0">#&lt;/a>
 &lt;/h1>
-&lt;h2 id="从预编译文件部署">
- 从预编译文件部署
- &lt;a class="anchor" href="#%e4%bb%8e%e9%a2%84%e7%bc%96%e8%af%91%e6%96%87%e4%bb%b6%e9%83%a8%e7%bd%b2">#&lt;/a>
+&lt;h2 id="从预编译文件部署推荐">
+ 从预编译文件部署(推荐)
+ &lt;a class="anchor" href="#%e4%bb%8e%e9%a2%84%e7%bc%96%e8%af%91%e6%96%87%e4%bb%b6%e9%83%a8%e7%bd%b2%e6%8e%a8%e8%8d%90">#&lt;/a>
 &lt;/h2>
 &lt;p>在 &lt;a href="https://github.com/krau/SaveAny-Bot/releases">Release&lt;/a> 页面下载对应平台的二进制文件.&lt;/p>
 &lt;p>在解压后目录新建 &lt;code>config.toml&lt;/code> 文件, 参考 &lt;a href="../configuration">配置说明&lt;/a> 编辑配置文件&lt;/p>
