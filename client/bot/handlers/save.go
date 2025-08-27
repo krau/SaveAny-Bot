@@ -12,6 +12,8 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -28,7 +30,7 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 	replyTo := update.EffectiveMessage.ReplyToMessage
 	if replyTo == nil || replyTo.Message == nil {
-		ctx.Reply(update, ext.ReplyTextString(msgelem.SaveHelpText), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgSaveHelpText)), nil)
 		return dispatcher.EndGroups
 	}
 	genFilename := func() string {
@@ -72,7 +74,7 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	}
 	replyTo := update.EffectiveMessage.ReplyToMessage
 	if replyTo == nil || replyTo.Message == nil {
-		ctx.Reply(update, ext.ReplyTextString(msgelem.SaveHelpText), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgSaveHelpText)), nil)
 		return dispatcher.EndGroups
 	}
 	genFilename := func() string {

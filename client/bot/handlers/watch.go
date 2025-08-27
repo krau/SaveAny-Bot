@@ -7,7 +7,8 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
-	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/database"
 )
@@ -16,7 +17,7 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	args := strings.Split(update.EffectiveMessage.Text, " ")
 	if len(args) < 2 {
-		ctx.Reply(update, ext.ReplyTextString(msgelem.WatchHelpText), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchHelpText)), nil)
 		return dispatcher.EndGroups
 	}
 	userChatID := update.GetUserChat().GetID()

@@ -36,7 +36,7 @@ func Run(cmd *cobra.Command, _ []string) {
 
 	exitChan, err := initAll(ctx)
 	if err != nil {
-		logger.Fatal("Failed to initialize", "error", err)
+		logger.Fatal(i18n.T(i18nk.LifetimeInitfailed), "error", err)
 	}
 	go func() {
 		<-exitChan
@@ -46,35 +46,36 @@ func Run(cmd *cobra.Command, _ []string) {
 	core.Run(ctx)
 
 	<-ctx.Done()
-	logger.Info(i18n.T(i18nk.Exiting))
-	defer logger.Info(i18n.T(i18nk.Bye))
+	logger.Info(i18n.T(i18nk.LifetimeExiting))
+	defer logger.Info(i18n.T(i18nk.LifetimeBye))
 	cleanCache()
 }
 
 func initAll(ctx context.Context) (<-chan struct{}, error) {
 	if err := config.Init(ctx); err != nil {
-		fmt.Println("Failed to load config:", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 	cache.Init()
 	logger := log.FromContext(ctx)
 	i18n.Init(config.C().Lang)
-	logger.Info(i18n.T(i18nk.Initing))
+	logger.Info(i18n.T(i18nk.LifetimeIniting))
 	database.Init(ctx)
 	storage.LoadStorages(ctx)
 	if config.C().Parser.PluginEnable {
 		for _, dir := range config.C().Parser.PluginDirs {
 			if err := parsers.LoadPlugins(ctx, dir); err != nil {
-				logger.Error("Failed to load parser plugins", "dir", dir, "error", err)
+				logger.Error(i18n.T(i18nk.ParserPluginLoadFailed), "dir", dir, "error", err)
 			} else {
-				logger.Debug("Loaded parser plugins", "dir", dir)
+				logger.Debug(i18n.T(i18nk.ParserPluginLoadedDir), "dir", dir)
 			}
 		}
 	}
 	if config.C().Telegram.Userbot.Enable {
 		_, err := userclient.Login(ctx)
 		if err != nil {
-			logger.Fatalf("User client login failed: %s", err)
+			logger.Fatal(i18n.T(i18nk.LifetimeUserLoginFailed, map[string]any{
+				"Error": err,
+			}))
 		}
 	}
 	return bot.Init(ctx), nil
@@ -86,14 +87,14 @@ func cleanCache() {
 	}
 	if config.C().Temp.BasePath != "" && !config.C().Stream {
 		if slices.Contains([]string{"/", ".", "\\", ".."}, filepath.Clean(config.C().Temp.BasePath)) {
-			log.Error(i18n.T(i18nk.InvalidCacheDir, map[string]any{
+			log.Error(i18n.T(i18nk.ConfigErrInvalidCacheDir, map[string]any{
 				"Path": config.C().Temp.BasePath,
 			}))
 			return
 		}
 		currentDir, err := os.Getwd()
 		if err != nil {
-			log.Error(i18n.T(i18nk.GetWorkdirFailed, map[string]any{
+			log.Error(i18n.T(i18nk.ErrGetWorkdirFailed, map[string]any{
 				"Error": err,
 			}))
 			return
@@ -101,16 +102,16 @@ func cleanCache() {
 		cachePath := filepath.Join(currentDir, config.C().Temp.BasePath)
 		cachePath, err = filepath.Abs(cachePath)
 		if err != nil {
-			log.Error(i18n.T(i18nk.GetCacheAbsPathFailed, map[string]any{
+			log.Error(i18n.T(i18nk.ErrGetCacheAbsPathFailed, map[string]any{
 				"Error": err,
 			}))
 			return
 		}
-		log.Info(i18n.T(i18nk.CleaningCache, map[string]any{
+		log.Info(i18n.T(i18nk.LifetimeCleaningCache, map[string]any{
 			"Path": cachePath,
 		}))
 		if err := fsutil.RemoveAllInDir(cachePath); err != nil {
-			log.Error(i18n.T(i18nk.CleanCacheFailed, map[string]any{
+			log.Error(i18n.T(i18nk.ErrCleanCacheFailed, map[string]any{
 				"Error": err,
 			}))
 		}

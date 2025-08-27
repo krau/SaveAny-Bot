@@ -112,25 +112,28 @@ func Init(ctx context.Context) error {
 	storageNames := make(map[string]struct{})
 	for _, storage := range cfg.Storages {
 		if _, ok := storageNames[storage.GetName()]; ok {
-			return errors.New(i18n.TWithoutInit(cfg.Lang, i18nk.ConfigInvalidDuplicateStorageName, map[string]any{
+			return errors.New(i18n.TWithoutInit(cfg.Lang, i18nk.ConfigErrDuplicateStorageName, map[string]any{
 				"Name": storage.GetName(),
 			}))
 		}
 		storageNames[storage.GetName()] = struct{}{}
 	}
 
-	fmt.Println(i18n.TWithoutInit(cfg.Lang, i18nk.LoadedStorages, map[string]any{
+	fmt.Println(i18n.TWithoutInit(cfg.Lang, i18nk.ConfigLoadedStorages, map[string]any{
 		"Count": len(cfg.Storages),
 	}))
 	for _, storage := range cfg.Storages {
 		fmt.Printf("  - %s (%s)\n", storage.GetName(), storage.GetType())
 	}
 
-	if cfg.Workers < 1 || cfg.Retry < 1 {
-		return errors.New(i18n.TWithoutInit(cfg.Lang, i18nk.ConfigInvalidWorkersOrRetry, map[string]any{
-			"Workers": cfg.Workers,
-			"Retry":   cfg.Retry,
-		}))
+	if cfg.Workers < 1 {
+		cfg.Workers = 1
+	}
+	if cfg.Threads < 1 {
+		cfg.Threads = 1
+	}
+	if cfg.Retry < 1 {
+		cfg.Retry = 1
 	}
 
 	for _, storage := range cfg.Storages {

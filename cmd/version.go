@@ -28,7 +28,7 @@ var upgradeCmd = &cobra.Command{
 		v := semver.MustParse(config.Version)
 		latest, err := selfupdate.UpdateSelf(v, config.GitRepo)
 		if err != nil {
-			fmt.Println("Binary update failed:", err)
+			fmt.Println("Update failed:", err)
 			return
 		}
 		if latest.Version.Equals(v) {

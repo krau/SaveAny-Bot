@@ -1,0 +1,62 @@
+lifetime:
+  initing: 正在启动
+  initfailed: 初始化失败
+  exiting: 正在退出
+  user_login_failed: "用户登录失败: {{.Error}}"
+  cleaning_cache: "正在清理缓存 {{.Path}}"
+  bye: 已退出
+config:
+  loaded_storages: "已加载 {{.Count}} 个存储后端"
+  err:
+    invalid_cache_dir: "无效的缓存目录: {{.Path}}，请检查配置文件"
+    duplicate_storage_name: "存储名称 '{{.Name}}' 重复，请检查配置文件"
+err:
+  get_workdir_failed: "获取工作目录失败: {{.Error}}"
+  get_cache_abs_path_failed: "获取缓存绝对路径失败: {{.Error}}"
+  clean_cache_failed: "清理缓存失败: {{.Error}}"
+parser:
+  plugin:
+    load_failed: 加载解析器插件失败
+    loaded_dir: 解析器插件已加载
+bot:
+  msg:
+    help_text_fmt: |
+      Save Any Bot - 转存你的 Telegram 文件
+      版本: %s , 提交: %s
+
+      命令:
+      /start - 开始使用
+      /help - 显示帮助
+      /silent - 开关静默模式
+      /storage - 设置默认存储位置
+      /save [自定义文件名] - 保存文件
+      /dir - 管理存储目录
+      /rule - 管理规则
+      /update - 检查更新并升级
+
+      使用帮助: https://sabot.unv.app/usage
+      反馈群组: https://t.me/ProjectSaveAny
+    save_help_text: |
+      使用方法:
+
+      1. 使用该命令回复要保存的文件, 可选文件名参数.
+      示例:
+      /save custom_file_name.mp4
+
+      2. 设置默认存储后, 发送 /save <频道ID/用户名> <消息ID范围> 来批量保存文件. 遵从存储规则, 若未匹配到任何规则则使用默认存储.
+      示例:
+      /save @acherkrau 114-514
+    watch_help_text: |
+      使用 /watch 命令监听一个聊天的消息, 并自动保存到默认存储中, 遵从存储规则.
+
+      命令语法:
+      /watch <chat_id> [filter]
+
+      参数:
+      - <chat_id>: 聊天的 ID 或用户名
+      - [filter]: 可选, 格式为 过滤器类型:表达式 , 所有支持类型的过滤器请查看文档
+
+      命令示例:
+      /watch 2229835658 msgre:.*plana.*
+
+      这将监听 ID 为 2229835658 的聊天, 并转存所有包含 "plana" 的媒体消息
