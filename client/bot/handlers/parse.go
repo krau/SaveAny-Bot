@@ -4,6 +4,7 @@ package handlers
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
@@ -12,6 +13,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/parsers"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -21,6 +23,10 @@ import (
 func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 	logger := log.FromContext(ctx)
 	text := u.EffectiveMessage.Text
+	entityUrls := tgutil.ExtractMessageEntityUrls(u.EffectiveMessage.Message)
+	if len(entityUrls) > 0 {
+		text += "\n" + strings.Join(entityUrls, "\n")
+	}
 	ok, pser := parsers.CanHandle(text)
 	if !ok {
 		return dispatcher.EndGroups

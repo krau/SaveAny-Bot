@@ -10,6 +10,7 @@ import (
 	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
+	sabotfilters "github.com/krau/SaveAny-Bot/client/bot/handlers/utils/filters"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/re"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
@@ -47,16 +48,8 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeSetDefault), handleSetDefaultCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeCancel), handleCancelCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeConfig), handleConfigCallback))
-	linkRegexFilter, err := filters.Message.Regex(re.TgMessageLinkRegexString)
-	if err != nil {
-		panic("failed to create regex filter: " + err.Error())
-	}
-	disp.AddHandler(handlers.NewMessage(linkRegexFilter, handleSilentMode(handleMessageLink, handleSilentSaveLink)))
-	telegraphUrlRegexFilter, err := filters.Message.Regex(re.TelegraphUrlRegexString)
-	if err != nil {
-		panic("failed to create Telegraph URL regex filter: " + err.Error())
-	}
-	disp.AddHandler(handlers.NewMessage(telegraphUrlRegexFilter, handleSilentMode(handleTelegraphUrlMessage, handleSilentSaveTelegraph)))
+	disp.AddHandler(handlers.NewMessage(sabotfilters.RegexUrl(regexp.MustCompile(re.TgMessageLinkRegexString)), handleSilentMode(handleMessageLink, handleSilentSaveLink)))
+	disp.AddHandler(handlers.NewMessage(sabotfilters.RegexUrl(regexp.MustCompile(re.TelegraphUrlRegexString)), handleSilentMode(handleTelegraphUrlMessage, handleSilentSaveTelegraph)))
 	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleSilentMode(handleMediaMessage, handleSilentSaveMedia)))
 	disp.AddHandler(handlers.NewMessage(filters.Message.Text, handleSilentMode(handleTextMessage, handleSilentSaveText)))
 

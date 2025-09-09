@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf16"
 
 	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/maputil"
@@ -305,4 +306,50 @@ func GetGroupedMessages(ctx *ext.Context, chatID int64, msg *tg.Message) ([]*tg.
 		}
 	}
 	return groupedMessages, nil
+}
+
+func ExtractMessageEntityUrls(msg *tg.Message) []string {
+	if len(msg.Entities) == 0 {
+		return nil
+	}
+	msgText := msg.GetMessage()
+	if msgText == "" {
+		return nil
+	}
+
+	runes := []rune(msgText)
+	utf16Codes := utf16.Encode(runes)
+
+	var urls []string
+	for _, entity := range msg.Entities {
+		switch ent := entity.(type) {
+		case *tg.MessageEntityTextURL:
+			urls = append(urls, ent.GetURL())
+		case *tg.MessageEntityURL:
+			start := ent.Offset
+			end := ent.Offset + ent.Length
+			if start < 0 || end > len(utf16Codes) {
+				continue
+			}
+			subRunes := utf16.Decode(utf16Codes[start:end])
+			urls = append(urls, string(subRunes))
+		}
+	}
+	return urls
+}
+
+func ExtractMessageEntityUrlsText(msg *tg.Message) string {
+	if msg == nil {
+		return ""
+	}
+	urls := ExtractMessageEntityUrls(msg)
+	if len(urls) == 0 {
+		return msg.GetMessage()
+	}
+	var sb strings.Builder
+	for _, url := range urls {
+		sb.WriteString(url)
+		sb.WriteString(" ")
+	}
+	return sb.String()
 }
