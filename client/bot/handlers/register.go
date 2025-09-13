@@ -24,6 +24,27 @@ import (
 	"github.com/rs/xid"
 )
 
+type DescCommandHandler struct {
+	Cmd     string
+	Desc    string
+	handler func(ctx *ext.Context, u *ext.Update) error
+}
+
+var CommandHandlers = []DescCommandHandler{
+	{"start", "开始使用", handleHelpCmd},
+	{"silent", "切换静默模式", handleSilentCmd},
+	{"storage", "设置默认存储端", handleStorageCmd},
+	{"dir", "管理存储文件夹", handleDirCmd},
+	{"rule", "管理自动存储规则", handleRuleCmd},
+	{"watch", "监听聊天(UserBot)", handleWatchCmd},
+	{"unwatch", "取消监听聊天(UserBot)", handleUnwatchCmd},
+	{"save", "保存文件", handleSilentMode(handleSaveCmd, handleSilentSaveReplied)},
+	{"config", "修改配置", handleConfigCmd},
+	{"fnametmpl", "设置文件命名模板", handleConfigFnameTmpl},
+	{"update", "检查更新", handleUpdateCmd},
+	{"help", "显示帮助", handleHelpCmd},
+}
+
 func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewMessage(filters.Message.ChatType(filters.ChatTypeChannel), func(ctx *ext.Context, u *ext.Update) error {
 		return dispatcher.EndGroups
@@ -32,18 +53,9 @@ func Register(disp dispatcher.Dispatcher) {
 		return dispatcher.EndGroups
 	}))
 	disp.AddHandler(handlers.NewMessage(filters.Message.All, checkPermission))
-	disp.AddHandler(handlers.NewCommand("start", handleHelpCmd))
-	disp.AddHandler(handlers.NewCommand("help", handleHelpCmd))
-	disp.AddHandler(handlers.NewCommand("silent", handleSilentCmd))
-	disp.AddHandler(handlers.NewCommand("storage", handleStorageCmd))
-	disp.AddHandler(handlers.NewCommand("dir", handleDirCmd))
-	disp.AddHandler(handlers.NewCommand("rule", handleRuleCmd))
-	disp.AddHandler(handlers.NewCommand("watch", handleWatchCmd))
-	disp.AddHandler(handlers.NewCommand("unwatch", handleUnwatchCmd))
-	disp.AddHandler(handlers.NewCommand("save", handleSilentMode(handleSaveCmd, handleSilentSaveReplied)))
-	disp.AddHandler(handlers.NewCommand("config", handleConfigCmd))
-	disp.AddHandler(handlers.NewCommand("fnametmpl", handleConfigFnameTmpl))
-	disp.AddHandler(handlers.NewCommand("update", handleUpdateCmd))
+	for _, info := range CommandHandlers {
+		disp.AddHandler(handlers.NewCommand(info.Cmd, info.handler))
+	}
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("update"), handleUpdateCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeAdd), handleAddCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeSetDefault), handleSetDefaultCallback))

@@ -19,7 +19,7 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-func Init(ctx context.Context) (<-chan struct{}) {
+func Init(ctx context.Context) <-chan struct{} {
 	log.FromContext(ctx).Info("初始化 Bot...")
 	resultChan := make(chan struct {
 		client *gotgproto.Client
@@ -75,18 +75,9 @@ func Init(ctx context.Context) (<-chan struct{}) {
 		client.API().BotsSetBotCommands(ctx, &tg.BotsSetBotCommandsRequest{
 			Scope: &tg.BotCommandScopeDefault{},
 		})
-		commands := []tg.BotCommand{
-			{Command: "start", Description: "开始使用"},
-			{Command: "help", Description: "显示帮助"},
-			{Command: "silent", Description: "开启/关闭静默模式"},
-			{Command: "storage", Description: "设置默认存储端"},
-			{Command: "save", Description: "保存文件"},
-			{Command: "dir", Description: "管理存储文件夹"},
-			{Command: "rule", Description: "管理规则"},
-		}
-		if config.C().Telegram.Userbot.Enable {
-			commands = append(commands, tg.BotCommand{Command: "watch", Description: "监听聊天"})
-			commands = append(commands, tg.BotCommand{Command: "unwatch", Description: "取消监听聊天"})
+		commands := make([]tg.BotCommand, 0, len(handlers.CommandHandlers))
+		for _, info := range handlers.CommandHandlers {
+			commands = append(commands, tg.BotCommand{Command: info.Cmd, Description: info.Desc})
 		}
 		_, err = client.API().BotsSetBotCommands(ctx, &tg.BotsSetBotCommandsRequest{
 			Scope:    &tg.BotCommandScopeDefault{},
