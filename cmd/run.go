@@ -36,7 +36,7 @@ func Run(cmd *cobra.Command, _ []string) {
 
 	exitChan, err := initAll(ctx)
 	if err != nil {
-		logger.Fatal(i18n.T(i18nk.LifetimeInitfailed), "error", err)
+		logger.Fatal("Init failed", "error", err)
 	}
 	go func() {
 		<-exitChan
