@@ -21,7 +21,6 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
-	"github.com/krau/SaveAny-Bot/pkg/enums/fnamest"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
@@ -42,15 +41,15 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *
 		logger.Errorf("Failed to reply: %s", err)
 		return nil, nil, dispatcher.EndGroups
 	}
-	options := []tfile.TGFileOption{
-		tfile.WithMessage(message),
-	}
-	if len(tfileopts) > 0 {
-		options = append(options, tfileopts...)
-	} else {
-		options = append(options, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message)))
-	}
-	file, err = tfile.FromMediaMessage(media, ctx.Raw, message, options...)
+	// options := []tfile.TGFileOption{
+	// 	tfile.WithMessage(message),
+	// }
+	// if len(tfileopts) > 0 {
+	// 	options = append(options, tfileopts...)
+	// } else {
+	// 	options = append(options, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message)))
+	// }
+	file, err = tfile.FromMediaMessage(media, ctx.Raw, message, tfileopts...)
 	if err != nil {
 		logger.Errorf("Failed to get file from media: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
@@ -100,14 +99,15 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 			logger.Debugf("message %d has no media", msg.GetID())
 			return
 		}
-		var opt tfile.TGFileOption
-		switch user.FilenameStrategy {
-		case fnamest.Message.String():
-			opt = tfile.WithName(tgutil.GenFileNameFromMessage(*msg))
-		default:
-			opt = tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg))
-		}
-		file, err := tfile.FromMediaMessage(media, client, msg, opt)
+		// var opt tfile.TGFileOption
+		// switch user.FilenameStrategy {
+		// case fnamest.Message.String():
+		// 	opt = tfile.WithName(tgutil.GenFileNameFromMessage(*msg))
+		// default:
+		// 	opt = tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg))
+		// }
+		opts := mediautil.TfileOptions(ctx, user, msg)
+		file, err := tfile.FromMediaMessage(media, client, msg, opts...)
 		if err != nil {
 			logger.Errorf("failed to create file from media: %s", err)
 			return

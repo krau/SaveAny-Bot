@@ -16,6 +16,8 @@ const (
 	Default FnameST = "default"
 	// Message is a FnameST of type message.
 	Message FnameST = "message"
+	// Template is a FnameST of type template.
+	Template FnameST = "template"
 )
 
 var ErrInvalidFnameST = fmt.Errorf("not a valid FnameST, try [%s]", strings.Join(_FnameSTNames, ", "))
@@ -23,6 +25,7 @@ var ErrInvalidFnameST = fmt.Errorf("not a valid FnameST, try [%s]", strings.Join
 var _FnameSTNames = []string{
 	string(Default),
 	string(Message),
+	string(Template),
 }
 
 // FnameSTNames returns a list of possible string values of FnameST.
@@ -37,6 +40,7 @@ func FnameSTValues() []FnameST {
 	return []FnameST{
 		Default,
 		Message,
+		Template,
 	}
 }
 
@@ -53,8 +57,9 @@ func (x FnameST) IsValid() bool {
 }
 
 var _FnameSTValue = map[string]FnameST{
-	"default": Default,
-	"message": Message,
+	"default":  Default,
+	"message":  Message,
+	"template": Template,
 }
 
 // ParseFnameST attempts to convert a string to a FnameST.

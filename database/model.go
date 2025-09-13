@@ -14,6 +14,7 @@ type User struct {
 	Rules            []Rule
 	WatchChats       []WatchChat
 	FilenameStrategy string
+	FilenameTemplate string
 }
 
 type WatchChat struct {

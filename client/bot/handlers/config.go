@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strings"
+	"text/template"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
@@ -99,5 +100,43 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 		Message:     fmt.Sprintf("请选择文件名策略, 当前策略: %s", fnamest.FnameSTDisplay[currentSt]),
 		ReplyMarkup: markup,
 	})
+	return dispatcher.EndGroups
+}
+
+func handleConfigFnameTmpl(ctx *ext.Context, update *ext.Update) error {
+	userID := update.GetUserChat().GetID()
+	user, err := database.GetUserByChatID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	args := strings.Fields(string(update.EffectiveMessage.Text))
+	if len(args) <= 1 {
+		text := `使用该命令设置文件名模板, 示例:
+/fnametmpl 图片_{{.msgid}}_{{.msgdate}}.jpg
+
+可用变量:
+- {{.msgid}}: 消息ID
+- {{.msgtags}}: 消息中的标签, 将以下划线分隔输出
+- {{.msggen}}: 根据消息生成的文件名
+- {{.msgdate}}: 消息日期, 格式 YYYY-MM-DD_HH-MM-SS
+- {{.origname}}: 媒体的原始文件名 (如果有)`
+		if user.FilenameTemplate != "" {
+			text += fmt.Sprintf("\n\n当前模板: %s", user.FilenameTemplate)
+		}
+		text += "\n\n模板仅在文件名策略设置为 '自定义模板' 时生效, 且模板解析错误时会回退到默认文件名"
+		ctx.Reply(update, ext.ReplyTextString(text), nil)
+		return dispatcher.EndGroups
+	}
+	newTmpl := strings.Join(args[1:], " ")
+	_, err = template.New("filename").Parse(newTmpl)
+	if err != nil {
+		ctx.Reply(update, ext.ReplyTextString("无效的模板, 请检查语法\n"+err.Error()), nil)
+		return dispatcher.EndGroups
+	}
+	user.FilenameTemplate = newTmpl
+	if err := database.UpdateUser(ctx, user); err != nil {
+		return err
+	}
+	ctx.Reply(update, ext.ReplyTextString("已更新文件名模板"), nil)
 	return dispatcher.EndGroups
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/database"
-	"github.com/krau/SaveAny-Bot/pkg/enums/fnamest"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -33,12 +32,13 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	tfOpts := make([]tfile.TGFileOption, 0)
-	switch userDB.FilenameStrategy {
-	case fnamest.Message.String():
-		tfOpts = append(tfOpts, tfile.WithName(tgutil.GenFileNameFromMessage(*message)))
-	default:
-	}
+	// tfOpts := make([]tfile.TGFileOption, 0)
+	// switch userDB.FilenameStrategy {
+	// case fnamest.Message.String():
+	// 	tfOpts = append(tfOpts, tfile.WithName(tgutil.GenFileNameFromMessage(*message)))
+	// default:
+	// }
+	tfOpts := mediautil.TfileOptions(ctx, userDB, message)
 	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, message, tfOpts...)
 	if err != nil {
 		return err
@@ -74,12 +74,13 @@ func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	tfOpts := make([]tfile.TGFileOption, 0)
-	switch userDB.FilenameStrategy {
-	case fnamest.Message.String():
-		tfOpts = append(tfOpts, tfile.WithName(tgutil.GenFileNameFromMessage(*message)))
-	default:
-	}
+	// tfOpts := make([]tfile.TGFileOption, 0)
+	// switch userDB.FilenameStrategy {
+	// case fnamest.Message.String():
+	// 	tfOpts = append(tfOpts, tfile.WithName(tgutil.GenFileNameFromMessage(*message)))
+	// default:
+	// }
+	tfOpts := mediautil.TfileOptions(ctx, userDB, message)
 	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, message, tfOpts...)
 	if err != nil {
 		return err

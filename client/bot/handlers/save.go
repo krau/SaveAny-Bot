@@ -16,6 +16,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
+	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 
@@ -33,18 +34,27 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgSaveHelpText)), nil)
 		return dispatcher.EndGroups
 	}
-	genFilename := func() string {
-		if len(args) > 1 {
-			return args[1]
-		}
-		filename := tgutil.GenFileNameFromMessage(*replyTo.Message)
-		return filename
-	}()
-	option := tfile.WithNameIfEmpty(genFilename)
-	if len(args) > 1 {
-		option = tfile.WithName(genFilename)
+	// genFilename := func() string {
+	// 	if len(args) > 1 {
+	// 		return args[1]
+	// 	}
+	// 	filename := tgutil.GenFileNameFromMessage(*replyTo.Message)
+	// 	return filename
+	// }()
+	// option := tfile.WithNameIfEmpty(genFilename)
+	// if len(args) > 1 {
+	// 	option = tfile.WithName(genFilename)
+	// }
+	userDB, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
+	if err != nil {
+		return err
 	}
-	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, replyTo.Message, option)
+	opts := mediautil.TfileOptions(ctx, userDB, replyTo.Message)
+	if len(args) > 1 {
+		// custom filename via command arg
+		opts = append(opts, tfile.WithName(strings.Join(args[1:], " ")))
+	}
+	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, replyTo.Message, opts...)
 	if err != nil {
 		return err
 	}
@@ -77,18 +87,27 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgSaveHelpText)), nil)
 		return dispatcher.EndGroups
 	}
-	genFilename := func() string {
-		if len(args) > 1 {
-			return args[1]
-		}
-		filename := tgutil.GenFileNameFromMessage(*replyTo.Message)
-		return filename
-	}()
-	option := tfile.WithNameIfEmpty(genFilename)
-	if len(args) > 1 {
-		option = tfile.WithName(genFilename)
+	// genFilename := func() string {
+	// 	if len(args) > 1 {
+	// 		return args[1]
+	// 	}
+	// 	filename := tgutil.GenFileNameFromMessage(*replyTo.Message)
+	// 	return filename
+	// }()
+	// option := tfile.WithNameIfEmpty(genFilename)
+	// if len(args) > 1 {
+	// 	option = tfile.WithName(genFilename)
+	// }
+	userDB, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
+	if err != nil {
+		return err
 	}
-	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, replyTo.Message, option)
+	opts := mediautil.TfileOptions(ctx, userDB, replyTo.Message)
+	if len(args) > 1 {
+		// custom filename via command arg
+		opts = append(opts, tfile.WithName(strings.Join(args[1:], " ")))
+	}
+	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, replyTo.Message, opts...)
 	if err != nil {
 		return err
 	}
@@ -126,7 +145,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		return dispatcher.EndGroups
 	}
 
-	// TODO: generator istead of get all messages
+	// [TODO]: generator istead of get all messages
 	msgs, err := tgutil.GetMessagesRange(ctx, chatID, int(startID), int(endID))
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString("获取消息失败: "+err.Error()), nil)
