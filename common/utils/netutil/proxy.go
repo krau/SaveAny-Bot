@@ -43,11 +43,10 @@ func NewProxyHTTPClient(proxyUrl string) (*http.Client, error) {
 			},
 		}, nil
 	case "socks5":
-		dialer, err := proxy.SOCKS5("tcp", u.Host, nil, proxy.Direct)
+		dialer, err := proxy.FromURL(u, proxy.Direct)
 		if err != nil {
 			return nil, err
 		}
-
 		return &http.Client{
 			Transport: &http.Transport{
 				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
