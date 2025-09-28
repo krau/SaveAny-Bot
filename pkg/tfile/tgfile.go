@@ -14,6 +14,7 @@ type TGFile interface {
 	Dler() downloader.Client // witch client to use for downloading
 	Size() int64
 	Name() string
+	SetName(name string)
 }
 
 type TGFileMessage interface {
@@ -27,6 +28,10 @@ type tgFile struct {
 	name     string
 	message  *tg.Message
 	dler     downloader.Client
+}
+
+func (f *tgFile) SetName(name string) {
+	f.name = name
 }
 
 func (f *tgFile) Location() tg.InputFileLocationClass {
