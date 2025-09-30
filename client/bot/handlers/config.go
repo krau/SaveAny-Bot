@@ -119,7 +119,9 @@ func handleConfigFnameTmpl(ctx *ext.Context, update *ext.Update) error {
 - {{.msgtags}}: 消息中的标签, 将以下划线分隔输出
 - {{.msggen}}: 根据消息生成的文件名
 - {{.msgdate}}: 消息日期, 格式 YYYY-MM-DD_HH-MM-SS
-- {{.origname}}: 媒体的原始文件名 (如果有)`
+- {{.origname}}: 媒体的原始文件名 (如果有)
+- {{.chatid}}: 消息的聊天ID
+`
 		if user.FilenameTemplate != "" {
 			text += fmt.Sprintf("\n\n当前模板: %s", user.FilenameTemplate)
 		}

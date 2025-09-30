@@ -26,11 +26,13 @@ func IsSupported(media tg.MessageMediaClass) bool {
 }
 
 type FilenameTemplateData struct {
-	MsgID    string `json:"msgid,omitempty"`
-	MsgTags  string `json:"msgtags,omitempty"`
-	MsgGen   string `json:"msggen,omitempty"`
-	MsgDate  string `json:"msgdate,omitempty"`
-	OrigName string `json:"origname,omitempty"`
+	MsgID     string `json:"msgid,omitempty"`
+	MsgTags   string `json:"msgtags,omitempty"`
+	MsgGen    string `json:"msggen,omitempty"`
+	MsgDate   string `json:"msgdate,omitempty"`
+	OrigName  string `json:"origname,omitempty"`
+	ChatID    string `json:"chatid,omitempty"`
+	ChatTitle string `json:"chattitle,omitempty"`
 }
 
 func (f FilenameTemplateData) ToMap() map[string]string {
@@ -40,6 +42,7 @@ func (f FilenameTemplateData) ToMap() map[string]string {
 		"msggen":   f.MsgGen,
 		"msgdate":  f.MsgDate,
 		"origname": f.OrigName,
+		"chatid":   f.ChatID,
 	}
 }
 
@@ -61,35 +64,7 @@ func TfileOptions(ctx context.Context, user *database.User, message *tg.Message)
 			fnameOpt = tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message))
 			break
 		}
-		data := FilenameTemplateData{
-			MsgID: func() string {
-				id := message.GetID()
-				if id == 0 {
-					return ""
-				}
-				return fmt.Sprintf("%d", id)
-			}(),
-			MsgTags: func() string {
-				tags := strutil.ExtractTagsFromText(message.GetMessage())
-				if len(tags) == 0 {
-					return ""
-				}
-				return strings.Join(tags, "_")
-			}(),
-			MsgGen: tgutil.GenFileNameFromMessage(*message),
-			OrigName: func() string {
-				f, _ := tgutil.GetMediaFileName(message.Media)
-				return f
-			}(),
-			MsgDate: func() string {
-				date := message.GetDate()
-				if date == 0 {
-					return ""
-				}
-				t := time.Unix(int64(date), 0)
-				return t.Format("2006-01-02_15-04-05")
-			}(),
-		}.ToMap()
+		data := BuildFilenameTemplateData(message)
 		var sb strings.Builder
 		err = tmpl.Execute(&sb, data)
 		if err != nil {
@@ -103,4 +78,65 @@ func TfileOptions(ctx context.Context, user *database.User, message *tg.Message)
 	}
 	opts = append(opts, fnameOpt, tfile.WithMessage(message))
 	return opts
+}
+
+func BuildFilenameTemplateData(message *tg.Message) map[string]string {
+	data := FilenameTemplateData{
+		MsgID: func() string {
+			id := message.GetID()
+			if id == 0 {
+				return ""
+			}
+			return fmt.Sprintf("%d", id)
+		}(),
+		MsgTags: func() string {
+			tags := strutil.ExtractTagsFromText(message.GetMessage())
+			if len(tags) == 0 {
+				return ""
+			}
+			return strings.Join(tags, "_")
+		}(),
+		MsgGen: tgutil.GenFileNameFromMessage(*message),
+		OrigName: func() string {
+			f, _ := tgutil.GetMediaFileName(message.Media)
+			return f
+		}(),
+		MsgDate: func() string {
+			date := message.GetDate()
+			if date == 0 {
+				return ""
+			}
+			t := time.Unix(int64(date), 0)
+			return t.Format("2006-01-02_15-04-05")
+		}(),
+		ChatID: func() string {
+			// 如果消息是频道的(从消息链接中fetch的) 直接使用其chat id, 无论它是否是从其他来源转发的
+			if message.GetPost() {
+				peer := message.GetPeerID()
+				switch p := peer.(type) {
+				case *tg.PeerChannel:
+					return intToStringOmitZero(p.ChannelID)
+				default: // impossible case
+					return intToStringOmitZero(tgutil.ChatIdFromPeer(peer))
+				}
+			}
+			fwdHeader, ok := message.GetFwdFrom()
+			if !ok {
+				return intToStringOmitZero(tgutil.ChatIdFromPeer(message.GetPeerID()))
+			}
+			fwdFrom, ok := fwdHeader.GetFromID()
+			if !ok {
+				return intToStringOmitZero(tgutil.ChatIdFromPeer(message.GetPeerID()))
+			}
+			return intToStringOmitZero(tgutil.ChatIdFromPeer(fwdFrom))
+		}(),
+	}.ToMap()
+	return data
+}
+
+func intToStringOmitZero(i int64) string {
+	if i == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d", i)
 }
