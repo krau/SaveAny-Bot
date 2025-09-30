@@ -26,13 +26,12 @@ func IsSupported(media tg.MessageMediaClass) bool {
 }
 
 type FilenameTemplateData struct {
-	MsgID     string `json:"msgid,omitempty"`
-	MsgTags   string `json:"msgtags,omitempty"`
-	MsgGen    string `json:"msggen,omitempty"`
-	MsgDate   string `json:"msgdate,omitempty"`
-	OrigName  string `json:"origname,omitempty"`
-	ChatID    string `json:"chatid,omitempty"`
-	ChatTitle string `json:"chattitle,omitempty"`
+	MsgID    string `json:"msgid,omitempty"`
+	MsgTags  string `json:"msgtags,omitempty"`
+	MsgGen   string `json:"msggen,omitempty"`
+	MsgDate  string `json:"msgdate,omitempty"`
+	OrigName string `json:"origname,omitempty"`
+	ChatID   string `json:"chatid,omitempty"`
 }
 
 func (f FilenameTemplateData) ToMap() map[string]string {
