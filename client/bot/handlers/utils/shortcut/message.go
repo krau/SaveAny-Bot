@@ -190,6 +190,7 @@ func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*type
 		ctx.Reply(update, ext.ReplyTextString("解析 telegraph 路径失败: "+err.Error()), nil)
 		return nil, nil, dispatcher.EndGroups
 	}
+	tphdir = strings.TrimSpace(tphdir)
 	msg, err := ctx.Reply(update, ext.ReplyTextString("正在获取 telegraph 页面..."), nil)
 	if err != nil {
 		logger.Errorf("Failed to reply to update: %s", err)
