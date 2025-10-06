@@ -223,6 +223,10 @@ func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*type
 		}
 		if node.Tag == "img" {
 			if src, ok := node.Attrs["src"]; ok {
+				if strings.HasPrefix(src, "/file/") {
+					// handle images on telegra.ph server
+					src = "https://telegra.ph" + src
+				}
 				imgs = append(imgs, src)
 			}
 		}
