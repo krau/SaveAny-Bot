@@ -196,6 +196,7 @@ func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*type
 		logger.Errorf("Failed to reply to update: %s", err)
 		return nil, nil, dispatcher.EndGroups
 	}
+	logger.Debugf("Fetching telegraph page: %s", pagepath)
 	page, err := tphutil.DefaultClient().GetPage(ctx, pagepath)
 	if err != nil {
 		logger.Errorf("Failed to get telegraph page: %s", err)

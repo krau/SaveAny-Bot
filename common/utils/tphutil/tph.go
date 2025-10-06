@@ -2,6 +2,7 @@ package tphutil
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
@@ -41,6 +42,10 @@ func GetNodeImages(node telegraph.Node) []string {
 
 	if nodeElement.Tag == "img" {
 		if src, exists := nodeElement.Attrs["src"]; exists {
+			if strings.HasPrefix(src, "/file/") {
+				// handle images on telegra.ph server
+				src = "https://telegra.ph" + src
+			}
 			srcs = append(srcs, src)
 		}
 	}
