@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"path"
 	"regexp"
 	"strings"
@@ -88,6 +89,36 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	ctx.Reply(update, ext.ReplyTextString("已开始监听聊天: "+chatArg), nil)
+	return dispatcher.EndGroups
+}
+
+func handleLswatchCmd(ctx *ext.Context, update *ext.Update) error {
+	logger := log.FromContext(ctx)
+	userChatID := update.GetUserChat().GetID()
+	user, err := database.GetUserByChatID(ctx, userChatID)
+	if err != nil {
+		logger.Errorf("获取用户失败: %s", err)
+		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
+		return dispatcher.EndGroups
+	}
+	chats := user.WatchChats
+	if len(chats) == 0 {
+		ctx.Reply(update, ext.ReplyTextString("当前没有监听任何聊天"), nil)
+		return dispatcher.EndGroups
+	}
+	var sb strings.Builder
+	sb.WriteString("当前监听的聊天:\n")
+	for _, chat := range chats {
+		sb.WriteString("- ")
+		sb.WriteString(fmt.Sprintf("%d", chat.ChatID))
+		if chat.Filter != "" {
+			sb.WriteString(" (过滤器: ")
+			sb.WriteString(chat.Filter)
+			sb.WriteString(")")
+		}
+		sb.WriteString("\n")
+	}
+	ctx.Reply(update, ext.ReplyTextString(sb.String()), nil)
 	return dispatcher.EndGroups
 }
 

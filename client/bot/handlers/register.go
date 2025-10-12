@@ -28,6 +28,7 @@ var CommandHandlers = []DescCommandHandler{
 	{"rule", "管理自动存储规则", handleRuleCmd},
 	{"watch", "监听聊天(UserBot)", handleWatchCmd},
 	{"unwatch", "取消监听聊天(UserBot)", handleUnwatchCmd},
+	{"lswatch", "列出监听的聊天(UserBot)", handleLswatchCmd},
 	{"save", "保存文件", handleSilentMode(handleSaveCmd, handleSilentSaveReplied)},
 	{"config", "修改配置", handleConfigCmd},
 	{"fnametmpl", "设置文件命名模板", handleConfigFnameTmpl},
