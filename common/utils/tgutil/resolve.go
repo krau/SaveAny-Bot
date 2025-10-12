@@ -14,7 +14,7 @@ import (
 func ParseChatID(ctx *ext.Context, idOrUsername string) (int64, error) {
 	idOrUsername = strings.TrimPrefix(idOrUsername, "@")
 	if validator.IsIntStr(idOrUsername) {
-		chatID, err := strconv.Atoi(idOrUsername)
+		chatID, err := strconv.Atoi(strings.TrimPrefix(idOrUsername, "-100"))
 		if err != nil {
 			return 0, err
 		}
