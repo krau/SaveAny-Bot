@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/celestix/gotgproto v1.0.0-beta21.0.20251018053725-7e5db4fdbe66
+	github.com/celestix/gotgproto v1.0.0-beta22
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/log v0.4.2

@@ -16,8 +16,8 @@ github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdn
 github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/catppuccin/go v0.3.0 h1:d+0/YicIq+hSTo5oPuRi5kOpqkVA5tAsU6dNhvRu+aY=
 github.com/catppuccin/go v0.3.0/go.mod h1:8IHJuMGaUUjQM82qBrGNBv7LFq6JI3NnQCF6MOlZjpc=
-github.com/celestix/gotgproto v1.0.0-beta21.0.20251018053725-7e5db4fdbe66 h1:yo+mL8D/9viQdrXoq3W7uaR5wRPaUiGDAw50vmOJtbs=
-github.com/celestix/gotgproto v1.0.0-beta21.0.20251018053725-7e5db4fdbe66/go.mod h1:JYC9Js/5KLUhFR5M2RslQi2DFAcF7EdrgJMXo0YrzGQ=
+github.com/celestix/gotgproto v1.0.0-beta22 h1:Iu78cFA08nV8+flmxKs9CJ3W73+HG30fx0nLOs5A6fI=
+github.com/celestix/gotgproto v1.0.0-beta22/go.mod h1:JYC9Js/5KLUhFR5M2RslQi2DFAcF7EdrgJMXo0YrzGQ=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
