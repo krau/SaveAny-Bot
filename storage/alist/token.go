@@ -18,7 +18,7 @@ func (a *Alist) getToken(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal login request: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, a.baseURL+"/api/auth/login", bytes.NewBuffer(loginBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/api/auth/login", bytes.NewBuffer(loginBody))
 	if err != nil {
 		return fmt.Errorf("failed to create login request: %w", err)
 	}
