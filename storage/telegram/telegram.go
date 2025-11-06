@@ -12,7 +12,6 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gabriel-vasile/mimetype"
-	"github.com/gotd/td/constant"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/telegram/uploader"
@@ -94,10 +93,6 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 			// id不合法时使用配置文件中的 chat_id
 			log.FromContext(ctx).Warnf("Failed to parse chat ID from path, using configured chat_id: %s", err)
 			cid = chatID
-		} else {
-			if cid > constant.MaxTDLibChannelID || cid > constant.MaxTDLibChatID || cid > constant.MaxTDLibUserID {
-				cid = chatID
-			}
 		}
 		chatID = cid
 	}
@@ -107,10 +102,6 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	}
 	if filename == "" {
 		filename = xid.New().String() + mtype.Extension()
-	}
-
-	if chatID < 0 {
-		chatID = chatID - constant.ZeroTDLibChannelID
 	}
 	peer := tctx.PeerStorage.GetInputPeerById(chatID)
 	if peer == nil {
