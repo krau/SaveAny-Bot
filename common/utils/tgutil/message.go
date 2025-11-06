@@ -293,7 +293,7 @@ func GetGroupedMessages(ctx *ext.Context, chatID int64, msg *tg.Message) ([]*tg.
 	}
 	msgs, err := GetMessagesRange(ctx, chatID, minID, maxID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get grouped messages: %w", err)
+		return nil, err
 	}
 	groupedMessages := make([]*tg.Message, 0, len(msgs))
 	for _, m := range msgs {

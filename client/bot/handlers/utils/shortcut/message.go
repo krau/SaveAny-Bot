@@ -99,13 +99,6 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 			logger.Debugf("message %d has no media", msg.GetID())
 			return
 		}
-		// var opt tfile.TGFileOption
-		// switch user.FilenameStrategy {
-		// case fnamest.Message.String():
-		// 	opt = tfile.WithName(tgutil.GenFileNameFromMessage(*msg))
-		// default:
-		// 	opt = tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg))
-		// }
 		opts := mediautil.TfileOptions(ctx, user, msg)
 		file, err := tfile.FromMediaMessage(media, client, msg, opts...)
 		if err != nil {
@@ -138,7 +131,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 		}
 		groupID, isGroup := msg.GetGroupedID()
 		if isGroup && groupID != 0 && !linkUrl.Query().Has("single") {
-			gmsgs, err := tgutil.GetGroupedMessages(ctx, chatId, msg)
+			gmsgs, err := tgutil.GetGroupedMessages(tctx, chatId, msg)
 			if err != nil {
 				logger.Errorf("failed to get grouped messages: %s", err)
 			} else {
