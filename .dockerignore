@@ -9,3 +9,4 @@ cache/
 docs/
 config.example.toml
 docker-compose.*
+playwright/

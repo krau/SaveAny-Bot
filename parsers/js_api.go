@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	"sync"
 
 	"github.com/blang/semver"
 	"github.com/charmbracelet/log"
 	"github.com/dop251/goja"
 	"github.com/krau/SaveAny-Bot/common/utils/netutil"
+	"github.com/playwright-community/playwright-go"
 )
 
 func jsRegisterParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value {
@@ -41,8 +44,11 @@ func jsRegisterParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value 
 		}
 
 		pluginV := semver.MustParse(metadata.Version)
-		if pluginV.LT(MinimumParserVersion) || pluginV.GT(LatestParserVersion) {
-			panic(fmt.Sprintf("parser version %s is not supported, must be between %s and %s", metadata.Version, MinimumParserVersion, LatestParserVersion))
+		if pluginV.LT(MinimumParserVersion) {
+			panic(fmt.Sprintf("parser version %s is not supported, must be at least %s", metadata.Version, MinimumParserVersion))
+		}
+		if pluginV.Major > LatestParserVersion.Major {
+			panic(fmt.Sprintf("parser major version %d is too new, latest supported major version is %d", pluginV.Major, LatestParserVersion.Major))
 		}
 
 		handleFn := obj.Get("canHandle")
@@ -71,6 +77,14 @@ var jsConsole = func(logger *log.Logger) map[string]any {
 	}
 }
 
+/*
+jsGhttp provides a http helper for js plugins
+
+It provides the following functions:
+  - get(url): performs a GET request and returns the response body as string
+  - getJSON(url): performs a GET request and returns the response body parsed as JSON
+  - head(url): performs a HEAD request and returns the response headers and status code
+*/
 var jsGhttp = func(vm *goja.Runtime) *goja.Object {
 	ghttp := vm.NewObject()
 	client := netutil.DefaultParserHTTPClient()
@@ -148,4 +162,75 @@ var jsGhttp = func(vm *goja.Runtime) *goja.Object {
 		})
 	})
 	return ghttp
+}
+
+var jsPlaywright = func(vm *goja.Runtime, logger *log.Logger) *goja.Object {
+	pwObj := vm.NewObject()
+	var installOnce sync.Once
+	slogger := slog.New(logger)
+	pwObj.Set("get", func(call goja.FunctionCall) goja.Value {
+		url := call.Argument(0).String()
+		var installErr error
+		installOnce.Do(func() {
+			installErr = playwright.Install(&playwright.RunOptions{
+				Browsers:        []string{"chromium"},
+				DriverDirectory: "./playwright",
+				Logger:          slogger,
+			})
+		})
+		if installErr != nil {
+			return vm.ToValue(map[string]any{
+				"error": fmt.Sprintf("failed to install playwright: %v", installErr),
+			})
+		}
+
+		pw, err := playwright.Run(&playwright.RunOptions{
+			DriverDirectory: "./playwright",
+			Logger:          slogger,
+		})
+		if err != nil {
+			return vm.ToValue(map[string]any{
+				"error": fmt.Sprintf("failed to start playwright: %v", err),
+			})
+		}
+		defer pw.Stop()
+
+		browser, err := pw.Chromium.Launch()
+		if err != nil {
+			return vm.ToValue(map[string]any{
+				"error": fmt.Sprintf("failed to launch browser: %v", err),
+			})
+		}
+		defer browser.Close()
+
+		page, err := browser.NewPage()
+		if err != nil {
+			return vm.ToValue(map[string]any{
+				"error": fmt.Sprintf("failed to create page: %v", err),
+			})
+		}
+
+		resp, err := page.Goto(url, playwright.PageGotoOptions{
+			WaitUntil: playwright.WaitUntilStateNetworkidle,
+			Timeout:   playwright.Float(60000),
+		})
+		if err != nil {
+			return vm.ToValue(map[string]any{
+				"error": fmt.Sprintf("failed to navigate: %v", err),
+			})
+		}
+		if resp != nil && resp.Status() >= 400 {
+			return vm.ToValue(map[string]any{
+				"error": fmt.Sprintf("bad status code: %d", resp.Status()),
+			})
+		}
+		content, err := page.Content()
+		if err != nil {
+			return vm.ToValue(map[string]any{
+				"error": fmt.Sprintf("failed to get page content: %v", err),
+			})
+		}
+		return vm.ToValue(content)
+	})
+	return pwObj
 }

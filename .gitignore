@@ -8,3 +8,5 @@ cache.db
 .vscode/
 temp/
 .hugo_build.lock
+playwright/
+testplugins/

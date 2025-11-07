@@ -45,6 +45,7 @@ type Item struct {
 - **registerParser**: 用于注册解析器, 每个插件必须调用此函数以注册
 - **console.log**: 调用 go 端的 logger 打印日志
 - **ghttp**: 提供 HTTP 请求功能
+- **playwright**: 提供基于 Playwright 的浏览器自动化请求功能
 
 插件需要提供元数据 `metadata` 并实现 `canHandle` 和 `parse` 两个函数, 最后调用 `registerParser` 注册解析器.
 
@@ -54,7 +55,7 @@ type Item struct {
 
 ```js
 const metadata = {
-    version: "1.0.0", // 插件版本号, 必须提供, 其他字段可选
+    version: "1.0.0", // 插件兼容版本号, 必须提供, 其他字段可选
     name: "Example Parser", // 插件名称
     description: "A parser for example links", // 插件描述
     author: "Krau", // 插件作者
@@ -139,6 +140,19 @@ if (response.status) {
 	data?: any, // 当请求成功且响应体为合法 JSON 时包含解析后的数据
 	error?: string, // 当请求失败或响应状态码不为 200 时包含错误信息
 	status?: number, // 响应状态码, 仅当响应状态码不为 200 时包含
+}
+```
+
+#### Playwright
+
+使用 `playwright` 对象以发起基于浏览器的请求.
+
+**playwright.get(url: string)** 发起基于浏览器的 GET 请求, 当成功时返回响应体字符串, 失败时或响应状态码不为 200 时返回一个包含 `error` 字段的对象:
+
+```js
+const response = playwright.get("https://example.com/somepage");
+if (response.error) {
+    console.log("Request failed:", response.error);
 }
 ```
 

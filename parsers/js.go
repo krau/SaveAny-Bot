@@ -121,7 +121,9 @@ func LoadPlugins(ctx context.Context, dir string) error {
 		vm.Set("console", jsConsole(logger))
 		// http fetch funcs
 		vm.Set("ghttp", jsGhttp(vm))
-		
+		// playwright fetch func
+		vm.Set("playwright", jsPlaywright(vm, logger))
+
 		if _, err := vm.RunString(string(code)); err != nil {
 			return fmt.Errorf("error loading plugin %s: %w", e.Name(), err)
 		}

@@ -23,12 +23,13 @@ type Resource struct {
 	Filename  string            `json:"filename"` // with ext
 	MimeType  string            `json:"mime_type"`
 	Extension string            `json:"extension"` // e.g. "mp4"
-	Size      int64             `json:"size"`    // 0 when unknown
-	Hash      map[string]string `json:"hash"`    // {"md5": "...", "sha256": "..."}
-	Headers   map[string]string `json:"headers"` // HTTP headers when downloading
+	Size      int64             `json:"size"`      // 0 when unknown
+	Hash      map[string]string `json:"hash"`      // {"md5": "...", "sha256": "..."}
+	Headers   map[string]string `json:"headers"`   // HTTP headers when downloading
 	Extra     map[string]any    `json:"extra"`
 }
 
+// Item represents a parsed item with metadata and resources.
 type Item struct {
 	Site        string         `json:"site"`
 	URL         string         `json:"url"` // original URL of the item
