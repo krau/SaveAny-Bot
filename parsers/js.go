@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/charmbracelet/log"
 	"github.com/dop251/goja"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
@@ -98,6 +100,7 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata
 	return p
 }
 
+// 加载指定文件夹下的所有 JS 解析器插件
 func LoadPlugins(ctx context.Context, dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -126,6 +129,43 @@ func LoadPlugins(ctx context.Context, dir string) error {
 
 		if _, err := vm.RunString(string(code)); err != nil {
 			return fmt.Errorf("error loading plugin %s: %w", e.Name(), err)
+		}
+	}
+	return nil
+}
+
+var (
+	pluginNameMu sync.Map
+)
+
+func AddPlugin(ctx context.Context, code string, name string) error {
+	value, _ := pluginNameMu.LoadOrStore(name, &sync.Mutex{})
+	mu := value.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
+
+	return addPlugin(ctx, code, name)
+}
+
+func addPlugin(ctx context.Context, code string, name string) error {
+	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("[plugin|parser]/%s", name))
+	vm := goja.New()
+	vm.Set("registerParser", jsRegisterParser(vm))
+	vm.Set("console", jsConsole(logger))
+	vm.Set("ghttp", jsGhttp(vm))
+	vm.Set("playwright", jsPlaywright(vm, logger))
+	if _, err := vm.RunString(code); err != nil {
+		return fmt.Errorf("error loading plugin %s: %w", name, err)
+	}
+	dir := "plugins"
+	configuredDirs := config.C().Parser.PluginDirs
+	if len(configuredDirs) > 0 {
+		dir = configuredDirs[0]
+	}
+	if err := os.MkdirAll(dir, 0755); err == nil {
+		pluginPath := filepath.Join(dir, name)
+		if err := os.WriteFile(pluginPath, []byte(code), 0644); err != nil {
+			logger.Warn("Failed to save plugin file: " + err.Error())
 		}
 	}
 	return nil

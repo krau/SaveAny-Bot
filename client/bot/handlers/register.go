@@ -34,6 +34,7 @@ var CommandHandlers = []DescCommandHandler{
 	{"fnametmpl", "设置文件命名模板", handleConfigFnameTmpl},
 	{"update", "检查更新", handleUpdateCmd},
 	{"help", "显示帮助", handleHelpCmd},
+	{"parser", "管理解析器", handleParserCmd},
 }
 
 func Register(disp dispatcher.Dispatcher) {
