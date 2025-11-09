@@ -58,7 +58,12 @@ func ParseArgsRespectQuotes(input string) []string {
 	for _, r := range input {
 		switch {
 		case escaped:
-			current.WriteRune(r)
+			if r == '"' || r == '\\' {
+				current.WriteRune(r)
+			} else {
+				current.WriteRune('\\')
+				current.WriteRune(r)
+			}
 			escaped = false
 
 		case r == '\\':
