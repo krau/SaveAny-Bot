@@ -48,3 +48,41 @@ func ParseIntStrRange(input string, sep string) (int64, int64, error) {
 	}
 	return min, max, nil
 }
+
+func ParseArgsRespectQuotes(input string) []string {
+	var args []string
+	var current strings.Builder
+	inQuotes := false
+	escaped := false
+
+	for _, r := range input {
+		switch {
+		case escaped:
+			current.WriteRune(r)
+			escaped = false
+
+		case r == '\\':
+			escaped = true
+
+		case r == '"':
+			inQuotes = !inQuotes
+
+		case r == ' ' || r == '\t':
+			if inQuotes {
+				current.WriteRune(r)
+			} else if current.Len() > 0 {
+				args = append(args, current.String())
+				current.Reset()
+			}
+
+		default:
+			current.WriteRune(r)
+		}
+	}
+
+	if current.Len() > 0 {
+		args = append(args, current.String())
+	}
+
+	return args
+}

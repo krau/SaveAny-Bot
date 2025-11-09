@@ -10,13 +10,14 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
+	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/rule"
 )
 
 func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
-	args := strings.Split(update.EffectiveMessage.Text, " ")
+	args := strutil.ParseArgsRespectQuotes(update.EffectiveMessage.Text)
 	userChatID := update.GetUserChat().GetID()
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
