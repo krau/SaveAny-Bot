@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/slice"
@@ -8,6 +10,22 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/storage"
 )
+
+type dirContextKey struct{}
+
+var defaultDirKey = dirContextKey{}
+
+func withDefaultDir(ctx context.Context, dirPath string) context.Context {
+	return context.WithValue(ctx, defaultDirKey, dirPath)
+}
+
+func getDefaultDir(ctx context.Context) string {
+	dirPath, ok := ctx.Value(defaultDirKey).(string)
+	if !ok {
+		return ""
+	}
+	return dirPath
+}
 
 func checkPermission(ctx *ext.Context, update *ext.Update) error {
 	userID := update.GetUserChat().GetID()
@@ -44,6 +62,15 @@ func handleSilentMode(next func(*ext.Context, *ext.Update) error, handler func(*
 			return dispatcher.EndGroups
 		}
 		ctx.Context = storage.WithContext(ctx.Context, stor)
+		
+		// Set default directory if configured
+		if user.DefaultDirID != nil {
+			defaultDir, err := database.GetDirByID(ctx, *user.DefaultDirID)
+			if err == nil && defaultDir.StorageName == user.DefaultStorage {
+				ctx.Context = withDefaultDir(ctx.Context, defaultDir.Path)
+			}
+		}
+		
 		return handler(ctx, update)
 	}
 }

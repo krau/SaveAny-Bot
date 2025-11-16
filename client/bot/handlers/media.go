@@ -85,7 +85,8 @@ func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, stor, "", file, msg.ID)
+	dirPath := getDefaultDir(ctx)
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, stor, dirPath, file, msg.ID)
 }
 
 type MediaGroupHandler struct {
@@ -153,11 +154,12 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, groupID int64) {
 	stor := storage.FromContext(ctx)
 	if stor != nil {
 		// In silent mode
+		dirPath := getDefaultDir(ctx)
 		if len(items) == 1 {
-			shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, stor, "", items[0], msg.ID)
+			shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, stor, dirPath, items[0], msg.ID)
 			return
 		}
-		shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, stor, "", items, msg.ID)
+		shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, stor, dirPath, items, msg.ID)
 		return
 	}
 

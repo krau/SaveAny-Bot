@@ -113,9 +113,13 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 		logger.Errorf("Failed to send message: %s", err)
 		return dispatcher.EndGroups
 	}
-	dirPath := ""
+	dirPath := getDefaultDir(ctx)
 	if len(item.Resources) > 1 {
-		dirPath = fsutil.NormalizePathname(item.Title)
+		if dirPath != "" {
+			dirPath = dirPath + "/" + fsutil.NormalizePathname(item.Title)
+		} else {
+			dirPath = fsutil.NormalizePathname(item.Title)
+		}
 	}
 	return shortcut.CreateAndAddParsedTaskWithEdit(ctx, stor, dirPath, item, msg.ID, userID)
 }

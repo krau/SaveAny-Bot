@@ -55,3 +55,22 @@ func DeleteDirForUser(ctx context.Context, userID uint, storageName, path string
 func DeleteDirByID(ctx context.Context, id uint) error {
 	return db.WithContext(ctx).Unscoped().Delete(&Dir{}, id).Error
 }
+
+func SetDefaultDirForUser(ctx context.Context, userID uint, dirID uint) error {
+	return db.WithContext(ctx).Model(&User{}).Where("id = ?", userID).Update("default_dir_id", dirID).Error
+}
+
+func ClearDefaultDirForUser(ctx context.Context, userID uint) error {
+	return db.WithContext(ctx).Model(&User{}).Where("id = ?", userID).Update("default_dir_id", nil).Error
+}
+
+func GetDefaultDirForUser(ctx context.Context, userID uint) (*Dir, error) {
+	user, err := GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user.DefaultDirID == nil {
+		return nil, nil
+	}
+	return GetDirByID(ctx, *user.DefaultDirID)
+}

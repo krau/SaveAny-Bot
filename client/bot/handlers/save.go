@@ -111,7 +111,8 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, "", file, msg.GetID())
+	dirPath := getDefaultDir(ctx)
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, dirPath, file, msg.GetID())
 }
 
 func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error {
@@ -212,5 +213,6 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		})
 		return dispatcher.EndGroups
 	}
-	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, "", files, replied.ID)
+	dirPath := getDefaultDir(ctx)
+	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, dirPath, files, replied.ID)
 }
