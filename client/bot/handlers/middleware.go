@@ -4,6 +4,7 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -42,6 +43,14 @@ func handleSilentMode(next func(*ext.Context, *ext.Update) error, handler func(*
 		if err != nil {
 			ctx.Reply(update, ext.ReplyTextString("获取默认存储失败: "+err.Error()), nil)
 			return dispatcher.EndGroups
+		}
+		if user.DefaultDir != 0 {
+			dir, err := database.GetDirByID(ctx, user.DefaultDir)
+			if err != nil {
+				ctx.Reply(update, ext.ReplyTextString("获取默认文件夹失败: "+err.Error()), nil)
+				return next(ctx, update)
+			}
+			ctx.Context = dirutil.WithContext(ctx.Context, dir)
 		}
 		ctx.Context = storage.WithContext(ctx.Context, stor)
 		return handler(ctx, update)

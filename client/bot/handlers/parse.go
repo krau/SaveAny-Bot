@@ -4,12 +4,14 @@ package handlers
 
 import (
 	"errors"
+	"path"
 	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
@@ -116,6 +118,9 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 	dirPath := ""
 	if len(item.Resources) > 1 {
 		dirPath = fsutil.NormalizePathname(item.Title)
+	}
+	if p := dirutil.PathFromContext(ctx); p != "" {
+		dirPath = path.Join(p, dirPath)
 	}
 	return shortcut.CreateAndAddParsedTaskWithEdit(ctx, stor, dirPath, item, msg.ID, userID)
 }

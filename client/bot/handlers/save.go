@@ -9,6 +9,7 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
@@ -87,17 +88,6 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgSaveHelpText)), nil)
 		return dispatcher.EndGroups
 	}
-	// genFilename := func() string {
-	// 	if len(args) > 1 {
-	// 		return args[1]
-	// 	}
-	// 	filename := tgutil.GenFileNameFromMessage(*replyTo.Message)
-	// 	return filename
-	// }()
-	// option := tfile.WithNameIfEmpty(genFilename)
-	// if len(args) > 1 {
-	// 	option = tfile.WithName(genFilename)
-	// }
 	userDB, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
 	if err != nil {
 		return err
@@ -111,7 +101,7 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, "", file, msg.GetID())
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, dirutil.PathFromContext(ctx), file, msg.GetID())
 }
 
 func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error {

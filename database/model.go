@@ -9,6 +9,7 @@ type User struct {
 	ChatID           int64 `gorm:"uniqueIndex;not null"`
 	Silent           bool
 	DefaultStorage   string
+	DefaultDir       uint // Dir.ID
 	Dirs             []Dir
 	ApplyRule        bool
 	Rules            []Rule

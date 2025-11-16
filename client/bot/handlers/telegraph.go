@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
@@ -9,6 +10,7 @@ import (
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
@@ -71,6 +73,10 @@ func handleSilentSaveTelegraph(ctx *ext.Context, update *ext.Update) error {
 		return err
 	}
 	userID := update.GetUserChat().GetID()
-	return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, result.Page, result.TphDir, result.Pics, stor, msg.ID)
+	dirpath := result.TphDir
+	if p := dirutil.PathFromContext(ctx); p != "" {
+		dirpath = path.Join(p, dirpath)
+	}
+	return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, result.Page, dirpath, result.Pics, stor, msg.ID)
 
 }

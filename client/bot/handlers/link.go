@@ -6,6 +6,7 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -56,7 +57,7 @@ func handleSilentSaveLink(ctx *ext.Context, update *ext.Update) error {
 	}
 	userId := update.GetUserChat().GetID()
 	if len(files) == 1 {
-		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, stor, "", files[0], replied.ID)
+		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, stor, dirutil.PathFromContext(ctx), files[0], replied.ID)
 	}
-	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, stor, "", files, replied.ID)
+	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, stor, dirutil.PathFromContext(ctx), files, replied.ID)
 }

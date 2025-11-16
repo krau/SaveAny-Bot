@@ -9,6 +9,7 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
@@ -32,12 +33,6 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	// tfOpts := make([]tfile.TGFileOption, 0)
-	// switch userDB.FilenameStrategy {
-	// case fnamest.Message.String():
-	// 	tfOpts = append(tfOpts, tfile.WithName(tgutil.GenFileNameFromMessage(*message)))
-	// default:
-	// }
 	tfOpts := mediautil.TfileOptions(ctx, userDB, message)
 	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, message, tfOpts...)
 	if err != nil {
@@ -74,18 +69,12 @@ func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	// tfOpts := make([]tfile.TGFileOption, 0)
-	// switch userDB.FilenameStrategy {
-	// case fnamest.Message.String():
-	// 	tfOpts = append(tfOpts, tfile.WithName(tgutil.GenFileNameFromMessage(*message)))
-	// default:
-	// }
 	tfOpts := mediautil.TfileOptions(ctx, userDB, message)
 	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, message, tfOpts...)
 	if err != nil {
 		return err
 	}
-	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, stor, "", file, msg.ID)
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, stor, dirutil.PathFromContext(ctx), file, msg.ID)
 }
 
 type MediaGroupHandler struct {

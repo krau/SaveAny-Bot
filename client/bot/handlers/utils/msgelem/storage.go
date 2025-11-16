@@ -94,7 +94,10 @@ func BuildAddOneSelectStorageMessage(ctx context.Context, stors []storage.Storag
 	}, nil
 }
 
-func BuildSetDefaultStorageMarkup(ctx context.Context, userID int64, stors []storage.Storage) (*tg.ReplyInlineMarkup, error) {
+// Builds the inline keyboard for setting default storage
+func BuildSetDefaultStorageMarkup(
+	ctx context.Context,
+	stors []storage.Storage) (*tg.ReplyInlineMarkup, error) {
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, storage := range stors {
 		data := tcbdata.SetDefaultStorage{
@@ -119,7 +122,35 @@ func BuildSetDefaultStorageMarkup(ctx context.Context, userID int64, stors []sto
 	return markup, nil
 }
 
-func BuildSetDirKeyboard(dirs []database.Dir, dataid string) (*tg.ReplyInlineMarkup, error) {
+func BuildSetDefaultDirMarkup(ctx context.Context,
+	seletedStorage string,
+	dirs []database.Dir) (*tg.ReplyInlineMarkup, error) {
+	buttons := make([]tg.KeyboardButtonClass, 0)
+	for _, dir := range dirs {
+		dataid := xid.New().String()
+		data := tcbdata.SetDefaultStorage{
+			StorageName: seletedStorage,
+			DirID:       dir.ID,
+		}
+		err := cache.Set(dataid, data)
+		if err != nil {
+			return nil, err
+		}
+		buttons = append(buttons, &tg.KeyboardButtonCallback{
+			Text: dir.Path,
+			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeSetDefault, dataid),
+		})
+	}
+	markup := &tg.ReplyInlineMarkup{}
+	for i := 0; i < len(buttons); i += 3 {
+		row := tg.KeyboardButtonRow{}
+		row.Buttons = buttons[i:min(i+3, len(buttons))]
+		markup.Rows = append(markup.Rows, row)
+	}
+	return markup, nil
+}
+
+func BuildSetDirMarkupForAdd(dirs []database.Dir, dataid string) (*tg.ReplyInlineMarkup, error) {
 	data, ok := cache.Get[tcbdata.Add](dataid)
 	if !ok {
 		return nil, fmt.Errorf("failed to get data from cache: %s", dataid)

@@ -10,7 +10,7 @@ import (
 const (
 	TypeAdd        = "add"
 	TypeSetDefault = "setdefault"
-	TypeConfig  = "config"
+	TypeConfig     = "config"
 	TypeCancel     = "cancel"
 )
 
@@ -47,4 +47,5 @@ type Add struct {
 
 type SetDefaultStorage struct {
 	StorageName string
+	DirID       uint
 }
