@@ -3,41 +3,16 @@ package parsers
 import (
 	"context"
 	"fmt"
-	"sync"
 
-	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/parsers/kemono"
-	"github.com/krau/SaveAny-Bot/parsers/twitter"
+	"github.com/krau/SaveAny-Bot/parsers/js"
+	"github.com/krau/SaveAny-Bot/parsers/native/kemono"
+	"github.com/krau/SaveAny-Bot/parsers/native/twitter"
+	"github.com/krau/SaveAny-Bot/parsers/parsers"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
-var (
-	parsers       []parser.Parser
-	parsersMu     sync.Mutex
-	doConfig      sync.Once
-	configParsers = func() {
-		if len(parsers) == 0 {
-			return
-		}
-		for _, pser := range parsers {
-			if configurable, ok := pser.(parser.ConfigurableParser); ok {
-				cfg := config.C().GetParserConfigByName(configurable.Name())
-				if err := configurable.Configure(cfg); err != nil {
-					fmt.Printf("Error configuring parser %s: %v\n", configurable.Name(), err)
-				}
-			}
-		}
-	}
-)
-
-func AddParser(p ...parser.Parser) {
-	parsersMu.Lock()
-	defer parsersMu.Unlock()
-	parsers = append(parsers, p...)
-}
-
 func init() {
-	AddParser(new(twitter.TwitterParser), new(kemono.KemonoParser))
+	parsers.Add(new(twitter.TwitterParser), new(kemono.KemonoParser))
 }
 
 var (
@@ -45,12 +20,11 @@ var (
 )
 
 func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
-	doConfig.Do(configParsers)
 	ch := make(chan *parser.Item, 1)
 	errCh := make(chan error, 1)
 
 	go func() {
-		for _, pser := range parsers {
+		for _, pser := range parsers.Get() {
 			if !pser.CanHandle(url) {
 				continue
 			}
@@ -76,11 +50,18 @@ func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
 }
 
 func CanHandle(url string) (bool, parser.Parser) {
-	doConfig.Do(configParsers)
-	for _, pser := range parsers {
+	for _, pser := range parsers.Get() {
 		if pser.CanHandle(url) {
 			return true, pser
 		}
 	}
 	return false, nil
+}
+
+func LoadPlugins(ctx context.Context, dir string) error {
+	return js.LoadPlugins(ctx, dir)
+}
+
+func AddPlugin(ctx context.Context, code string, name string) error {
+	return js.AddPlugin(ctx, code, name)
 }

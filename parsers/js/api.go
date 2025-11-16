@@ -1,19 +1,17 @@
-package parsers
+package js
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
-	"sync"
 
 	"github.com/blang/semver"
 	"github.com/charmbracelet/log"
 	"github.com/dop251/goja"
 	"github.com/krau/SaveAny-Bot/common/utils/netutil"
-	"github.com/playwright-community/playwright-go"
+	"github.com/krau/SaveAny-Bot/parsers/parsers"
 )
 
 func jsRegisterParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value {
@@ -57,7 +55,7 @@ func jsRegisterParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value 
 		if parseFn == nil || goja.IsUndefined(parseFn) {
 			return vm.NewGoError(errors.New("parser must provide a parse function"))
 		}
-		AddParser(newJSParser(vm, handleFn, parseFn, metadata))
+		parsers.Add(newJSParser(vm, handleFn, parseFn, metadata))
 		return goja.Undefined()
 	}
 }
@@ -172,75 +170,4 @@ var jsGhttp = func(vm *goja.Runtime) *goja.Object {
 		})
 	})
 	return ghttp
-}
-
-var jsPlaywright = func(vm *goja.Runtime, logger *log.Logger) *goja.Object {
-	pwObj := vm.NewObject()
-	var installOnce sync.Once
-	slogger := slog.New(logger)
-	pwObj.Set("get", func(call goja.FunctionCall) goja.Value {
-		url := call.Argument(0).String()
-		var installErr error
-		installOnce.Do(func() {
-			installErr = playwright.Install(&playwright.RunOptions{
-				Browsers:        []string{"chromium"},
-				DriverDirectory: "./playwright",
-				Logger:          slogger,
-			})
-		})
-		if installErr != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("failed to install playwright: %v", installErr),
-			})
-		}
-
-		pw, err := playwright.Run(&playwright.RunOptions{
-			DriverDirectory: "./playwright",
-			Logger:          slogger,
-		})
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("failed to start playwright: %v", err),
-			})
-		}
-		defer pw.Stop()
-
-		browser, err := pw.Chromium.Launch()
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("failed to launch browser: %v", err),
-			})
-		}
-		defer browser.Close()
-
-		page, err := browser.NewPage()
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("failed to create page: %v", err),
-			})
-		}
-
-		resp, err := page.Goto(url, playwright.PageGotoOptions{
-			WaitUntil: playwright.WaitUntilStateNetworkidle,
-			Timeout:   playwright.Float(60000),
-		})
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("failed to navigate: %v", err),
-			})
-		}
-		if resp != nil && resp.Status() >= 400 {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("bad status code: %d", resp.Status()),
-			})
-		}
-		content, err := page.Content()
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("failed to get page content: %v", err),
-			})
-		}
-		return vm.ToValue(content)
-	})
-	return pwObj
 }

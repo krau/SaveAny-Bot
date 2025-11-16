@@ -1,4 +1,4 @@
-package parsers
+package js
 
 import "github.com/blang/semver"
 
