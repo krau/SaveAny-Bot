@@ -147,6 +147,17 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	switch mtypeStr := mtype.String(); {
 	case strings.HasPrefix(mtypeStr, "video/"):
 		media = docb.Video().SupportsStreaming()
+		rs.Seek(0, io.SeekStart)
+		switch mtypeStr {
+		case "video/mp4":
+			info, err := getMP4Info(rs)
+			if err == nil {
+				media = docb.Video().
+					Duration(time.Duration(info.Duration)*time.Second).
+					Resolution(info.Width, info.Height).
+					SupportsStreaming()
+			}
+		}
 	case strings.HasPrefix(mtypeStr, "audio/"):
 		media = docb.Audio().Title(filename)
 	case strings.HasPrefix(mtypeStr, "image/") && !strings.HasSuffix(mtypeStr, "webp"):
