@@ -68,8 +68,8 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if err := t.limiter.Wait(ctx); err != nil {
 		return fmt.Errorf("rate limit failed: %w", err)
 	}
-	rs, ok := r.(io.ReadSeeker)
-	if !ok || rs == nil {
+	rs, seekable := r.(io.ReadSeeker)
+	if !seekable || rs == nil {
 		return fmt.Errorf("reader must implement io.ReadSeeker")
 	}
 	tctx := tgutil.ExtFromContext(ctx)
