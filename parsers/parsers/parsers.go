@@ -30,7 +30,6 @@ var (
 )
 
 func Add(p ...parser.Parser) {
-	configOnce.Do(configParsers)
 	mu.Lock()
 	defer mu.Unlock()
 	parsers = append(parsers, p...)
