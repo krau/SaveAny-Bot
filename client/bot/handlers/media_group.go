@@ -20,28 +20,32 @@ import (
 )
 
 type MediaGroupHandler struct {
-	groups  map[int64][]tfile.TGFileMessage
-	timers  map[int64]*time.Timer
-	mu      sync.Mutex
-	timeout time.Duration
+	groups    map[int64][]tfile.TGFileMessage
+	timers    map[int64]*time.Timer
+	mu        sync.Mutex
+	timeout   time.Duration
+	setupOnce sync.Once
+}
+
+func (m *MediaGroupHandler) SetupTimeout(timeoutSec int) {
+	m.setupOnce.Do(func() {
+		if timeoutSec < 1 {
+			timeoutSec = 1
+		}
+		m.timeout = time.Duration(timeoutSec) * time.Second
+	})
 }
 
 var (
-	mediaGroupHandler      *MediaGroupHandler
-	onceMediaGroup         sync.Once
-	setupMediaGroupHandler = func() {
-		onceMediaGroup.Do(func() {
-			mediaGroupHandler = &MediaGroupHandler{
-				groups:  make(map[int64][]tfile.TGFileMessage),
-				timers:  make(map[int64]*time.Timer),
-				timeout: time.Duration(max(config.C().Telegram.MediaGroupTimeout, 1)) * time.Second,
-			}
-		})
+	mediaGroupHandler = &MediaGroupHandler{
+		groups: make(map[int64][]tfile.TGFileMessage),
+		timers: make(map[int64]*time.Timer),
+		mu:     sync.Mutex{},
 	}
 )
 
 func handleGroupMediaMessage(ctx *ext.Context, update *ext.Update, message *tg.Message, groupID int64) error {
-	onceMediaGroup.Do(setupMediaGroupHandler)
+	mediaGroupHandler.SetupTimeout(max(config.C().Telegram.MediaGroupTimeout, 1))
 	logger := log.FromContext(ctx)
 	media := message.Media
 	supported := mediautil.IsSupported(media)
