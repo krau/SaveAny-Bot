@@ -34,7 +34,7 @@ var (
 			mediaGroupHandler = &MediaGroupHandler{
 				groups:  make(map[int64][]tfile.TGFileMessage),
 				timers:  make(map[int64]*time.Timer),
-				timeout: time.Duration(min(config.C().Telegram.MediaGroupTimeout, 1)) * time.Second,
+				timeout: time.Duration(max(config.C().Telegram.MediaGroupTimeout, 1)) * time.Second,
 			}
 		})
 	}
