@@ -11,7 +11,7 @@ if [ -n "$CONFIG_URL" ]; then
 fi
 
 if [ ! -f /app/config.toml ]; then
-    echo "[ERROR] Missing config.toml: 请通过挂载或 CONFIG_URL 提供配置文件"
+    echo "[ERROR] Missing config.toml: Please provide the configuration file via mounting or CONFIG_URL"
     exit 1
 fi
     
