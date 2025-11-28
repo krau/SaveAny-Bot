@@ -13,6 +13,7 @@ require (
 	github.com/goccy/go-yaml v1.18.0
 	github.com/gotd/contrib v0.21.1
 	github.com/gotd/td v0.132.0
+	github.com/krau/ffmpeg-go v0.6.0
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/playwright-community/playwright-go v0.5200.1
 	github.com/rhysd/go-github-selfupdate v1.2.3

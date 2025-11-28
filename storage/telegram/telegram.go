@@ -137,29 +137,44 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if strings.HasPrefix(mtype.String(), "image/") && size >= tglimit.MaxPhotoSize {
 		forceFile = true
 	}
-	docb := message.UploadedDocument(file, caption).
+	doc := message.UploadedDocument(file, caption).
 		Filename(filename).
 		ForceFile(forceFile).
 		MIME(mtype.String())
 
-	var media message.MediaOption = docb
+	var media message.MediaOption = doc
 
 	switch mtypeStr := mtype.String(); {
 	case strings.HasPrefix(mtypeStr, "video/"):
-		media = docb.Video().SupportsStreaming()
+		media = doc.Video().SupportsStreaming()
+		thumb, err := extractThumbFrame(rs)
+		if err == nil {
+			thumb, err := upler.FromBytes(ctx, "thumb.jpg", thumb)
+			if err == nil {
+				doc = doc.Thumb(thumb)
+			}
+		}
 		rs.Seek(0, io.SeekStart)
 		switch mtypeStr {
 		case "video/mp4":
-			info, err := getMP4Info(rs)
+			info, err := getMP4Meta(rs)
 			if err == nil {
-				media = docb.Video().
+				media = doc.Video().
+					Duration(time.Duration(info.Duration)*time.Second).
+					Resolution(info.Width, info.Height).
+					SupportsStreaming()
+			}
+		default:
+			info, err := getVideoMetadata(rs)
+			if err == nil {
+				media = doc.Video().
 					Duration(time.Duration(info.Duration)*time.Second).
 					Resolution(info.Width, info.Height).
 					SupportsStreaming()
 			}
 		}
 	case strings.HasPrefix(mtypeStr, "audio/"):
-		media = docb.Audio().Title(filename)
+		media = doc.Audio().Title(filename)
 	case strings.HasPrefix(mtypeStr, "image/") && !strings.HasSuffix(mtypeStr, "webp"):
 		media = message.UploadedPhoto(file, caption)
 	}
