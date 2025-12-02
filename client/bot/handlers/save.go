@@ -76,13 +76,7 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	if len(args) >= 3 {
 		return handleBatchSave(ctx, update, args[1:])
 	}
-	logger := log.FromContext(ctx)
 	stor := storage.FromContext(ctx)
-	if stor == nil {
-		logger.Warn("Context storage is nil")
-		ctx.Reply(update, ext.ReplyTextString("未找到存储"), nil)
-		return dispatcher.EndGroups
-	}
 	replyTo := update.EffectiveMessage.ReplyToMessage
 	if replyTo == nil || replyTo.Message == nil {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgSaveHelpText)), nil)

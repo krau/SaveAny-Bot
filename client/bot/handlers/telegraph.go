@@ -61,13 +61,7 @@ func handleTelegraphUrlMessage(ctx *ext.Context, update *ext.Update) error {
 }
 
 func handleSilentSaveTelegraph(ctx *ext.Context, update *ext.Update) error {
-	logger := log.FromContext(ctx)
 	stor := storage.FromContext(ctx)
-	if stor == nil {
-		logger.Warn("Context storage is nil")
-		ctx.Reply(update, ext.ReplyTextString("未找到存储"), nil)
-		return dispatcher.EndGroups
-	}
 	msg, result, err := shortcut.GetTphPicsFromMessageWithReply(ctx, update)
 	if err != nil {
 		return err

@@ -40,7 +40,7 @@ func GetStorageByUserIDAndName(ctx context.Context, chatID int64, name string) (
 	}
 
 	if !config.C().HasStorage(chatID, name) {
-		return nil, fmt.Errorf("没有找到用户 %d 的存储 %s", chatID, name)
+		return nil, fmt.Errorf("no storage %s for user %d", name, chatID)
 	}
 
 	return getStorageByName(ctx, name)

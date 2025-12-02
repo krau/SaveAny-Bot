@@ -4,13 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/spf13/viper"
+	"golang.org/x/net/proxy"
 )
 
 type Config struct {
@@ -20,6 +25,7 @@ type Config struct {
 	NoCleanCache bool   `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
 	Threads      int    `toml:"threads" mapstructure:"threads" json:"threads"`
 	Stream       bool   `toml:"stream" mapstructure:"stream" json:"stream"`
+	Proxy        string `toml:"proxy" mapstructure:"proxy" json:"proxy"`
 
 	Cache    cacheConfig             `toml:"cache" mapstructure:"cache" json:"cache"`
 	Users    []userConfig            `toml:"users" mapstructure:"users" json:"users"`
@@ -147,5 +153,43 @@ func Init(ctx context.Context) error {
 			userStorages[user.ID] = user.Storages
 		}
 	}
+	if cfg.Proxy != "" {
+		http.DefaultTransport, err = newProxyTransport(cfg.Proxy)
+		if err != nil {
+			return fmt.Errorf("failed to create proxy transport: %w", err)
+		}
+	}
 	return nil
+}
+
+func newProxyTransport(proxyStr string) (*http.Transport, error) {
+	proxyURL, err := url.Parse(proxyStr)
+	if err != nil {
+		return nil, err
+	}
+	transport := &http.Transport{
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	switch proxyURL.Scheme {
+	case "http", "https":
+		transport.Proxy = http.ProxyURL(proxyURL)
+
+	case "socks5", "socks5h":
+		dialer, err := proxy.FromURL(proxyURL, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+		transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.(proxy.ContextDialer).DialContext(ctx, network, addr)
+		}
+
+	default:
+		return nil, fmt.Errorf("unsupported proxy type: %s", proxyURL.Scheme)
+	}
+
+	return transport, nil
 }

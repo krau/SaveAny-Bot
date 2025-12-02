@@ -77,11 +77,6 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 	logger := log.FromContext(ctx)
 	stor := storage.FromContext(ctx)
-	if stor == nil {
-		logger.Warn("Context storage is nil")
-		ctx.Reply(u, ext.ReplyTextString("未找到存储"), nil)
-		return dispatcher.EndGroups
-	}
 	text := u.EffectiveMessage.Text
 	if text == "" {
 		return dispatcher.EndGroups

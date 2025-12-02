@@ -44,13 +44,7 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 }
 
 func handleSilentSaveLink(ctx *ext.Context, update *ext.Update) error {
-	logger := log.FromContext(ctx)
 	stor := storage.FromContext(ctx)
-	if stor == nil {
-		logger.Warn("Context storage is nil")
-		ctx.Reply(update, ext.ReplyTextString("未找到存储"), nil)
-		return dispatcher.EndGroups
-	}
 	replied, files, _, err := shortcut.GetFilesFromUpdateLinkMessageWithReplyEdit(ctx, update)
 	if err != nil {
 		return err

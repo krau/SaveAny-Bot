@@ -7,56 +7,24 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
 	"golang.org/x/net/proxy"
 )
 
-func NewProxyDialer(proxyUrl string) (proxy.Dialer, error) {
-	url, err := url.Parse(proxyUrl)
-	if err != nil {
-		return nil, err
-	}
-	return proxy.FromURL(url, proxy.Direct)
-}
-
 func NewProxyHTTPClient(proxyUrl string) (*http.Client, error) {
 	if proxyUrl == "" {
-		return &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
-			},
-		}, nil
+		return http.DefaultClient, nil
 	}
-
-	u, err := url.Parse(proxyUrl)
+	transport, err := NewProxyTransport(proxyUrl)
 	if err != nil {
 		return nil, err
 	}
-
-	switch u.Scheme {
-	case "http", "https":
-		return &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyURL(u),
-			},
-		}, nil
-	case "socks5":
-		dialer, err := proxy.FromURL(u, proxy.Direct)
-		if err != nil {
-			return nil, err
-		}
-		return &http.Client{
-			Transport: &http.Transport{
-				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-					return dialer.Dial(network, addr)
-				},
-			},
-		}, nil
-	default:
-		return nil, fmt.Errorf("unsupported proxy scheme: %s", u.Scheme)
-	}
+	return &http.Client{
+		Transport: transport,
+	}, nil
 }
 
 var (
@@ -75,4 +43,36 @@ func DefaultParserHTTPClient() *http.Client {
 		}
 	})
 	return defaultProxyHttpClient
+}
+
+func NewProxyTransport(proxyStr string) (*http.Transport, error) {
+	proxyURL, err := url.Parse(proxyStr)
+	if err != nil {
+		return nil, err
+	}
+	transport := &http.Transport{
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	switch proxyURL.Scheme {
+	case "http", "https":
+		transport.Proxy = http.ProxyURL(proxyURL)
+
+	case "socks5", "socks5h":
+		dialer, err := proxy.FromURL(proxyURL, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+		transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.(proxy.ContextDialer).DialContext(ctx, network, addr)
+		}
+
+	default:
+		return nil, fmt.Errorf("unsupported proxy type: %s", proxyURL.Scheme)
+	}
+
+	return transport, nil
 }

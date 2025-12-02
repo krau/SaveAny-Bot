@@ -45,11 +45,6 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	stor := storage.FromContext(ctx)
-	if stor == nil {
-		logger.Warn("Context storage is nil")
-		ctx.Reply(update, ext.ReplyTextString("未找到存储"), nil)
-		return dispatcher.EndGroups
-	}
 	message := update.EffectiveMessage.Message
 	groupID, isGroup := message.GetGroupedID()
 	if isGroup && groupID != 0 {
