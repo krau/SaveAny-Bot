@@ -12,7 +12,7 @@ import (
 	"github.com/gotd/td/telegram/message/html"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/rhysd/go-github-selfupdate/selfupdate"
+	"github.com/unvgo/ghselfupdate"
 )
 
 func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
@@ -21,13 +21,17 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 		ctx.Reply(u, ext.ReplyTextString(fmt.Sprintf("You are in dev or the version var failed to inject: %v", err)), nil)
 		return dispatcher.EndGroups
 	}
-	latest, ok, err := selfupdate.DetectLatest(config.GitRepo)
+	latest, ok, err := ghselfupdate.DetectLatest(config.GitRepo)
 	if err != nil {
 		ctx.Reply(u, ext.ReplyTextString(fmt.Sprintf("检测最新版本失败: %v", err)), nil)
 		return dispatcher.EndGroups
 	}
 	if !ok {
 		ctx.Reply(u, ext.ReplyTextString("没有找到版本信息"), nil)
+		return dispatcher.EndGroups
+	}
+	if latest.Version.Major != currentV.Major {
+		ctx.Reply(u, ext.ReplyTextString(fmt.Sprintf("检测到大版本更新: %s -> %s , 请前往 GitHub 手动下载最新版本并查看迁移指南", currentV, latest.Version)), nil)
 		return dispatcher.EndGroups
 	}
 	if latest.Version.LT(currentV) || latest.Version.Equals(currentV) {
@@ -86,7 +90,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 		ID:      u.CallbackQuery.GetMsgID(),
 		Message: fmt.Sprintf("正在升级中, 当前版本: %s", config.Version),
 	})
-	latest, err := selfupdate.UpdateSelf(currentV, config.GitRepo)
+	latest, err := ghselfupdate.UpdateSelf(currentV, config.GitRepo)
 	if err != nil {
 		ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:      u.CallbackQuery.GetMsgID(),

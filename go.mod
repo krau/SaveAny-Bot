@@ -16,10 +16,10 @@ require (
 	github.com/krau/ffmpeg-go v0.6.0
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/playwright-community/playwright-go v0.5200.1
-	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/rs/xid v1.6.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
+	github.com/unvgo/ghselfupdate v1.0.0
 	github.com/yapingcat/gomedia v0.0.0-20240906162731-17feea57090c
 	golang.org/x/net v0.47.0
 	golang.org/x/time v0.14.0
@@ -82,14 +82,12 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/ncruces/julianday v1.0.0 // indirect
 	github.com/ogen-go/ogen v1.16.0 // indirect
-	github.com/onsi/gomega v1.36.2 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/tcnksm/go-gitconfig v0.1.2 // indirect
 	github.com/tetratelabs/wazero v1.10.1 // indirect
 	github.com/tinylib/msgp v1.4.0 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
@@ -101,7 +99,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	modernc.org/libc v1.66.10 // indirect

@@ -5,7 +5,7 @@ import (
 	"runtime"
 
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/rhysd/go-github-selfupdate/selfupdate"
+	"github.com/unvgo/ghselfupdate"
 
 	"github.com/blang/semver"
 	"github.com/spf13/cobra"
@@ -26,17 +26,32 @@ var upgradeCmd = &cobra.Command{
 	Short:   "Upgrade saveany-bot to the latest version",
 	Run: func(cmd *cobra.Command, args []string) {
 		v := semver.MustParse(config.Version)
-		latest, err := selfupdate.UpdateSelf(v, config.GitRepo)
+		latest, found, err := ghselfupdate.DetectLatest(config.GitRepo)
+		if err != nil {
+			fmt.Println("Error occurred while detecting latest version:", err)
+			return
+		}
+		if !found {
+			fmt.Println("No releases found")
+			return
+		}
+		if latest.Version.Major != v.Major {
+			fmt.Printf("Major version upgrade detected: %s -> %s. Please manually download the latest version and check the migration guide.\n", v, latest.Version)
+			return
+		}
+		if latest.Version.Equals(v) || latest.Version.LT(v) {
+			fmt.Println("Current binary is the latest version", config.Version)
+			return
+		}
+		fmt.Printf("Updating to version %s...\n", latest.Version)
+		latest, err = ghselfupdate.UpdateSelf(v, config.GitRepo)
 		if err != nil {
 			fmt.Println("Update failed:", err)
 			return
 		}
-		if latest.Version.Equals(v) {
-			fmt.Println("Current binary is the latest version", config.Version)
-		} else {
-			fmt.Println("Successfully updated to version", latest.Version)
-			fmt.Println("Release note:\n", latest.ReleaseNotes)
-		}
+		fmt.Println("Successfully updated to version", latest.Version)
+		fmt.Println("Release note:\n", latest.ReleaseNotes)
+
 	},
 }
 
