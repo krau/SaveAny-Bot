@@ -1,80 +1,57 @@
 package user
 
 import (
+	"bufio"
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/celestix/gotgproto"
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/log"
-	"github.com/fatih/color"
+	"golang.org/x/term"
 )
 
 type terminalAuthConversator struct{}
 
-func (t *terminalAuthConversator) AskPhoneNumber() (string, error) {
-	phone := ""
-	err := huh.NewInput().Title("Your Phone Number").
-		Placeholder("+44 123456").
-		Prompt("> ").
-		Value(&phone).
-		WithTheme(huh.ThemeCatppuccin()).
-		Run()
-
+func readLine(prompt string) (string, error) {
+	fmt.Print(prompt)
+	reader := bufio.NewReader(os.Stdin)
+	text, err := reader.ReadString('\n')
 	if err != nil {
 		return "", err
 	}
+	return strings.TrimSpace(text), nil
+}
 
-	log.Info("Sending code to your phone number...")
-
-	return strings.TrimSpace(phone), nil
+func (t *terminalAuthConversator) AskPhoneNumber() (string, error) {
+	fmt.Println("Your Phone Number (e.g. +44 123456):")
+	return readLine("> ")
 }
 
 func (t *terminalAuthConversator) AskCode() (string, error) {
-	code := ""
-	err := huh.NewInput().Title("Your Code").
-		Placeholder("123456").
-		Value(&code).
-		Prompt("> ").
-		WithTheme(huh.ThemeCatppuccin()).
-		Run()
-
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(code), nil
+	fmt.Println("Your Code (e.g. 123456):")
+	return readLine("> ")
 }
 
 func (t *terminalAuthConversator) AskPassword() (string, error) {
-	pwd := ""
-
-	err := huh.NewInput().Title("Your 2FA Password").
-		EchoMode(huh.EchoModePassword).
-		Value(&pwd).
-		Prompt("> ").
-		WithTheme(huh.ThemeCatppuccin()).
-		Run()
+	fmt.Println("Your 2FA Password:")
+	fmt.Print("> ")
+	bytePwd, err := term.ReadPassword(int(os.Stdin.Fd()))
+	fmt.Println()
 	if err != nil {
 		return "", err
 	}
 
-	return strings.TrimSpace(pwd), nil
+	return strings.TrimSpace(string(bytePwd)), nil
 }
 
 func (t *terminalAuthConversator) AuthStatus(authStatus gotgproto.AuthStatus) {
 	switch authStatus.Event {
 	case gotgproto.AuthStatusPhoneRetrial:
-		color.Red("The phone number you just entered seems to be incorrect,")
-		color.Red("Attempts Left: %d", authStatus.AttemptsLeft)
-		color.Red("Please try again....")
+		fmt.Printf("The phone number is incorrect. Attempts left: %d\n", authStatus.AttemptsLeft)
 	case gotgproto.AuthStatusPasswordRetrial:
-		color.Red("The 2FA password you just entered seems to be incorrect,")
-		color.Red("Attempts Left: %d", authStatus.AttemptsLeft)
-		color.Red("Please try again....")
+		fmt.Printf("The 2FA password is incorrect. Attempts left: %d\n", authStatus.AttemptsLeft)
 	case gotgproto.AuthStatusPhoneCodeRetrial:
-		color.Red("The OTP you just entered seems to be incorrect,")
-		color.Red("Attempts Left: %d", authStatus.AttemptsLeft)
-		color.Red("Please try again....")
+		fmt.Printf("The OTP code is incorrect. Attempts left: %d\n", authStatus.AttemptsLeft)
 	default:
 	}
 }
