@@ -142,8 +142,8 @@ reload() {
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">username&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_username&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">password&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_password&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 的密码&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;/path/to/webdav&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 中的基础路径, 所有文件将存储在此路径下&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="minio-s3">
- MinIO (S3)
- &lt;a class="anchor" href="#minio-s3">#&lt;/a>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="s3">
+ S3
+ &lt;a class="anchor" href="#s3">#&lt;/a>
 &lt;/h2>
-&lt;p>&lt;code>type=minio&lt;/code>&lt;/p></description></item></channel></rss>
+&lt;p>&lt;code>type=s3&lt;/code>&lt;/p></description></item></channel></rss>
