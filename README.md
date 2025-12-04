@@ -29,7 +29,7 @@
 - 使用 js 编写解析器插件以转存任意网站的文件
 - 存储端支持:
   - Alist
-  - S3 (MinioSDK)
+  - S3
   - WebDAV
   - 本地磁盘
   - Telegram (重传回指定聊天)

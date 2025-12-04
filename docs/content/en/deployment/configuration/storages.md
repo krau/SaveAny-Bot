@@ -41,17 +41,18 @@ password = "your_password" # Password for WebDAV
 base_path = "/path/to/webdav" # Base path in WebDAV, all files will be stored under this path
 ```
 
-## MinIO (S3)
+## S3
 
-`type=minio`
+`type=s3`
 
 ```toml
-endpoint = "minio.example.com" # Endpoint for MinIO or S3
-access_key_id = "your_access_key_id" # Access key ID for MinIO or S3
-secret_access_key = "your_secret_access_key" # Secret access key for MinIO or S3
-bucket_name = "your_bucket_name" # Bucket name for MinIO or S3
+endpoint = "s3.example.com" # Endpoint for S3
+region = "us-east-1" # Region for S3
+access_key_id = "your_access_key_id" # Access key ID for S3
+secret_access_key = "your_secret_access_key" # Secret access key for S3
+bucket_name = "your_bucket_name" # Bucket name for S3
 use_ssl = true # Whether to use SSL, default is true
-base_path = "/path/to/minio" # Base path in MinIO, all files will be stored under this path
+base_path = "/path/to/s3" # Base path in S3, all files will be stored under this path
 ```
 
 ## Telegram

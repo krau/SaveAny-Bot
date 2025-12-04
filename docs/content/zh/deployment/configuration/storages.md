@@ -41,17 +41,18 @@ password = "your_password" # WebDAV 的密码
 base_path = "/path/to/webdav" # WebDAV 中的基础路径, 所有文件将存储在此路径下
 ```
 
-## MinIO (S3)
+## S3
 
-`type=minio`
+`type=s3`
 
 ```toml
-endpoint = "minio.example.com" # MinIO 或 S3 的端点
-access_key_id = "your_access_key_id" # MinIO 或 S3 的访问密钥 ID
-secret_access_key = "your_secret_access_key" # MinIO 或 S3 的秘密访问密钥
-bucket_name = "your_bucket_name" # MinIO 或 S3 的存储桶名称
+endpoint = "s3.example.com" # S3 的端点
+region = "us-east-1" # S3 的区域
+access_key_id = "your_access_key_id" # S3 的访问密钥 ID
+secret_access_key = "your_secret_access_key" # S3 的秘密访问密钥
+bucket_name = "your_bucket_name" # S3 的存储桶名称
 use_ssl = true # 是否使用 SSL, 默认为 true
-base_path = "/path/to/minio" # MinIO 中的基础路径, 所有文件将存储在此路径下
+base_path = "/path/to/s3" # S3 中的基础路径, 所有文件将存储在此路径下
 ```
 
 ## Telegram

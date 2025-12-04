@@ -93,7 +93,7 @@ session = "data/usersession.db"
   - `local`: 本地磁盘
   - `alist`: Alist
   - `webdav`: WebDAV
-  - `minio`: MinIO (兼容 S3 API)
+  - `s3`: aws S3 及其他兼容 S3 的服务
   - `telegram`: 上传到 Telegram
 
 示例, 这是一个包含本地存储和 webdav 存储的配置:

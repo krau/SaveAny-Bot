@@ -14,6 +14,7 @@ var storageFactories = map[storenum.StorageType]func(cfg *BaseConfig) (StorageCo
 	storenum.Alist:    createStorageConfig(&AlistStorageConfig{}),
 	storenum.Webdav:   createStorageConfig(&WebdavStorageConfig{}),
 	storenum.Minio:    createStorageConfig(&MinioStorageConfig{}),
+	storenum.S3:       createStorageConfig(&S3StorageConfig{}),
 	storenum.Telegram: createStorageConfig(&TelegramStorageConfig{}),
 }
 

@@ -79,7 +79,7 @@ Each storage endpoint requires at least the following fields:
   - `local`: Local disk
   - `alist`: Alist
   - `webdav`: WebDAV
-  - `minio`: MinIO (compatible with S3 API)
+  - `s3`: aws S3 and other S3 compatible services
   - `telegram`: Upload to Telegram
 
 Example, this is a configuration that includes local storage and webdav storage:

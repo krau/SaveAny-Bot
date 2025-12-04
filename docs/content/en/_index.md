@@ -21,7 +21,7 @@ Save Any Bot is a tool that allows you to save files from Telegram to various st
 - Automatic organization based on storage rules
 - Supports multiple storage backends:
     - Alist
-    - Minio (S3 compatible)
+    - S3
     - WebDAV
     - Telegram (re-upload to specified chat)
     - Local disk

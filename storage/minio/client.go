@@ -6,6 +6,7 @@ import (
 	"io"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/log"
 	config "github.com/krau/SaveAny-Bot/config/storage"
@@ -16,6 +17,10 @@ import (
 	"github.com/rs/xid"
 )
 
+var (
+	deprecatedOnce sync.Once
+)
+
 type Minio struct {
 	config config.MinioStorageConfig
 	client *minio.Client
@@ -23,6 +28,9 @@ type Minio struct {
 }
 
 func (m *Minio) Init(ctx context.Context, cfg config.StorageConfig) error {
+	deprecatedOnce.Do(func() {
+		log.FromContext(ctx).Warn("Minio storage is deprecated, please use S3 storage type instead.")
+	})
 	minioConfig, ok := cfg.(*config.MinioStorageConfig)
 	if !ok {
 		return fmt.Errorf("failed to cast minio config")
@@ -73,7 +81,7 @@ func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error
 	candidate := storagePath
 	for i := 1; m.Exists(ctx, candidate); i++ {
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-		if i > 1000 {
+		if i > 100 {
 			m.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
 			candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
 			break

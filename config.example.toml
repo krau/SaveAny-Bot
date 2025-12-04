@@ -22,7 +22,7 @@ url = "socks5://127.0.0.1:7890"
 [[storages]]
 # 标识名, 需要唯一
 name = "本机1"
-# 存储类型, 目前可用: local, alist, webdav, minio, telegram
+# 存储类型, 目前可用: local, alist, webdav, s3, telegram
 type = "local"
 # 启用存储
 enable = true
