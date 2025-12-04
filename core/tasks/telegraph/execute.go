@@ -11,7 +11,6 @@ import (
 	"github.com/duke-git/lancet/v2/retry"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
-	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -48,13 +47,10 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 		retry.Context(ctx),
 		retry.RetryTimes(uint(config.C().Retry)),
 	}
-	var lastErr error
 	err := retry.Retry(func() error {
-		var body io.ReadCloser
-		body, lastErr = t.client.Download(ctx, picUrl)
-		if lastErr != nil {
-			lastErr = fmt.Errorf("failed to download picture %s: %w", picUrl, lastErr)
-			return lastErr
+		body, err := t.client.Download(ctx, picUrl)
+		if err != nil {
+			return fmt.Errorf("failed to download picture %s: %w", picUrl, err)
 		}
 		defer body.Close()
 		filename := fmt.Sprintf("%d%s", index+1, path.Ext(picUrl))
@@ -63,8 +59,7 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 				fmt.Sprintf("tph_%s_%s", t.TaskID(), filename),
 			))
 			if err != nil {
-				lastErr = fmt.Errorf("failed to create cache file for picture %s: %w", filename, err)
-				return lastErr
+				return fmt.Errorf("failed to create cache file for picture %s: %w", filename, err)
 			}
 			defer func() {
 				if err := cacheFile.CloseAndRemove(); err != nil {
@@ -72,26 +67,26 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 					logger.Errorf("Failed to close and remove cache file for picture %s: %v", filename, err)
 				}
 			}()
-			_, lastErr = io.Copy(cacheFile, body)
-			if lastErr != nil {
-				lastErr = fmt.Errorf("failed to copy picture %s to cache file: %w", filename, lastErr)
-				return lastErr
+			_, err = io.Copy(cacheFile, body)
+			if err != nil {
+				return fmt.Errorf("failed to copy picture %s to cache file: %w", filename, err)
 			}
 			_, err = cacheFile.Seek(0, 0)
 			if err != nil {
-				lastErr = fmt.Errorf("failed to seek cache file for picture %s: %w", filename, err)
-				return lastErr
+				return fmt.Errorf("failed to seek cache file for picture %s: %w", filename, err)
 			}
-			lastErr = t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, filename))
+			err = t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, filename))
+			if err != nil {
+				return fmt.Errorf("failed to save picture %s: %w", filename, err)
+			}
 		} else {
-			lastErr = t.Stor.Save(ctx, body, path.Join(t.StorPath, filename))
+			err = t.Stor.Save(ctx, body, path.Join(t.StorPath, filename))
 		}
 
-		if lastErr != nil {
-			lastErr = fmt.Errorf("failed to save picture %s: %w", filename, lastErr)
-			return lastErr
+		if err != nil {
+			return fmt.Errorf("failed to save picture %s: %w", filename, err)
 		}
 		return nil
 	}, retryOpts...)
-	return multierr.Combine(err, lastErr)
+	return err
 }

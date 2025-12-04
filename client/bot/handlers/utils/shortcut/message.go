@@ -126,7 +126,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 		}
 		msg, err := tgutil.GetMessageByID(tctx, chatId, msgId)
 		if err != nil {
-			logger.Errorf("failed to get message by ID: %s", err)
+			logger.Error(err)
 			continue
 		}
 		groupID, isGroup := msg.GetGroupedID()

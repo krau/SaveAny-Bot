@@ -7,6 +7,9 @@ import (
 	"io"
 	"time"
 
+	"github.com/celestix/gotgproto/ext"
+	"github.com/gotd/td/constant"
+	"github.com/gotd/td/tg"
 	"github.com/krau/ffmpeg-go"
 	"github.com/yapingcat/gomedia/go-mp4"
 )
@@ -132,4 +135,29 @@ func extractFrameAt(rs io.ReadSeeker, timestamp float64) ([]byte, error) {
 	}
 
 	return out.Bytes(), nil
+}
+
+func tryGetInputPeer(ctx *ext.Context, chatID int64) tg.InputPeerClass {
+	peer := ctx.PeerStorage.GetInputPeerById(chatID)
+	if peer != nil && !peer.Zero() {
+		return peer
+	}
+	id := constant.TDLibPeerID(chatID)
+	plain := id.ToPlain()
+	var channel constant.TDLibPeerID
+	channel.Channel(plain)
+	peer = ctx.PeerStorage.GetInputPeerById(int64(channel))
+	if peer != nil && !peer.Zero() {
+		return peer
+	}
+	var chat constant.TDLibPeerID
+	chat.Chat(plain)
+	peer = ctx.PeerStorage.GetInputPeerById(int64(chat))
+	if peer != nil && !peer.Zero() {
+		return peer
+	}
+	var user constant.TDLibPeerID
+	user.User(plain)
+	peer = ctx.PeerStorage.GetInputPeerById(int64(user))
+	return peer
 }

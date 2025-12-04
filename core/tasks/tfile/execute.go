@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/duke-git/lancet/v2/retry"
+	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
-	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
 
 func (t *Task) Execute(ctx context.Context) error {
@@ -40,7 +40,7 @@ func (t *Task) Execute(ctx context.Context) error {
 			t.Progress.OnDone(ctx, t, err)
 		}
 	}()
-	_, err = tfile.NewDownloader(t.File).Parallel(ctx, wrAt)
+	_, err = tdler.NewDownloader(t.File).Parallel(ctx, wrAt)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}
@@ -57,30 +57,19 @@ func (t *Task) Execute(ctx context.Context) error {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
-	for i := range config.C().Retry + 1 {
-		if err = vctx.Err(); err != nil {
-			return fmt.Errorf("context canceled while saving file: %w", err)
-		}
-		var file *os.File
-		file, err = os.Open(t.localPath)
+	err = retry.Retry(func() error {
+		file, err := os.Open(t.localPath)
 		if err != nil {
 			return fmt.Errorf("failed to open cache file: %w", err)
 		}
 		defer file.Close()
 		if err = t.Storage.Save(vctx, file, t.Path); err != nil {
-			if i == config.C().Retry {
-				return fmt.Errorf("failed to save file: %w", err)
-			}
-			logger.Errorf("Failed to save file: %s, retrying...", err)
-			select {
-			case <-vctx.Done():
-				return fmt.Errorf("context canceled during retry delay: %w", vctx.Err())
-			case <-time.After(time.Duration(i*500) * time.Millisecond):
-			}
-			continue
+			return fmt.Errorf("failed to save file: %w", err)
 		}
 		return nil
+	}, retry.RetryTimes(uint(config.C().Retry)), retry.Context(vctx))
+	if err != nil {
+		return fmt.Errorf("failed to save file after retries: %w", err)
 	}
-	return fmt.Errorf("failed to save file after retries")
-
+	return nil
 }

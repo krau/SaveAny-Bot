@@ -103,8 +103,8 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if filename == "" {
 		filename = xid.New().String() + mtype.Extension()
 	}
-	peer := tctx.PeerStorage.GetInputPeerById(chatID)
-	if peer == nil {
+	peer := tryGetInputPeer(tctx, chatID)
+	if peer == nil || peer.Zero() {
 		return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
 	}
 
