@@ -15,6 +15,7 @@ type S3StorageConfig struct {
 	UseSSL          bool   `toml:"use_ssl" mapstructure:"use_ssl" json:"use_ssl"`
 	BasePath        string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
 	Region          string `toml:"region" mapstructure:"region" json:"region"`
+	VirtualHost     bool   `toml:"virtual_host" mapstructure:"virtual_host" json:"virtual_host"`
 }
 
 func (m *S3StorageConfig) Validate() error {

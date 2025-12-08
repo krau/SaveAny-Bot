@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"path"
 	"strings"
 
@@ -35,21 +36,52 @@ func (m *S3) Init(ctx context.Context, cfg storconfig.StorageConfig) error {
 
 	m.config = *s3Config
 	m.logger = log.FromContext(ctx).WithPrefix(fmt.Sprintf("s3[%s]", m.config.Name))
+	loadOpts := make([]config.LoadOptionsFunc, 0)
+	if m.config.Region != "" {
+		loadOpts = append(loadOpts, config.WithRegion(m.config.Region))
+	}
+	if endpoint := m.config.Endpoint; endpoint != "" {
+		if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+			if m.config.UseSSL {
+				endpoint = "https://" + endpoint
+			} else {
+				endpoint = "http://" + endpoint
+			}
+		}
+
+		if _, err := url.Parse(endpoint); err != nil {
+			return fmt.Errorf("invalid s3 endpoint %q: %w", m.config.Endpoint, err)
+		}
+		loadOpts = append(loadOpts, config.WithBaseEndpoint(endpoint))
+	}
+	loadOpts = append(loadOpts, config.WithCredentialsProvider(
+		credentials.NewStaticCredentialsProvider(
+			m.config.AccessKeyID,
+			m.config.SecretAccessKey,
+			"",
+		),
+	))
 	awsCfg, err := config.LoadDefaultConfig(
 		ctx,
-		config.WithRegion(m.config.Region),
-		config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				m.config.AccessKeyID,
-				m.config.SecretAccessKey,
-				"",
-			),
-		),
+		func() []func(*config.LoadOptions) error {
+			// wtf aws sdk
+			// https://github.com/aws/aws-sdk-go-v2/issues/2193
+			funcs := make([]func(*config.LoadOptions) error, 0)
+			for _, fn := range loadOpts {
+				funcs = append(funcs, fn)
+			}
+			return funcs
+		}()...,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to load AWS config: %w", err)
 	}
-	m.client = s3.NewFromConfig(awsCfg)
+
+	m.client = s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		// Path style: https://s3.amazonaws.com/mybucket/path/to/file.jpg
+		// virtual hosted style: https://mybucket.s3.amazonaws.com/path/to/file.jpg
+		o.UsePathStyle = !m.config.VirtualHost
+	})
 
 	// Check if bucket exists
 	_, err = m.client.HeadBucket(ctx, &s3.HeadBucketInput{
