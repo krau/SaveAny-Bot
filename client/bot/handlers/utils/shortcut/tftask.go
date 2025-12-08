@@ -41,7 +41,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 		if matchedDirPath != "" {
 			dirPath = matchedDirPath.String()
 		}
-		if matchedStorageName.IsUsable() {
+		if matchedStorageName.Usable() {
 			stor, err = storage.GetStorageByUserIDAndName(ctx, user.ChatID, matchedStorageName.String())
 			if err != nil {
 				logger.Errorf("Failed to get storage by user ID and name: %s", err)
@@ -111,7 +111,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 			return stor.Name(), ruleutil.MatchedDirPath(dirPath)
 		}
 		storname := storName.String()
-		if !storName.IsUsable() {
+		if !storName.Usable() {
 			storname = stor.Name()
 		}
 		return storname, dirP

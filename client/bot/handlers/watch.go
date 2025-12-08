@@ -228,7 +228,7 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 					goto startCreateTask
 				}
 				dirPath = matchedDirPath.String()
-				if matchedStorageName.IsUsable() {
+				if matchedStorageName.Usable() {
 					stor, err = storage.GetStorageByUserIDAndName(ctx, user.ChatID, matchedStorageName.String())
 					if err != nil {
 						logger.Errorf("Failed to get storage by user ID and name: %s", err)

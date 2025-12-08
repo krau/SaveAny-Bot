@@ -32,6 +32,10 @@ bot:
       /save [自定义文件名] - 保存文件
       /dir - 管理存储目录
       /rule - 管理规则
+      /config - 修改配置
+      /fnametmpl - 设置文件自定义命名模板
+      /parser - 管理解析器插件
+      /watch - 监听聊天并自动保存 (UserBot)
       /update - 检查更新并升级
 
       使用帮助: https://sabot.unv.app/usage
@@ -57,6 +61,6 @@ bot:
       - [filter]: 可选, 格式为 过滤器类型:表达式 , 所有支持类型的过滤器请查看文档
 
       命令示例:
-      /watch 2229835658 msgre:.*plana.*
+      /watch -1002229835658 msgre:.*plana.*
 
-      这将监听 ID 为 2229835658 的聊天, 并转存所有包含 "plana" 的媒体消息
+      这将监听 ID 为 -1002229835658 的聊天, 并转存所有包含 "plana" 的媒体消息

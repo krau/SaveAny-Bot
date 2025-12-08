@@ -34,7 +34,7 @@ func (m matchedStorName) String() string {
 }
 
 // can we use this storage name directly?
-func (m matchedStorName) IsUsable() bool {
+func (m matchedStorName) Usable() bool {
 	return m != "" && m != rule.RuleStorNameChosen
 }
 
