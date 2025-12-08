@@ -45,6 +45,8 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 			TphDirPath:  adddata.TphDirPath,
 
 			ParsedItem: adddata.ParsedItem,
+
+			DirectLinks: adddata.DirectLinks,
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)

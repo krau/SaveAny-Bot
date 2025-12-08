@@ -43,6 +43,8 @@ type Add struct {
 	TphDirPath  string // unescaped telegraph.Page.Path
 	// parseditem
 	ParsedItem *parser.Item
+	// directlinks
+	DirectLinks []string
 }
 
 type SetDefaultStorage struct {

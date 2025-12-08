@@ -19,9 +19,9 @@ type Task struct {
 	Stor       storage.Storage
 	StorPath   string
 	item       *parser.Item
-	httpClient *http.Client
-	progress   ProgressTracker
-	stream     bool
+	httpClient *http.Client // [TODO] btorrent support?
+	progress ProgressTracker
+	stream   bool
 
 	totalResources  int64
 	downloaded      atomic.Int64 // downloaded resources count

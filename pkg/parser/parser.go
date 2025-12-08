@@ -55,7 +55,7 @@ func (r *Resource) ID() string {
 	h.Write([]byte(r.Filename))
 	h.Write([]byte(r.MimeType))
 	h.Write([]byte(r.Extension))
-	h.Write([]byte(fmt.Sprintf("%d", r.Size)))
+	fmt.Fprintf(h, "%d", r.Size)
 
 	for k, v := range r.Hash {
 		h.Write([]byte(k))

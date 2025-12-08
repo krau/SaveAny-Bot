@@ -24,7 +24,7 @@ func (t *Task) Execute(ctx context.Context) error {
 	workers := config.C().Workers
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(workers)
-	for _, elem := range t.Elems {
+	for _, elem := range t.elems {
 		eg.Go(func() error {
 			t.processingMu.RLock()
 			if t.processing[elem.ID] != nil {

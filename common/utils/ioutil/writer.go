@@ -1,6 +1,8 @@
 package ioutil
 
-import "io"
+import (
+	"io"
+)
 
 type ProgressWriterAt struct {
 	wrAt    io.WriterAt

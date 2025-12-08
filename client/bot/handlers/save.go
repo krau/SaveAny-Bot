@@ -26,7 +26,7 @@ import (
 
 func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
-	args := strings.Split(string(update.EffectiveMessage.Text), " ")
+	args := strings.Split(update.EffectiveMessage.Text, " ")
 	if len(args) >= 3 {
 		return handleBatchSave(ctx, update, args[1:])
 	}
@@ -35,17 +35,6 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgSaveHelpText)), nil)
 		return dispatcher.EndGroups
 	}
-	// genFilename := func() string {
-	// 	if len(args) > 1 {
-	// 		return args[1]
-	// 	}
-	// 	filename := tgutil.GenFileNameFromMessage(*replyTo.Message)
-	// 	return filename
-	// }()
-	// option := tfile.WithNameIfEmpty(genFilename)
-	// if len(args) > 1 {
-	// 	option = tfile.WithName(genFilename)
-	// }
 	userDB, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
 	if err != nil {
 		return err

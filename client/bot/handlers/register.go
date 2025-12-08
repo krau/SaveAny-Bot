@@ -26,15 +26,16 @@ var CommandHandlers = []DescCommandHandler{
 	{"storage", "设置默认存储端", handleStorageCmd},
 	{"dir", "管理存储文件夹", handleDirCmd},
 	{"rule", "管理自动存储规则", handleRuleCmd},
+	{"save", "保存文件", handleSilentMode(handleSaveCmd, handleSilentSaveReplied)},
+	{"dl", "下载给定链接的文件", handleDlCmd},
 	{"watch", "监听聊天(UserBot)", handleWatchCmd},
 	{"unwatch", "取消监听聊天(UserBot)", handleUnwatchCmd},
 	{"lswatch", "列出监听的聊天(UserBot)", handleLswatchCmd},
-	{"save", "保存文件", handleSilentMode(handleSaveCmd, handleSilentSaveReplied)},
 	{"config", "修改配置", handleConfigCmd},
 	{"fnametmpl", "设置文件命名模板", handleConfigFnameTmpl},
-	{"update", "检查更新", handleUpdateCmd},
 	{"help", "显示帮助", handleHelpCmd},
 	{"parser", "管理解析器", handleParserCmd},
+	{"update", "检查更新", handleUpdateCmd},
 }
 
 func Register(disp dispatcher.Dispatcher) {

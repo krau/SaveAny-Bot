@@ -49,6 +49,7 @@ func ParseWithContext(ctx context.Context, url string) (*parser.Item, error) {
 	}
 }
 
+// CanHandle checks if any registered parser can handle the given URL and returns the parser if found.
 func CanHandle(url string) (bool, parser.Parser) {
 	for _, pser := range parsers.Get() {
 		if pser.CanHandle(url) {

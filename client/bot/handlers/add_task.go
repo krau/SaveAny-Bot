@@ -80,8 +80,10 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 			dirPath = path.Join(dirPath, fsutil.NormalizePathname(data.ParsedItem.Title))
 		}
 		shortcut.CreateAndAddParsedTaskWithEdit(ctx, selectedStorage, dirPath, data.ParsedItem, msgID, userID)
+	case tasktype.TaskTypeDirectlinks:
+		shortcut.CreateAndAddDirectTaskWithEdit(ctx, selectedStorage, dirPath, data.DirectLinks, msgID, userID)
 	default:
-		log.FromContext(ctx).Errorf("Unsupported task type: %s", data.TaskType)
+		return fmt.Errorf("unexcept task type: %s", data.TaskType)
 	}
 	return dispatcher.EndGroups
 }

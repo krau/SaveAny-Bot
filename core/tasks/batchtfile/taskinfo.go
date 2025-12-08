@@ -44,11 +44,11 @@ func (t *Task) Downloaded() int64 {
 }
 
 func (t *Task) Count() int {
-	return len(t.Elems)
+	return len(t.elems)
 }
 
 func (t *Task) Processing() []TaskElementInfo {
-	processing := make([]TaskElementInfo, 0, len(t.Elems))
+	processing := make([]TaskElementInfo, 0, len(t.elems))
 	for _, elem := range t.processing {
 		processing = append(processing, elem)
 	}

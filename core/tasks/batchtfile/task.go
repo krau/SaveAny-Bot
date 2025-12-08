@@ -25,8 +25,8 @@ type TaskElement struct {
 
 type Task struct {
 	ID           string
-	Ctx          context.Context
-	Elems        []TaskElement
+	ctx          context.Context
+	elems        []TaskElement
 	Progress     ProgressTracker
 	IgnoreErrors bool // if true, errors during processing will be ignored
 	downloaded   atomic.Int64
@@ -78,8 +78,8 @@ func NewBatchTGFileTask(
 ) *Task {
 	task := &Task{
 		ID:         id,
-		Ctx:        ctx,
-		Elems:      files,
+		ctx:        ctx,
+		elems:      files,
 		Progress:   progress,
 		downloaded: atomic.Int64{},
 		totalSize: func() int64 {

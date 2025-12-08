@@ -18,6 +18,8 @@ const (
 	TaskTypeTphpics TaskType = "tphpics"
 	// TaskTypeParseditem is a TaskType of type parseditem.
 	TaskTypeParseditem TaskType = "parseditem"
+	// TaskTypeDirectlinks is a TaskType of type directlinks.
+	TaskTypeDirectlinks TaskType = "directlinks"
 )
 
 var ErrInvalidTaskType = fmt.Errorf("not a valid TaskType, try [%s]", strings.Join(_TaskTypeNames, ", "))
@@ -26,6 +28,7 @@ var _TaskTypeNames = []string{
 	string(TaskTypeTgfiles),
 	string(TaskTypeTphpics),
 	string(TaskTypeParseditem),
+	string(TaskTypeDirectlinks),
 }
 
 // TaskTypeNames returns a list of possible string values of TaskType.
@@ -41,6 +44,7 @@ func TaskTypeValues() []TaskType {
 		TaskTypeTgfiles,
 		TaskTypeTphpics,
 		TaskTypeParseditem,
+		TaskTypeDirectlinks,
 	}
 }
 
@@ -57,9 +61,10 @@ func (x TaskType) IsValid() bool {
 }
 
 var _TaskTypeValue = map[string]TaskType{
-	"tgfiles":    TaskTypeTgfiles,
-	"tphpics":    TaskTypeTphpics,
-	"parseditem": TaskTypeParseditem,
+	"tgfiles":     TaskTypeTgfiles,
+	"tphpics":     TaskTypeTphpics,
+	"parseditem":  TaskTypeParseditem,
+	"directlinks": TaskTypeDirectlinks,
 }
 
 // ParseTaskType attempts to convert a string to a TaskType.
