@@ -88,8 +88,6 @@ func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 func (tq *TaskQueue[T]) Done(taskID string) {
 	tq.mu.Lock()
 	defer tq.mu.Unlock()
-
-	tq.CancelTask(taskID) // ensure it's cancelled
 	delete(tq.taskMap, taskID)
 	delete(tq.runningTaskMap, taskID)
 }
