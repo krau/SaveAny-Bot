@@ -15,6 +15,13 @@ type Task[T any] struct {
 	element *list.Element
 }
 
+// Read-only info about a task
+type TaskInfo struct {
+	ID        string
+	Created   time.Time
+	Cancelled bool
+}
+
 func NewTask[T any](ctx context.Context, id string, data T) *Task[T] {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	return &Task[T]{
@@ -26,7 +33,7 @@ func NewTask[T any](ctx context.Context, id string, data T) *Task[T] {
 	}
 }
 
-func (t *Task[T]) IsCancelled() bool {
+func (t *Task[T]) Cancelled() bool {
 	select {
 	case <-t.ctx.Done():
 		return true

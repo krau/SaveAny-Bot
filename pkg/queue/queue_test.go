@@ -39,37 +39,6 @@ func TestDuplicateAdd(t *testing.T) {
 	}
 }
 
-func TestGetAndPeek(t *testing.T) {
-	q := queue.NewTaskQueue[int]()
-	t1 := newTask("a")
-	t2 := newTask("b")
-	q.Add(t1)
-	q.Add(t2)
-	// Peek should return t1
-	peeked, err := q.Peek()
-	if err != nil {
-		t.Fatalf("unexpected error on Peek: %v", err)
-	}
-	if peeked.ID != "a" {
-		t.Fatalf("expected Peek ID 'a', got '%s'", peeked.ID)
-	}
-	// Get should return t1 then t2
-	first, err := q.Get()
-	if err != nil {
-		t.Fatalf("unexpected error on Get: %v", err)
-	}
-	if first.ID != "a" {
-		t.Fatalf("expected first Get ID 'a', got '%s'", first.ID)
-	}
-	second, err := q.Get()
-	if err != nil {
-		t.Fatalf("unexpected error on second Get: %v", err)
-	}
-	if second.ID != "b" {
-		t.Fatalf("expected second Get ID 'b', got '%s'", second.ID)
-	}
-}
-
 func TestCancelAndActiveLength(t *testing.T) {
 	q := queue.NewTaskQueue[int]()
 	t1 := newTask("1")
@@ -87,41 +56,6 @@ func TestCancelAndActiveLength(t *testing.T) {
 	// ActiveLength skips cancelled
 	if got := q.ActiveLength(); got != 1 {
 		t.Fatalf("expected active length 1, got %d", got)
-	}
-}
-
-func TestRemoveTask(t *testing.T) {
-	q := queue.NewTaskQueue[int]()
-	t1 := newTask("r1")
-	q.Add(t1)
-	if err := q.RemoveTask("r1"); err != nil {
-		t.Fatalf("unexpected error on RemoveTask: %v", err)
-	}
-	if q.Length() != 0 {
-		t.Fatalf("expected length 0 after remove, got %d", q.Length())
-	}
-}
-
-func TestClearAndCleanupCancelled(t *testing.T) {
-	q := queue.NewTaskQueue[int]()
-	tasks := []*queue.Task[int]{newTask("c1"), newTask("c2"), newTask("c3")}
-	for _, tsk := range tasks {
-		q.Add(tsk)
-	}
-	// Cancel one
-	q.CancelTask("c2")
-	// Cleanup cancelled
-	removed := q.CleanupCancelled()
-	if removed != 1 {
-		t.Fatalf("expected removed 1, got %d", removed)
-	}
-	if q.ActiveLength() != 2 {
-		t.Fatalf("expected active length 2 after cleanup, got %d", q.ActiveLength())
-	}
-	// Clear all
-	q.Clear()
-	if q.Length() != 0 {
-		t.Fatalf("expected length 0 after clear, got %d", q.Length())
 	}
 }
 

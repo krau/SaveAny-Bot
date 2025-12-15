@@ -38,7 +38,7 @@ func (tq *TaskQueue[T]) Add(task *Task[T]) error {
 		return fmt.Errorf("task with ID %s already exists", task.ID)
 	}
 
-	if task.IsCancelled() {
+	if task.Cancelled() {
 		return fmt.Errorf("task %s has been cancelled", task.ID)
 	}
 
@@ -50,6 +50,8 @@ func (tq *TaskQueue[T]) Add(task *Task[T]) error {
 	return nil
 }
 
+// Get retrieves and removes the next non-cancelled task from the queue, adding it to the running tasks.
+// Blocks until a task is available or the queue is closed.
 func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 	tq.mu.Lock()
 	defer tq.mu.Unlock()
@@ -69,7 +71,7 @@ func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 		tq.tasks.Remove(element)
 		task.element = nil
 
-		if !task.IsCancelled() {
+		if !task.Cancelled() {
 			tq.runningTaskMap[task.ID] = task
 			return task, nil
 		}
@@ -82,30 +84,14 @@ func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 	return nil, fmt.Errorf("queue is closed and empty")
 }
 
+// Done stops(cancels) and removes the task from the running tasks.
 func (tq *TaskQueue[T]) Done(taskID string) {
 	tq.mu.Lock()
 	defer tq.mu.Unlock()
 
+	tq.CancelTask(taskID) // ensure it's cancelled
 	delete(tq.taskMap, taskID)
 	delete(tq.runningTaskMap, taskID)
-}
-
-func (tq *TaskQueue[T]) Peek() (*Task[T], error) {
-	tq.mu.RLock()
-	defer tq.mu.RUnlock()
-
-	if tq.tasks.Len() == 0 {
-		return nil, fmt.Errorf("queue is empty")
-	}
-
-	for element := tq.tasks.Front(); element != nil; element = element.Next() {
-		task := element.Value.(*Task[T])
-		if !task.IsCancelled() {
-			return task, nil
-		}
-	}
-
-	return nil, fmt.Errorf("queue has no valid tasks")
 }
 
 func (tq *TaskQueue[T]) Length() int {
@@ -114,6 +100,7 @@ func (tq *TaskQueue[T]) Length() int {
 	return tq.tasks.Len()
 }
 
+// ActiveLength returns the number of non-cancelled tasks in the queue.
 func (tq *TaskQueue[T]) ActiveLength() int {
 	tq.mu.RLock()
 	defer tq.mu.RUnlock()
@@ -121,13 +108,56 @@ func (tq *TaskQueue[T]) ActiveLength() int {
 	count := 0
 	for element := tq.tasks.Front(); element != nil; element = element.Next() {
 		task := element.Value.(*Task[T])
-		if !task.IsCancelled() {
+		if !task.Cancelled() {
 			count++
 		}
 	}
 	return count
 }
 
+// RunningTasks returns the currently running tasks' info.
+func (tq *TaskQueue[T]) RunningTasks() []TaskInfo {
+	tq.mu.RLock()
+	defer tq.mu.RUnlock()
+
+	tasks := make([]TaskInfo, 0, len(tq.runningTaskMap))
+	for _, task := range tq.runningTaskMap {
+		if task.Cancelled() {
+			continue
+		}
+		tasks = append(tasks, TaskInfo{
+			ID:        task.ID,
+			Created:   task.created,
+			Cancelled: task.Cancelled(),
+		})
+	}
+	return tasks
+}
+
+// QueuedTasks returns the queued (not yet running) tasks' info.
+// The sorting is in the order of addition.
+func (tq *TaskQueue[T]) QueuedTasks() []TaskInfo {
+	tq.mu.RLock()
+	defer tq.mu.RUnlock()
+
+	tasks := make([]TaskInfo, 0, tq.tasks.Len())
+	for element := tq.tasks.Front(); element != nil; element = element.Next() {
+		task := element.Value.(*Task[T])
+		if !task.Cancelled() {
+			tasks = append(tasks, TaskInfo{
+				ID:        task.ID,
+				Created:   task.created,
+				Cancelled: task.Cancelled(),
+			})
+		}
+	}
+	return tasks
+}
+
+// CancelTask cancels a task by its ID.
+// It looks for the task in both queued and running tasks.
+// [NOTE] Cancelled tasks will not be removed from the queue, but marked as cancelled. Use Done to remove them.
+// [WARN] Cancelling a running task relies on the task's implementation to respect the cancellation. If the task does not check for cancellation, it may continue running.
 func (tq *TaskQueue[T]) CancelTask(taskID string) error {
 	tq.mu.RLock()
 	task, exists := tq.taskMap[taskID]
@@ -144,98 +174,10 @@ func (tq *TaskQueue[T]) CancelTask(taskID string) error {
 	return nil
 }
 
-func (tq *TaskQueue[T]) RemoveTask(taskID string) error {
-	tq.mu.Lock()
-	defer tq.mu.Unlock()
-
-	task, exists := tq.taskMap[taskID]
-	if !exists {
-		_, exists = tq.runningTaskMap[taskID]
-		if exists {
-			delete(tq.runningTaskMap, taskID)
-		}
-		return fmt.Errorf("task %s is already running, cannot remove from queue", taskID)
-	}
-
-	if task.element != nil {
-		tq.tasks.Remove(task.element)
-	}
-	delete(tq.taskMap, taskID)
-	task.Cancel()
-	return nil
-}
-
-func (tq *TaskQueue[T]) CancelAll() {
-	tq.mu.RLock()
-	tasks := make([]*Task[T], 0, tq.tasks.Len())
-	for element := tq.tasks.Front(); element != nil; element = element.Next() {
-		tasks = append(tasks, element.Value.(*Task[T]))
-	}
-	tq.mu.RUnlock()
-
-	for _, task := range tasks {
-		task.Cancel()
-	}
-}
-
-func (tq *TaskQueue[T]) GetTask(taskID string) (*Task[T], error) {
-	tq.mu.RLock()
-	defer tq.mu.RUnlock()
-
-	task, exists := tq.taskMap[taskID]
-	if !exists {
-		return nil, fmt.Errorf("task %s does not exist", taskID)
-	}
-
-	return task, nil
-}
-
 func (tq *TaskQueue[T]) Close() {
 	tq.mu.Lock()
 	defer tq.mu.Unlock()
 
 	tq.closed = true
 	tq.cond.Broadcast()
-}
-
-func (tq *TaskQueue[T]) IsClosed() bool {
-	tq.mu.RLock()
-	defer tq.mu.RUnlock()
-	return tq.closed
-}
-
-func (tq *TaskQueue[T]) Clear() {
-	tq.mu.Lock()
-	defer tq.mu.Unlock()
-
-	for element := tq.tasks.Front(); element != nil; element = element.Next() {
-		task := element.Value.(*Task[T])
-		task.Cancel()
-	}
-
-	tq.tasks.Init()
-	tq.taskMap = make(map[string]*Task[T])
-}
-
-func (tq *TaskQueue[T]) CleanupCancelled() int {
-	tq.mu.Lock()
-	defer tq.mu.Unlock()
-
-	removed := 0
-	element := tq.tasks.Front()
-
-	for element != nil {
-		next := element.Next()
-		task := element.Value.(*Task[T])
-
-		if task.IsCancelled() {
-			tq.tasks.Remove(element)
-			delete(tq.taskMap, task.ID)
-			removed++
-		}
-
-		element = next
-	}
-
-	return removed
 }
