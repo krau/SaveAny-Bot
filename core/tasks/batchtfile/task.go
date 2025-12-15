@@ -8,11 +8,14 @@ import (
 	"sync/atomic"
 
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/rs/xid"
 )
+
+var _ core.Executable = (*Task)(nil)
 
 type TaskElement struct {
 	ID        string
@@ -34,6 +37,11 @@ type Task struct {
 	processing   map[string]TaskElementInfo
 	processingMu sync.RWMutex
 	failed       map[string]error // [TODO] errors for each element
+}
+
+// Title implements core.Exectable.
+func (t *Task) Title() string {
+	return fmt.Sprintf("[%s](%d files/%.2fMB)", t.Type(), len(t.elems), float64(t.totalSize)/(1024*1024))
 }
 
 func (t *Task) Type() tasktype.TaskType {

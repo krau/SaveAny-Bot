@@ -2,11 +2,13 @@ package directlinks
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"sync/atomic"
 
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/storage"
 )
@@ -25,6 +27,8 @@ func (f *File) FileSize() int64 {
 	return f.Size
 }
 
+var _ core.Executable = (*Task)(nil)
+
 type Task struct {
 	ID       string
 	ctx      context.Context
@@ -42,6 +46,11 @@ type Task struct {
 	processing      map[string]*File // {"url": File}
 	processingMu    sync.RWMutex
 	failed          map[string]error // [TODO] errors for each file
+}
+
+// Title implements core.Exectable.
+func (t *Task) Title() string {
+	return fmt.Sprintf("[%s](%s...->%s:%s)", t.Type(), t.files[0].Name, t.Storage.Name(), t.StorPath)
 }
 
 // DownloadedBytes implements TaskInfo.

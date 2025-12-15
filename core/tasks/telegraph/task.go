@@ -2,12 +2,16 @@ package telegraph
 
 import (
 	"context"
+	"fmt"
 	"sync/atomic"
 
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/storage"
 )
+
+var _ core.Executable = (*Task)(nil)
 
 type Task struct {
 	ID       string
@@ -22,6 +26,11 @@ type Task struct {
 	cannotStream bool
 	totalpics    int
 	downloaded   atomic.Int64
+}
+
+// Title implements core.Exectable.
+func (t *Task) Title() string {
+	return fmt.Sprintf("[%s](%s->%s:%s)", t.Type(), t.PhPath, t.Stor.Name(), t.StorPath)
 }
 
 func (t *Task) Type() tasktype.TaskType {

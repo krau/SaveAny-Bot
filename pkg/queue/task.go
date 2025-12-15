@@ -8,6 +8,7 @@ import (
 
 type Task[T any] struct {
 	ID      string
+	Title   string
 	Data    T
 	ctx     context.Context
 	cancel  context.CancelFunc
@@ -20,12 +21,14 @@ type TaskInfo struct {
 	ID        string
 	Created   time.Time
 	Cancelled bool
+	Title     string
 }
 
-func NewTask[T any](ctx context.Context, id string, data T) *Task[T] {
+func NewTask[T any](ctx context.Context, id string, title string, data T) *Task[T] {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	return &Task[T]{
 		ID:      id,
+		Title:   title,
 		Data:    data,
 		ctx:     cancelCtx,
 		cancel:  cancel,

@@ -28,6 +28,8 @@ var CommandHandlers = []DescCommandHandler{
 	{"rule", "管理自动存储规则", handleRuleCmd},
 	{"save", "保存文件", handleSilentMode(handleSaveCmd, handleSilentSaveReplied)},
 	{"dl", "下载给定链接的文件", handleDlCmd},
+	{"task", "管理任务队列", handleTaskCmd},
+	{"cancel", "取消任务", handleCancelCmd},
 	{"watch", "监听聊天(UserBot)", handleWatchCmd},
 	{"unwatch", "取消监听聊天(UserBot)", handleUnwatchCmd},
 	{"lswatch", "列出监听的聊天(UserBot)", handleLswatchCmd},

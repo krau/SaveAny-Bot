@@ -6,10 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
 )
+
+var _ core.Executable = (*Task)(nil)
 
 type Task struct {
 	ID        string
@@ -20,6 +23,11 @@ type Task struct {
 	Progress  ProgressTracker
 	stream    bool // true if the file should be downloaded in stream mode
 	localPath string
+}
+
+// Title implements core.Exectable.
+func (t *Task) Title() string {
+	return fmt.Sprintf("[%s](%s->%s:%s)", t.Type(), t.File.Name(), t.Storage.Name(), t.Path)
 }
 
 func (t *Task) Type() tasktype.TaskType {

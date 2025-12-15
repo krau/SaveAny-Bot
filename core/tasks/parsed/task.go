@@ -2,16 +2,20 @@ package parsed
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"sync/atomic"
 
 	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 	"github.com/krau/SaveAny-Bot/storage"
 )
+
+var _ core.Executable = (*Task)(nil)
 
 type Task struct {
 	ID         string
@@ -20,8 +24,8 @@ type Task struct {
 	StorPath   string
 	item       *parser.Item
 	httpClient *http.Client // [TODO] btorrent support?
-	progress ProgressTracker
-	stream   bool
+	progress   ProgressTracker
+	stream     bool
 
 	totalResources  int64
 	downloaded      atomic.Int64 // downloaded resources count
@@ -30,6 +34,11 @@ type Task struct {
 	processing      map[string]ResourceInfo
 	processingMu    sync.RWMutex
 	failed          map[string]error // [TODO] errors for each resource
+}
+
+// Title implements core.Exectable.
+func (t *Task) Title() string {
+	return fmt.Sprintf("[%s](%s->%s:%s)", t.Type(), t.item.Title, t.Stor.Name(), t.StorPath)
 }
 
 func (t *Task) Type() tasktype.TaskType {

@@ -125,6 +125,7 @@ func (tq *TaskQueue[T]) RunningTasks() []TaskInfo {
 		}
 		tasks = append(tasks, TaskInfo{
 			ID:        task.ID,
+			Title:     task.Title,
 			Created:   task.created,
 			Cancelled: task.Cancelled(),
 		})
@@ -144,6 +145,7 @@ func (tq *TaskQueue[T]) QueuedTasks() []TaskInfo {
 		if !task.Cancelled() {
 			tasks = append(tasks, TaskInfo{
 				ID:        task.ID,
+				Title:     task.Title,
 				Created:   task.created,
 				Cancelled: task.Cancelled(),
 			})
