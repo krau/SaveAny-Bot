@@ -95,7 +95,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if !seekable || rs == nil {
 		return fmt.Errorf("reader must implement io.ReadSeeker")
 	}
-	splitSize := t.config.SplitSizeMB * 1024 * 1000
+	splitSize := t.config.SplitSizeMB * 1024 * 1024
 	if splitSize <= 0 {
 		splitSize = DefaultSplitSize
 	}
