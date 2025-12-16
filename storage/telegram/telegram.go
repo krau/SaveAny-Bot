@@ -31,8 +31,9 @@ import (
 )
 
 const (
-	DefaultSplitSize  = 2 * 1024 * 1024 * 1024 // 2000 MB
-	MaxUploadFileSize = 2 * 1024 * 1024 * 1024 // 2 GB
+	// https://core.telegram.org/api/config#upload-max-fileparts-default
+	DefaultSplitSize  = 4000 * 524288 // 4000 * 512 KB
+	MaxUploadFileSize = 4000 * 524288 // 4000 * 512 KB
 )
 
 type Telegram struct {
@@ -94,7 +95,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if !seekable || rs == nil {
 		return fmt.Errorf("reader must implement io.ReadSeeker")
 	}
-	splitSize := t.config.SplitSizeMB * 1024 * 1024
+	splitSize := t.config.SplitSizeMB * 1024 * 1000
 	if splitSize <= 0 {
 		splitSize = DefaultSplitSize
 	}
