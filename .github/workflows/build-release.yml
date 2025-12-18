@@ -41,7 +41,6 @@ jobs:
         exclude:
           - goos: windows
             goarch: arm64
-        variant: [full, micro, pico]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,13 +61,11 @@ jobs:
           extra_files: |
             LICENSE
             README.md
-          build_flags: ${{ matrix.variant == 'full' && '' || (matrix.variant == 'micro' && '-tags=no_jsparser,no_minio' || '-tags=no_jsparser,no_minio,sqlite_glebarez') }}
           ldflags: >-
             -s -w
             -X "github.com/krau/SaveAny-Bot/config.Version=${{ env.VERSION }}"
             -X "github.com/krau/SaveAny-Bot/config.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
             -X "github.com/krau/SaveAny-Bot/config.GitCommit=${{ github.sha }}"
-          binary_name: saveany-bot-${{ matrix.variant }}
-          asset_name: saveany-bot-${{ matrix.variant }}-v${{ env.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          binary_name: saveany-bot
         env:
           VERSION: ${{ env.VERSION }}
