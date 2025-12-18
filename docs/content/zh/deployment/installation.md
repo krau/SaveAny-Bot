@@ -129,17 +129,39 @@ docker run -d --name saveany-bot \
     ghcr.io/krau/saveany-bot:latest
 ```
 
+{{< hint info >}}
+关于 docker 镜像的变体版本
+<br />
+<ul>
+<li>默认版本: 包含所有功能和依赖, 体积较大. 如果没有特殊需要, 请使用此版本</li>
+<li>micro: 精简版本, 去除部分可选依赖, 体积较小</li>
+<li>pico: 极简版本, 仅包含核心功能, 体积最小</li>
+</ul>
+你可以根据需要, 通过指定不同的标签来拉取合适的版本, 例如: <code>ghcr.io/krau/saveany-bot:micro</code>
+<br />
+关于变体版本的更详细的区别, 请参考项目根目录下的 Dockerfile 文件.
+{{< /hint >}}
+
 ## 更新
 
-向 Bot 发送 `/update` 指令检查更新并升级, 或者使用 CLI 命令更新:
+若使用预编译二进制文件部署, 使用以下 CLI 命令更新:
 
 ```bash
 ./saveany-bot up
 ```
 
-如果是 Docker 部署, 还可以使用以下命令更新:
+如果是 Docker 部署, 使用以下命令更新:
+
+docker:
 
 ```bash
 docker pull ghcr.io/krau/saveany-bot:latest
 docker restart saveany-bot
+```
+
+docker compose:
+
+```bash
+docker compose pull
+docker compose restart
 ```
