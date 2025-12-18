@@ -19,14 +19,12 @@ jobs:
     permissions:
       contents: read
       packages: write
-
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
-      version: ${{ steps.args.outputs.version }}
-      git_commit: ${{ steps.args.outputs.git_commit }}
-      build_time: ${{ steps.args.outputs.build_time }}
-
+      version: ${{ steps.vars.outputs.version }}
+      git_commit: ${{ steps.vars.outputs.git_commit }}
+      build_time: ${{ steps.vars.outputs.build_time }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,11 +40,13 @@ jobs:
             type=sha
             type=raw,value=latest
 
-      - name: Extract Dockerfile args
-        id: args
+      - name: Extract Build Vars
+        id: vars
         run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "git_commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          echo "build_time=$(git show -s --format=%cI)" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
@@ -58,7 +58,6 @@ jobs:
         arch: [amd64, arm64]
         type: [default, micro, pico]
       fail-fast: false
-
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
 
     steps:
@@ -80,23 +79,9 @@ jobs:
         run: |
           if [ "${{ matrix.type }}" == "default" ]; then
             echo "DOCKERFILE=./Dockerfile" >> "$GITHUB_OUTPUT"
-          elif [ "${{ matrix.type }}" == "micro" ]; then
-            echo "DOCKERFILE=./Dockerfile.micro" >> "$GITHUB_OUTPUT"
           else
-            echo "DOCKERFILE=./Dockerfile.pico" >> "$GITHUB_OUTPUT"
+            echo "DOCKERFILE=./Dockerfile.${{ matrix.type }}" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Set image tags
-        id: tags
-        run: |
-          if [ "${{ matrix.type }}" == "default" ]; then
-            TAGS=$(echo "${{ needs.prepare.outputs.tags }}" | tr '\n' ' ')
-          elif [ "${{ matrix.type }}" == "micro" ]; then
-            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro-latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro-${{ needs.prepare.outputs.version }}"
-          else
-            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico-latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico-${{ needs.prepare.outputs.version }}"
-          fi
-          echo "TAGS=$TAGS" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -104,8 +89,12 @@ jobs:
           context: .
           file: ${{ steps.dockerfile.outputs.DOCKERFILE }}
           platforms: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.tags.outputs.TAGS }}
+          push: true
+          tags: |
+            ${{ matrix.type == 'default' && needs.prepare.outputs.tags || '' }}
+            ${{ matrix.type != 'default' && format('{0}/{1}:{2}', env.REGISTRY, env.IMAGE_NAME, matrix.type) || '' }}
+            ${{ matrix.type != 'default' && format('{0}/{1}:{2}-latest', env.REGISTRY, env.IMAGE_NAME, matrix.type) || '' }}
+            ${{ matrix.type != 'default' && format('{0}/{1}:{2}-{3}', env.REGISTRY, env.IMAGE_NAME, matrix.type, needs.prepare.outputs.version) || '' }}
           labels: ${{ needs.prepare.outputs.labels }}
           cache-from: |
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.type }}-latest
