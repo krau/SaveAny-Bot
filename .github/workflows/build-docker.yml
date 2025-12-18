@@ -84,6 +84,7 @@ jobs:
             echo "DOCKERFILE=./Dockerfile.micro" >> "$GITHUB_OUTPUT"
           else
             echo "DOCKERFILE=./Dockerfile.pico" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set image tags
         id: tags
