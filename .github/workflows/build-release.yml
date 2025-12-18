@@ -68,7 +68,7 @@ jobs:
             -X "github.com/krau/SaveAny-Bot/config.Version=${{ env.VERSION }}"
             -X "github.com/krau/SaveAny-Bot/config.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
             -X "github.com/krau/SaveAny-Bot/config.GitCommit=${{ github.sha }}"
-          binary_name: saveany-bot
-          asset_name: saveany-bot-${{ matrix.variant }}-${{ env.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          binary_name: saveany-bot-${{ matrix.variant }}
+          asset_name: saveany-bot-${{ matrix.variant }}-v${{ env.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}
         env:
           VERSION: ${{ env.VERSION }}
