@@ -1,3 +1,5 @@
+//go:build !no_jsparser
+
 package js
 
 import "github.com/blang/semver"

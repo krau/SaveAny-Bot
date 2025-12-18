@@ -1,0 +1,35 @@
+# pico is the minimum build of SaveAnyBot, which disables all the optional features like JS parsing and MinIO support.
+FROM golang:alpine AS builder
+
+ARG VERSION="dev"
+ARG GitCommit="Unknown"
+ARG BuildTime="Unknown"
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg \
+    CGO_ENABLED=0 \
+    go build -trimpath \
+    -tags=no_jsparser,no_minio,sqlite_glebarez \
+    -ldflags=" \
+    -s -w \
+    -X 'github.com/krau/SaveAny-Bot/config.Version=${VERSION}' \
+    -X 'github.com/krau/SaveAny-Bot/config.GitCommit=${GitCommit}' \
+    -X 'github.com/krau/SaveAny-Bot/config.BuildTime=${BuildTime}' \
+    " \
+    -o saveany-bot .
+
+FROM scratch
+
+WORKDIR /app
+
+COPY --from=builder /app/saveany-bot .
+RUN chmod +x /app/saveany-bot
+
+ENTRYPOINT ["/app/saveany-bot"]

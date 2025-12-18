@@ -1,4 +1,4 @@
-//go:build no_playwright
+//go:build no_playwright && !no_jsparser
 
 package js
 

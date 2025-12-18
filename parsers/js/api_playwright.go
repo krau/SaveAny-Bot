@@ -1,3 +1,5 @@
+//go:build !no_jsparser && !no_playwright
+
 package js
 
 import (

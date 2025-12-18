@@ -1,3 +1,5 @@
+// [TODO] complete the i18n support
+
 package i18n
 
 import (

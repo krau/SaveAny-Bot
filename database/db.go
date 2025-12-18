@@ -9,8 +9,6 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
-	_ "github.com/ncruces/go-sqlite3/embed"
-	"github.com/ncruces/go-sqlite3/gormlite"
 	"gorm.io/gorm"
 	glogger "gorm.io/gorm/logger"
 )
@@ -23,7 +21,7 @@ func Init(ctx context.Context) {
 		logger.Fatal("Failed to create data directory: ", err)
 	}
 	var err error
-	db, err = gorm.Open(gormlite.Open(config.C().DB.Path), &gorm.Config{
+	db, err = gorm.Open(GetDialect(config.C().DB.Path), &gorm.Config{
 		Logger: glogger.New(logger, glogger.Config{
 			Colorful:                  true,
 			SlowThreshold:             time.Second * 5,

@@ -1,3 +1,5 @@
+//go:build !no_minio
+
 package minio
 
 import (

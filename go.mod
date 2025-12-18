@@ -27,9 +27,6 @@ require (
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.3 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.40.1 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.93.0 // indirect
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -110,7 +107,7 @@ require (
 	github.com/dop251/goja v0.0.0-20251008123653-cf18d89f3cf6
 	github.com/duke-git/lancet/v2 v2.3.7
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/glebarez/sqlite v1.11.0 // indirect
+	github.com/glebarez/sqlite v1.11.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0

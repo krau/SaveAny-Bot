@@ -14,7 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/middleware"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/ncruces/go-sqlite3/gormlite"
+	"github.com/krau/SaveAny-Bot/database"
 )
 
 func Init(ctx context.Context) <-chan struct{} {
@@ -39,7 +39,7 @@ func Init(ctx context.Context) <-chan struct{} {
 			config.C().Telegram.AppHash,
 			gotgproto.ClientTypeBot(config.C().Telegram.Token),
 			&gotgproto.ClientOpts{
-				Session:          sessionMaker.SqlSession(gormlite.Open(config.C().DB.Session)),
+				Session:          sessionMaker.SqlSession(database.GetDialect(config.C().DB.Session)),
 				DisableCopyright: true,
 				Middlewares:      middleware.NewDefaultMiddlewares(ctx, 5*time.Minute),
 				Resolver:         resolver,
