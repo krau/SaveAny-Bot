@@ -9,34 +9,50 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: krau/saveany-bot
 
+concurrency:
+  group: docker-build-${{ github.repository }}
+  cancel-in-progress: true
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.vars.outputs.version }}
-      git_commit: ${{ steps.vars.outputs.git_commit }}
+      major_minor: ${{ steps.vars.outputs.major_minor }}
+      short_sha: ${{ steps.vars.outputs.short_sha }}
       build_time: ${{ steps.vars.outputs.build_time }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-      - id: vars
+        uses: actions/checkout@v6
+
+      - name: Extract Version Components
+        id: vars
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
+
+          MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1,2)
+
+          SHORT_SHA=$(git rev-parse --short HEAD)
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "git_commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "major_minor=$MAJOR_MINOR" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
           echo "build_time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         arch: [amd64, arm64]
         type: [default, micro, pico]
       fail-fast: false
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
-    permissions:
-      contents: read
-      packages: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,20 +67,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push by arch
-        id: build
+      - name: Build and push (Temporary Tags)
         uses: docker/build-push-action@v6
         with:
           context: .
+          # 根据类型选择 Dockerfile
           file: ${{ matrix.type == 'default' && './Dockerfile' || format('./Dockerfile.{0}', matrix.type) }}
+          # 仅构建当前架构
           platforms: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.type }}-${{ matrix.arch }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.type }}-${{ needs.prepare.outputs.version }}-${{ matrix.arch }}
+          # 推送带有架构后缀的临时标签，供后续合并使用
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:tmp-${{ matrix.type }}-${{ matrix.arch }}
           build-args: |
             VERSION=${{ needs.prepare.outputs.version }}
-            GitCommit=${{ needs.prepare.outputs.git_commit }}
+            GitCommit=${{ needs.prepare.outputs.short_sha }}
             BuildTime=${{ needs.prepare.outputs.build_time }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -85,24 +101,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create and push manifest group
+      - name: Create and push manifest lists
         run: |
-          TAG_PREFIX="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          REPO="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           VERSION="${{ needs.prepare.outputs.version }}"
+          MAJOR_MINOR="${{ needs.prepare.outputs.major_minor }}"
+          SHA="${{ needs.prepare.outputs.short_sha }}"
           TYPE="${{ matrix.type }}"
+          TAGS=()
 
           if [ "$TYPE" == "default" ]; then
-            TARGET_TAGS=("$TAG_PREFIX:latest" "$TAG_PREFIX:$VERSION")
+            TAGS+=("$REPO:latest")
+            TAGS+=("$REPO:$VERSION")
+            TAGS+=("$REPO:$MAJOR_MINOR")
+            TAGS+=("$REPO:sha-$SHA")
           else
-            TARGET_TAGS=("$TAG_PREFIX:$TYPE" "$TAG_PREFIX:$TYPE-latest" "$TAG_PREFIX:$TYPE-$VERSION")
+            TAGS+=("$REPO:$TYPE")
+            TAGS+=("$REPO:$TYPE-latest")
+            TAGS+=("$REPO:$TYPE-$VERSION")
           fi
 
-          for final_tag in "${TARGET_TAGS[@]}"; do
-            docker buildx imagetools create -t "$final_tag" \
-              "$TAG_PREFIX:$TYPE-amd64" \
-              "$TAG_PREFIX:$TYPE-arm64"
-          done
+          SRC_AMD64="$REPO:tmp-$TYPE-amd64"
+          SRC_ARM64="$REPO:tmp-$TYPE-arm64"
 
-      - name: Inspect manifest
-        run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.type }}
+          for TAG in "${TAGS[@]}"; do
+            docker buildx imagetools create -t "$TAG" "$SRC_AMD64" "$SRC_ARM64"
+          done
