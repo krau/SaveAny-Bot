@@ -55,9 +55,52 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            GitCommit=${{ steps.args.outputs.git_commit }}
+            BuildTime=${{ steps.args.outputs.build_time }}
+
+      - name: Build and push micro Docker image
+        id: build-and-push-micro
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.micro
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro-${{ steps.meta.outputs.version }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            GitCommit=${{ steps.args.outputs.git_commit }}
+            BuildTime=${{ steps.args.outputs.build_time }}
+
+      - name: Build and push pico Docker image
+        id: build-and-push-pico
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.pico
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico-${{ steps.meta.outputs.version }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: |
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
