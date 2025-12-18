@@ -90,17 +90,13 @@ jobs:
         id: tags
         run: |
           if [ "${{ matrix.type }}" == "default" ]; then
-            TAGS="${{ needs.prepare.outputs.tags }}"
+            TAGS=$(echo "${{ needs.prepare.outputs.tags }}" | tr '\n' ' ')
           elif [ "${{ matrix.type }}" == "micro" ]; then
-            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro ${{
-              env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro-latest ${{
-              env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro-${{ needs.prepare.outputs.version }}"
+            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro-latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro-${{ needs.prepare.outputs.version }}"
           else
-            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico ${{
-              env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico-latest ${{
-              env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico-${{ needs.prepare.outputs.version }}"
+            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico-latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico-${{ needs.prepare.outputs.version }}"
           fi
-          echo "TAGS=$TAGS" >> $GITHUB_OUTPUT
+          echo "TAGS=$TAGS" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
