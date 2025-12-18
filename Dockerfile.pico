@@ -24,13 +24,12 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -X 'github.com/krau/SaveAny-Bot/config.BuildTime=${BuildTime}' \
     -X 'github.com/krau/SaveAny-Bot/config.Docker=true' \
     " \
-    -o saveany-bot .
+    -o saveany-bot . && chmod +x saveany-bot
 
 FROM scratch
 
 WORKDIR /app
 
 COPY --from=builder /app/saveany-bot .
-RUN chmod +x /app/saveany-bot
 
 ENTRYPOINT ["/app/saveany-bot"]
