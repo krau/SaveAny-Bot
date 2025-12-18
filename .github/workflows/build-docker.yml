@@ -31,9 +31,7 @@ jobs:
         id: vars
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-
           MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1,2)
-
           SHORT_SHA=$(git rev-parse --short HEAD)
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -55,7 +53,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -67,23 +65,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push (Temporary Tags)
+      - name: Build and push by digest
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          # 根据类型选择 Dockerfile
           file: ${{ matrix.type == 'default' && './Dockerfile' || format('./Dockerfile.{0}', matrix.type) }}
-          # 仅构建当前架构
           platforms: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
-          push: true
-          # 推送带有架构后缀的临时标签，供后续合并使用
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:tmp-${{ matrix.type }}-${{ matrix.arch }}
+          # 关键修改：不再使用 tags，而是通过 image output 按摘要推送
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           build-args: |
             VERSION=${{ needs.prepare.outputs.version }}
             GitCommit=${{ needs.prepare.outputs.short_sha }}
             BuildTime=${{ needs.prepare.outputs.build_time }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name:
+          Export digest
+          # 将 digest 写入文件，供后续步骤读取
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+          echo "$digest" > /tmp/digests/digest
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.type }}-${{ matrix.arch }}
+          path: /tmp/digests/digest
+          if-no-files-found: error
+          retention-days: 1
 
   create-manifest:
     needs: [prepare, build]
@@ -101,6 +115,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-${{ matrix.type }}-*
+          merge-multiple: false
+
       - name: Create and push manifest lists
         run: |
           REPO="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
@@ -108,6 +129,14 @@ jobs:
           MAJOR_MINOR="${{ needs.prepare.outputs.major_minor }}"
           SHA="${{ needs.prepare.outputs.short_sha }}"
           TYPE="${{ matrix.type }}"
+
+          DIGEST_AMD64=$(cat /tmp/digests/digest-${TYPE}-amd64/digest)
+          DIGEST_ARM64=$(cat /tmp/digests/digest-${TYPE}-arm64/digest)
+
+          echo "Found digests for $TYPE:"
+          echo "AMD64: $DIGEST_AMD64"
+          echo "ARM64: $DIGEST_ARM64"
+
           TAGS=()
 
           if [ "$TYPE" == "default" ]; then
@@ -121,9 +150,14 @@ jobs:
             TAGS+=("$REPO:$TYPE-$VERSION")
           fi
 
-          SRC_AMD64="$REPO:tmp-$TYPE-amd64"
-          SRC_ARM64="$REPO:tmp-$TYPE-arm64"
+          SRC_AMD64="${REPO}@${DIGEST_AMD64}"
+          SRC_ARM64="${REPO}@${DIGEST_ARM64}"
+
+          echo "Creating manifest list with sources:"
+          echo "  $SRC_AMD64"
+          echo "  $SRC_ARM64"
 
           for TAG in "${TAGS[@]}"; do
+            echo "Pushing tag: $TAG"
             docker buildx imagetools create -t "$TAG" "$SRC_AMD64" "$SRC_ARM64"
           done
