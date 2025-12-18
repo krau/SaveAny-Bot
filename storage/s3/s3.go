@@ -11,12 +11,13 @@ import (
 	storconfig "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+	"github.com/krau/SaveAny-Bot/pkg/s3"
 	"github.com/rs/xid"
 )
 
 type S3 struct {
 	config storconfig.S3StorageConfig
-	client *Client
+	client *s3.Client
 	logger *log.Logger
 }
 
@@ -30,7 +31,14 @@ func (m *S3) Init(ctx context.Context, cfg storconfig.StorageConfig) error {
 	}
 	m.config = *s3cfg
 	m.logger = log.FromContext(ctx).WithPrefix(fmt.Sprintf("s3[%s]", m.config.Name))
-	client, err := NewClient(m.config)
+	client, err := s3.NewClient(&s3.Config{
+		Endpoint:        m.config.Endpoint,
+		Region:          m.config.Region,
+		AccessKeyID:     m.config.AccessKeyID,
+		SecretAccessKey: m.config.SecretAccessKey,
+		BucketName:      m.config.BucketName,
+		PathStyle:       !m.config.VirtualHost,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create s3 client: %w", err)
 	}
