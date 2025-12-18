@@ -6,6 +6,7 @@ var (
 	Version   string = "dev"
 	BuildTime string = "unknown"
 	GitCommit string = "unknown"
+	Docker    string = "false" // whether built inside Docker
 )
 
 const (

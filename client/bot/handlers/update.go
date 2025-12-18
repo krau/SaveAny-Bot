@@ -38,6 +38,7 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 		ctx.Reply(u, ext.ReplyTextString(fmt.Sprintf("当前已经是最新版本: %s", config.Version)), nil)
 		return dispatcher.EndGroups
 	}
+	indocker := config.Docker == "true"
 	ctx.Sender.To(u.GetUserChat().AsInputPeer()).StyledText(ctx, html.String(nil, func() string {
 		md := latest.ReleaseNotes
 		md = regexp.MustCompile(`(?m)^###\s+&nbsp;&nbsp;&nbsp;(.+)$`).ReplaceAllString(md, "<b>$1</b>")
@@ -53,6 +54,15 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 
 		return `<blockquote expandable>` + md + `</blockquote>`
 	}()))
+	if indocker {
+		text := fmt.Sprintf("发现新版本: %s\n当前版本: %s\n发布时间: %s\n由于您正在使用 Docker 部署, 请自行在部署平台上执行更新命令",
+			latest.Version,
+			config.Version,
+			latest.PublishedAt.Format("2006-01-02 15:04:05"),
+		)
+		ctx.Reply(u, ext.ReplyTextString(text), nil)
+		return dispatcher.EndGroups
+	}
 	text := fmt.Sprintf(`发现新版本: %s
 当前版本: %s
 
