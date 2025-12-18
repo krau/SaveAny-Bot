@@ -44,6 +44,15 @@ Stream 模式对于磁盘空间有限的部署环境十分有用, 但也有一�
 - `workers`: 同时处理任务数量, 默认为 3
 - `threads`: 下载文件时使用的线程数, 默认为 4. 仅在未启用 Stream 模式时生效.
 - `retry`: 任务失败时的重试次数, 默认为 3.
+- `proxy`: 全局代理配置, 配置后程序内一切网络连接将会尝试使用该代理, 可选.
+
+```toml
+stream = false
+workers = 3
+threads = 4
+retry = 3
+proxy = "socks5://127.0.0.1:7890"
+```
 
 ### Telegram 配置
 
