@@ -9,39 +9,17 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: krau/saveany-bot
 
-concurrency:
-  group: docker-build-${{ github.repository }}
-  cancel-in-progress: true
-
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     outputs:
-      tags: ${{ steps.meta.outputs.tags }}
-      labels: ${{ steps.meta.outputs.labels }}
       version: ${{ steps.vars.outputs.version }}
       git_commit: ${{ steps.vars.outputs.git_commit }}
       build_time: ${{ steps.vars.outputs.build_time }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
-            type=raw,value=latest
-
-      - name: Extract Build Vars
-        id: vars
+      - id: vars
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -50,16 +28,15 @@ jobs:
 
   build:
     needs: prepare
-    permissions:
-      contents: read
-      packages: write
     strategy:
       matrix:
         arch: [amd64, arm64]
         type: [default, micro, pico]
       fail-fast: false
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
-
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -74,33 +51,58 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set Dockerfile path
-        id: dockerfile
-        run: |
-          if [ "${{ matrix.type }}" == "default" ]; then
-            echo "DOCKERFILE=./Dockerfile" >> "$GITHUB_OUTPUT"
-          else
-            echo "DOCKERFILE=./Dockerfile.${{ matrix.type }}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build and push Docker image
+      - name: Build and push by arch
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ steps.dockerfile.outputs.DOCKERFILE }}
+          file: ${{ matrix.type == 'default' && './Dockerfile' || format('./Dockerfile.{0}', matrix.type) }}
           platforms: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
           push: true
           tags: |
-            ${{ matrix.type == 'default' && needs.prepare.outputs.tags || '' }}
-            ${{ matrix.type != 'default' && format('{0}/{1}:{2}', env.REGISTRY, env.IMAGE_NAME, matrix.type) || '' }}
-            ${{ matrix.type != 'default' && format('{0}/{1}:{2}-latest', env.REGISTRY, env.IMAGE_NAME, matrix.type) || '' }}
-            ${{ matrix.type != 'default' && format('{0}/{1}:{2}-{3}', env.REGISTRY, env.IMAGE_NAME, matrix.type, needs.prepare.outputs.version) || '' }}
-          labels: ${{ needs.prepare.outputs.labels }}
-          cache-from: |
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.type }}-latest
-            type=gha
-          cache-to: type=gha,mode=max
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.type }}-${{ matrix.arch }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.type }}-${{ needs.prepare.outputs.version }}-${{ matrix.arch }}
           build-args: |
             VERSION=${{ needs.prepare.outputs.version }}
             GitCommit=${{ needs.prepare.outputs.git_commit }}
             BuildTime=${{ needs.prepare.outputs.build_time }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-manifest:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      matrix:
+        type: [default, micro, pico]
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest group
+        run: |
+          TAG_PREFIX="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          VERSION="${{ needs.prepare.outputs.version }}"
+          TYPE="${{ matrix.type }}"
+
+          if [ "$TYPE" == "default" ]; then
+            TARGET_TAGS=("$TAG_PREFIX:latest" "$TAG_PREFIX:$VERSION")
+          else
+            TARGET_TAGS=("$TAG_PREFIX:$TYPE" "$TAG_PREFIX:$TYPE-latest" "$TAG_PREFIX:$TYPE-$VERSION")
+          fi
+
+          for final_tag in "${TARGET_TAGS[@]}"; do
+            docker buildx imagetools create -t "$final_tag" \
+              "$TAG_PREFIX:$TYPE-amd64" \
+              "$TAG_PREFIX:$TYPE-arm64"
+          done
+
+      - name: Inspect manifest
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.type }}
