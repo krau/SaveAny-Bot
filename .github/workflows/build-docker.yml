@@ -29,7 +29,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -79,6 +79,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro-latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:micro-${{ steps.meta.outputs.version }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: |
@@ -100,6 +101,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico-latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pico-${{ steps.meta.outputs.version }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: |
