@@ -1,4 +1,4 @@
-package s3
+package s3_test
 
 import (
 	"bytes"
@@ -10,6 +10,8 @@ import (
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
 	storconfig "github.com/krau/SaveAny-Bot/config/storage"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/storage/s3"
 )
 
 func newTestContext(t *testing.T) context.Context {
@@ -19,7 +21,7 @@ func newTestContext(t *testing.T) context.Context {
 	return log.WithContext(ctx, logger)
 }
 
-func newFakeS3(t *testing.T) (*S3, *storconfig.S3StorageConfig) {
+func newFakeS3(t *testing.T) (*s3.S3, *storconfig.S3StorageConfig) {
 	t.Helper()
 
 	backend := s3mem.New()
@@ -45,7 +47,7 @@ func newFakeS3(t *testing.T) (*S3, *storconfig.S3StorageConfig) {
 		t.Fatalf("failed to create fake bucket: %v", err)
 	}
 
-	s := &S3{}
+	s := &s3.S3{}
 	ctx := newTestContext(t)
 	if err := s.Init(ctx, cfg); err != nil {
 		t.Fatalf("init s3 failed: %v", err)
@@ -54,9 +56,9 @@ func newFakeS3(t *testing.T) (*S3, *storconfig.S3StorageConfig) {
 	return s, cfg
 }
 
-func TestS3_SaveAndExists(t *testing.T) {
+func TestS3(t *testing.T) {
 	s, _ := newFakeS3(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	content := []byte("hello world")
 	reader := bytes.NewReader(content)
@@ -68,5 +70,27 @@ func TestS3_SaveAndExists(t *testing.T) {
 
 	if !s.Exists(ctx, key) {
 		t.Fatalf("Exists should return true for saved key")
+	}
+
+	if s.Exists(ctx, "nonexistent.txt") {
+		t.Fatalf("Exists should return false for nonexistent key")
+	}
+
+	if err := s.Save(ctx, bytes.NewReader(content), key); err != nil {
+		t.Fatalf("Save with existing key failed: %v", err)
+	}
+
+	if !s.Exists(ctx, "foo/bar_1.txt") {
+		t.Fatalf("Exists should return true for unique renamed key")
+	}
+
+	var length int64 = int64(len(content))
+	ctx = context.WithValue(ctx, ctxkey.ContentLength, length)
+	if err := s.Save(ctx, bytes.NewReader(content), "size_test.txt"); err != nil {
+		t.Fatalf("Save with content length failed: %v", err)
+	}
+
+	if !s.Exists(ctx, "size_test.txt") {
+		t.Fatalf("Exists should return true for size_test.txt")
 	}
 }
