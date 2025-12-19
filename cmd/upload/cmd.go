@@ -1,8 +1,9 @@
-package cmd
+package upload
 
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	"github.com/krau/SaveAny-Bot/common/cache"
+	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
@@ -25,13 +27,14 @@ var uploadCmd = &cobra.Command{
 	RunE:  Upload,
 }
 
-func init() {
+func Register(root *cobra.Command) {
 	uploadCmd.Flags().StringP("file", "f", "", "file path to upload")
 	uploadCmd.MarkFlagRequired("file")
 	uploadCmd.Flags().StringP("storage", "s", "", "storage name to upload to")
 	uploadCmd.MarkFlagRequired("storage")
 	uploadCmd.Flags().StringP("dir", "d", "", "storage dir to upload to, default is the base_path of the storage")
-	rootCmd.AddCommand(uploadCmd)
+	uploadCmd.Flags().Bool("no-progress", false, "disable progress bar")
+	root.AddCommand(uploadCmd)
 }
 
 func Upload(cmd *cobra.Command, args []string) error {
@@ -44,6 +47,10 @@ func Upload(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	dirPath, err := cmd.Flags().GetString("dir")
+	if err != nil {
+		return err
+	}
+	noProgress, err := cmd.Flags().GetBool("no-progress")
 	if err != nil {
 		return err
 	}
@@ -86,9 +93,35 @@ func Upload(cmd *cobra.Command, args []string) error {
 	ctx = context.WithValue(ctx, ctxkey.ContentLength, fileSize)
 	ctx = tgutil.ExtWithContext(ctx, bot.ExtContext())
 
+	// Create progress reader and UI
+	var reader io.Reader
+	var progressUI *UploadProgress
 	log.Info("Uploading file...", "file", fp, "to", storname, "as", uploadPath)
-	if err := stor.Save(ctx, file, uploadPath); err != nil {
+
+	if !noProgress && fileSize > 0 {
+		progressUI = NewUploadProgress(ctx, fileName, fileSize)
+		progressUI.Start()
+
+		reader = ioutil.NewProgressReader(file, fileSize, func(read int64, total int64) {
+			if total > 0 {
+				progressUI.UpdateProgress(float64(read) / float64(total))
+			}
+		})
+	} else {
+		reader = file
+	}
+
+	if err := stor.Save(ctx, reader, uploadPath); err != nil {
+		if progressUI != nil {
+			progressUI.SetError(err)
+			progressUI.Wait()
+		}
 		log.Fatal("Failed to upload file", "error", err)
+	}
+
+	if progressUI != nil {
+		progressUI.Done()
+		progressUI.Wait()
 	}
 	log.Info("File uploaded successfully")
 	return nil
