@@ -152,6 +152,9 @@ func handleUnwatchCmd(ctx *ext.Context, update *ext.Update) error {
 }
 
 func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
+	if userclient.GetCtx() == nil {
+		return
+	}
 	logger := log.FromContext(userclient.GetCtx())
 	for event := range ch {
 		logger.Debug("Received media message event", "chat_id", event.ChatID, "file_name", event.File.Name())

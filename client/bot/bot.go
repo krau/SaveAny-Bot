@@ -17,6 +17,12 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 )
 
+var ectx *ext.Context
+
+func ExtContext() *ext.Context {
+	return ectx
+}
+
 func Init(ctx context.Context) <-chan struct{} {
 	log.FromContext(ctx).Info("初始化 Bot...")
 	resultChan := make(chan struct {
@@ -88,6 +94,7 @@ func Init(ctx context.Context) <-chan struct{} {
 			log.FromContext(ctx).Fatalf("初始化 Bot 失败: %s", result.err)
 		}
 		handlers.Register(result.client.Dispatcher)
+		ectx = result.client.CreateContext()
 		log.FromContext(ctx).Info("Bot 初始化完成")
 	}
 	return shouldRestart

@@ -23,21 +23,14 @@ var uc *gotgproto.Client
 var ectx *ext.Context
 
 func GetCtx() *ext.Context {
-	if uc == nil {
-		panic("User client is not initialized, please call Login first")
-	}
 	if ectx != nil {
 		return ectx
 	}
+	if uc == nil {
+		return nil
+	}
 	ectx = uc.CreateContext()
 	return ectx
-}
-
-func GetClient() *gotgproto.Client {
-	if uc == nil {
-		panic("User client is not initialized, please call Login first")
-	}
-	return uc
 }
 
 func Login(ctx context.Context) (*gotgproto.Client, error) {
