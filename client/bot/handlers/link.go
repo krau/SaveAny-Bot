@@ -1,14 +1,14 @@
 package handlers
 
 import (
-	"fmt"
-
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
 )
@@ -25,7 +25,9 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 		req, err := msgelem.BuildAddOneSelectStorageMessage(ctx, stors, files[0], replied.ID)
 		if err != nil {
 			logger.Errorf("Failed to build storage selection message: %s", err)
-			editReplied("构建存储选择消息失败: "+err.Error(), nil)
+			editReplied(i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectMessageFailed, map[string]any{
+				"Error": err.Error(),
+			}), nil)
 			return dispatcher.EndGroups
 		}
 		ctx.EditMessage(update.EffectiveChat().GetID(), req)
@@ -36,10 +38,14 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 	})
 	if err != nil {
 		logger.Errorf("Failed to build storage selection keyboard: %s", err)
-		editReplied("构建存储选择键盘失败: "+err.Error(), nil)
+		editReplied(i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectKeyboardFailed, map[string]any{
+			"Error": err.Error(),
+		}), nil)
 		return dispatcher.EndGroups
 	}
-	editReplied(fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)), markup)
+	editReplied(i18n.T(i18nk.BotMsgCommonInfoFoundFilesSelectStorage, map[string]any{
+		"Count": len(files),
+	}), markup)
 	return dispatcher.EndGroups
 }
 

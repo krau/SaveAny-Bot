@@ -103,6 +103,10 @@ bot:
       info_fetching_telegraph_page: "正在获取 telegraph 页面..."
       error_get_telegraph_page_failed: "获取 telegraph 页面失败: {{.Error}}"
       error_no_images_in_telegraph_page: "在 telegraph 页面中未找到图片"
+      error_build_dir_select_keyboard_failed: "构建目录选择键盘失败: {{.Error}}"
+      error_no_permission: |
+        您不在白名单中, 无法使用此 Bot.
+        您可以部署自己的实例: https://github.com/krau/SaveAny-Bot
     save:
       error_invalid_id_or_username: "无效的ID或用户名: {{.Error}}"
     watch:
@@ -135,6 +139,10 @@ bot:
       queued_empty: "当前没有排队中的任务"
       queued_title: "当前排队中的任务:"
       truncated_note: "...\n只显示前 10 个任务, 共 {{.Count}} 个任务"
+      info_added_to_queue_full: "已添加到任务队列\n文件名: {{.Filename}}\n当前排队任务数: {{.QueueLength}}"
+      info_added_to_queue_prefix: "已添加到任务队列\n"
+      info_filename_prefix: "文件名: "
+      info_queue_length_prefix: "\n当前排队任务数: "
     rule:
       error_get_user_rules_failed: "获取用户规则失败"
       error_update_user_failed: "更新用户失败"
@@ -147,6 +155,14 @@ bot:
       error_invalid_rule_id: "无效的规则ID"
       error_delete_rule_failed: "删除规则失败"
       info_delete_rule_success: "删除规则成功"
+      help_usage: "使用方法: /rule <操作> <参数...>"
+      help_current_mode_enabled: "\n当前已启用规则模式"
+      help_current_mode_disabled: "\n当前已禁用规则模式"
+      help_available_ops: "\n\n可用操作:\n"
+      help_switch_suffix: " - 开关规则模式\n"
+      help_add_suffix: " <类型> <数据> <存储名> <路径> - 添加规则\n"
+      help_del_suffix: " <规则ID> - 删除规则\n"
+      help_existing_rules_prefix: "\n当前已添加的规则:\n"
     dir:
       error_get_user_dirs_failed: "获取用户文件夹失败"
       error_get_user_failed: "获取用户失败"
@@ -156,6 +172,16 @@ bot:
       error_delete_dir_failed: "删除文件夹失败"
       info_delete_dir_success: "文件夹删除成功"
       error_unknown_operation: "未知操作"
+      help_usage: "使用方法: /dir <操作> <参数...>"
+      help_available_ops: "\n\n可用操作:\n"
+      help_add_suffix: " <存储名> <路径> - 添加路径\n"
+      help_del_suffix: " <路径ID> - 删除路径\n"
+      help_add_example_prefix: "\n添加路径示例:\n"
+      help_add_example_cmd: "/dir add local1 path/to/dir"
+      help_del_example_prefix: "\n\n删除路径示例:\n"
+      help_del_example_cmd: "/dir del 3"
+      help_existing_dirs_prefix: "\n\n当前已添加的路径:\n"
+      button_default: "默认"
     parser:
       help_text: |
         用法:
@@ -176,6 +202,12 @@ bot:
       error_parse_text_failed: "Failed to parse text: {{.Error}}"
       error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
       error_build_parsed_text_entity_failed: "Failed to build parsed text entity: {{.Error}}"
+      info_link_prefix: "\n链接: "
+      info_author_prefix: "\n作者: "
+      info_description_prefix: "\n描述: "
+      info_file_count_prefix: "\n文件数量: "
+      info_total_size_prefix: "\n预计总大小: "
+      info_prompt_select_storage: "\n请选择存储位置"
     telegraph:
       error_build_storage_select_keyboard_failed: "构建存储选择键盘失败: {{.Error}}"
       info_title_prefix: "标题: "
@@ -199,7 +231,7 @@ bot:
         文件大小: {{.SizeMB}} MB
         下载链接: {{.URL}}
         发布时间: {{.PublishedAt}}
-
+        
         升级将重启 Bot , 是否升级?
       info_upgrading_with_version: "正在升级中, 当前版本: {{.Current}}"
       error_upgrade_failed: "升级失败: {{.Error}}"
@@ -226,6 +258,11 @@ bot:
         模板仅在文件名策略设置为 '自定义模板' 时生效, 且模板解析错误时会回退到默认文件名
       error_invalid_template: "无效的模板, 请检查语法\n{{.Error}}"
       info_template_updated: "已更新文件名模板"
+      info_current_template_prefix: "当前模板: {{.Template}}"
+    dl:
+      usage: "用法: /dl <链接1> <链接2> ..."
+      error_no_valid_links: "没有有效的链接可供下载"
+      info_files_select_storage: "共 {{.Count}} 个文件, 请选择存储位置"
     cancel:
       usage: "用法: /cancel <task_id>"
       error_cancel_failed: "取消任务失败: {{.Error}}"
@@ -235,3 +272,6 @@ bot:
       info_saving_files: "正在保存文件..."
       error_build_storage_select_keyboard_failed: "构建存储选择键盘失败: {{.Error}}"
       info_group_found_files_select_storage: "共 {{.Count}} 个文件, 请选择存储位置"
+    storage:
+      info_filename_prefix: "文件名: "
+      info_prompt_select_storage: "\n请选择存储位置"

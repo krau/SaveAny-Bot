@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -12,6 +11,8 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -89,7 +90,7 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, groupID int64) {
 	logger.Debugf("Processing media group %d with %d items", groupID, len(items))
 
 	userId := update.GetUserChat().GetID()
-	msg, err := ctx.Reply(update, ext.ReplyTextString("正在保存文件..."), nil)
+	msg, err := ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgMediaGroupInfoSavingFiles, nil)), nil)
 	if err != nil {
 		logger.Errorf("Failed to reply: %s", err)
 		return
@@ -114,13 +115,17 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, groupID int64) {
 		logger.Errorf("Failed to build storage selection keyboard: %s", err)
 		ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
 			ID:      msg.ID,
-			Message: "构建存储选择键盘失败: " + err.Error(),
+			Message: i18n.T(i18nk.BotMsgMediaGroupErrorBuildStorageSelectKeyboardFailed, map[string]any{
+				"Error": err.Error(),
+			}),
 		})
 		return
 	}
 	ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
-		ID:          msg.ID,
-		Message:     fmt.Sprintf("共 %d 个文件, 请选择存储位置", len(items)),
+		ID: msg.ID,
+		Message: i18n.T(i18nk.BotMsgMediaGroupInfoGroupFoundFilesSelectStorage, map[string]any{
+			"Count": len(items),
+		}),
 		ReplyMarkup: markup,
 	})
 }

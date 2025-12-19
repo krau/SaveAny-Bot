@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -11,6 +10,8 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/telegram/message/html"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/unvgo/ghselfupdate"
 )
@@ -18,24 +19,33 @@ import (
 func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 	currentV, err := semver.Parse(config.Version)
 	if err != nil {
-		ctx.Reply(u, ext.ReplyTextString(fmt.Sprintf("You are in dev or the version var failed to inject: %v", err)), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateErrorVersionVarInvalid, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	latest, ok, err := ghselfupdate.DetectLatest(config.GitRepo)
 	if err != nil {
-		ctx.Reply(u, ext.ReplyTextString(fmt.Sprintf("检测最新版本失败: %v", err)), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateErrorCheckLatestFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	if !ok {
-		ctx.Reply(u, ext.ReplyTextString("没有找到版本信息"), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateErrorNoReleaseFound, nil)), nil)
 		return dispatcher.EndGroups
 	}
 	if latest.Version.Major != currentV.Major {
-		ctx.Reply(u, ext.ReplyTextString(fmt.Sprintf("检测到大版本更新: %s -> %s , 请前往 GitHub 手动下载最新版本并查看迁移指南", currentV, latest.Version)), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateInfoMajorUpgradeRequired, map[string]any{
+			"Current": currentV.String(),
+			"Latest":  latest.Version.String(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	if latest.Version.LT(currentV) || latest.Version.Equals(currentV) {
-		ctx.Reply(u, ext.ReplyTextString(fmt.Sprintf("当前已经是最新版本: %s", config.Version)), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateInfoAlreadyLatest, map[string]any{
+			"Version": config.Version,
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	indocker := config.Docker == "true"
@@ -55,32 +65,28 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 		return `<blockquote expandable>` + md + `</blockquote>`
 	}()))
 	if indocker {
-		text := fmt.Sprintf("发现新版本: %s\n当前版本: %s\n发布时间: %s\n由于您正在使用 Docker 部署, 请自行在部署平台上执行更新命令",
-			latest.Version,
-			config.Version,
-			latest.PublishedAt.Format("2006-01-02 15:04:05"),
-		)
+		text := i18n.T(i18nk.BotMsgUpdateInfoNewVersionInDocker, map[string]any{
+			"Latest":      latest.Version.String(),
+			"Current":     config.Version,
+			"PublishedAt": latest.PublishedAt.Format("2006-01-02 15:04:05"),
+		})
 		ctx.Reply(u, ext.ReplyTextString(text), nil)
 		return dispatcher.EndGroups
 	}
-	text := fmt.Sprintf(`发现新版本: %s
-当前版本: %s
-
-文件大小: %.2f MB
-下载链接: %s
-发布时间: %s
-
-升级将重启 Bot , 是否升级?`, latest.Version, config.Version,
-		float64(latest.AssetByteSize)/(1024*1024), latest.AssetURL,
-		latest.PublishedAt.Format("2006-01-02 15:04:05"),
-	)
+	text := i18n.T(i18nk.BotMsgUpdateInfoNewVersionPromptUpgrade, map[string]any{
+		"Latest":      latest.Version.String(),
+		"Current":     config.Version,
+		"SizeMB":      float64(latest.AssetByteSize) / (1024 * 1024),
+		"URL":         latest.AssetURL,
+		"PublishedAt": latest.PublishedAt.Format("2006-01-02 15:04:05"),
+	})
 	ctx.Reply(u, ext.ReplyTextString(text), &ext.ReplyOpts{
 		Markup: &tg.ReplyInlineMarkup{
 			Rows: []tg.KeyboardButtonRow{
 				{
 					Buttons: []tg.KeyboardButtonClass{
 						&tg.KeyboardButtonCallback{
-							Text: "升级",
+							Text: i18n.T(i18nk.BotMsgUpdateButtonUpgrade, nil),
 							Data: []byte("update"),
 						},
 					},
@@ -98,19 +104,25 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 	}
 	ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
 		ID:      u.CallbackQuery.GetMsgID(),
-		Message: fmt.Sprintf("正在升级中, 当前版本: %s", config.Version),
+		Message: i18n.T(i18nk.BotMsgUpdateInfoUpgradingWithVersion, map[string]any{
+			"Current": config.Version,
+		}),
 	})
 	latest, err := ghselfupdate.UpdateSelf(currentV, config.GitRepo)
 	if err != nil {
 		ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:      u.CallbackQuery.GetMsgID(),
-			Message: fmt.Sprintf("升级失败: %v", err),
+			Message: i18n.T(i18nk.BotMsgUpdateErrorUpgradeFailed, map[string]any{
+				"Error": err.Error(),
+			}),
 		})
 		return dispatcher.EndGroups
 	}
 	ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
 		ID:      u.CallbackQuery.GetMsgID(),
-		Message: fmt.Sprintf("已升级至版本 %s\n若 Bot 未自动重启请手动启动", latest.Version),
+		Message: i18n.T(i18nk.BotMsgUpdateInfoUpgradeSuccess, map[string]any{
+			"Version": latest.Version.String(),
+		}),
 	})
 	return errors.New("SAVEANTBOT-RESTART")
 }

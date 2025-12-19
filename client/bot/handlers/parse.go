@@ -14,6 +14,8 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/parsers"
@@ -33,7 +35,7 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 	if !ok {
 		return dispatcher.EndGroups
 	}
-	msg, err := ctx.Reply(u, ext.ReplyTextString("正在解析..."), nil)
+	msg, err := ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgParseInfoParsing, nil)), nil)
 	if err != nil {
 		return err
 	}
@@ -44,7 +46,9 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 	}
 	if err != nil {
 		logger.Error("Failed to parse text", "error", err)
-		ctx.Reply(u, ext.ReplyTextString("Failed to parse text: "+err.Error()), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgParseErrorParseTextFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	logger.Debug("Parsed item from text message", "title", item.Title, "url", item.URL)
@@ -55,13 +59,17 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 	})
 	if err != nil {
 		logger.Errorf("Failed to build storage selection keyboard: %s", err)
-		ctx.Reply(u, ext.ReplyTextString("Failed to build storage selection keyboard: "+err.Error()), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgParseErrorBuildStorageSelectKeyboardFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	text, entities, err := msgelem.BuildParsedTextEntity(*item)
 	if err != nil {
 		logger.Errorf("Failed to build parsed text entity: %s", err)
-		ctx.Reply(u, ext.ReplyTextString("Failed to build parsed text entity: "+err.Error()), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgParseErrorBuildParsedTextEntityFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
@@ -87,7 +95,9 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 	}
 	if err != nil {
 		logger.Error("Failed to parse text", "error", err)
-		ctx.Reply(u, ext.ReplyTextString("Failed to parse text: "+err.Error()), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgParseErrorParseTextFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	logger.Debug("Parsed item from text message", "title", item.Title, "url", item.URL)
@@ -95,7 +105,9 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 	text, entities, err := msgelem.BuildParsedTextEntity(*item)
 	if err != nil {
 		logger.Errorf("Failed to build parsed text entity: %s", err)
-		ctx.Reply(u, ext.ReplyTextString("Failed to build parsed text entity: "+err.Error()), nil)
+		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgParseErrorBuildParsedTextEntityFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	msg, err := ctx.SendMessage(userID, &tg.MessagesSendMessageRequest{

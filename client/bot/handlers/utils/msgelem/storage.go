@@ -9,6 +9,8 @@ import (
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/cache"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -70,11 +72,14 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 func BuildAddOneSelectStorageMessage(ctx context.Context, stors []storage.Storage, file tfile.TGFileMessage, msgId int) (*tg.MessagesEditMessageRequest, error) {
 	eb := entity.Builder{}
 	var entities []tg.MessageEntityClass
-	text := fmt.Sprintf("文件名: %s\n请选择存储位置", file.Name())
+	text := i18n.T(i18nk.BotMsgTasksInfoAddedToQueueFull, map[string]any{
+		"Filename":    file.Name(),
+		"QueueLength": 0,
+	})
 	if err := styling.Perform(&eb,
-		styling.Plain("文件名: "),
+		styling.Plain(i18n.T(i18nk.BotMsgStorageInfoFilenamePrefix, nil)),
 		styling.Code(file.Name()),
-		styling.Plain("\n请选择存储位置"),
+		styling.Plain(i18n.T(i18nk.BotMsgStorageInfoPromptSelectStorage, nil)),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entity: %s", err)
 	} else {
@@ -185,7 +190,7 @@ func BuildSetDirMarkupForAdd(dirs []database.Dir, dataid string) (*tg.ReplyInlin
 		return nil, fmt.Errorf("failed to set default directory data in cache: %w", err)
 	}
 	buttons = append(buttons, &tg.KeyboardButtonCallback{
-		Text: "默认",
+		Text: i18n.T(i18nk.BotMsgDirButtonDefault, nil),
 		Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dirDefaultDataId),
 	})
 	markup := &tg.ReplyInlineMarkup{}

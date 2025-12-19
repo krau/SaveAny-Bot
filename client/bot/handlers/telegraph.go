@@ -13,6 +13,8 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -35,17 +37,19 @@ func handleTelegraphUrlMessage(ctx *ext.Context, update *ext.Update) error {
 	})
 	if err != nil {
 		logger.Errorf("Failed to build storage selection keyboard: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("构建存储选择键盘失败: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgTelegraphErrorBuildStorageSelectKeyboardFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 
 	eb := entity.Builder{}
 	if err := styling.Perform(&eb,
-		styling.Plain("标题: "),
+		styling.Plain(i18n.T(i18nk.BotMsgTelegraphInfoTitlePrefix, nil)),
 		styling.Code(result.Page.Title),
-		styling.Plain("\n图片数量: "),
+		styling.Plain(i18n.T(i18nk.BotMsgTelegraphInfoPicCountPrefix, nil)),
 		styling.Code(fmt.Sprintf("%d", len(result.Pics))),
-		styling.Plain("\n请选择存储位置"),
+		styling.Plain(i18n.T(i18nk.BotMsgTelegraphInfoPromptSelectStorage, nil)),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entity: %s", err)
 		return dispatcher.EndGroups

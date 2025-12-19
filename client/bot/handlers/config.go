@@ -8,19 +8,21 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/fnamest"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 )
 
 func handleConfigCmd(ctx *ext.Context, update *ext.Update) error {
-	ctx.Reply(update, ext.ReplyTextString("请选择要配置的选项"), &ext.ReplyOpts{
+	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgConfigPromptSelectOption)), &ext.ReplyOpts{
 		Markup: &tg.ReplyInlineMarkup{
 			Rows: []tg.KeyboardButtonRow{
 				{
 					Buttons: []tg.KeyboardButtonClass{
 						&tg.KeyboardButtonCallback{
-							Text: "文件名策略",
+							Text: i18n.T(i18nk.BotMsgConfigButtonFilenameStrategy),
 							Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeConfig, "fnamest"),
 						},
 					},
@@ -37,7 +39,7 @@ func handleConfigCallback(ctx *ext.Context, update *ext.Update) error {
 		ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 			QueryID:   update.CallbackQuery.GetQueryID(),
 			Alert:     true,
-			Message:   "无效的回调数据",
+			Message:   i18n.T(i18nk.BotMsgConfigErrorInvalidCallbackData),
 			CacheTime: 5,
 		})
 		return dispatcher.EndGroups
@@ -72,7 +74,9 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 		}
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:      update.CallbackQuery.GetMsgID(),
-			Message: fmt.Sprintf("已将文件名策略设置为: %s", fnamest.FnameSTDisplay[st]),
+			Message: i18n.T(i18nk.BotMsgConfigInfoFilenameStrategySet, map[string]any{
+				"Strategy": fnamest.FnameSTDisplay[st],
+			}),
 		})
 		return dispatcher.EndGroups
 	}
@@ -97,7 +101,9 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 	}
 	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 		ID:          update.CallbackQuery.GetMsgID(),
-		Message:     fmt.Sprintf("请选择文件名策略, 当前策略: %s", fnamest.FnameSTDisplay[currentSt]),
+		Message:     i18n.T(i18nk.BotMsgConfigPromptSelectFilenameStrategy, map[string]any{
+			"Strategy": fnamest.FnameSTDisplay[currentSt],
+		}),
 		ReplyMarkup: markup,
 	})
 	return dispatcher.EndGroups
@@ -111,34 +117,27 @@ func handleConfigFnameTmpl(ctx *ext.Context, update *ext.Update) error {
 	}
 	args := strings.Fields(string(update.EffectiveMessage.Text))
 	if len(args) <= 1 {
-		text := `使用该命令设置文件名模板, 示例:
-/fnametmpl 图片_{{.msgid}}_{{.msgdate}}.jpg
-
-可用变量:
-- {{.msgid}}: 消息ID
-- {{.msgtags}}: 消息中的标签, 将以下划线分隔输出
-- {{.msggen}}: 根据消息生成的文件名
-- {{.msgdate}}: 消息日期, 格式 YYYY-MM-DD_HH-MM-SS
-- {{.origname}}: 媒体的原始文件名 (如果有)
-- {{.chatid}}: 消息的聊天ID
-`
+		text := i18n.T(i18nk.BotMsgConfigFnametmplHelp, nil)
 		if user.FilenameTemplate != "" {
-			text += fmt.Sprintf("\n\n当前模板: %s", user.FilenameTemplate)
+			text += "\n\n" + i18n.T(i18nk.BotMsgConfigInfoCurrentTemplatePrefix, map[string]any{
+				"Template": user.FilenameTemplate,
+			})
 		}
-		text += "\n\n模板仅在文件名策略设置为 '自定义模板' 时生效, 且模板解析错误时会回退到默认文件名"
 		ctx.Reply(update, ext.ReplyTextString(text), nil)
 		return dispatcher.EndGroups
 	}
 	newTmpl := strings.Join(args[1:], " ")
 	_, err = template.New("filename").Parse(newTmpl)
 	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString("无效的模板, 请检查语法\n"+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgConfigErrorInvalidTemplate, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return dispatcher.EndGroups
 	}
 	user.FilenameTemplate = newTmpl
 	if err := database.UpdateUser(ctx, user); err != nil {
 		return err
 	}
-	ctx.Reply(update, ext.ReplyTextString("已更新文件名模板"), nil)
+	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgConfigInfoTemplateUpdated, nil)), nil)
 	return dispatcher.EndGroups
 }

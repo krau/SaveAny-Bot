@@ -8,6 +8,8 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/storage"
 )
@@ -19,7 +21,7 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 	dirs, err := database.GetUserDirsByChatID(ctx, userChatID)
 	if err != nil {
 		logger.Errorf("Failed to get user directories: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取用户文件夹失败"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorGetUserDirsFailed)), nil)
 		return dispatcher.EndGroups
 	}
 	if len(args) < 2 {
@@ -29,7 +31,7 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 	user, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
 	if err != nil {
 		logger.Errorf("Failed to get user: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorGetUserFailed)), nil)
 		return dispatcher.EndGroups
 	}
 	switch args[1] {
@@ -46,10 +48,10 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 
 		if err := database.CreateDirForUser(ctx, user.ID, args[2], args[3]); err != nil {
 			logger.Errorf("Failed to create directory: %s", err)
-			ctx.Reply(update, ext.ReplyTextString("创建文件夹失败"), nil)
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorCreateDirFailed)), nil)
 			return dispatcher.EndGroups
 		}
-		ctx.Reply(update, ext.ReplyTextString("文件夹添加成功"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirInfoCreateDirSuccess)), nil)
 	case "del":
 		// /dir del 3
 		if len(args) < 3 {
@@ -58,17 +60,17 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 		}
 		dirID, err := strconv.Atoi(args[2])
 		if err != nil {
-			ctx.Reply(update, ext.ReplyTextString("文件夹ID无效"), nil)
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorInvalidDirId)), nil)
 			return dispatcher.EndGroups
 		}
 		if err := database.DeleteDirByID(ctx, uint(dirID)); err != nil {
 			logger.Errorf("Failed to delete directory: %s", err)
-			ctx.Reply(update, ext.ReplyTextString("删除文件夹失败"), nil)
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorDeleteDirFailed)), nil)
 			return dispatcher.EndGroups
 		}
-		ctx.Reply(update, ext.ReplyTextString("文件夹删除成功"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirInfoDeleteDirSuccess)), nil)
 	default:
-		ctx.Reply(update, ext.ReplyTextString("未知操作"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorUnknownOperation)), nil)
 	}
 	return dispatcher.EndGroups
 }

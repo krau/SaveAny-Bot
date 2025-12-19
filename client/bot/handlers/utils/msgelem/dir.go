@@ -5,22 +5,24 @@ import (
 	"strings"
 
 	"github.com/gotd/td/telegram/message/styling"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/database"
 )
 
 func BuildDirHelpStyling(dirs []database.Dir) []styling.StyledTextOption {
 	return []styling.StyledTextOption{
-		styling.Bold("使用方法: /dir <操作> <参数...>"),
-		styling.Plain("\n\n可用操作:\n"),
+		styling.Bold(i18n.T(i18nk.BotMsgDirHelpUsage, nil)),
+		styling.Plain(i18n.T(i18nk.BotMsgDirHelpAvailableOps, nil)),
 		styling.Code("add"),
-		styling.Plain(" <存储名> <路径> - 添加路径\n"),
+		styling.Plain(i18n.T(i18nk.BotMsgDirHelpAddSuffix, nil)),
 		styling.Code("del"),
-		styling.Plain(" <路径ID> - 删除路径\n"),
-		styling.Plain("\n添加路径示例:\n"),
-		styling.Code("/dir add local1 path/to/dir"),
-		styling.Plain("\n\n删除路径示例:\n"),
-		styling.Code("/dir del 3"),
-		styling.Plain("\n\n当前已添加的路径:\n"),
+		styling.Plain(i18n.T(i18nk.BotMsgDirHelpDelSuffix, nil)),
+		styling.Plain(i18n.T(i18nk.BotMsgDirHelpAddExamplePrefix, nil)),
+		styling.Code(i18n.T(i18nk.BotMsgDirHelpAddExampleCmd, nil)),
+		styling.Plain(i18n.T(i18nk.BotMsgDirHelpDelExamplePrefix, nil)),
+		styling.Code(i18n.T(i18nk.BotMsgDirHelpDelExampleCmd, nil)),
+		styling.Plain(i18n.T(i18nk.BotMsgDirHelpExistingDirsPrefix, nil)),
 		styling.Blockquote(func() string {
 			var sb strings.Builder
 			for _, dir := range dirs {
