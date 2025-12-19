@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
     CGO_ENABLED=0 \
     go build -trimpath \
-    -tags=no_jsparser,no_minio \
+    -tags=no_jsparser,no_minio,no_bubbletea \
     -ldflags=" \
     -s -w \
     -X 'github.com/krau/SaveAny-Bot/config.Version=${VERSION}' \
