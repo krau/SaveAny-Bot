@@ -11,20 +11,22 @@ title: Introduction
 
 Save Any Bot is a tool that allows you to save files from Telegram to various storage backends.
 
-## Features
+## 🎯 Features
 
-- Supports documents/videos/images/stickers... and even Telegraph
+- Supports documents/videos/images/stickers... and even [Telegraph](https://telegra.ph/)
 - Breaks restrictions on saving files
 - Batch download
 - Streaming
 - Multi-user
 - Automatic organization based on storage rules
+- Watch specific chats and automatically save messages, with filters
+- Write JS parser plugins to save files from almost any website
 - Supports multiple storage backends:
     - Alist
     - S3
     - WebDAV
-    - Telegram (re-upload to specified chat)
     - Local disk
+    - Telegram (re-upload to specified chat)
 
 ## [Contributors](https://github.com/krau/SaveAny-Bot/graphs/contributors)
 

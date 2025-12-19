@@ -4,7 +4,7 @@ title: "Installation and Updates"
 
 # Installation and Updates
 
-## Deploy from Pre-compiled Files
+## Deploy from Pre-compiled Files (Recommended)
 
 Download the binary file for your platform from the [Release](https://github.com/krau/SaveAny-Bot/releases) page.
 
@@ -129,17 +129,41 @@ docker run -d --name saveany-bot \
     ghcr.io/krau/saveany-bot:latest
 ```
 
+{{< hint info >}}
+About Docker image variants
+<br />
+<ul>
+<li>Default: Includes all features and dependencies, larger in size. Use this if you don't have special requirements.</li>
+<li>micro: Slimmed-down image with some optional dependencies removed, smaller in size.</li>
+<li>pico: Minimal image containing only core features, smallest in size.</li>
+</ul>
+You can pull different variants by specifying tags, for example: <code>ghcr.io/krau/saveany-bot:micro</code>
+<br />
+For more details about the variants, see the Dockerfile in the project root.
+{{< /hint >}}
+
 ## Updates
 
-Use `upgrade` or `up` to upgrade to the latest version
+If you deployed from pre-compiled binaries, use the following CLI command to update:
 
 ```bash
-./saveany-bot upgrade
+./saveany-bot up
 ```
 
+(`upgrade` is also available as an alias.)
+
 If you deployed with Docker, use the following commands to update:
+
+docker:
 
 ```bash
 docker pull ghcr.io/krau/saveany-bot:latest
 docker restart saveany-bot
+```
+
+docker compose:
+
+```bash
+docker compose pull
+docker compose restart
 ```

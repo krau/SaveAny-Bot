@@ -44,6 +44,15 @@ Stream mode is very useful for deployment environments with limited disk space, 
 - `workers`: Number of tasks to process simultaneously, default is 3.
 - `threads`: Number of threads used when downloading files, default is 4. Only effective when Stream mode is not enabled.
 - `retry`: Number of retries when a task fails, default is 3.
+- `proxy`: Global proxy configuration. After setting this, all network connections inside the program will try to use this proxy. Optional.
+
+```toml
+stream = false
+workers = 3
+threads = 4
+retry = 3
+proxy = "socks5://127.0.0.1:7890"
+```
 
 ### Telegram Configuration
 
@@ -54,6 +63,17 @@ Stream mode is very useful for deployment environments with limited disk space, 
 - `proxy`: Proxy configuration, optional.
   - `enable`: Whether to enable the proxy.
   - `url`: Proxy address, only supports `socks5://`
+- `userbot`: Userbot configuration, optional.
+  - `enable`: Enable userbot integration. Requires logging in with a user account; you should use your own API ID & Hash when enabling this.
+  - `session`: Path to the userbot session file, default is `data/usersession.db`.
+
+{{< hint warning >}}
+After enabling userbot integration, the bot can download files from private channels and groups, but there is an unavoidable risk of the account being banned.
+<br />
+On the first start after enabling userbot, you need to input phone number, 2FA and verification code in the terminal.
+<br />
+If you deploy with Docker, please run the container with `-it` for an interactive environment, then perform the login.
+{{< /hint >}}
 
 ```toml
 [telegram]
@@ -65,6 +85,9 @@ rpc_retry = 5
 [telegram.proxy]
 enable = false
 url = "socks5://127.0.0.1:7890"
+[telegram.userbot]
+enable = false
+session = "data/usersession.db"
 ```
 
 ### Storage Endpoints List
@@ -130,6 +153,39 @@ id = 789789
 storages = []
 blacklist = true
 ```
+
+### Events
+
+Event hooks allow you to run custom commands based on task status while the bot is processing tasks. Currently only arbitrary command execution is supported, configured via `[hook.exec]`.
+
+Supported event types:
+
+- `task_before_start`: Before a task starts
+- `task_success`: After a task completes successfully
+- `task_fail`: After a task fails
+- `task_cancel`: After a task is cancelled
+
+The configured value must be a full shell command line. The bot will execute this command when the event occurs. Example:
+
+```toml
+[hook.exec]
+task_before_start = "echo 'task is about to start'"
+task_success = "bash /path/to/success_script.sh"
+task_fail = "curl -X POST https://example.com/api/notify -d 'task failed'"
+task_cancel = "bash /path/to/cancel_script.sh"
+```
+
+### Parsers
+
+Parsers give the bot the ability to handle non-Telegram files, such as downloading files from other websites. Configure them via `[parsers]`.
+
+```toml
+[parsers]
+plugin_enable = true # Whether to enable parser plugins
+plugin_dirs = ["./plugins"] # Plugin directories, can be multiple
+```
+
+The above settings only control JavaScript-based parser plugins. The bot also has built-in parsers implemented in Go, which are enabled by default.
 
 ### Miscellaneous
 
