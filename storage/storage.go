@@ -16,6 +16,7 @@ import (
 )
 
 type Storage interface {
+	// Init 只应该在创建存储时调用一次
 	Init(ctx context.Context, cfg storcfg.StorageConfig) error
 	Type() storenum.StorageType
 	Name() string
@@ -42,6 +43,7 @@ var storageConstructors = map[storenum.StorageType]StorageConstructor{
 	storenum.Telegram: func() Storage { return new(telegram.Telegram) },
 }
 
+// NewStorage creates a new storage instance based on the provided config and initializes it
 func NewStorage(ctx context.Context, cfg storcfg.StorageConfig) (Storage, error) {
 	constructor, ok := storageConstructors[cfg.GetType()]
 	if !ok {
