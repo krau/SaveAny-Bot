@@ -6,7 +6,6 @@ lifetime:
   cleaning_cache: "正在清理缓存 {{.Path}}"
   bye: 已退出
 config:
-  loaded_storages: "已加载 {{.Count}} 个存储后端"
   err:
     invalid_cache_dir: "无效的缓存目录: {{.Path}}，请检查配置文件"
     duplicate_storage_name: "存储名称 '{{.Name}}' 重复，请检查配置文件"
@@ -35,11 +34,13 @@ bot:
       /config - 修改配置
       /fnametmpl - 设置文件自定义命名模板
       /parser - 管理解析器插件
+      /task - 管理任务队列
       /watch - 监听聊天并自动保存 (UserBot)
+      /unwatch - 取消监听聊天 (UserBot)
+      /lswatch - 列出正在监听的聊天 (UserBot)
       /update - 检查更新并升级
 
       使用帮助: https://sabot.unv.app/usage
-      反馈群组: https://t.me/ProjectSaveAny
     save_help_text: |
       使用方法:
 
