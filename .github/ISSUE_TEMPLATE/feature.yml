@@ -1,5 +1,5 @@
-name: "⭐️ 功能请求"
-description: "功能请求"
+name: "⭐️ Feature Request"
+description: "Feature request"
 labels:
   - "enhancement"
 assignees:
@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        # 请详细描述你想要的功能
+        # Please describe the feature you want in detail
   - type: textarea
     attributes:
       label: "⭐️ Feature description"

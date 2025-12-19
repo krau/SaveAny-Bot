@@ -92,7 +92,7 @@ jobs:
           echo "$digest" > /tmp/digests/digest
 
       - name: Upload digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: digest-${{ matrix.type }}-${{ matrix.arch }}
           path: /tmp/digests/digest
@@ -116,7 +116,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: /tmp/digests
           pattern: digest-${{ matrix.type }}-*

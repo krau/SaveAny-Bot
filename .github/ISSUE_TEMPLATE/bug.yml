@@ -1,5 +1,5 @@
-name: "👾 报告 bug"
-description: "报告 bug"
+name: "👾 Bug Report"
+description: "Report a bug or unexpected behavior"
 labels:
   - "bug"
 assignees:
@@ -7,29 +7,29 @@ assignees:
 body:
   - type: textarea
     attributes:
-      label: "👾 问题描述"
+      label: "👾 Description"
       description: "What happened?"
       placeholder: "When called ... happens ..."
     validations:
       required: true
   - type: textarea
     attributes:
-      label: "⚡️ 预期行为"
+      label: "⚡️ Expected Behavior"
       description: "What was expected?"
       placeholder: "It should be ..."
   - type: textarea
     attributes:
-      label: "📄 配置文件"
+      label: "📄 Configuration File"
       description: "Please provide your config file"
-      placeholder: "请自行隐去密钥信息"
+      placeholder: "Please remove sensitive information"
       render: toml
     validations:
       required: true
   - type: textarea
     attributes:
-      label: "🔍 日志"
+      label: "🔍 Logs"
       description: "Please provide logs"
-      placeholder: "可删除隐私信息"
+      placeholder: "Please remove sensitive information"
       render: shell
     validations:
       required: true
