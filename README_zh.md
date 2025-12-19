@@ -2,9 +2,7 @@
 
 # <img src="docs/static/logo.png" width="45" align="center"> Save Any Bot
 
-**English** | [简体中文](./README_zh.md)
-
-> **Save Any Telegram File to Anywhere 📂. Support restrict saving content and beyond telegram.**
+> **把 Telegram 上的文件转存到多种存储端**
 
 [![Release Date](https://img.shields.io/github/release-date/krau/saveany-bot?label=release)](https://github.com/krau/saveany-bot/releases)
 [![tag](https://img.shields.io/github/v/tag/krau/saveany-bot.svg)](https://github.com/krau/saveany-bot/releases)
@@ -17,48 +15,48 @@
 
 </div>
 
-## 🎯 Features
+## 🎯 特性
 
-- Support documents / videos / photos / stickers… and even [Telegraph](https://telegra.ph/)
-- Bypass "restrict saving content" media
-- Batch download
-- Streaming transfer
-- Multi-user support
-- Auto organize files based on storage rules
-- Watch specified chats and auto-save messages, with filters
-- Write JS parser plugins to save files from almost any website
-- Storage backends:
+- 支持文档/视频/图片/贴纸…甚至还有 [Telegraph](https://telegra.ph/)
+- 破解禁止保存的文件
+- 批量下载
+- 流式传输
+- 多用户使用
+- 基于存储规则的自动整理
+- 监听并自动转存指定聊天的消息, 支持过滤
+- 使用 js 编写解析器插件以转存任意网站的文件
+- 存储端支持:
   - Alist
   - S3
   - WebDAV
-  - Local filesystem
-  - Telegram (re-upload to specified chats)
+  - 本地磁盘
+  - Telegram (重传回指定聊天)
 
-## 📦 Quick Start
+## 快速开始
 
-Create a `config.toml` file with the following content:
+创建文件 `config.toml` 并填入以下内容:
 
 ```toml
 [telegram]
-token = "" # Your bot token, obtained from @BotFather
+token = "" # 你的 Bot Token, 在 @BotFather 获取
 [telegram.proxy]
-# Enable proxy for Telegram, currently only SOCKS5 is supported
+# 启用代理连接 telegram, 当前只支持 socks5
 enable = false
 url = "socks5://127.0.0.1:7890"
 
 [[storages]]
-name = "Local Disk"
+name = "本地磁盘"
 type = "local"
 enable = true
 base_path = "./downloads"
 
 [[users]]
-id = 114514 # Your Telegram account id
+id = 114514 # 你的 Telegram 账号 id
 storages = []
 blacklist = true
 ```
 
-Run Save Any Bot with Docker:
+使用 Docker 运行 Save Any Bot:
 
 ```bash
 docker run -d --name saveany-bot \
@@ -67,17 +65,17 @@ docker run -d --name saveany-bot \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-Please [**read the docs**](https://sabot.unv.app/en/) for more configuration options and usage.
+请 [**查看文档**](https://sabot.unv.app/) 以获取更多配置选项和使用方法.
 
-## Sponsors
+## 赞助
 
-This project is supported by [YxVM](https://yxvm.com/) and [NodeSupport](https://github.com/NodeSeekDev/NodeSupport).
+本项目受到 [YxVM](https://yxvm.com/) 与 [NodeSupport](https://github.com/NodeSeekDev/NodeSupport) 的支持.
 
-If this project is helpful to you, consider sponsoring me via:
+如果这个项目对你有帮助, 你可以考虑通过以下方式赞助我:
 
-- [Afdian](https://afdian.com/a/unvapp)
+- [爱发电](https://afdian.com/a/unvapp)
 
-## Thanks To
+## 鸣谢
 
 - [gotd](https://github.com/gotd/td)
 - [TG-FileStreamBot](https://github.com/EverythingSuckz/TG-FileStreamBot)
@@ -85,8 +83,8 @@ If this project is helpful to you, consider sponsoring me via:
 - [tdl](https://github.com/iyear/tdl)
 - All the dependencies, contributors, sponsors and users.
 
-## Contact
+## 社区和关于作者
 
-- [![Group](https://img.shields.io/badge/ProjectSaveAny-Group-blue)](https://t.me/ProjectSaveAny)
-- [![Discussion](https://img.shields.io/badge/Github-Discussion-white)](https://github.com/krau/saveany-bot/discussions)
-- [![PersonalChannel](https://img.shields.io/badge/Krau-PersonalChannel-cyan)](https://t.me/acherkrau)
+- [![通知群组](https://img.shields.io/badge/ProjectSaveAny-Group-blue)](https://t.me/ProjectSaveAny)
+- [![讨论区](https://img.shields.io/badge/Github-Discussion-white)](https://github.com/krau/saveany-bot/discussions)
+- [![个人频道](https://img.shields.io/badge/Krau-PersonalChannel-cyan)](https://t.me/acherkrau)
