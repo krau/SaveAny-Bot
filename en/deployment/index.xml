@@ -2,9 +2,9 @@
  Installation and Updates
  &lt;a class="anchor" href="#installation-and-updates">#&lt;/a>
 &lt;/h1>
-&lt;h2 id="deploy-from-pre-compiled-files">
- Deploy from Pre-compiled Files
- &lt;a class="anchor" href="#deploy-from-pre-compiled-files">#&lt;/a>
+&lt;h2 id="deploy-from-pre-compiled-files-recommended">
+ Deploy from Pre-compiled Files (Recommended)
+ &lt;a class="anchor" href="#deploy-from-pre-compiled-files-recommended">#&lt;/a>
 &lt;/h2>
 &lt;p>Download the binary file for your platform from the &lt;a href="https://github.com/krau/SaveAny-Bot/releases">Release&lt;/a> page.&lt;/p>
 &lt;p>Create a &lt;code>config.toml&lt;/code> file in the extracted directory, refer to the &lt;a href="../configuration">Configuration Guide&lt;/a> to edit the configuration file.&lt;/p>
