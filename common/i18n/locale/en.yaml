@@ -1,0 +1,324 @@
+lifetime:
+  initing: Starting up
+  initfailed: Initialization failed
+  exiting: Shutting down
+  user_login_failed: "User login failed: {{.Error}}"
+  cleaning_cache: "Cleaning cache {{.Path}}"
+  bye: Exited
+config:
+  err:
+    invalid_cache_dir: "Invalid cache directory: {{.Path}}, please check the config file"
+    duplicate_storage_name: "Storage name '{{.Name}}' is duplicated, please check the config file"
+err:
+  get_workdir_failed: "Failed to get working directory: {{.Error}}"
+  get_cache_abs_path_failed: "Failed to get absolute cache path: {{.Error}}"
+  clean_cache_failed: "Failed to clean cache: {{.Error}}"
+parser:
+  plugin:
+    load_failed: Failed to load parser plugins
+    loaded_dir: Parser plugins loaded
+bot:
+  msg:
+    help_text_fmt: |
+      Save Any Bot - Save your Telegram files
+      Version: %s , Commit: %s
+
+      Commands:
+      /start - Start using the bot
+      /help - Show help
+      /silent - Toggle silent mode
+      /storage - Set default storage
+      /save [custom filename] - Save file
+      /dir - Manage storage directories
+      /rule - Manage rules
+      /config - Modify configuration
+      /fnametmpl - Set custom filename template
+      /parser - Manage parser plugins
+      /task - Manage task queue
+      /watch - Watch chats and auto save (UserBot)
+      /unwatch - Stop watching chats (UserBot)
+      /lswatch - List watched chats (UserBot)
+      /update - Check and upgrade to latest version
+
+      Usage guide: https://sabot.unv.app/usage
+    cmd:
+      start: "Start using"
+      silent: "Toggle silent mode"
+      storage: "Set default storage"
+      dir: "Manage storage directories"
+      rule: "Manage auto-save rules"
+      save: "Save files"
+      dl: "Download files from given links"
+      task: "Manage task queue"
+      cancel: "Cancel task"
+      watch: "Watch chats (UserBot)"
+      unwatch: "Stop watching chats (UserBot)"
+      lswatch: "List watched chats (UserBot)"
+      config: "Modify configuration"
+      fnametmpl: "Set filename template"
+      help: "Show help"
+      parser: "Manage parsers"
+      update: "Check for updates"
+    save_help_text: |
+      Usage:
+
+      1. Reply to the file you want to save with this command, optional filename parameter.
+      Example:
+      /save custom_file_name.mp4
+
+      2. After setting default storage, send /save <channel_id/username> <message_id_range> to batch save files. Rules will be applied; if no rule matches, default storage will be used.
+      Example:
+      /save @acherkrau 114-514
+    watch_help_text: |
+      Use /watch to watch messages in a chat and automatically save them to the default storage, following storage rules.
+
+      Syntax:
+      /watch <chat_id> [filter]
+
+      Parameters:
+      - <chat_id>: Chat ID or username
+      - [filter]: Optional, format is filter_type:expression , see docs for all supported filters
+
+      Example:
+      /watch -1002229835658 msgre:.*plana.*
+
+      This will watch chat with ID -1002229835658 and save all media messages containing "plana".
+    common:
+      error_invalid_regex: "Invalid regex: {{.Error}}"
+      error_invalid_msg_id_range: "Invalid message ID range: {{.Error}}"
+      error_invalid_id_or_username: "Invalid ID or username: {{.Error}}"
+      error_get_messages_failed: "Failed to get messages: {{.Error}}"
+      info_fetching_messages: "Fetching messages..."
+      error_no_messages_in_range: "No messages found in the specified range"
+      error_no_savable_messages_in_range: "No savable messages found in the specified range"
+      error_build_storage_select_message_failed: "Failed to build storage selection message: {{.Error}}"
+      error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
+      info_found_files_select_storage: "Found {{.Count}} files, please select storage"
+      error_get_user_failed: "Failed to get user"
+      error_get_user_with_err_failed: "Failed to get user: {{.Error}}"
+      error_default_storage_not_set: "Please set a default storage first with /storage"
+      error_no_available_storage: "No available storage"
+      error_get_storage_failed: "Failed to get storage: {{.Error}}"
+      prompt_select_default_storage: "Please select a storage to set as default"
+      error_data_expired: "Data has expired or is invalid"
+      error_task_add_failed: "Failed to add task: {{.Error}}"
+      info_task_added: "Task added"
+      info_batch_tasks_added: "Batch tasks added, total {{.Count}} files"
+      error_task_create_failed: "Failed to create task: {{.Error}}"
+      error_get_dir_failed: "Failed to get directory: {{.Error}}"
+      prompt_select_dir: "Please select a directory to store to"
+      prompt_select_default_dir: "Please select a default directory to save to"
+      info_default_storage_set: "Default storage set to: {{.Name}}"
+      info_default_storage_with_dir_set: "Default storage set to: {{.Name}}:/{{.Dir}}"
+      error_get_user_info_failed: "Failed to get user info: {{.Error}}"
+      error_update_user_info_failed: "Failed to update user info: {{.Error}}"
+      info_silent_mode_on: "Silent mode enabled"
+      info_silent_mode_off: "Silent mode disabled"
+      error_get_file_failed: "Failed to get file: {{.Error}}"
+      info_fetching_file_info: "Fetching file info..."
+      error_no_savable_files_found: "No savable files found"
+      error_parse_telegraph_path_failed: "Failed to parse telegraph path: {{.Error}}"
+      info_fetching_telegraph_page: "Fetching telegraph page..."
+      error_get_telegraph_page_failed: "Failed to get telegraph page: {{.Error}}"
+      error_no_images_in_telegraph_page: "No images found in telegraph page"
+      error_build_dir_select_keyboard_failed: "Failed to build directory selection keyboard: {{.Error}}"
+      error_no_permission: |
+        You are not in the whitelist and cannot use this bot.
+        You can deploy your own instance: https://github.com/krau/SaveAny-Bot
+    save:
+      error_invalid_id_or_username: "Invalid ID or username: {{.Error}}"
+    watch:
+      error_filter_format_invalid: "Invalid filter format, please use <type>:<expression>"
+      error_filter_type_unsupported: "Unsupported filter type, please see the docs"
+      error_watch_chat_failed: "Failed to watch chat: {{.Error}}"
+      info_watch_chat_started: "Started watching chat: {{.Chat}}"
+      info_already_watching_chat: "Already watching this chat"
+      info_watch_list_empty: "No chats are being watched currently"
+      info_watch_list_header: "Currently watched chats:\n"
+      info_watch_list_filter_prefix: " (filter: "
+      error_unwatch_no_chat_provided: "Please provide a chat ID or username to unwatch"
+      error_unwatch_chat_failed: "Failed to unwatch chat: {{.Error}}"
+      info_watch_chat_stopped: "Stopped watching chat: {{.Chat}}"
+    tasks:
+      usage_cancel: "Usage: /tasks cancel <task_id>"
+      usage: "Usage: /tasks [running|queued|cancel <task_id>]"
+      cancel_failed: "Failed to cancel task: {{.Error}}"
+      cancel_requested_prefix: "Cancel requested for task: "
+      running_empty: "No running tasks"
+      running_title: "Currently running tasks:"
+      total_prefix: "Total: {{.Count}}\n"
+      field_id: "ID: "
+      field_title: "Title: "
+      field_created: "Created at: "
+      field_status: "Status: "
+      status_running: "Running"
+      status_queued: "Queued"
+      status_cancel_requested: "Cancel requested"
+      queued_empty: "No queued tasks"
+      queued_title: "Currently queued tasks:"
+      truncated_note: "...\nShowing first 10 tasks, total {{.Count}} tasks"
+      info_added_to_queue_full: "Added to task queue\nFilename: {{.Filename}}\nCurrent queued tasks: {{.QueueLength}}"
+      info_added_to_queue_prefix: "Added to task queue\n"
+      info_filename_prefix: "Filename: "
+      info_queue_length_prefix: "\nCurrent queued tasks: "
+    rule:
+      error_get_user_rules_failed: "Failed to get user rules"
+      error_update_user_failed: "Failed to update user"
+      info_rule_mode_enabled: "Rule mode enabled"
+      info_rule_mode_disabled: "Rule mode disabled"
+      error_invalid_rule_type: "Invalid rule type: {{.Type}}\nAvailable: {{.Available}}"
+      error_create_rule_failed: "Failed to create rule"
+      info_create_rule_success: "Rule created successfully"
+      prompt_provide_rule_id: "Please provide rule ID"
+      error_invalid_rule_id: "Invalid rule ID"
+      error_delete_rule_failed: "Failed to delete rule"
+      info_delete_rule_success: "Rule deleted successfully"
+      help_usage: "Usage: /rule <op> <args...>"
+      help_current_mode_enabled: "\nRule mode is currently enabled"
+      help_current_mode_disabled: "\nRule mode is currently disabled"
+      help_available_ops: "\n\nAvailable operations:\n"
+      help_switch_suffix: " - Toggle rule mode\n"
+      help_add_suffix: " <type> <data> <storage_name> <path> - Add rule\n"
+      help_del_suffix: " <rule_id> - Delete rule\n"
+      help_existing_rules_prefix: "\nCurrent rules:\n"
+    dir:
+      error_get_user_dirs_failed: "Failed to get user directories"
+      error_get_user_failed: "Failed to get user"
+      error_create_dir_failed: "Failed to create directory"
+      info_create_dir_success: "Directory created successfully"
+      error_invalid_dir_id: "Invalid directory ID"
+      error_delete_dir_failed: "Failed to delete directory"
+      info_delete_dir_success: "Directory deleted successfully"
+      error_unknown_operation: "Unknown operation"
+      help_usage: "Usage: /dir <op> <args...>"
+      help_available_ops: "\n\nAvailable operations:\n"
+      help_add_suffix: " <storage_name> <path> - Add path\n"
+      help_del_suffix: " <path_id> - Delete path\n"
+      help_add_example_prefix: "\nAdd path example:\n"
+      help_add_example_cmd: "/dir add local1 path/to/dir"
+      help_del_example_prefix: "\n\nDelete path example:\n"
+      help_del_example_cmd: "/dir del 3"
+      help_existing_dirs_prefix: "\n\nCurrent paths:\n"
+      button_default: "Default"
+    parser:
+      help_text: |
+        Usage:
+
+        /parser install <reply a file> - Install parser
+      plugin_not_enabled: "Parser plugin feature is not enabled"
+      prompt_reply_with_parser_file: "Please reply with a message containing the parser file"
+      error_no_valid_file_in_reply: "The replied message does not contain a valid file"
+      error_wrong_file_type: "Wrong file type"
+      error_file_too_large: "File too large"
+      error_get_filename_failed: "Failed to get filename"
+      error_only_js_supported: "Only .js files are supported as parsers"
+      error_download_file_failed: "Failed to download file: {{.Error}}"
+      error_install_plugin_failed: "Failed to install plugin: {{.Error}}"
+      info_install_plugin_success: "Plugin installed: {{.Name}}"
+    parse:
+      info_parsing: "Parsing..."
+      error_parse_text_failed: "Failed to parse text: {{.Error}}"
+      error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
+      error_build_parsed_text_entity_failed: "Failed to build parsed text entity: {{.Error}}"
+      info_link_prefix: "\nLink: "
+      info_author_prefix: "\nAuthor: "
+      info_description_prefix: "\nDescription: "
+      info_file_count_prefix: "\nFile count: "
+      info_total_size_prefix: "\nEstimated total size: "
+      info_prompt_select_storage: "\nPlease select storage"
+    telegraph:
+      error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
+      info_title_prefix: "Title: "
+      info_pic_count_prefix: "\nImage count: "
+      info_prompt_select_storage: "\nPlease select storage"
+    update:
+      error_version_var_invalid: "Currently in development version or version info injection failed: {{.Error}}"
+      error_check_latest_failed: "Failed to check latest version: {{.Error}}"
+      error_no_release_found: "No release found"
+      info_major_upgrade_required: "Major upgrade detected: {{.Current}} -> {{.Latest}} , please download the latest version from GitHub and check the migration guide"
+      info_already_latest: "Already on latest version: {{.Version}}"
+      info_new_version_in_docker: |-
+        New version found: {{.Latest}}
+        Current version: {{.Current}}
+        Published at: {{.PublishedAt}}
+        Since you are using Docker, please update it on your deployment platform
+      info_new_version_prompt_upgrade: |-
+        New version found: {{.Latest}}
+        Current version: {{.Current}}
+
+        File size: {{.SizeMB}} MB
+        Download URL: {{.URL}}
+        Published at: {{.PublishedAt}}
+
+        Upgrading will restart the bot. Proceed?
+      info_upgrading_with_version: "Upgrading, current version: {{.Current}}"
+      error_upgrade_failed: "Upgrade failed: {{.Error}}"
+      info_upgrade_success: "Upgraded to version {{.Version}}\nIf the bot did not restart automatically, please start it manually"
+      button_upgrade: "Upgrade"
+    config:
+      prompt_select_option: "Please select an option to configure"
+      button_filename_strategy: "Filename strategy"
+      error_invalid_callback_data: "Invalid callback data"
+      error_invalid_template: "Invalid template, please check syntax\n{{.Error}}"
+      info_filename_strategy_set: "Filename strategy set to: {{.Strategy}}"
+      prompt_select_filename_strategy: "Please select filename strategy, current strategy: {{.Strategy}}"
+      fnametmpl_help: |-
+        Use this command to set filename template, for example:
+        /fnametmpl Image_{{"{{.msgid}}"}}_{{"{{.msgdate}}"}}.jpg
+
+        Available variables:
+        - {{"{{.msgid}}"}}: Message ID
+        - {{"{{.msgtags}}"}}: Tags in the message, joined with underscore
+        - {{"{{.msggen}}"}}: Generated filename from the message
+        - {{"{{.msgdate}}"}}: Message date, format YYYY-MM-DD_HH-MM-SS
+        - {{"{{.origname}}"}}: Original media filename (if any)
+        - {{"{{.chatid}}"}}: Chat ID of the message
+
+        Template only takes effect when filename strategy is set to 'Custom template'.
+        If template parsing fails, it will fall back to default filename.
+      info_template_updated: "Filename template updated"
+      info_current_template_prefix: "Current template: {{.Template}}"
+    dl:
+      usage: "Usage: /dl <url1> <url2> ..."
+      error_no_valid_links: "No valid links to download"
+      info_files_select_storage: "Total {{.Count}} files, please select storage"
+    cancel:
+      usage: "Usage: /cancel <task_id>"
+      error_cancel_failed: "Failed to cancel task: {{.Error}}"
+      info_cancel_requested: "Cancel requested for task: {{.TaskID}}"
+      info_cancelling_task: "Cancelling task..."
+    media_group:
+      info_saving_files: "Saving files..."
+      error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
+      info_group_found_files_select_storage: "Total {{.Count}} files, please select storage"
+    storage:
+      info_filename_prefix: "Filename: "
+      info_prompt_select_storage: "\nPlease select storage"
+    progress:
+      batch_start_prefix: "Starting batch download task\nTotal size: "
+      batch_processing_prefix: "Processing batch download task\nTotal size: "
+      downloading_prefix: "Downloading\nTotal size: "
+      processing_list_prefix: "\nProcessing:\n"
+      processing_none: "  - None"
+      avg_speed_prefix: "\nAverage speed: "
+      current_progress_prefix: "\nCurrent progress: "
+      task_canceled: "Task canceled"
+      task_canceled_with_id: "Processing canceled: {{.TaskID}}"
+      task_failed_with_error: "Processing failed: {{.Error}}"
+      batch_done_prefix: "Completed\nFile count: "
+      direct_done_prefix: "Completed, file count: "
+      parsed_start_prefix: "Starting download from {{.Site}}\nTotal size: "
+      parsed_done_prefix: "Completed, resource count: "
+      telegraph_start_prefix: "Starting Telegraph download\nImage count: "
+      telegraph_progress_prefix: "Downloading\nCurrent progress: "
+      telegraph_done_prefix: "Completed\nImage count: "
+      file_start_prefix: "Starting download\nFilename: "
+      file_processing_prefix: "Processing download task\nFilename: "
+      download_failed_prefix: "Download failed\nFilename: "
+      download_done_prefix: "Download completed\nFilename: "
+      file_size_prefix: "\nFile size: "
+      save_path_prefix: "\nSave path: "
+      total_size_prefix: "\nTotal size: "
+      direct_start: "Starting download, total size: {{.SizeMB}} MB ({{.Count}} files)"
+      file_name_prefix: "Filename: "
+      error_prefix: "\nError: "

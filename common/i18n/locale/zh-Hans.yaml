@@ -41,6 +41,24 @@ bot:
       /update - 检查更新并升级
 
       使用帮助: https://sabot.unv.app/usage
+    cmd:
+      start: "开始使用"
+      silent: "切换静默模式"
+      storage: "设置默认存储端"
+      dir: "管理存储文件夹"
+      rule: "管理自动存储规则"
+      save: "保存文件"
+      dl: "下载给定链接的文件"
+      task: "管理任务队列"
+      cancel: "取消任务"
+      watch: "监听聊天(UserBot)"
+      unwatch: "取消监听聊天(UserBot)"
+      lswatch: "列出监听的聊天(UserBot)"
+      config: "修改配置"
+      fnametmpl: "设置文件命名模板"
+      help: "显示帮助"
+      parser: "管理解析器"
+      update: "检查更新"
     save_help_text: |
       使用方法:
 
