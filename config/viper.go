@@ -52,15 +52,38 @@ func (c Config) GetStorageByName(name string) storage.StorageConfig {
 	return nil
 }
 
-func Init(ctx context.Context) error {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("/etc/saveany/")
+func Init(ctx context.Context, configFile ...string) error {
 	viper.SetConfigType("toml")
 	viper.SetEnvPrefix("SAVEANY")
 	viper.AutomaticEnv()
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
+
+	// 如果指定了配置文件路径，则使用指定的配置文件
+	// 配置文件支持传入一个 http(s) URL 地址
+	if len(configFile) > 0 && configFile[0] != "" {
+		cfg := configFile[0]
+		if strings.HasPrefix(cfg, "http://") || strings.HasPrefix(cfg, "https://") {
+			// 	使用远程配置文件
+			resp, err := http.Get(cfg)
+			if err != nil {
+				return fmt.Errorf("failed to fetch remote config file: %w", err)
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("failed to fetch remote config file: status code %d", resp.StatusCode)
+			}
+			if err := viper.ReadConfig(resp.Body); err != nil {
+				return fmt.Errorf("failed to read remote config file: %w", err)
+			}
+		} else {
+			viper.SetConfigFile(cfg)
+		}
+	} else {
+		viper.SetConfigName("config")
+		viper.AddConfigPath(".")
+		viper.AddConfigPath("/etc/saveany/")
+	}
 
 	defaultConfigs := map[string]any{
 		// 基础配置
@@ -123,13 +146,6 @@ func Init(ctx context.Context) error {
 			}))
 		}
 		storageNames[storage.GetName()] = struct{}{}
-	}
-
-	fmt.Println(i18n.TWithoutInit(cfg.Lang, i18nk.ConfigLoadedStorages, map[string]any{
-		"Count": len(cfg.Storages),
-	}))
-	for _, storage := range cfg.Storages {
-		fmt.Printf("  - %s (%s)\n", storage.GetName(), storage.GetType())
 	}
 
 	if cfg.Workers < 1 {

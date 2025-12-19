@@ -34,7 +34,7 @@ func Run(cmd *cobra.Command, _ []string) {
 	})
 	ctx = log.WithContext(ctx, logger)
 
-	exitChan, err := initAll(ctx)
+	exitChan, err := initAll(ctx, cmd)
 	if err != nil {
 		logger.Fatal("Init failed", "error", err)
 	}
@@ -51,8 +51,9 @@ func Run(cmd *cobra.Command, _ []string) {
 	cleanCache()
 }
 
-func initAll(ctx context.Context) (<-chan struct{}, error) {
-	if err := config.Init(ctx); err != nil {
+func initAll(ctx context.Context, cmd *cobra.Command) (<-chan struct{}, error) {
+	configFile := config.GetConfigFile(cmd)
+	if err := config.Init(ctx, configFile); err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 	cache.Init()
