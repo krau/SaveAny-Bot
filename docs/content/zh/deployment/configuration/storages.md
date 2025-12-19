@@ -76,8 +76,14 @@ https://s3.example.com/your_bucket_name/path/to/s3/your_file
 不支持 Stream 模式.
 
 ```toml
-chat_id = "123456789" # Telegram 聊天 ID, Bot 将把文件发送到这个聊天
-force_file = false # 是否强制使用文件方式发送, 默认为 false.
-skip_large = true # 是否跳过大文件, 默认为 true. 如果启用, 超过 Telegram 限制的文件将不会上传.
-spilt_size_mb = 2000 # 分卷大小, 单位 MB, 默认为 2000 MB (2 GB). 超过该大小的文件将被分割成多个部分上传.(使用 zip 格式)
+# Telegram 聊天 ID, Bot 将把文件发送到这个聊天
+chat_id = "123456789"
+# 是否强制使用文件方式发送, 默认为 false
+force_file = false
+# 是否跳过大文件, 默认为 false. 如果启用, 超过 Telegram 限制的文件将不会上传.
+skip_large = false
+# 分卷大小, 单位 MB, 默认为 2000 MB (2 GB). 
+# 超过该大小的文件将被分割成多个部分上传.(使用 zip 格式)
+# 当 skip_large 启用时, 该选项无效.
+spilt_size_mb = 2000
 ```
