@@ -13,6 +13,8 @@ import (
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
@@ -37,7 +39,7 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("开始执行批量下载任务\n总大小: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressBatchStartPrefix, nil)),
 		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
@@ -78,22 +80,22 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("正在处理批量下载任务\n总大小: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressBatchProcessingPrefix, nil)),
 		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
-		styling.Plain("\n正在处理:\n"),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressProcessingListPrefix, nil)),
 		func() styling.StyledTextOption {
 			var lines []string
 			for _, elem := range info.Processing() {
 				lines = append(lines, fmt.Sprintf("  - %s (%.2f MB)", elem.FileName(), float64(elem.FileSize())/(1024*1024)))
 			}
 			if len(lines) == 0 {
-				lines = append(lines, "  - 无")
+				lines = append(lines, i18n.T(i18nk.BotMsgProgressProcessingNone, nil))
 			}
 			return styling.Plain(slice.Join(lines, "\n"))
 		}(),
-		styling.Plain("\n平均速度: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressAvgSpeedPrefix, nil)),
 		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(info.Downloaded(), p.start)/(1024*1024))),
-		styling.Plain("\n当前进度: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressCurrentProgressPrefix, nil)),
 		styling.Bold(fmt.Sprintf("%.2f%%", float64(info.Downloaded())/float64(info.TotalSize())*100)),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
@@ -133,19 +135,21 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			stylingErr = styling.Perform(&entityBuilder,
-				styling.Plain("任务已取消"),
+				styling.Plain(i18n.T(i18nk.BotMsgProgressTaskCanceled, nil)),
 			)
 		} else {
 			stylingErr = styling.Perform(&entityBuilder,
-				styling.Plain("处理失败, 错误:\n "),
+				styling.Plain(i18n.T(i18nk.BotMsgProgressTaskFailedWithError, map[string]any{
+					"Error": "",
+				})),
 				styling.Code(err.Error()),
 			)
 		}
 	} else {
 		stylingErr = styling.Perform(&entityBuilder,
-			styling.Plain("处理完成\n文件数: "),
+			styling.Plain(i18n.T(i18nk.BotMsgProgressBatchDonePrefix, nil)),
 			styling.Code(strconv.Itoa(info.Count())),
-			styling.Plain("\n总大小: "),
+			styling.Plain(i18n.T(i18nk.BotMsgProgressTotalSizePrefix, nil)),
 			styling.Code(fmt.Sprintf("%.2f MB", float64(info.TotalSize())/(1024*1024))),
 		)
 	}

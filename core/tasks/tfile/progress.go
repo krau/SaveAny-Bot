@@ -11,6 +11,8 @@ import (
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
@@ -35,11 +37,11 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("开始下载\n文件名: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressFileStartPrefix, nil)),
 		styling.Code(info.FileName()),
-		styling.Plain("\n保存路径: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressSavePathPrefix, nil)),
 		styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
-		styling.Plain("\n文件大小: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressFileSizePrefix, nil)),
 		styling.Code(fmt.Sprintf("%.2f MB", float64(info.FileSize())/(1024*1024))),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
@@ -80,15 +82,15 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo, downloaded, to
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("正在处理下载任务\n文件名: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressFileProcessingPrefix, nil)),
 		styling.Code(info.FileName()),
-		styling.Plain("\n保存路径: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressSavePathPrefix, nil)),
 		styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
-		styling.Plain("\n文件大小: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressFileSizePrefix, nil)),
 		styling.Code(fmt.Sprintf("%.2f MB", float64(total)/(1024*1024))),
-		styling.Plain("\n平均速度: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressAvgSpeedPrefix, nil)),
 		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(downloaded, p.start)/(1024*1024))),
-		styling.Plain("\n当前进度: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressCurrentProgressPrefix, nil)),
 		styling.Bold(fmt.Sprintf("%.2f%%", float64(downloaded)/float64(total)*100)),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
@@ -130,22 +132,24 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			stylingErr = styling.Perform(&entityBuilder,
-				styling.Plain("任务已取消\n文件名: "),
+				styling.Plain(i18n.T(i18nk.BotMsgProgressTaskCanceled, nil)),
+				styling.Plain("\n"),
+				styling.Plain(i18n.T(i18nk.BotMsgProgressFileNamePrefix, nil)),
 				styling.Code(info.FileName()),
 			)
 		} else {
 			stylingErr = styling.Perform(&entityBuilder,
-				styling.Plain("下载失败\n文件名: "),
+				styling.Plain(i18n.T(i18nk.BotMsgProgressDownloadFailedPrefix, nil)),
 				styling.Code(info.FileName()),
-				styling.Plain("\n错误: "),
+				styling.Plain(i18n.T(i18nk.BotMsgProgressErrorPrefix, nil)),
 				styling.Bold(err.Error()),
 			)
 		}
 	} else {
 		stylingErr = styling.Perform(&entityBuilder,
-			styling.Plain("下载完成\n文件名: "),
+			styling.Plain(i18n.T(i18nk.BotMsgProgressDownloadDonePrefix, nil)),
 			styling.Code(info.FileName()),
-			styling.Plain("\n保存路径: "),
+			styling.Plain(i18n.T(i18nk.BotMsgProgressSavePathPrefix, nil)),
 			styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
 		)
 	}

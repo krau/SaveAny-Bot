@@ -9,6 +9,8 @@ import (
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
 
@@ -29,7 +31,7 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("开始下载Telegraph\n图片数量: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressTelegraphStartPrefix, nil)),
 		styling.Code(fmt.Sprintf("%d", info.TotalPics())),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
@@ -65,7 +67,7 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("正在下载\n当前进度: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressTelegraphProgressPrefix, nil)),
 		styling.Code(fmt.Sprintf("%d/%d", info.Downloaded(), info.TotalPics())),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
@@ -101,8 +103,10 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 			ext := tgutil.ExtFromContext(ctx)
 			if ext != nil {
 				ext.EditMessage(p.ChatID, &tg.MessagesEditMessageRequest{
-					ID:      p.MessageID,
-					Message: fmt.Sprintf("处理已取消: %s", info.TaskID()),
+					ID: p.MessageID,
+					Message: i18n.T(i18nk.BotMsgProgressTaskCanceledWithId, map[string]any{
+						"TaskID": info.TaskID(),
+					}),
 				})
 			}
 		} else {
@@ -110,8 +114,10 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 			ext := tgutil.ExtFromContext(ctx)
 			if ext != nil {
 				ext.EditMessage(p.ChatID, &tg.MessagesEditMessageRequest{
-					ID:      p.MessageID,
-					Message: fmt.Sprintf("处理失败: %s", err.Error()),
+					ID: p.MessageID,
+					Message: i18n.T(i18nk.BotMsgProgressTaskFailedWithError, map[string]any{
+						"Error": err.Error(),
+					}),
 				})
 			}
 		}
@@ -121,9 +127,9 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 
 	entityBuilder := entity.Builder{}
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("处理完成\n图片数量: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressTelegraphDonePrefix, nil)),
 		styling.Code(fmt.Sprintf("%d", info.TotalPics())),
-		styling.Plain("\n保存路径: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressSavePathPrefix, nil)),
 		styling.Code(fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath())),
 	); err != nil {
 		logger.Errorf("Failed to build entities: %s", err)
