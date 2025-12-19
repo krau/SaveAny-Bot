@@ -17,6 +17,8 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/re"
 	uc "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/cache"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
 	"github.com/krau/SaveAny-Bot/config"
@@ -36,7 +38,7 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *
 		return nil, nil, dispatcher.ContinueGroups
 	}
 
-	replied, err = ctx.Reply(update, ext.ReplyTextString("正在获取文件信息..."), nil)
+	replied, err = ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoFetchingFileInfo, nil)), nil)
 	if err != nil {
 		logger.Errorf("Failed to reply: %s", err)
 		return nil, nil, dispatcher.EndGroups
@@ -52,7 +54,9 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *
 	file, err = tfile.FromMediaMessage(media, ctx.Raw, message, tfileopts...)
 	if err != nil {
 		logger.Errorf("Failed to get file from media: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取文件失败: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetFileFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return nil, nil, dispatcher.EndGroups
 	}
 	return replied, file, nil
@@ -68,7 +72,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 		logger.Warn("no matched message links but called handleMessageLink")
 		return nil, nil, nil, dispatcher.EndGroups
 	}
-	replied, err = ctx.Reply(update, ext.ReplyTextString("正在获取消息..."), nil)
+	replied, err = ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoFetchingMessages, nil)), nil)
 	if err != nil {
 		logger.Errorf("failed to reply: %s", err)
 		return nil, nil, nil, dispatcher.EndGroups
@@ -85,7 +89,9 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 	user, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
 	if err != nil {
 		logger.Errorf("failed to get user from db: %s", err)
-		editReplied("获取用户信息失败: "+err.Error(), nil)
+		editReplied(i18n.T(i18nk.BotMsgCommonErrorGetUserInfoFailed, map[string]any{
+			"Error": err.Error(),
+		}), nil)
 		return nil, nil, nil, dispatcher.EndGroups
 	}
 	files = make([]tfile.TGFileMessage, 0, len(msgLinks))
@@ -146,7 +152,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 		}
 	}
 	if len(files) == 0 {
-		editReplied("没有找到可保存的文件", nil)
+		editReplied(i18n.T(i18nk.BotMsgCommonErrorNoSavableFilesFound, nil), nil)
 		return nil, nil, nil, dispatcher.EndGroups
 	}
 	return replied, files, editReplied, nil
@@ -157,7 +163,7 @@ func GetCallbackDataWithAnswer[DataType any](ctx *ext.Context, update *ext.Updat
 	if !ok {
 		log.FromContext(ctx).Warnf("Invalid data ID: %s", dataid)
 		queryID := update.CallbackQuery.GetQueryID()
-		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "数据已过期或无效"))
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, i18n.T(i18nk.BotMsgCommonErrorDataExpired, nil)))
 		var zero DataType
 		return zero, dispatcher.EndGroups
 	}
@@ -182,11 +188,13 @@ func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*type
 	tphdir, err := url.PathUnescape(pagepath)
 	if err != nil {
 		logger.Errorf("Failed to unescape telegraph path: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("解析 telegraph 路径失败: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorParseTelegraphPathFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return nil, nil, dispatcher.EndGroups
 	}
 	tphdir = strings.TrimSpace(tphdir)
-	msg, err := ctx.Reply(update, ext.ReplyTextString("正在获取 telegraph 页面..."), nil)
+	msg, err := ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoFetchingTelegraphPage, nil)), nil)
 	if err != nil {
 		logger.Errorf("Failed to reply to update: %s", err)
 		return nil, nil, dispatcher.EndGroups
@@ -195,7 +203,9 @@ func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*type
 	page, err := tphutil.DefaultClient().GetPage(ctx, pagepath)
 	if err != nil {
 		logger.Errorf("Failed to get telegraph page: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取 telegraph 页面失败: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetTelegraphPageFailed, map[string]any{
+			"Error": err.Error(),
+		})), nil)
 		return nil, nil, dispatcher.EndGroups
 	}
 	imgs := make([]string, 0)
@@ -229,7 +239,7 @@ func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*type
 	}
 	if len(imgs) == 0 {
 		logger.Warn("No images found in telegraph page")
-		ctx.Reply(update, ext.ReplyTextString("在 telegraph 页面中未找到图片"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorNoImagesInTelegraphPage, nil)), nil)
 		return nil, nil, dispatcher.EndGroups
 	}
 	return msg, &TelegraphResult{

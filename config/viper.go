@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -11,8 +10,6 @@ import (
 	"time"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/SaveAny-Bot/common/i18n"
-	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/spf13/viper"
 	"golang.org/x/net/proxy"
@@ -141,9 +138,7 @@ func Init(ctx context.Context, configFile ...string) error {
 	storageNames := make(map[string]struct{})
 	for _, storage := range cfg.Storages {
 		if _, ok := storageNames[storage.GetName()]; ok {
-			return errors.New(i18n.TWithoutInit(cfg.Lang, i18nk.ConfigErrDuplicateStorageName, map[string]any{
-				"Name": storage.GetName(),
-			}))
+			return fmt.Errorf("duplicate storage name: %s", storage.GetName())
 		}
 		storageNames[storage.GetName()] = struct{}{}
 	}

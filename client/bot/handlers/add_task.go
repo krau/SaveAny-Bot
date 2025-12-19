@@ -12,6 +12,8 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
@@ -33,12 +35,14 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, data.SelectedStorName)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Failed to get storage: %s", err)
-		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "存储获取失败: "+err.Error()))
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
+			"Error": err.Error(),
+		})))
 		return dispatcher.EndGroups
 	}
 	dirs, err := database.GetDirsByUserChatIDAndStorageName(ctx, userID, data.SelectedStorName)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return fmt.Errorf("获取用户目录失败: %w", err)
+		return fmt.Errorf("failed to get user directories: %w", err)
 	}
 
 	if !data.SettedDir && len(dirs) != 0 {
@@ -46,12 +50,14 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		markup, err := msgelem.BuildSetDirMarkupForAdd(dirs, dataid)
 		if err != nil {
 			log.FromContext(ctx).Errorf("Failed to build directory keyboard: %s", err)
-			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "目录键盘构建失败: "+err.Error()))
+			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectKeyboardFailed, map[string]any{
+				"Error": err.Error(),
+			})))
 			return dispatcher.EndGroups
 		}
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:          update.CallbackQuery.GetMsgID(),
-			Message:     "请选择要存储到的目录",
+			Message:     i18n.T(i18nk.BotMsgCommonPromptSelectDir, nil),
 			ReplyMarkup: markup,
 		})
 		return dispatcher.EndGroups
@@ -61,7 +67,9 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	if data.DirID != 0 {
 		dir, err := database.GetDirByID(ctx, data.DirID)
 		if err != nil {
-			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, "获取目录失败: "+err.Error()))
+			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, i18n.T(i18nk.BotMsgCommonErrorGetDirFailed, map[string]any{
+				"Error": err.Error(),
+			})))
 			return dispatcher.EndGroups
 		}
 		dirPath = dir.Path

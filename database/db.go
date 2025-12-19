@@ -36,7 +36,7 @@ func Init(ctx context.Context) {
 	}
 	logger.Debug("Database connected")
 	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}, &WatchChat{}); err != nil {
-		logger.Fatal("迁移数据库失败, 如果您从旧版本升级, 建议手动删除数据库文件后重试: ", err)
+		logger.Fatal("Database migration failed; if upgrading from an old version, try deleting the database file and retrying", "error", err)
 	}
 	if err := syncUsers(ctx); err != nil {
 		logger.Fatal("Failed to sync users:", err)
@@ -67,7 +67,7 @@ func syncUsers(ctx context.Context) error {
 			if err := CreateUser(ctx, cfgID); err != nil {
 				return fmt.Errorf("failed to create user %d: %w", cfgID, err)
 			}
-			logger.Infof("创建用户: %d", cfgID)
+			logger.Infof("Created user from config: %d", cfgID)
 		}
 	}
 
@@ -76,7 +76,7 @@ func syncUsers(ctx context.Context) error {
 			if err := DeleteUser(ctx, &dbUser); err != nil {
 				return fmt.Errorf("failed to delete user %d: %w", dbID, err)
 			}
-			logger.Infof("删除用户: %d", dbID)
+			logger.Infof("Deleted user not present in config: %d", dbID)
 		}
 	}
 

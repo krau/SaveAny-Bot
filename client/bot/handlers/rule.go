@@ -21,7 +21,7 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 	userChatID := update.GetUserChat().GetID()
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
-		logger.Errorf("获取用户规则失败: %s", err)
+		logger.Errorf("Failed to get user rules: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取用户规则失败"), nil)
 		return dispatcher.EndGroups
 	}

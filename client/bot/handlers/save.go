@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -52,8 +51,8 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	stors := storage.GetUserStorages(ctx, userId)
 	req, err := msgelem.BuildAddOneSelectStorageMessage(ctx, stors, file, msg.ID)
 	if err != nil {
-		logger.Errorf("构建存储选择消息失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("构建存储选择消息失败: "+err.Error()), nil)
+		logger.Errorf("Failed to build storage selection message: %s", err)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectMessageFailed, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
 	}
 	ctx.EditMessage(update.EffectiveChat().GetID(), req)
@@ -97,35 +96,35 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		var err error
 		filter, err = regexp.Compile(filterStr)
 		if err != nil {
-			ctx.Reply(update, ext.ReplyTextString("无效的正则表达式: "+err.Error()), nil)
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidRegex, map[string]any{"Error": err.Error()})), nil)
 			return dispatcher.EndGroups
 		}
 	}
 	startID, endID, err := strutil.ParseIntStrRange(msgIdRangeArg, "-")
 	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString("无效的消息ID范围: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidMsgIdRange, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
 	}
 	chatID, err := tgutil.ParseChatID(ctx, chatArg)
 	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString("无效的ID或用户名: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidIdOrUsername, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
 	}
 
-	replied, err := ctx.Reply(update, ext.ReplyTextString("正在获取消息..."), nil)
+	replied, err := ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoFetchingMessages)), nil)
 	if err != nil {
-		log.FromContext(ctx).Errorf("回复失败: %s", err)
+		log.FromContext(ctx).Errorf("Failed to reply: %s", err)
 		return dispatcher.EndGroups
 	}
 
 	// [TODO]: generator istead of get all messages
 	msgs, err := tgutil.GetMessagesRange(ctx, chatID, int(startID), int(endID))
 	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString("获取消息失败: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetMessagesFailed, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
 	}
 	if len(msgs) == 0 {
-		ctx.Reply(update, ext.ReplyTextString("没有找到指定范围内的消息"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorNoMessagesInRange)), nil)
 		return dispatcher.EndGroups
 	}
 	files := make([]tfile.TGFileMessage, 0, len(msgs))
@@ -144,7 +143,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		}
 		file, err := tfile.FromMediaMessage(media, ctx.Raw, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
 		if err != nil {
-			log.FromContext(ctx).Errorf("获取文件失败: %s", err)
+			log.FromContext(ctx).Errorf("Failed to get file from message: %s", err)
 			continue
 		}
 		if filter != nil {
@@ -160,7 +159,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		files = append(files, file)
 	}
 	if len(files) == 0 {
-		ctx.Reply(update, ext.ReplyTextString("没有找到指定范围内的可保存消息"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorNoSavableMessagesInRange)), nil)
 		return dispatcher.EndGroups
 	}
 	stor := storage.FromContext(ctx)
@@ -171,16 +170,16 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 			Files: files,
 		})
 		if err != nil {
-			log.FromContext(ctx).Errorf("构建存储选择键盘失败: %s", err)
+			log.FromContext(ctx).Errorf("Failed to build storage selection keyboard: %s", err)
 			ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-				ID:      replied.ID,
-				Message: "构建存储选择键盘失败: " + err.Error(),
+					ID: replied.ID,
+					Message: i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectKeyboardFailed, map[string]any{"Error": err.Error()}),
 			})
 			return dispatcher.EndGroups
 		}
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-			ID:          replied.ID,
-			Message:     fmt.Sprintf("找到 %d 个文件, 请选择存储位置", len(files)),
+				ID: replied.ID,
+				Message: i18n.T(i18nk.BotMsgCommonInfoFoundFilesSelectStorage, map[string]any{"Count": len(files)}),
 			ReplyMarkup: markup,
 		})
 		return dispatcher.EndGroups

@@ -34,7 +34,7 @@ func handleTelegraphUrlMessage(ctx *ext.Context, update *ext.Update) error {
 		TphPics:     result.Pics,
 	})
 	if err != nil {
-		logger.Errorf("构建存储选择键盘失败: %s", err)
+		logger.Errorf("Failed to build storage selection keyboard: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("构建存储选择键盘失败: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}

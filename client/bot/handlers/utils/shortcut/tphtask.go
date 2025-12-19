@@ -6,6 +6,8 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
 	"github.com/krau/SaveAny-Bot/core"
@@ -38,7 +40,9 @@ func CreateAndAddtelegraphWithEdit(
 		log.FromContext(ctx).Errorf("Failed to add task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:      trackMsgID,
-			Message: "任务添加失败: " + err.Error(),
+			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
+				"Error": err.Error(),
+			}),
 		})
 		return dispatcher.EndGroups
 	}

@@ -34,18 +34,18 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 	userChatID := update.GetUserChat().GetID()
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
-		logger.Errorf("获取用户失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
+		logger.Errorf("Failed to get user: %s", err)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserFailed)), nil)
 		return dispatcher.EndGroups
 	}
 	if user.DefaultStorage == "" {
-		ctx.Reply(update, ext.ReplyTextString("请先设置默认存储, 使用 /storage 命令"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorDefaultStorageNotSet)), nil)
 		return dispatcher.EndGroups
 	}
 	chatArg := args[1]
 	chatID, err := tgutil.ParseChatID(ctx, chatArg)
 	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString("无效的ID或用户名: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidIdOrUsername, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
 	}
 	watching, err := user.WatchingChat(ctx, chatID)
@@ -54,7 +54,7 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	if watching {
-		ctx.Reply(update, ext.ReplyTextString("已经在监听此聊天"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchInfoAlreadyWatchingChat)), nil)
 		return dispatcher.EndGroups
 	}
 	filter := ""
@@ -63,19 +63,19 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 		filterType := strings.Split(filterArg, ":")[0]
 		filterData := strings.Split(filterArg, ":")[1]
 		if filterType == "" || filterData == "" {
-			ctx.Reply(update, ext.ReplyTextString("过滤器格式错误, 请使用 <过滤器类型>:<表达式>"), nil)
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorFilterFormatInvalid)), nil)
 			return dispatcher.EndGroups
 		}
 		switch filterType {
 		case "msgre":
 			_, err := regexp.Compile(filterData)
 			if err != nil {
-				ctx.Reply(update, ext.ReplyTextString("正则表达式格式错误: "+err.Error()), nil)
+				ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidRegex, map[string]any{"Error": err.Error()})), nil)
 				return dispatcher.EndGroups
 			}
 			filter = filterType + ":" + filterData
 		default:
-			ctx.Reply(update, ext.ReplyTextString("不支持的过滤器类型, 请参阅文档"), nil)
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorFilterTypeUnsupported)), nil)
 			return dispatcher.EndGroups
 		}
 	}
@@ -85,10 +85,10 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 		Filter: filter,
 	}); err != nil {
 		logger.Errorf("Failed to watch chat %d: %s", chatID, err)
-		ctx.Reply(update, ext.ReplyTextString("监听聊天失败: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorWatchChatFailed, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
 	}
-	ctx.Reply(update, ext.ReplyTextString("已开始监听聊天: "+chatArg), nil)
+	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchInfoWatchChatStarted, map[string]any{"Chat": chatArg})), nil)
 	return dispatcher.EndGroups
 }
 
@@ -97,22 +97,22 @@ func handleLswatchCmd(ctx *ext.Context, update *ext.Update) error {
 	userChatID := update.GetUserChat().GetID()
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
-		logger.Errorf("获取用户失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
+		logger.Errorf("Failed to get user: %s", err)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserFailed)), nil)
 		return dispatcher.EndGroups
 	}
 	chats := user.WatchChats
 	if len(chats) == 0 {
-		ctx.Reply(update, ext.ReplyTextString("当前没有监听任何聊天"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchInfoWatchListEmpty)), nil)
 		return dispatcher.EndGroups
 	}
 	var sb strings.Builder
-	sb.WriteString("当前监听的聊天:\n")
+	sb.WriteString(i18n.T(i18nk.BotMsgWatchInfoWatchListHeader))
 	for _, chat := range chats {
 		sb.WriteString("- ")
 		sb.WriteString(fmt.Sprintf("%d", chat.ChatID))
 		if chat.Filter != "" {
-			sb.WriteString(" (过滤器: ")
+			sb.WriteString(i18n.T(i18nk.BotMsgWatchInfoWatchListFilterPrefix))
 			sb.WriteString(chat.Filter)
 			sb.WriteString(")")
 		}
@@ -126,28 +126,28 @@ func handleUnwatchCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	args := strings.Split(update.EffectiveMessage.Text, " ")
 	if len(args) < 2 {
-		ctx.Reply(update, ext.ReplyTextString("请提供要取消监听的聊天ID或用户名"), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorUnwatchNoChatProvided)), nil)
 		return dispatcher.EndGroups
 	}
 	userChatID := update.GetUserChat().GetID()
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
-		logger.Errorf("获取用户失败: %s", err)
-		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
+		logger.Errorf("Failed to get user: %s", err)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserFailed)), nil)
 		return dispatcher.EndGroups
 	}
 	chatArg := args[1]
 	chatID, err := tgutil.ParseChatID(ctx, chatArg)
 	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString("无效的ID或用户名: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidIdOrUsername, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
 	}
 	if err := user.UnwatchChat(ctx, chatID); err != nil {
 		logger.Errorf("Failed to unwatch chat %d: %s", chatID, err)
-		ctx.Reply(update, ext.ReplyTextString("取消监听聊天失败: "+err.Error()), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorUnwatchChatFailed, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
 	}
-	ctx.Reply(update, ext.ReplyTextString("已取消监听聊天: "+chatArg), nil)
+	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchInfoWatchChatStopped, map[string]any{"Chat": chatArg})), nil)
 	return dispatcher.EndGroups
 }
 

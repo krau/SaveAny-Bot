@@ -1,7 +1,6 @@
 package shortcut
 
 import (
-	"fmt"
 	"path"
 	"strings"
 
@@ -11,6 +10,8 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tasks/batchtfile"
@@ -29,7 +30,9 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 		logger.Errorf("Failed to get user by chat ID: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:      trackMsgID,
-			Message: "获取用户失败: " + err.Error(),
+			Message: i18n.T(i18nk.BotMsgCommonErrorGetUserWithErrFailed, map[string]any{
+				"Error": err.Error(),
+			}),
 		})
 		return dispatcher.EndGroups
 	}
@@ -47,7 +50,9 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 				logger.Errorf("Failed to get storage by user ID and name: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 					ID:      trackMsgID,
-					Message: "获取存储失败: " + err.Error(),
+					Message: i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
+						"Error": err.Error(),
+					}),
 				})
 				return dispatcher.EndGroups
 			}
@@ -65,7 +70,9 @@ startCreateTask:
 		logger.Errorf("create task failed: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:      trackMsgID,
-			Message: "创建任务失败: " + err.Error(),
+			Message: i18n.T(i18nk.BotMsgCommonErrorTaskCreateFailed, map[string]any{
+				"Error": err.Error(),
+			}),
 		})
 		return dispatcher.EndGroups
 	}
@@ -73,7 +80,9 @@ startCreateTask:
 		logger.Errorf("add task failed: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:      trackMsgID,
-			Message: "添加任务失败: " + err.Error(),
+			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
+				"Error": err.Error(),
+			}),
 		})
 		return dispatcher.EndGroups
 	}
@@ -95,7 +104,9 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		logger.Errorf("Failed to get user by chat ID: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:      trackMsgID,
-			Message: "获取用户失败: " + err.Error(),
+			Message: i18n.T(i18nk.BotMsgCommonErrorGetUserWithErrFailed, map[string]any{
+				"Error": err.Error(),
+			}),
 		})
 		return dispatcher.EndGroups
 	}
@@ -132,7 +143,9 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 				logger.Errorf("Failed to get storage by user ID and name: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 					ID:      trackMsgID,
-					Message: "获取存储失败: " + err.Error(),
+					Message: i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
+						"Error": err.Error(),
+					}),
 				})
 				return dispatcher.EndGroups
 			}
@@ -144,7 +157,9 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 				logger.Errorf("Failed to create task element: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 					ID:      trackMsgID,
-					Message: "任务创建失败: " + err.Error(),
+						Message: i18n.T(i18nk.BotMsgCommonErrorTaskCreateFailed, map[string]any{
+							"Error": err.Error(),
+						}),
 				})
 				return dispatcher.EndGroups
 			}
@@ -179,7 +194,9 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 				logger.Errorf("Failed to create task element for album file: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 					ID:      trackMsgID,
-					Message: "任务创建失败: " + err.Error(),
+					Message: i18n.T(i18nk.BotMsgCommonErrorTaskCreateFailed, map[string]any{
+						"Error": err.Error(),
+					}),
 				})
 				return dispatcher.EndGroups
 			}
@@ -194,13 +211,17 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		logger.Errorf("Failed to add batch task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:      trackMsgID,
-			Message: "批量任务添加失败: " + err.Error(),
+			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
+				"Error": err.Error(),
+			}),
 		})
 		return dispatcher.EndGroups
 	}
 	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 		ID:          trackMsgID,
-		Message:     fmt.Sprintf("已添加批量任务, 共 %d 个文件", len(files)),
+		Message:     i18n.T(i18nk.BotMsgCommonInfoBatchTasksAdded, map[string]any{
+			"Count": len(files),
+		}),
 		ReplyMarkup: nil,
 	})
 	return dispatcher.EndGroups

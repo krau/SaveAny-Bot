@@ -34,7 +34,7 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 	stors := storage.GetUserStorages(ctx, userId)
 	req, err := msgelem.BuildAddOneSelectStorageMessage(ctx, stors, file, msg.ID)
 	if err != nil {
-		logger.Errorf("构建存储选择消息失败: %s", err)
+		logger.Errorf("Failed to build storage selection message: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("构建存储选择消息失败: "+err.Error()), nil)
 		return dispatcher.EndGroups
 	}

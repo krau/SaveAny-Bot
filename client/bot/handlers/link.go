@@ -24,7 +24,7 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 	if len(files) == 1 {
 		req, err := msgelem.BuildAddOneSelectStorageMessage(ctx, stors, files[0], replied.ID)
 		if err != nil {
-			logger.Errorf("构建存储选择消息失败: %s", err)
+			logger.Errorf("Failed to build storage selection message: %s", err)
 			editReplied("构建存储选择消息失败: "+err.Error(), nil)
 			return dispatcher.EndGroups
 		}
@@ -35,7 +35,7 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 		Files: files,
 	})
 	if err != nil {
-		logger.Errorf("构建存储选择键盘失败: %s", err)
+		logger.Errorf("Failed to build storage selection keyboard: %s", err)
 		editReplied("构建存储选择键盘失败: "+err.Error(), nil)
 		return dispatcher.EndGroups
 	}

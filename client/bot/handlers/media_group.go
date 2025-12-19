@@ -111,7 +111,7 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, groupID int64) {
 		AsBatch: len(items) > 1,
 	})
 	if err != nil {
-		logger.Errorf("构建存储选择键盘失败: %s", err)
+		logger.Errorf("Failed to build storage selection keyboard: %s", err)
 		ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
 			ID:      msg.ID,
 			Message: "构建存储选择键盘失败: " + err.Error(),

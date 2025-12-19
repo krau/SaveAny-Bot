@@ -18,7 +18,7 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 	userChatID := update.GetUserChat().GetID()
 	dirs, err := database.GetUserDirsByChatID(ctx, userChatID)
 	if err != nil {
-		logger.Errorf("获取用户文件夹失败: %s", err)
+		logger.Errorf("Failed to get user directories: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取用户文件夹失败"), nil)
 		return dispatcher.EndGroups
 	}
@@ -28,7 +28,7 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 	user, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
 	if err != nil {
-		logger.Errorf("获取用户失败: %s", err)
+		logger.Errorf("Failed to get user: %s", err)
 		ctx.Reply(update, ext.ReplyTextString("获取用户失败"), nil)
 		return dispatcher.EndGroups
 	}
@@ -45,7 +45,7 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 		}
 
 		if err := database.CreateDirForUser(ctx, user.ID, args[2], args[3]); err != nil {
-			logger.Errorf("创建文件夹失败: %s", err)
+			logger.Errorf("Failed to create directory: %s", err)
 			ctx.Reply(update, ext.ReplyTextString("创建文件夹失败"), nil)
 			return dispatcher.EndGroups
 		}
@@ -62,7 +62,7 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 		if err := database.DeleteDirByID(ctx, uint(dirID)); err != nil {
-			logger.Errorf("删除文件夹失败: %s", err)
+			logger.Errorf("Failed to delete directory: %s", err)
 			ctx.Reply(update, ext.ReplyTextString("删除文件夹失败"), nil)
 			return dispatcher.EndGroups
 		}
