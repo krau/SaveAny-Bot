@@ -67,14 +67,14 @@ func GetUserStorages(ctx context.Context, chatID int64) []Storage {
 
 func LoadStorages(ctx context.Context) {
 	logger := log.FromContext(ctx)
-	logger.Info("加载存储...")
+	logger.Debug("loading storages...")
 	for _, storage := range config.C().Storages {
 		_, err := GetStorageByName(ctx, storage.GetName())
 		if err != nil {
-			logger.Errorf("加载存储 %s 失败: %v", storage.GetName(), err)
+			logger.Errorf("failed to load storage %s: %v", storage.GetName(), err)
 		}
 	}
-	logger.Infof("成功加载 %d 个存储", len(Storages))
+	logger.Infof("successfully loaded %d storages", len(Storages))
 	for user := range config.C().GetUsersID() {
 		UserStorages[int64(user)] = GetUserStorages(ctx, int64(user))
 	}

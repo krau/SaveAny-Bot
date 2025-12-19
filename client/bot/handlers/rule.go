@@ -36,7 +36,6 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 		// /rule switch
 		applyRule := !user.ApplyRule
 		if err := database.UpdateUserApplyRule(ctx, user.ChatID, applyRule); err != nil {
-			logger.Errorf("更新用户失败: %s", err)
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorUpdateUserFailed, nil)), nil)
 			return dispatcher.EndGroups
 		}
@@ -58,7 +57,7 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 					return t, nil
 				}
 			}
-			return rule.RuleType(""), fmt.Errorf("无效的规则类型: %s\n可用: %v", ruleTypeArg, slice.Join(rule.Values(), ", "))
+			return rule.RuleType(""), fmt.Errorf("invalid rule type: %s\navailable: %v", ruleTypeArg, slice.Join(rule.Values(), ", "))
 		}()
 		if err != nil {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorInvalidRuleType, map[string]any{
@@ -80,7 +79,7 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 			UserID:      user.ID,
 		}
 		if err := database.CreateRule(ctx, rd); err != nil {
-			logger.Errorf("创建规则失败: %s", err)
+			logger.Errorf("failed to create rule: %s", err)
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorCreateRuleFailed, nil)), nil)
 			return dispatcher.EndGroups
 		}
@@ -98,7 +97,7 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 		if err := database.DeleteRule(ctx, uint(id)); err != nil {
-			logger.Errorf("删除规则失败: %s", err)
+			logger.Errorf("failed to delete rule %d: %s", id, err)
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorDeleteRuleFailed, nil)), nil)
 			return dispatcher.EndGroups
 		}

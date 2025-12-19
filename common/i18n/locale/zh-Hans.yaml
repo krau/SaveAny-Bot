@@ -231,7 +231,7 @@ bot:
         文件大小: {{.SizeMB}} MB
         下载链接: {{.URL}}
         发布时间: {{.PublishedAt}}
-        
+
         升级将重启 Bot , 是否升级?
       info_upgrading_with_version: "正在升级中, 当前版本: {{.Current}}"
       error_upgrade_failed: "升级失败: {{.Error}}"
@@ -245,18 +245,18 @@ bot:
       prompt_select_filename_strategy: "请选择文件名策略, 当前策略: {{.Strategy}}"
       fnametmpl_help: |-
         使用该命令设置文件名模板, 示例:
-        /fnametmpl 图片_{{.msgid}}_{{.msgdate}}.jpg
+        /fnametmpl 图片_{{"{{.msgid}}"}}_{{"{{.msgdate}}"}}.jpg
 
         可用变量:
-        - {{.msgid}}: 消息ID
-        - {{.msgtags}}: 消息中的标签, 将以下划线分隔输出
-        - {{.msggen}}: 根据消息生成的文件名
-        - {{.msgdate}}: 消息日期, 格式 YYYY-MM-DD_HH-MM-SS
-        - {{.origname}}: 媒体的原始文件名 (如果有)
-        - {{.chatid}}: 消息的聊天ID
+        - {{"{{.msgid}}"}}: 消息ID
+        - {{"{{.msgtags}}"}}: 消息中的标签, 将以下划线分隔输出
+        - {{"{{.msggen}}"}}: 根据消息生成的文件名
+        - {{"{{.msgdate}}"}}: 消息日期, 格式 YYYY-MM-DD_HH-MM-SS
+        - {{"{{.origname}}"}}: 媒体的原始文件名 (如果有)
+        - {{"{{.chatid}}"}}: 消息的聊天ID
 
-        模板仅在文件名策略设置为 '自定义模板' 时生效, 且模板解析错误时会回退到默认文件名
-      error_invalid_template: "无效的模板, 请检查语法\n{{.Error}}"
+        模板仅在文件名策略设置为 '自定义模板' 时生效,
+        且模板解析错误时会回退到默认文件名
       info_template_updated: "已更新文件名模板"
       info_current_template_prefix: "当前模板: {{.Template}}"
     dl:

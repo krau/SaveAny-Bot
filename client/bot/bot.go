@@ -24,7 +24,7 @@ func ExtContext() *ext.Context {
 }
 
 func Init(ctx context.Context) <-chan struct{} {
-	log.FromContext(ctx).Info("初始化 Bot...")
+	log.FromContext(ctx).Info("Initializing Bot...")
 	resultChan := make(chan struct {
 		client *gotgproto.Client
 		err    error
@@ -88,14 +88,14 @@ func Init(ctx context.Context) <-chan struct{} {
 
 	select {
 	case <-ctx.Done():
-		log.FromContext(ctx).Errorf("已取消 Bot 初始化: %s", ctx.Err())
+		log.FromContext(ctx).Errorf("Bot initialization cancelled: %s", ctx.Err())
 	case result := <-resultChan:
 		if result.err != nil {
-			log.FromContext(ctx).Fatalf("初始化 Bot 失败: %s", result.err)
+			log.FromContext(ctx).Fatalf("Failed to initialize Bot: %s", result.err)
 		}
 		handlers.Register(result.client.Dispatcher)
 		ectx = result.client.CreateContext()
-		log.FromContext(ctx).Info("Bot 初始化完成")
+		log.FromContext(ctx).Info("Bot initialization completed.")
 	}
 	return shouldRestart
 }
