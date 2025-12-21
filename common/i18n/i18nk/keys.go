@@ -25,6 +25,7 @@ const (
 	BotMsgCmdUnwatch Key = "bot.msg.cmd.unwatch"
 	BotMsgCmdUpdate Key = "bot.msg.cmd.update"
 	BotMsgCmdWatch Key = "bot.msg.cmd.watch"
+	BotMsgCommonCancelButtonText Key = "bot.msg.common.cancel_button_text"
 	BotMsgCommonErrorBuildDirSelectKeyboardFailed Key = "bot.msg.common.error_build_dir_select_keyboard_failed"
 	BotMsgCommonErrorBuildStorageSelectKeyboardFailed Key = "bot.msg.common.error_build_storage_select_keyboard_failed"
 	BotMsgCommonErrorBuildStorageSelectMessageFailed Key = "bot.msg.common.error_build_storage_select_message_failed"
@@ -230,5 +231,4 @@ const (
 	LifetimeUserLoginFailed Key = "lifetime.user_login_failed"
 	ParserPluginLoadFailed Key = "parser.plugin.load_failed"
 	ParserPluginLoadedDir Key = "parser.plugin.loaded_dir"
-	BotMsgCancelCancelTask Key = "bot.msg.cancel.cancel.task"
 )

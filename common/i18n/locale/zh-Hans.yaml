@@ -84,6 +84,7 @@ bot:
 
       这将监听 ID 为 -1002229835658 的聊天, 并转存所有包含 "plana" 的媒体消息
     common:
+      cancel_button_text: "取消任务"
       error_invalid_regex: "无效的正则表达式: {{.Error}}"
       error_invalid_msg_id_range: "无效的消息ID范围: {{.Error}}"
       error_invalid_id_or_username: "无效的ID或用户名: {{.Error}}"

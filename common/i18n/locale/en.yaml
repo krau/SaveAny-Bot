@@ -84,6 +84,7 @@ bot:
 
       This will watch chat with ID -1002229835658 and save all media messages containing "plana".
     common:
+      cancel_button_text: "Cancel"
       error_invalid_regex: "Invalid regex: {{.Error}}"
       error_invalid_msg_id_range: "Invalid message ID range: {{.Error}}"
       error_invalid_id_or_username: "Invalid ID or username: {{.Error}}"
