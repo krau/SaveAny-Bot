@@ -230,4 +230,5 @@ const (
 	LifetimeUserLoginFailed Key = "lifetime.user_login_failed"
 	ParserPluginLoadFailed Key = "parser.plugin.load_failed"
 	ParserPluginLoadedDir Key = "parser.plugin.loaded_dir"
+	BotMsgCancelCancelTask Key = "bot.msg.cancel.cancel.task"
 )
