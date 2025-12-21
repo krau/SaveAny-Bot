@@ -21,7 +21,7 @@ func BuildParsedTextEntity(item parser.Item) (string, []tg.MessageEntityClass, e
 		styling.Plain(i18n.T(i18nk.BotMsgParseInfoAuthorPrefix, nil)),
 		styling.Code(item.Author),
 		styling.Plain(i18n.T(i18nk.BotMsgParseInfoDescriptionPrefix, nil)),
-		styling.Code(strutil.Ellipsis(item.Description, 233)),
+		styling.Blockquote(strutil.Ellipsis(item.Description, 233), true),
 		styling.Plain(i18n.T(i18nk.BotMsgParseInfoFileCountPrefix, nil)),
 		styling.Code(fmt.Sprintf("%d", len(item.Resources))),
 		styling.Plain(i18n.T(i18nk.BotMsgParseInfoTotalSizePrefix, nil)),

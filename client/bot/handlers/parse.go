@@ -31,7 +31,23 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 	if len(entityUrls) > 0 {
 		text += "\n" + strings.Join(entityUrls, "\n")
 	}
-	ok, pser := parsers.CanHandle(text)
+	// read lines and remove empty lines & duplicates
+	lines := strings.Split(text, "\n")
+	seen := make(map[string]struct{})
+	var processedLines []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if _, ok := seen[line]; ok {
+			continue
+		}
+		seen[line] = struct{}{}
+		processedLines = append(processedLines, line)
+	}
+	source := strings.TrimSpace(strings.Join(processedLines, "\n"))
+	ok, pser := parsers.CanHandle(source)
 	if !ok {
 		return dispatcher.EndGroups
 	}
@@ -40,7 +56,7 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 		return err
 	}
 
-	item, err := pser.Parse(ctx, text)
+	item, err := pser.Parse(ctx, source)
 	if errors.Is(err, parsers.ErrNoParserFound) {
 		return dispatcher.EndGroups
 	}
