@@ -37,7 +37,7 @@ func main() {
 			return err
 		}
 
-		var content map[string]interface{}
+		var content map[string]any
 		if err := yaml.Unmarshal(data, &content); err != nil {
 			return fmt.Errorf("failed to parse yaml %s: %w", path, err)
 		}

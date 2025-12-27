@@ -85,7 +85,7 @@ func TestConcurrencySafety(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			q.Add(newTask(fmt.Sprintf("p%d", i)))
 		}
 	}()

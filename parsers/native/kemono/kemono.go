@@ -46,8 +46,8 @@ func (k *KemonoParser) CanHandle(text string) bool {
 
 	var path string
 	for _, domain := range kemonoDomains {
-		if idx := strings.Index(text, domain); idx != -1 {
-			remaining := text[idx+len(domain):]
+		if _, after, ok := strings.Cut(text, domain); ok {
+			remaining := after
 			if len(remaining) > 0 && remaining[0] == '/' {
 				path = remaining[1:]
 			}
