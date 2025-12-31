@@ -181,6 +181,11 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		switch mtypeStr {
 		case "video/mp4":
 			info, err := getMP4Meta(rs)
+			if err != nil {
+				// Fallback to ffprobe if gomedia fails (e.g., malformed MP4)
+				rs.Seek(0, io.SeekStart)
+				info, err = getVideoMetadata(rs)
+			}
 			if err == nil {
 				media = doc.Video().
 					Duration(time.Duration(info.Duration)*time.Second).

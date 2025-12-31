@@ -21,12 +21,19 @@ type VideoMetadata struct {
 }
 
 // a go native way to get mp4 video metadata
-func getMP4Meta(rs io.ReadSeeker) (*VideoMetadata, error) {
+func getMP4Meta(rs io.ReadSeeker) (metadata *VideoMetadata, err error) {
+	// Recover from panics in the gomedia library (e.g., "no vosdata" panic)
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic while parsing MP4: %v", r)
+		}
+	}()
+
 	d := mp4.CreateMp4Demuxer(rs)
 
-	tracks, err := d.ReadHead()
-	if err != nil {
-		return nil, err
+	tracks, e := d.ReadHead()
+	if e != nil {
+		return nil, e
 	}
 
 	for _, track := range tracks {
