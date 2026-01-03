@@ -29,6 +29,7 @@ bot:
       /silent - 开关静默模式
       /storage - 设置默认存储位置
       /save [自定义文件名] - 保存文件
+      /dl <链接1> <链接2> ... - 下载给定链接的文件
       /dir - 管理存储目录
       /rule - 管理规则
       /config - 修改配置
@@ -50,6 +51,7 @@ bot:
       rule: "管理自动存储规则"
       save: "保存文件"
       dl: "下载给定链接的文件"
+      aria2dl: "使用 Aria2 下载给定链接的文件"
       task: "管理任务队列"
       cancel: "取消任务"
       watch: "监听聊天(UserBot)"
@@ -329,3 +331,9 @@ bot:
       start: "正在同步对话列表..."
       success: "对话列表同步完成, 共同步 {{.Count}} 个对话"
       failed: "对话列表同步失败: {{.Error}}"
+    aria2:
+      error_aria2_not_enabled: "Aria2 功能未启用, 请在配置文件中启用"
+      error_aria2_client_init_failed: "Aria2 客户端初始化失败: {{.Error}}"
+      info_adding_aria2_download: "正在添加 Aria2 下载任务..."
+      error_adding_aria2_download: "添加 Aria2 下载任务失败: {{.Error}}"
+      info_aria2_download_added: "Aria2 下载任务已添加, GID: {{.GID}}"

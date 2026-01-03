@@ -29,6 +29,7 @@ var CommandHandlers = []DescCommandHandler{
 	{"rule", i18nk.BotMsgCmdRule, handleRuleCmd},
 	{"save", i18nk.BotMsgCmdSave, handleSilentMode(handleSaveCmd, handleSilentSaveReplied)},
 	{"dl", i18nk.BotMsgCmdDl, handleDlCmd},
+	{"aria2dl", i18nk.BotMsgCmdAria2dl, handleAria2DlCmd},
 	{"task", i18nk.BotMsgCmdTask, handleTaskCmd},
 	{"cancel", i18nk.BotMsgCmdCancel, handleCancelCmd},
 	{"config", i18nk.BotMsgCmdConfig, handleConfigCmd},

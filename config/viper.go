@@ -16,13 +16,14 @@ import (
 )
 
 type Config struct {
-	Lang         string `toml:"lang" mapstructure:"lang" json:"lang"`
-	Workers      int    `toml:"workers" mapstructure:"workers"`
-	Retry        int    `toml:"retry" mapstructure:"retry"`
-	NoCleanCache bool   `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
-	Threads      int    `toml:"threads" mapstructure:"threads" json:"threads"`
-	Stream       bool   `toml:"stream" mapstructure:"stream" json:"stream"`
-	Proxy        string `toml:"proxy" mapstructure:"proxy" json:"proxy"`
+	Lang         string      `toml:"lang" mapstructure:"lang" json:"lang"`
+	Workers      int         `toml:"workers" mapstructure:"workers"`
+	Retry        int         `toml:"retry" mapstructure:"retry"`
+	NoCleanCache bool        `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
+	Threads      int         `toml:"threads" mapstructure:"threads" json:"threads"`
+	Stream       bool        `toml:"stream" mapstructure:"stream" json:"stream"`
+	Proxy        string      `toml:"proxy" mapstructure:"proxy" json:"proxy"`
+	Aria2        aria2Config `toml:"aria2" mapstructure:"aria2" json:"aria2"`
 
 	Cache    cacheConfig             `toml:"cache" mapstructure:"cache" json:"cache"`
 	Users    []userConfig            `toml:"users" mapstructure:"users" json:"users"`
@@ -32,6 +33,12 @@ type Config struct {
 	Storages []storage.StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
 	Parser   parserConfig            `toml:"parser" mapstructure:"parser" json:"parser"`
 	Hook     hookConfig              `toml:"hook" mapstructure:"hook" json:"hook"`
+}
+
+type aria2Config struct {
+	Enable bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	Url    string `toml:"url" mapstructure:"url" json:"url"`
+	Secret string `toml:"secret" mapstructure:"secret" json:"secret"`
 }
 
 var cfg = &Config{}

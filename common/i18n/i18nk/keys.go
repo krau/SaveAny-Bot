@@ -4,10 +4,16 @@ package i18nk
 type Key string
 
 const (
+	BotMsgAria2ErrorAddingAria2Download                   Key = "bot.msg.aria2.error_adding_aria2_download"
+	BotMsgAria2ErrorAria2ClientInitFailed                 Key = "bot.msg.aria2.error_aria2_client_init_failed"
+	BotMsgAria2ErrorAria2NotEnabled                       Key = "bot.msg.aria2.error_aria2_not_enabled"
+	BotMsgAria2InfoAddingAria2Download                    Key = "bot.msg.aria2.info_adding_aria2_download"
+	BotMsgAria2InfoAria2DownloadAdded                     Key = "bot.msg.aria2.info_aria2_download_added"
 	BotMsgCancelErrorCancelFailed                         Key = "bot.msg.cancel.error_cancel_failed"
 	BotMsgCancelInfoCancelRequested                       Key = "bot.msg.cancel.info_cancel_requested"
 	BotMsgCancelInfoCancellingTask                        Key = "bot.msg.cancel.info_cancelling_task"
 	BotMsgCancelUsage                                     Key = "bot.msg.cancel.usage"
+	BotMsgCmdAria2dl                                      Key = "bot.msg.cmd.aria2dl"
 	BotMsgCmdCancel                                       Key = "bot.msg.cmd.cancel"
 	BotMsgCmdConfig                                       Key = "bot.msg.cmd.config"
 	BotMsgCmdDir                                          Key = "bot.msg.cmd.dir"
@@ -171,6 +177,7 @@ const (
 	BotMsgSaveHelpText                                    Key = "bot.msg.save_help_text"
 	BotMsgStorageInfoFilenamePrefix                       Key = "bot.msg.storage.info_filename_prefix"
 	BotMsgStorageInfoPromptSelectStorage                  Key = "bot.msg.storage.info_prompt_select_storage"
+	BotMsgSyncpeersDone                                   Key = "bot.msg.syncpeers.done"
 	BotMsgSyncpeersFailed                                 Key = "bot.msg.syncpeers.failed"
 	BotMsgSyncpeersStart                                  Key = "bot.msg.syncpeers.start"
 	BotMsgSyncpeersSuccess                                Key = "bot.msg.syncpeers.success"
