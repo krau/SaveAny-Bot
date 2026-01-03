@@ -31,13 +31,14 @@ var CommandHandlers = []DescCommandHandler{
 	{"dl", i18nk.BotMsgCmdDl, handleDlCmd},
 	{"task", i18nk.BotMsgCmdTask, handleTaskCmd},
 	{"cancel", i18nk.BotMsgCmdCancel, handleCancelCmd},
-	{"watch", i18nk.BotMsgCmdWatch, handleWatchCmd},
-	{"unwatch", i18nk.BotMsgCmdUnwatch, handleUnwatchCmd},
-	{"lswatch", i18nk.BotMsgCmdLswatch, handleLswatchCmd},
 	{"config", i18nk.BotMsgCmdConfig, handleConfigCmd},
 	{"fnametmpl", i18nk.BotMsgCmdFnametmpl, handleConfigFnameTmpl},
 	{"help", i18nk.BotMsgCmdHelp, handleHelpCmd},
 	{"parser", i18nk.BotMsgCmdParser, handleParserCmd},
+	{"watch", i18nk.BotMsgCmdWatch, handleWatchCmd},
+	{"unwatch", i18nk.BotMsgCmdUnwatch, handleUnwatchCmd},
+	{"lswatch", i18nk.BotMsgCmdLswatch, handleLswatchCmd},
+	{"syncpeers", i18nk.BotMsgCmdSyncpeers, handleSyncpeersCmd},
 	{"update", i18nk.BotMsgCmdUpdate, handleUpdateCmd},
 }
 

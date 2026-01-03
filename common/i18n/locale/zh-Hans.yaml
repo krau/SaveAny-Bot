@@ -38,6 +38,7 @@ bot:
       /watch - 监听聊天并自动保存 (UserBot)
       /unwatch - 取消监听聊天 (UserBot)
       /lswatch - 列出正在监听的聊天 (UserBot)
+      /syncpeers - 同步对话列表 (UserBot)
       /update - 检查更新并升级
 
       使用帮助: https://sabot.unv.app/usage
@@ -54,6 +55,7 @@ bot:
       watch: "监听聊天(UserBot)"
       unwatch: "取消监听聊天(UserBot)"
       lswatch: "列出监听的聊天(UserBot)"
+      syncpeers: "同步对话列表(UserBot)"
       config: "修改配置"
       fnametmpl: "设置文件命名模板"
       help: "显示帮助"
@@ -323,3 +325,7 @@ bot:
       direct_start: "开始下载, 总大小: {{.SizeMB}} MB ({{.Count}} 个文件)"
       file_name_prefix: "文件名: "
       error_prefix: "\n错误: "
+    syncpeers:
+      start: "正在同步对话列表..."
+      success: "对话列表同步完成, 共同步 {{.Count}} 个对话"
+      failed: "对话列表同步失败: {{.Error}}"

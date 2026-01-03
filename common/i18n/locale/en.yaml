@@ -38,6 +38,7 @@ bot:
       /watch - Watch chats and auto save (UserBot)
       /unwatch - Stop watching chats (UserBot)
       /lswatch - List watched chats (UserBot)
+      /syncpeers - Sync peer chats (UserBot)
       /update - Check and upgrade to latest version
 
       Usage guide: https://sabot.unv.app/usage
@@ -59,6 +60,7 @@ bot:
       help: "Show help"
       parser: "Manage parsers"
       update: "Check for updates"
+      syncpeers: "Sync peer chats (UserBot)"
     save_help_text: |
       Usage:
 
@@ -323,3 +325,7 @@ bot:
       direct_start: "Starting download, total size: {{.SizeMB}} MB ({{.Count}} files)"
       file_name_prefix: "Filename: "
       error_prefix: "\nError: "
+    syncpeers:
+      start: "Starting to sync peers..."
+      done: "Peer sync completed, total {{.Count}} chats synced"
+      failed: "Peer sync failed: {{.Error}}"
