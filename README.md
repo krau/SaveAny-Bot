@@ -39,6 +39,7 @@
 Create a `config.toml` file with the following content:
 
 ```toml
+lang = "en" # Language setting, "en" for English
 [telegram]
 token = "" # Your bot token, obtained from @BotFather
 [telegram.proxy]

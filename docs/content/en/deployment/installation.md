@@ -4,7 +4,7 @@ title: "Installation and Updates"
 
 # Installation and Updates
 
-## Deploy from Pre-compiled Files (Recommended)
+## Deploy from Pre-compiled Binary (Recommended)
 
 Download the binary file for your platform from the [Release](https://github.com/krau/SaveAny-Bot/releases) page.
 
@@ -17,7 +17,7 @@ chmod +x saveany-bot
 ./saveany-bot
 ```
 
-### Process Monitoring
+### Daemon
 
 {{< tabs "daemon" >}}
 {{< tab "systemd (Regular Linux)" >}}

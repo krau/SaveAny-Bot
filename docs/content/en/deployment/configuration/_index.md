@@ -30,6 +30,7 @@ base_path = "./downloads"
 
 ### Global Configuration
 
+- `lang`: The language used by the Bot, default is `zh-CN` (Simplified Chinese). `en` is used for English.
 - `stream`: Whether to enable Stream mode, default is `false`. When enabled, the Bot will stream files directly to storage endpoints (if supported), without downloading them locally.
 {{< hint warning >}}
 Stream mode is very useful for deployment environments with limited disk space, but it also has some drawbacks:
@@ -47,6 +48,7 @@ Stream mode is very useful for deployment environments with limited disk space, 
 - `proxy`: Global proxy configuration. After setting this, all network connections inside the program will try to use this proxy. Optional.
 
 ```toml
+lang = "en"
 stream = false
 workers = 3
 threads = 4
