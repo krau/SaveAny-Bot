@@ -2,18 +2,18 @@
  Installation and Updates
  &lt;a class="anchor" href="#installation-and-updates">#&lt;/a>
 &lt;/h1>
-&lt;h2 id="deploy-from-pre-compiled-files-recommended">
- Deploy from Pre-compiled Files (Recommended)
- &lt;a class="anchor" href="#deploy-from-pre-compiled-files-recommended">#&lt;/a>
+&lt;h2 id="deploy-from-pre-compiled-binary-recommended">
+ Deploy from Pre-compiled Binary (Recommended)
+ &lt;a class="anchor" href="#deploy-from-pre-compiled-binary-recommended">#&lt;/a>
 &lt;/h2>
 &lt;p>Download the binary file for your platform from the &lt;a href="https://github.com/krau/SaveAny-Bot/releases">Release&lt;/a> page.&lt;/p>
 &lt;p>Create a &lt;code>config.toml&lt;/code> file in the extracted directory, refer to the &lt;a href="../configuration">Configuration Guide&lt;/a> to edit the configuration file.&lt;/p>
 &lt;p>Run:&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>chmod +x saveany-bot
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>./saveany-bot
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="process-monitoring">
- Process Monitoring
- &lt;a class="anchor" href="#process-monitoring">#&lt;/a>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="daemon">
+ Daemon
+ &lt;a class="anchor" href="#daemon">#&lt;/a>
 &lt;/h3>
 &lt;div class="book-tabs">
 
