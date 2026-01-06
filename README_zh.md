@@ -40,7 +40,7 @@
 [telegram]
 token = "" # 你的 Bot Token, 在 @BotFather 获取
 [telegram.proxy]
-# 启用代理连接 telegram, 当前只支持 socks5
+# 启用代理连接 telegram
 enable = false
 url = "socks5://127.0.0.1:7890"
 

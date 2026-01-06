@@ -62,7 +62,7 @@ proxy = "socks5://127.0.0.1:7890"
 - `rpc_retry`: RPC 请求重试次数, 默认为 5.
 - `proxy`: 代理配置, 可选.
   - `enable`: 是否启用代理.
-  - `url`: 代理地址, 只支持 `socks5://`
+  - `url`: 代理地址
 - `userbot`: userbot 配置, 可选.
   - `enable`: 启用 userbot 集成, 需要登录用户账号, 此时请务必使用自己的 api id & hash.
   - `session`: userbot 会话文件路径, 默认为 `data/usersession.db`.

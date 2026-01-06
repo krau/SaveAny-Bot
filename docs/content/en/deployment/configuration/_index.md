@@ -64,7 +64,7 @@ proxy = "socks5://127.0.0.1:7890"
 - `rpc_retry`: Number of retries for RPC requests, default is 5.
 - `proxy`: Proxy configuration, optional.
   - `enable`: Whether to enable the proxy.
-  - `url`: Proxy address, only supports `socks5://`
+  - `url`: Proxy address
 - `userbot`: Userbot configuration, optional.
   - `enable`: Enable userbot integration. Requires logging in with a user account; you should use your own API ID & Hash when enabling this.
   - `session`: Path to the userbot session file, default is `data/usersession.db`.

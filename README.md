@@ -43,7 +43,7 @@ lang = "en" # Language setting, "en" for English
 [telegram]
 token = "" # Your bot token, obtained from @BotFather
 [telegram.proxy]
-# Enable proxy for Telegram, currently only SOCKS5 is supported
+# Enable proxy for Telegram
 enable = false
 url = "socks5://127.0.0.1:7890"
 

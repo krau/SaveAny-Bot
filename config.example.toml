@@ -14,7 +14,7 @@ token = ""
 # app_id = 1025907
 # app_hash = "452b0359b988148995f22ff0f4229750"
 [telegram.proxy]
-# 启用代理连接 telegram, 只支持 socks5
+# 启用代理连接 telegram
 enable = false
 url = "socks5://127.0.0.1:7890"
 
