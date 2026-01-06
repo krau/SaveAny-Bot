@@ -5,6 +5,12 @@ labels:
 assignees:
   - krau
 body:
+  - type: markdown
+    attributes:
+      value: |
+        # Please Search Before Submitting / 提交前请搜索
+        Please make sure to search existing issues before submitting a new bug report.  
+        提交新的 Bug 报告前请务必搜索已有的 issue，避免重复
   - type: textarea
     attributes:
       label: "👾 Description"

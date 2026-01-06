@@ -8,7 +8,69 @@ body:
   - type: markdown
     attributes:
       value: |
-        # Please describe the feature you want in detail
+        Please describe the feature you want in detail.
+        请详细描述你想要的功能。
+
+        ---
+
+        ## ⚠️ IMPORTANT NOTICE / 说明
+
+        Save Any Bot supports multiple storage backends, **including Telegram**.  
+        However, **all backends are treated equally**, keep this in mind when submitting feature requests.
+
+        Save Any Bot 支持多种存储后端，**包括 Telegram**。  
+        但**所有后端在设计上是平等的**，请在提出功能请求前务必理解这一点。
+
+        ### ❌ Out of scope requests / 不在项目范围内的请求
+        The following requests are **out of scope** and will be closed without discussion:
+
+        以下请求**不属于本项目设计范围**，将被直接关闭，不再讨论：
+
+        - Adding **Telegram-specific behaviors or exceptions**  
+          添加 **仅针对 Telegram 的特殊行为或例外逻辑**
+        - Treating Telegram as anything other than a **generic file storage backend**  
+          将 Telegram 视为非“通用文件存储后端”的特殊存在
+        - Saving or syncing **non-file content** (text messages, chat history, etc.)  
+          保存或同步 **非文件内容**（文本消息、聊天记录等）
+        - Preserving or reconstructing original messages (e.g. 1:1 forwarding)  
+          保留或还原原始消息形态（例如 1:1 转发）
+        - Perform special reprocessing on files to adapt to specific storage backends  
+          (e.g. splitting, re-encoding, transforming, etc.)  
+          为适配特定存储后端而对文件进行特殊处理  
+          （如分割、转码、重编码、转换格式等）
+        - Any request that requires different logic *only because the backend is Telegram*  
+          任何**仅因后端是 Telegram 而需要不同逻辑**的请求
+
+        ### ❌ Abuse-leaning or high-risk requests / 滥用倾向的请求
+        Requests that may **enable or encourage** the following will NOT be accepted:
+
+        可能**促成或鼓励**以下行为的请求将不会被接受：
+
+        - Violating Telegram Terms of Service  
+          违反 Telegram 服务条款
+        - Building traffic, mirror, or profit-oriented channels using third-party content  
+          利用第三方内容构建引流、镜像或牟利用途的频道
+
+        ### ⚖️ Design principle / 设计原则
+        Save Any Bot follows a **backend-agnostic design**:
+
+        Save Any Bot 遵循 **后端无关（backend-agnostic）** 的设计原则：
+
+        - If a feature cannot be implemented **uniformly across all backends**, it will not be added.  
+          如果某个功能无法在 **所有后端** 中统一实现，则不会被添加。
+        - No backend-specific hacks or special cases will be introduced.  
+          不会引入任何后端特有的 hack 或特殊处理逻辑。
+
+        ---
+
+        If your request falls into any of the categories above, please do not open an issue.  
+        Such issues will be closed.
+
+        如果你的请求符合以上任一情况，请不要提交 issue，  
+        相关 issue 将被直接关闭。
+
+        Thank you for respecting the scope and design principles of this project.
+        感谢你的理解与支持。
   - type: textarea
     attributes:
       label: "⭐️ Feature description"
