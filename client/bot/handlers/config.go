@@ -10,6 +10,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/fnamest"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -73,9 +74,9 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 			return err
 		}
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:      update.CallbackQuery.GetMsgID(),
+			ID: update.CallbackQuery.GetMsgID(),
 			Message: i18n.T(i18nk.BotMsgConfigInfoFilenameStrategySet, map[string]any{
-				"Strategy": fnamest.FnameSTDisplay[st],
+				"Strategy": fnamest.GetDisplay(st, config.C().Lang),
 			}),
 		})
 		return dispatcher.EndGroups
@@ -84,7 +85,7 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 	buttons := make([]tg.KeyboardButtonClass, 0, len(opts))
 	for _, opt := range opts {
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: fnamest.FnameSTDisplay[opt],
+			Text: fnamest.GetDisplay(opt, config.C().Lang),
 			Data: fmt.Appendf(nil, "%s %s %s", tcbdata.TypeConfig, "fnamest", opt),
 		})
 	}
@@ -100,9 +101,9 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 		currentSt = fnamest.Default
 	}
 	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-		ID:          update.CallbackQuery.GetMsgID(),
-		Message:     i18n.T(i18nk.BotMsgConfigPromptSelectFilenameStrategy, map[string]any{
-			"Strategy": fnamest.FnameSTDisplay[currentSt],
+		ID: update.CallbackQuery.GetMsgID(),
+		Message: i18n.T(i18nk.BotMsgConfigPromptSelectFilenameStrategy, map[string]any{
+			"Strategy": fnamest.GetDisplay(currentSt, config.C().Lang),
 		}),
 		ReplyMarkup: markup,
 	})

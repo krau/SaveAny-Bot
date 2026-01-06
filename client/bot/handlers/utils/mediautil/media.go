@@ -30,6 +30,7 @@ type FilenameTemplateData struct {
 	MsgTags  string `json:"msgtags,omitempty"`
 	MsgGen   string `json:"msggen,omitempty"`
 	MsgDate  string `json:"msgdate,omitempty"`
+	MsgRaw   string `json:"msgraw,omitempty"`
 	OrigName string `json:"origname,omitempty"`
 	ChatID   string `json:"chatid,omitempty"`
 }
@@ -39,6 +40,7 @@ func (f FilenameTemplateData) ToMap() map[string]string {
 		"msgid":    f.MsgID,
 		"msgtags":  f.MsgTags,
 		"msggen":   f.MsgGen,
+		"msgraw":   f.MsgRaw,
 		"msgdate":  f.MsgDate,
 		"origname": f.OrigName,
 		"chatid":   f.ChatID,
@@ -108,8 +110,10 @@ func BuildFilenameTemplateData(message *tg.Message) map[string]string {
 			t := time.Unix(int64(date), 0)
 			return t.Format("2006-01-02_15-04-05")
 		}(),
+		MsgRaw: message.GetMessage(),
 		ChatID: func() string {
-			// 如果消息是频道的(从消息链接中fetch的) 直接使用其chat id, 无论它是否是从其他来源转发的
+			// 如果消息是频道的(从消息链接中fetch的) 直接使用其chat id, 
+			// 无论它是否是从其他来源转发的
 			if message.GetPost() {
 				peer := message.GetPeerID()
 				switch p := peer.(type) {
