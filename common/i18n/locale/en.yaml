@@ -274,6 +274,7 @@ bot:
         - {{"{{.msgtags}}"}}: Tags in the message, joined with underscore
         - {{"{{.msggen}}"}}: Generated filename from the message
         - {{"{{.msgdate}}"}}: Message date, format YYYY-MM-DD_HH-MM-SS
+        - {{"{{.msgraw}}"}}: Raw message text (unprocessed)
         - {{"{{.origname}}"}}: Original media filename (if any)
         - {{"{{.chatid}}"}}: Chat ID of the message
 
