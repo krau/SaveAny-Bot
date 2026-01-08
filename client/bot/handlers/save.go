@@ -7,11 +7,13 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
+	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
+	"github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
@@ -105,7 +107,12 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidMsgIdRange, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
 	}
-	chatID, err := tgutil.ParseChatID(ctx, chatArg)
+	tctx := ctx
+	uctx := user.GetCtx()
+	if uctx != nil && validator.IsIntStr(chatArg) {
+		tctx = uctx
+	}
+	chatID, err := tgutil.ParseChatID(tctx, chatArg)
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidIdOrUsername, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
@@ -118,7 +125,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 	}
 
 	// [TODO]: generator istead of get all messages
-	msgs, err := tgutil.GetMessagesRange(ctx, chatID, int(startID), int(endID))
+	msgs, err := tgutil.GetMessagesRange(tctx, chatID, int(startID), int(endID))
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetMessagesFailed, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
@@ -141,7 +148,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		if !supported {
 			continue
 		}
-		file, err := tfile.FromMediaMessage(media, ctx.Raw, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
+		file, err := tfile.FromMediaMessage(media, tctx.Raw, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
 		if err != nil {
 			log.FromContext(ctx).Errorf("Failed to get file from message: %s", err)
 			continue
@@ -172,14 +179,14 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		if err != nil {
 			log.FromContext(ctx).Errorf("Failed to build storage selection keyboard: %s", err)
 			ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-					ID: replied.ID,
-					Message: i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectKeyboardFailed, map[string]any{"Error": err.Error()}),
+				ID:      replied.ID,
+				Message: i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectKeyboardFailed, map[string]any{"Error": err.Error()}),
 			})
 			return dispatcher.EndGroups
 		}
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-				ID: replied.ID,
-				Message: i18n.T(i18nk.BotMsgCommonInfoFoundFilesSelectStorage, map[string]any{"Count": len(files)}),
+			ID:          replied.ID,
+			Message:     i18n.T(i18nk.BotMsgCommonInfoFoundFilesSelectStorage, map[string]any{"Count": len(files)}),
 			ReplyMarkup: markup,
 		})
 		return dispatcher.EndGroups
