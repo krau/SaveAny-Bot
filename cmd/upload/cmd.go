@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	"github.com/krau/SaveAny-Bot/common/cache"
+	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
@@ -61,6 +62,7 @@ func Upload(cmd *cobra.Command, args []string) error {
 	if err := config.Init(ctx, configFile); err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
+	i18n.Init(config.C().Lang)
 	cache.Init()
 	database.Init(ctx)
 
