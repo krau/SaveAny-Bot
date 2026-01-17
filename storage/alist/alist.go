@@ -16,6 +16,7 @@ import (
 	config "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 )
 
 type Alist struct {
@@ -214,4 +215,146 @@ func (a *Alist) Exists(ctx context.Context, storagePath string) bool {
 // Impl StorageCannotStream interface
 func (a *Alist) CannotStream() string {
 	return "Alist does not support chunked transfer encoding"
+}
+
+// ListFiles implements StorageListable interface
+func (a *Alist) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error) {
+	a.logger.Debugf("Listing files in directory: %s", dirPath)
+
+	reqBody := fsListRequest{
+		Path:     dirPath,
+		Password: "",
+		Page:     1,
+		PerPage:  0, // 0 means all files
+		Refresh:  false,
+	}
+
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/api/fs/list", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", a.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to list files: %s", resp.Status)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var listResp fsListResponse
+	if err := json.Unmarshal(data, &listResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal list response: %w", err)
+	}
+
+	if listResp.Code != http.StatusOK {
+		return nil, fmt.Errorf("failed to list files: %d, %s", listResp.Code, listResp.Message)
+	}
+
+	files := make([]storagetypes.FileInfo, 0, len(listResp.Data.Content))
+	for _, item := range listResp.Data.Content {
+		// Parse modified time
+		modTime, _ := time.Parse(time.RFC3339, item.Modified)
+
+		files = append(files, storagetypes.FileInfo{
+			Name:    item.Name,
+			Path:    path.Join(dirPath, item.Name),
+			Size:    item.Size,
+			IsDir:   item.IsDir,
+			ModTime: modTime,
+		})
+	}
+
+	a.logger.Debugf("Found %d files in directory %s", len(files), dirPath)
+	return files, nil
+}
+
+// OpenFile implements StorageReadable interface
+func (a *Alist) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
+	a.logger.Debugf("Opening file: %s", filePath)
+
+	// First, get file info to get the raw_url
+	reqBody := map[string]any{
+		"path":     filePath,
+		"password": "",
+	}
+
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/api/fs/get", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", a.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, 0, fmt.Errorf("failed to get file info: %s", resp.Status)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var getResp fsGetResponse
+	if err := json.Unmarshal(data, &getResp); err != nil {
+		return nil, 0, fmt.Errorf("failed to unmarshal get response: %w", err)
+	}
+
+	if getResp.Code != http.StatusOK {
+		return nil, 0, fmt.Errorf("failed to get file info: %d, %s", getResp.Code, getResp.Message)
+	}
+
+	if getResp.Data.IsDir {
+		return nil, 0, fmt.Errorf("path is a directory, not a file")
+	}
+
+	// Download the file from raw_url
+	downloadURL := getResp.Data.RawURL
+	if downloadURL == "" {
+		// If no raw_url, construct download URL
+		downloadURL = a.baseURL + "/d" + filePath
+	}
+
+	downloadReq, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to create download request: %w", err)
+	}
+
+	downloadResp, err := a.client.Do(downloadReq)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to download file: %w", err)
+	}
+
+	if downloadResp.StatusCode != http.StatusOK {
+		downloadResp.Body.Close()
+		return nil, 0, fmt.Errorf("failed to download file: %s", downloadResp.Status)
+	}
+
+	a.logger.Debugf("Opened file %s, size: %d bytes", filePath, getResp.Data.Size)
+	return downloadResp.Body, getResp.Data.Size, nil
 }

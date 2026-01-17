@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/charmbracelet/log"
 	config "github.com/krau/SaveAny-Bot/config/storage"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/rs/xid"
 )
 
@@ -83,4 +85,72 @@ func (w *Webdav) Exists(ctx context.Context, storagePath string) bool {
 		return false
 	}
 	return exists
+}
+
+// ListFiles implements storage.StorageListable
+func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error) {
+	w.logger.Infof("Listing files in %s", dirPath)
+	
+	// Join with base path
+	fullPath := path.Join(w.config.BasePath, dirPath)
+	
+	responses, err := w.client.ListDir(ctx, fullPath)
+	if err != nil {
+		w.logger.Errorf("Failed to list directory %s: %v", fullPath, err)
+		return nil, fmt.Errorf("failed to list directory: %w", err)
+	}
+
+	files := make([]storagetypes.FileInfo, 0, len(responses))
+	for _, resp := range responses {
+		// Parse the href to get the file name
+		decodedHref, err := url.PathUnescape(resp.Href)
+		if err != nil {
+			decodedHref = resp.Href
+		}
+		
+		// Extract filename from href
+		name := path.Base(strings.TrimSuffix(decodedHref, "/"))
+		if name == "" || name == "." {
+			continue
+		}
+
+		// Parse modification time
+		var modTime time.Time
+		if resp.Propstat.Prop.GetLastModified != "" {
+			// Try RFC1123 format (standard for WebDAV)
+			modTime, _ = time.Parse(time.RFC1123, resp.Propstat.Prop.GetLastModified)
+		}
+
+		isDir := resp.Propstat.Prop.ResourceType.IsCollection()
+		
+		fileInfo := storagetypes.FileInfo{
+			Name:    name,
+			Path:    strings.TrimPrefix(decodedHref, w.config.BasePath),
+			Size:    resp.Propstat.Prop.GetContentLength,
+			IsDir:   isDir,
+			ModTime: modTime,
+		}
+		
+		files = append(files, fileInfo)
+	}
+
+	w.logger.Debugf("Found %d files/directories in %s", len(files), dirPath)
+	return files, nil
+}
+
+// OpenFile implements storage.StorageReadable
+func (w *Webdav) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
+	w.logger.Infof("Opening file %s", filePath)
+	
+	// Join with base path
+	fullPath := path.Join(w.config.BasePath, filePath)
+	
+	reader, size, err := w.client.ReadFile(ctx, fullPath)
+	if err != nil {
+		w.logger.Errorf("Failed to open file %s: %v", fullPath, err)
+		return nil, 0, fmt.Errorf("failed to open file: %w", err)
+	}
+
+	w.logger.Debugf("Opened file %s (size: %d bytes)", filePath, size)
+	return reader, size, nil
 }
