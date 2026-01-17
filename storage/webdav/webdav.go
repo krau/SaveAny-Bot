@@ -105,6 +105,7 @@ func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 		// Parse the href to get the file name
 		decodedHref, err := url.PathUnescape(resp.Href)
 		if err != nil {
+			w.logger.Warnf("Failed to unescape href %q: %v; using original value", resp.Href, err)
 			decodedHref = resp.Href
 		}
 		
