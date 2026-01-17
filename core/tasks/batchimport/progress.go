@@ -42,10 +42,16 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	p.lastUpdatePercent.Store(0)
 	log.FromContext(ctx).Debugf("Batch import task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 
+	sizeMB := float64(info.TotalSize()) / (1024 * 1024)
+	statsText := i18n.T(i18nk.BotMsgProgressImportStartStats, map[string]any{
+		"size":  fmt.Sprintf("%.2f", sizeMB),
+		"count": info.Count(),
+	})
+
 	entityBuilder := entity.Builder{}
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain(i18n.T(i18nk.BotMsgProgressImportStartPrefix, nil)),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
+		styling.Code(statsText),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
