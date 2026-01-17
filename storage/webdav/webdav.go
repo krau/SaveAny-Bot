@@ -119,7 +119,12 @@ func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 		var modTime time.Time
 		if resp.Propstat.Prop.GetLastModified != "" {
 			// Try RFC1123 format (standard for WebDAV)
-			modTime, _ = time.Parse(time.RFC1123, resp.Propstat.Prop.GetLastModified)
+			parsedTime, err := time.Parse(time.RFC1123, resp.Propstat.Prop.GetLastModified)
+			if err != nil {
+				w.logger.Warnf("Failed to parse last modified time %q for %s: %v", resp.Propstat.Prop.GetLastModified, decodedHref, err)
+			} else {
+				modTime = parsedTime
+			}
 		}
 
 		isDir := resp.Propstat.Prop.ResourceType.IsCollection()
