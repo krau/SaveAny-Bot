@@ -48,7 +48,9 @@ func (t *Task) Execute(ctx context.Context) error {
 				return err
 			}
 			if err != nil {
+				t.processingMu.Lock()
 				t.failed[elem.ID] = err
+				t.processingMu.Unlock()
 				logger.Errorf("Failed to process file %s: %v", elem.FileInfo.Name, err)
 			}
 			return nil
