@@ -72,8 +72,10 @@ func (t *Task) Execute(ctx context.Context) error {
 				}
 			}
 
-			logger.Debugf("Aria2 GID %s status: %s, completed: %s/%s",
-				t.GID, status.Status, status.CompletedLength, status.TotalLength)
+			if status.Status != "active" && status.Status != "waiting" {
+				logger.Debugf("Aria2 GID %s status: %s, completed: %s/%s",
+					t.GID, status.Status, status.CompletedLength, status.TotalLength)
+			}
 
 			if t.Progress != nil {
 				t.Progress.OnProgress(ctx, t, status)
@@ -81,6 +83,15 @@ func (t *Task) Execute(ctx context.Context) error {
 
 			// Check if download is complete
 			if status.IsDownloadComplete() {
+				// Check if this is a metadata download (torrent/magnet) that spawned follow-up downloads
+				if len(status.FollowedBy) > 0 {
+					logger.Infof("Aria2 GID %s completed and spawned follow-up downloads: %v", t.GID, status.FollowedBy)
+					logger.Infof("Switching to follow-up download GID: %s", status.FollowedBy[0])
+					// Update to the follow-up GID (usually the actual file download)
+					t.GID = status.FollowedBy[0]
+					// Continue monitoring the new GID
+					continue
+				}
 				logger.Infof("Aria2 download completed for GID %s", t.GID)
 				goto TransferFiles
 			}
@@ -129,15 +140,31 @@ TransferFiles:
 
 	// Transfer files to storage
 	logger.Infof("Transferring %d file(s) to storage %s", len(status.Files), t.Storage.Name())
+	transferredCount := 0
 	for _, file := range status.Files {
 		if file.Selected != "true" {
 			logger.Debugf("Skipping unselected file: %s", file.Path)
 			continue
 		}
 
+		// Skip torrent files (they are metadata, not the actual content)
+		fileName := filepath.Base(file.Path)
+		if filepath.Ext(fileName) == ".torrent" {
+			logger.Debugf("Skipping torrent metadata file: %s", file.Path)
+			// Still remove it if configured
+			if config.C().Aria2.RemoveAfterTransfer {
+				if err := os.Remove(file.Path); err != nil {
+					logger.Warnf("Failed to remove torrent file %s: %v", file.Path, err)
+				} else {
+					logger.Debugf("Removed torrent file %s", file.Path)
+				}
+			}
+			continue
+		}
+
 		// Check if file exists
 		if _, err := os.Stat(file.Path); os.IsNotExist(err) {
-			logger.Errorf("Downloaded file not found: %s", file.Path)
+			logger.Warnf("Downloaded file not found: %s", file.Path)
 			continue
 		}
 
@@ -166,7 +193,7 @@ TransferFiles:
 		ctx = context.WithValue(ctx, ctxkey.ContentLength, fileInfo.Size())
 
 		// Determine destination path
-		fileName := filepath.Base(file.Path)
+		fileName = filepath.Base(file.Path)
 		destPath := filepath.Join(t.StorPath, fileName)
 
 		logger.Infof("Transferring file %s to %s:%s", fileName, t.Storage.Name(), destPath)
@@ -182,6 +209,7 @@ TransferFiles:
 		}
 
 		logger.Infof("Successfully transferred file %s", fileName)
+		transferredCount++
 
 		// Optionally remove the local file after successful transfer
 		if config.C().Aria2.RemoveAfterTransfer {
@@ -193,7 +221,16 @@ TransferFiles:
 		}
 	}
 
-	logger.Infof("Aria2 task %s completed successfully", t.ID)
+	if transferredCount == 0 {
+		err := errors.New("no files were transferred")
+		logger.Error("No files were transferred to storage")
+		if t.Progress != nil {
+			t.Progress.OnDone(ctx, t, err)
+		}
+		return err
+	}
+
+	logger.Infof("Aria2 task %s completed successfully, transferred %d file(s)", t.ID, transferredCount)
 	if t.Progress != nil {
 		t.Progress.OnDone(ctx, t, nil)
 	}
