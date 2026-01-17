@@ -25,6 +25,10 @@ func (t *Task) Execute(ctx context.Context) error {
 
 	// Wait for aria2 download to complete
 	if err := t.waitForDownload(ctx); err != nil {
+		// If context was canceled, also cancel the aria2 download
+		if errors.Is(err, context.Canceled) {
+			t.cancelAria2Download()
+		}
 		logger.Errorf("Aria2 download failed: %v", err)
 		if t.Progress != nil {
 			t.Progress.OnDone(ctx, t, err)
@@ -47,7 +51,7 @@ func (t *Task) Execute(ctx context.Context) error {
 	}
 
 	// Clean up aria2 download result
-	if _, err := t.Aria2Client.RemoveDownloadResult(ctx, t.GID); err != nil {
+	if _, err := t.Aria2Client.RemoveDownloadResult(context.Background(), t.GID); err != nil {
 		logger.Warnf("Failed to remove aria2 download result: %v", err)
 	}
 
@@ -101,7 +105,7 @@ func (t *Task) waitForDownload(ctx context.Context) error {
 // getStatus retrieves the current status of the download
 func (t *Task) getStatus(ctx context.Context) (*aria2.Status, error) {
 	logger := log.FromContext(ctx)
-	
+
 	// Try active/waiting queue first
 	status, err := t.Aria2Client.TellStatus(ctx, t.GID)
 	if err == nil {
@@ -128,7 +132,7 @@ func (t *Task) getStatus(ctx context.Context) (*aria2.Status, error) {
 // transferFiles transfers downloaded files from aria2 to storage
 func (t *Task) transferFiles(ctx context.Context) error {
 	logger := log.FromContext(ctx)
-	
+
 	status, err := t.Aria2Client.TellStatus(ctx, t.GID)
 	if err != nil {
 		return fmt.Errorf("failed to get final status: %w", err)
@@ -148,7 +152,7 @@ func (t *Task) transferFiles(ctx context.Context) error {
 		}
 
 		fileName := filepath.Base(file.Path)
-		
+
 		// Skip torrent metadata files
 		if filepath.Ext(fileName) == ".torrent" {
 			logger.Debugf("Skipping torrent metadata file: %s", fileName)
@@ -159,7 +163,7 @@ func (t *Task) transferFiles(ctx context.Context) error {
 		if err := t.transferFile(ctx, file.Path); err != nil {
 			return err
 		}
-		
+
 		transferredCount++
 		t.removeFileIfNeeded(file.Path)
 	}
@@ -174,7 +178,7 @@ func (t *Task) transferFiles(ctx context.Context) error {
 // transferFile transfers a single file to storage
 func (t *Task) transferFile(ctx context.Context, filePath string) error {
 	logger := log.FromContext(ctx)
-	
+
 	// Check if file exists
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
@@ -198,9 +202,9 @@ func (t *Task) transferFile(ctx context.Context, filePath string) error {
 	// Save to storage
 	fileName := filepath.Base(filePath)
 	destPath := filepath.Join(t.StorPath, fileName)
-	
+
 	logger.Infof("Transferring file %s to %s:%s", fileName, t.Storage.Name(), destPath)
-	
+
 	if err := t.Storage.Save(ctx, f, destPath); err != nil {
 		return fmt.Errorf("failed to save file %s to storage: %w", fileName, err)
 	}
@@ -214,11 +218,33 @@ func (t *Task) removeFileIfNeeded(filePath string) {
 	if config.C().Aria2.KeepFile {
 		return
 	}
-	
+
 	logger := log.FromContext(t.ctx)
 	if err := os.Remove(filePath); err != nil {
 		logger.Warnf("Failed to remove local file %s: %v", filePath, err)
 	} else {
 		logger.Debugf("Removed local file %s", filePath)
+	}
+}
+
+// cancelAria2Download cancels the aria2 download task
+func (t *Task) cancelAria2Download() {
+	logger := log.FromContext(t.ctx)
+	logger.Infof("Canceling aria2 download GID: %s", t.GID)
+
+	// Use a background context with timeout for cleanup
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Try to force remove the download
+	if _, err := t.Aria2Client.ForceRemove(ctx, t.GID); err != nil {
+		logger.Warnf("Failed to cancel aria2 download %s: %v", t.GID, err)
+	} else {
+		logger.Infof("Successfully canceled aria2 download %s", t.GID)
+	}
+
+	// Also remove the download result to clean up
+	if _, err := t.Aria2Client.RemoveDownloadResult(ctx, t.GID); err != nil {
+		logger.Debugf("Failed to remove download result for %s: %v", t.GID, err)
 	}
 }
