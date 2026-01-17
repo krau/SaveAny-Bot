@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
@@ -11,6 +10,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	storconfig "github.com/krau/SaveAny-Bot/config/storage"
@@ -23,7 +23,7 @@ import (
 
 func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
-	args := strings.Split(update.EffectiveMessage.Text, " ")
+	args := strutil.ParseArgsRespectQuotes(update.EffectiveMessage.Text)
 
 	if len(args) < 3 {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportUsage, nil)), nil)
@@ -35,7 +35,6 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 
 	userID := update.GetUserChat().GetID()
 
-	// 1. 获取源存储端
 	stor, err := storage.GetStorageByUserIDAndName(ctx, userID, storageName)
 	if err != nil {
 		logger.Errorf("Failed to get storage by user ID and name: %s", err)
@@ -46,7 +45,6 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// 2. 检查是否支持列举
 	listable, ok := stor.(storage.StorageListable)
 	if !ok {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportErrorStorageNotListable, map[string]any{
@@ -55,7 +53,6 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// 3. 检查是否支持读取
 	_, ok = stor.(storage.StorageReadable)
 	if !ok {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportErrorStorageNotReadable, map[string]any{
@@ -64,7 +61,6 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// 4. 获取目标 Telegram 存储
 	telegramStorage, err := storage.GetTelegramStorageByUserID(ctx, userID)
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportErrorNoTelegramStorage, map[string]any{
@@ -73,7 +69,6 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// 5. 列举目录文件
 	replied, err := ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportInfoFetchingFiles, nil)), nil)
 	if err != nil {
 		logger.Errorf("Failed to reply: %s", err)
@@ -89,7 +84,6 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// 6. 过滤文件
 	var filter *regexp.Regexp
 	if len(args) >= 5 {
 		filter, err = regexp.Compile(args[4])
@@ -121,7 +115,6 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// 7. 解析目标 Chat ID
 	// Get default chat_id from Telegram storage config
 	targetChatID := int64(0)
 	if telegramCfg := config.C().GetStorageByName(telegramStorage.Name()); telegramCfg != nil {
@@ -150,7 +143,6 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// 8. 创建任务元素
 	elems := make([]batchimport.TaskElement, 0, len(filteredFiles))
 	var totalSize int64
 	for _, file := range filteredFiles {
@@ -159,7 +151,6 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		totalSize += file.Size
 	}
 
-	// 9. 创建并添加任务
 	taskID := xid.New().String()
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	task := batchimport.NewBatchImportTask(
