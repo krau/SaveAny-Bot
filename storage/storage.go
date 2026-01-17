@@ -7,6 +7,7 @@ import (
 
 	storcfg "github.com/krau/SaveAny-Bot/config/storage"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/krau/SaveAny-Bot/storage/alist"
 	"github.com/krau/SaveAny-Bot/storage/local"
 	"github.com/krau/SaveAny-Bot/storage/minio"
@@ -28,6 +29,18 @@ type Storage interface {
 type StorageCannotStream interface {
 	Storage
 	CannotStream() string
+}
+
+// StorageListable 表示支持列举目录内容的存储
+type StorageListable interface {
+	Storage
+	ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error)
+}
+
+// StorageReadable 表示支持读取文件内容的存储
+type StorageReadable interface {
+	Storage
+	OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error)
 }
 
 var Storages = make(map[string]Storage)

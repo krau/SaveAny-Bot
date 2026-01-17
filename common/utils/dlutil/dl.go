@@ -1,6 +1,9 @@
 package dlutil
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 var threadsLevels = []struct {
 	threads int
@@ -30,4 +33,24 @@ func GetSpeed(downloaded int64, startTime time.Time) float64 {
 		return 0
 	}
 	return float64(downloaded) / elapsed
+}
+
+// FormatSize formats a byte size as a human-readable string
+func FormatSize(bytes int64) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+	)
+	
+	switch {
+	case bytes >= GB:
+		return fmt.Sprintf("%.2f GB", float64(bytes)/float64(GB))
+	case bytes >= MB:
+		return fmt.Sprintf("%.2f MB", float64(bytes)/float64(MB))
+	case bytes >= KB:
+		return fmt.Sprintf("%.2f KB", float64(bytes)/float64(KB))
+	default:
+		return fmt.Sprintf("%d B", bytes)
+	}
 }
