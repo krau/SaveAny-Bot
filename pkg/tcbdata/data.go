@@ -47,6 +47,8 @@ type Add struct {
 	DirectLinks []string
 	// aria2
 	Aria2URIs []string
+	// ytdlp
+	YtdlpURLs []string
 }
 
 type SetDefaultStorage struct {

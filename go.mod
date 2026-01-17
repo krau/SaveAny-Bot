@@ -17,6 +17,7 @@ require (
 	github.com/gotd/td v0.137.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20250916175020-ebf3e50324d3
 	github.com/krau/ffmpeg-go v0.6.0
+	github.com/lrstanley/go-ytdlp v1.2.7
 	github.com/minio/minio-go/v7 v7.0.98
 	github.com/playwright-community/playwright-go v0.5200.1
 	github.com/rs/xid v1.6.0
@@ -31,6 +32,7 @@ require (
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.3 // indirect
+	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -42,6 +44,7 @@ require (
 	github.com/clipperhouse/displaywidth v0.7.0 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect

@@ -99,6 +99,8 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 		shortcut.CreateAndAddAria2TaskWithEdit(ctx, selectedStorage, dirPath, data.Aria2URIs, client, msgID, userID)
+	case tasktype.TaskTypeYtdlp:
+		shortcut.CreateAndAddYtdlpTaskWithEdit(ctx, selectedStorage, dirPath, data.YtdlpURLs, msgID, userID)
 	default:
 		return fmt.Errorf("unexcept task type: %s", data.TaskType)
 	}
