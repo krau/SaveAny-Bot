@@ -130,7 +130,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	var mtype *mimetype.MIME
 	if seekable {
 		var err error
-		mtype, err = mimetype.DetectReader(r)
+		mtype, err = mimetype.DetectReader(rs)
 		if err != nil {
 			return fmt.Errorf("failed to detect mimetype: %w", err)
 		}
