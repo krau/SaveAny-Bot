@@ -82,7 +82,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	}
 	defer reader.Close()
 
-	// 构造 Telegram 存储路径: /<chat_id>/<filename>
+	// Build Telegram storage path: /<chat_id>/<filename>
 	storagePath := fmt.Sprintf("/%d/%s", elem.TargetChatID, elem.FileInfo.Name)
 
 	// 注入文件大小到 context
