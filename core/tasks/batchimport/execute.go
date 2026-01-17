@@ -69,7 +69,7 @@ func (t *Task) Execute(ctx context.Context) error {
 func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", elem.FileInfo.Name))
 
-	// 检查源存储是否支持读取
+	// Check whether the source storage supports reading
 	readableStorage, ok := elem.SourceStorage.(storage.StorageReadable)
 	if !ok {
 		return fmt.Errorf("source storage %s does not support reading", elem.SourceStorage.Name())
