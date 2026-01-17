@@ -267,8 +267,19 @@ func (a *Alist) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.F
 
 	files := make([]storagetypes.FileInfo, 0, len(listResp.Data.Content))
 	for _, item := range listResp.Data.Content {
-		// Parse modified time
-		modTime, _ := time.Parse(time.RFC3339, item.Modified)
+		// Parse modified time; log failures but keep zero value on error.
+		var modTime time.Time
+		if item.Modified != "" {
+			parsedTime, err := time.Parse(time.RFC3339, item.Modified)
+			if err != nil {
+				a.logger.With(
+					"path", path.Join(dirPath, item.Name),
+					"modified_raw", item.Modified,
+				).Warnf("failed to parse modified time for file")
+			} else {
+				modTime = parsedTime
+			}
+		}
 
 		files = append(files, storagetypes.FileInfo{
 			Name:    item.Name,
