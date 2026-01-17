@@ -30,6 +30,7 @@ bot:
       /storage - 设置默认存储位置
       /save [自定义文件名] - 保存文件
       /dl <链接1> <链接2> ... - 下载给定链接的文件
+      /import <存储名> <目录路径> [频道ID] [过滤器] - 从存储端导入文件到 Telegram
       /dir - 管理存储目录
       /rule - 管理规则
       /config - 修改配置
@@ -53,6 +54,7 @@ bot:
       dl: "下载给定链接的文件"
       aria2dl: "使用 Aria2 下载给定链接的文件"
       ytdlp: "使用 yt-dlp 下载视频/音频"
+      import: "从存储端导入文件到 Telegram"
       task: "管理任务队列"
       cancel: "取消任务"
       watch: "监听聊天(UserBot)"

@@ -92,9 +92,6 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		return nil
 	}
 	rs, seekable := r.(io.ReadSeeker)
-	if !seekable || rs == nil {
-		return fmt.Errorf("reader must implement io.ReadSeeker")
-	}
 	splitSize := t.config.SplitSizeMB * 1024 * 1024
 	if splitSize <= 0 {
 		splitSize = DefaultSplitSize
@@ -123,88 +120,96 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		}
 		chatID = cid
 	}
-	mtype, err := mimetype.DetectReader(rs)
-	if err != nil {
-		return fmt.Errorf("failed to detect mimetype: %w", err)
-	}
-	if filename == "" {
-		filename = xid.New().String() + mtype.Extension()
-	}
+	upler := uploader.NewUploader(tctx.Raw).
+		WithPartSize(tglimit.MaxUploadPartSize).
+		WithThreads(dlutil.BestThreads(size, config.C().Threads))
 	peer := tryGetInputPeer(tctx, chatID)
 	if peer == nil || peer.Zero() {
 		return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
 	}
+	var mtype *mimetype.MIME
+	if seekable {
+		var err error
+		mtype, err = mimetype.DetectReader(r)
+		if err != nil {
+			return fmt.Errorf("failed to detect mimetype: %w", err)
+		}
+		if filename == "" {
+			filename = xid.New().String() + mtype.Extension()
+		}
 
-	if _, err := rs.Seek(0, io.SeekStart); err != nil {
-		return fmt.Errorf("failed to seek reader: %w", err)
+		if _, err := rs.Seek(0, io.SeekStart); err != nil {
+			return fmt.Errorf("failed to seek reader: %w", err)
+		}
 	}
-	upler := uploader.NewUploader(tctx.Raw).
-		WithPartSize(tglimit.MaxUploadPartSize).
-		WithThreads(dlutil.BestThreads(size, config.C().Threads))
 	if size > splitSize {
 		// large file, use split uploader
-		return t.splitUpload(tctx, rs, filename, upler, peer, size, splitSize)
+		return t.splitUpload(tctx, r, filename, upler, peer, size, splitSize)
 	}
 
 	var file tg.InputFileClass
-	if size < 0 {
-		file, err = upler.FromReader(ctx, filename, rs)
+	var err error
+	if size <= 0 {
+		file, err = upler.FromReader(ctx, filename, r)
 	} else {
-		file, err = upler.Upload(ctx, uploader.NewUpload(filename, rs, size))
+		file, err = upler.Upload(ctx, uploader.NewUpload(filename, r, size))
 	}
 	if err != nil {
 		return fmt.Errorf("failed to upload file to telegram: %w", err)
 	}
 	caption := styling.Plain(filename)
 	forceFile := t.config.ForceFile
-	if strings.HasPrefix(mtype.String(), "image/") && size >= tglimit.MaxPhotoSize {
+
+	if mtype != nil && strings.HasPrefix(mtype.String(), "image/") && size >= tglimit.MaxPhotoSize {
 		forceFile = true
 	}
 	doc := message.UploadedDocument(file, caption).
 		Filename(filename).
-		ForceFile(forceFile).
-		MIME(mtype.String())
-
+		ForceFile(forceFile)
+	if mtype != nil {
+		doc = doc.MIME(mtype.String())
+	}
 	var media message.MediaOption = doc
-
-	switch mtypeStr := mtype.String(); {
-	case strings.HasPrefix(mtypeStr, "video/"):
-		media = doc.Video().SupportsStreaming()
-		thumb, err := extractThumbFrame(rs)
-		if err == nil {
-			thumb, err := upler.FromBytes(ctx, "thumb.jpg", thumb)
+	if mtype != nil && rs != nil {
+		switch mtypeStr := mtype.String(); {
+		case strings.HasPrefix(mtypeStr, "video/"):
+			media = doc.Video().SupportsStreaming()
+			thumb, err := extractThumbFrame(rs)
 			if err == nil {
-				doc = doc.Thumb(thumb)
+				thumb, err := upler.FromBytes(ctx, "thumb.jpg", thumb)
+				if err == nil {
+					doc = doc.Thumb(thumb)
+				}
 			}
+			rs.Seek(0, io.SeekStart)
+			switch mtypeStr {
+			case "video/mp4":
+				info, err := getMP4Meta(rs)
+				if err != nil {
+					// Fallback to ffprobe if gomedia fails (e.g., malformed MP4)
+					rs.Seek(0, io.SeekStart)
+					info, err = getVideoMetadata(rs)
+				}
+				if err == nil {
+					media = doc.Video().
+						Duration(time.Duration(info.Duration)*time.Second).
+						Resolution(info.Width, info.Height).
+						SupportsStreaming()
+				}
+			default:
+				info, err := getVideoMetadata(rs)
+				if err == nil {
+					media = doc.Video().
+						Duration(time.Duration(info.Duration)*time.Second).
+						Resolution(info.Width, info.Height).
+						SupportsStreaming()
+				}
+			}
+		case strings.HasPrefix(mtypeStr, "audio/"):
+			media = doc.Audio().Title(filename)
+		case strings.HasPrefix(mtypeStr, "image/") && !strings.HasSuffix(mtypeStr, "webp"):
+			media = message.UploadedPhoto(file, caption)
 		}
-		rs.Seek(0, io.SeekStart)
-		switch mtypeStr {
-		case "video/mp4":
-			info, err := getMP4Meta(rs)
-			if err != nil {
-				// Fallback to ffprobe if gomedia fails (e.g., malformed MP4)
-				rs.Seek(0, io.SeekStart)
-				info, err = getVideoMetadata(rs)
-			}
-			if err == nil {
-				media = doc.Video().
-					Duration(time.Duration(info.Duration)*time.Second).
-					Resolution(info.Width, info.Height).
-					SupportsStreaming()
-			}
-		default:
-			info, err := getVideoMetadata(rs)
-			if err == nil {
-				media = doc.Video().
-					Duration(time.Duration(info.Duration)*time.Second).
-					Resolution(info.Width, info.Height).
-					SupportsStreaming()
-			}
-		}
-	case strings.HasPrefix(mtypeStr, "audio/"):
-		media = doc.Audio().Title(filename)
-	case strings.HasPrefix(mtypeStr, "image/") && !strings.HasSuffix(mtypeStr, "webp"):
-		media = message.UploadedPhoto(file, caption)
 	}
 	sender := tctx.Sender
 	_, err = sender.WithUploader(upler).To(peer).Media(ctx, media)
@@ -215,7 +220,7 @@ func (t *Telegram) CannotStream() string {
 	return "Telegram storage must use a ReaderSeeker"
 }
 
-func (t *Telegram) splitUpload(ctx *ext.Context, rs io.ReadSeeker, filename string, upler *uploader.Uploader, peer tg.InputPeerClass, fileSize, splitSize int64) error {
+func (t *Telegram) splitUpload(ctx *ext.Context, r io.Reader, filename string, upler *uploader.Uploader, peer tg.InputPeerClass, fileSize, splitSize int64) error {
 	tempId := xid.New().String()
 	outputBase := filepath.Join(config.C().Temp.BasePath, tempId, strings.Split(filename, ".")[0])
 	defer func() {
@@ -224,7 +229,7 @@ func (t *Telegram) splitUpload(ctx *ext.Context, rs io.ReadSeeker, filename stri
 			log.FromContext(ctx).Warnf("Failed to cleanup temp split files: %s", err)
 		}
 	}()
-	if err := CreateSplitZip(ctx, rs, fileSize, filename, outputBase, splitSize); err != nil {
+	if err := CreateSplitZip(ctx, r, fileSize, filename, outputBase, splitSize); err != nil {
 		return fmt.Errorf("failed to create split zip: %w", err)
 	}
 	matched, err := filepath.Glob(outputBase + ".z*")

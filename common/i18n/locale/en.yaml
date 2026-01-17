@@ -29,6 +29,7 @@ bot:
       /silent - Toggle silent mode
       /storage - Set default storage
       /save [custom filename] - Save file
+      /import <storage_name> <dir_path> [channel_id] [filter] - Import files from storage to Telegram
       /dir - Manage storage directories
       /rule - Manage rules
       /config - Modify configuration
@@ -52,6 +53,7 @@ bot:
       dl: "Download files from given links"
       aria2dl: "Download files using Aria2"
       ytdlp: "Download video/audio using yt-dlp"
+      import: "Import files from storage to Telegram"
       task: "Manage task queue"
       cancel: "Cancel task"
       watch: "Watch chats (UserBot)"
