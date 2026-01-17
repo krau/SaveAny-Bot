@@ -297,7 +297,7 @@ bot:
       info_downloading: "Downloading via yt-dlp..."
       error_download_failed: "yt-dlp download failed: {{.Error}}"
     import:
-      usage: "Usage: /import <storage_name> <dir_path> [target_chat_id] [filter]\n\nExamples:\n/import local1 /downloads\n/import MyAlist /media/photos -1001234567890\n/import MyLocal /backup \".*\\\\.mp4$\""
+      usage: "Usage: /import <storage_name> <dir_path> [target_chat_id] [filter]\n\nExamples:\n/import local1 /downloads\n/import MyAlist /media/photos -1001234567890\n/import MyLocal /backup \".*[.]mp4$\""
       error_storage_not_found: "Storage '{{.StorageName}}' not found or access denied: {{.Error}}"
       error_storage_not_listable: "Storage '{{.StorageName}}' does not support listing files"
       error_storage_not_readable: "Storage '{{.StorageName}}' does not support reading files"
