@@ -298,7 +298,12 @@ bot:
       info_downloading: "正在通过 yt-dlp 下载..."
       error_download_failed: "yt-dlp 下载失败: {{.Error}}"
     import:
-      usage: "用法: /import <storage_name> <dir_path> [target_chat_id] [filter]\n\n示例:\n/import 本机1 /downloads\n/import MyAlist /media/photos -1001234567890\n/import MyLocal /backup \".*\.mp4$\""
+      usage: |
+        用法: /import <storage_name> <dir_path> [target_chat_id] [filter]
+        示例:
+        /import 本机1 /downloads
+        /import MyAlist /media/photos -1001234567890
+        /import MyLocal /backup ".*\.mp4$"
       error_storage_not_found: "存储端 '{{.StorageName}}' 不存在或您无权访问: {{.Error}}"
       error_storage_not_listable: "存储端 '{{.StorageName}}' 不支持列举文件功能"
       error_storage_not_readable: "存储端 '{{.StorageName}}' 不支持读取文件功能"
@@ -311,6 +316,7 @@ bot:
       error_no_target_chat_id: "未指定目标频道 ID，且 Telegram 存储未配置默认 chat_id"
       error_add_task_failed: "添加任务失败: {{.Error}}"
       info_task_added: "已添加 {{.Count}} 个文件到导入队列\n总大小: {{.SizeMB}} MB\n任务 ID: {{.TaskID}}"
+      start_stats: "总文件数: {{.Count}}\n总大小: {{.SizeMB}} MB"
     cancel:
       usage: "用法: /cancel <task_id>"
       error_cancel_failed: "取消任务失败: {{.Error}}"

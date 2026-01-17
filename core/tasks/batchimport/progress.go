@@ -43,9 +43,9 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	log.FromContext(ctx).Debugf("Batch import task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 
 	sizeMB := float64(info.TotalSize()) / (1024 * 1024)
-	statsText := i18n.T(i18nk.BotMsgProgressImportStartStats, map[string]any{
-		"size":  fmt.Sprintf("%.2f", sizeMB),
-		"count": info.Count(),
+	statsText := i18n.T(i18nk.BotMsgImportStartStats, map[string]any{
+		"SizeMB":  fmt.Sprintf("%.2f", sizeMB),
+		"Count": info.Count(),
 	})
 
 	entityBuilder := entity.Builder{}

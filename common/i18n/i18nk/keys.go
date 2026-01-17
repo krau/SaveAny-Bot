@@ -118,6 +118,7 @@ const (
 	BotMsgImportErrorStorageNotReadable                   Key = "bot.msg.import.error_storage_not_readable"
 	BotMsgImportInfoFetchingFiles                         Key = "bot.msg.import.info_fetching_files"
 	BotMsgImportInfoTaskAdded                             Key = "bot.msg.import.info_task_added"
+	BotMsgImportStartStats                                Key = "bot.msg.import.start_stats"
 	BotMsgImportUsage                                     Key = "bot.msg.import.usage"
 	BotMsgMediaGroupErrorBuildStorageSelectKeyboardFailed Key = "bot.msg.media_group.error_build_storage_select_keyboard_failed"
 	BotMsgMediaGroupInfoGroupFoundFilesSelectStorage      Key = "bot.msg.media_group.info_group_found_files_select_storage"
