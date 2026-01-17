@@ -298,7 +298,7 @@ bot:
       info_downloading: "正在通过 yt-dlp 下载..."
       error_download_failed: "yt-dlp 下载失败: {{.Error}}"
     import:
-      usage: "用法: /import <storage_name> <dir_path> [target_chat_id] [filter]\n\n示例:\n/import 本机1 /downloads\n/import MyAlist /media/photos -1001234567890\n/import MyLocal /backup \".*\\\\.mp4$\""
+      usage: "用法: /import <storage_name> <dir_path> [target_chat_id] [filter]\n\n示例:\n/import 本机1 /downloads\n/import MyAlist /media/photos -1001234567890\n/import MyLocal /backup \".*\.mp4$\""
       error_storage_not_found: "存储端 '{{.StorageName}}' 不存在或您无权访问: {{.Error}}"
       error_storage_not_listable: "存储端 '{{.StorageName}}' 不支持列举文件功能"
       error_storage_not_readable: "存储端 '{{.StorageName}}' 不支持读取文件功能"
