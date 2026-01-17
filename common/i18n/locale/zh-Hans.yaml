@@ -328,6 +328,11 @@ bot:
       direct_start: "开始下载, 总大小: {{.SizeMB}} MB ({{.Count}} 个文件)"
       file_name_prefix: "文件名: "
       error_prefix: "\n错误: "
+      aria2_start: "等待 Aria2 下载完成 (GID: {{.GID}})..."
+      aria2_downloading: "Aria2 正在下载 (GID: {{.GID}})\n"
+      aria2_done: "Aria2 下载完成并已转存 (GID: {{.GID}})\n"
+      downloaded_prefix: "\n已下载: "
+      current_speed_prefix: "\n当前速度: "
     syncpeers:
       start: "正在同步对话列表..."
       success: "对话列表同步完成, 共同步 {{.Count}} 个对话"
@@ -338,3 +343,4 @@ bot:
       info_adding_aria2_download: "正在添加 Aria2 下载任务..."
       error_adding_aria2_download: "添加 Aria2 下载任务失败: {{.Error}}"
       info_aria2_download_added: "Aria2 下载任务已添加, GID: {{.GID}}"
+      info_select_storage: "请选择存储位置, 选择后将添加到 Aria2 下载队列"

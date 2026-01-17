@@ -18,6 +18,17 @@ token = ""
 enable = false
 url = "socks5://127.0.0.1:7890"
 
+# Aria2 配置
+[aria2]
+# 启用 Aria2 下载支持
+enable = false
+# Aria2 RPC URL
+url = "http://localhost:6800/jsonrpc"
+# Aria2 RPC Secret (如果配置了 rpc-secret)
+secret = ""
+# 转存完成后删除 Aria2 下载的本地文件
+remove_after_transfer = true
+
 # 存储列表
 [[storages]]
 # 标识名, 需要唯一

@@ -58,6 +58,11 @@ var aria2ClientInitOnce sync.Once
 var aria2ClientInitErr error
 var aria2Client *aria2.Client
 
+// GetAria2Client returns the shared aria2 client instance
+func GetAria2Client() *aria2.Client {
+	return aria2Client
+}
+
 func handleAria2DlCmd(ctx *ext.Context, update *ext.Update) error {
 	if !config.C().Aria2.Enable {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgAria2ErrorAria2NotEnabled)), nil)
@@ -78,7 +83,9 @@ func handleAria2DlCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDlErrorNoValidLinks)), nil)
 		return nil
 	}
-	logger.Debug("Adding aria2 download", "links", links)
+	logger.Debug("Preparing aria2 download", "links", links)
+	
+	// Initialize aria2 client to check connection
 	aria2ClientInitOnce.Do(func() {
 		aria2Client, aria2ClientInitErr = aria2.NewClient(config.C().Aria2.Url, config.C().Aria2.Secret)
 	})
@@ -89,17 +96,18 @@ func handleAria2DlCmd(ctx *ext.Context, update *ext.Update) error {
 		})), nil)
 		return nil
 	}
-	gid, err := aria2Client.AddURI(ctx, links, nil)
+
+	// Build storage selection keyboard (don't add to aria2 yet)
+	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, update.GetUserChat().GetID()), tcbdata.Add{
+		TaskType:  tasktype.TaskTypeAria2,
+		Aria2URIs: links,
+	})
 	if err != nil {
-		logger.Error("Failed to add aria2 download", "error", err)
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgAria2ErrorAddingAria2Download, map[string]any{
-			"Error": err.Error(),
-		})), nil)
-		return nil
+		return err
 	}
-	logger.Info("Aria2 download added", "gid", gid)
-	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgAria2InfoAria2DownloadAdded, map[string]any{
-		"GID": gid,
-	})), nil)
+
+	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgAria2InfoSelectStorage)), &ext.ReplyOpts{
+		Markup: markup,
+	})
 	return nil
 }

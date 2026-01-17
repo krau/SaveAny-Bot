@@ -36,9 +36,10 @@ type Config struct {
 }
 
 type aria2Config struct {
-	Enable bool   `toml:"enable" mapstructure:"enable" json:"enable"`
-	Url    string `toml:"url" mapstructure:"url" json:"url"`
-	Secret string `toml:"secret" mapstructure:"secret" json:"secret"`
+	Enable              bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	Url                 string `toml:"url" mapstructure:"url" json:"url"`
+	Secret              string `toml:"secret" mapstructure:"secret" json:"secret"`
+	RemoveAfterTransfer bool   `toml:"remove_after_transfer" mapstructure:"remove_after_transfer" json:"remove_after_transfer"`
 }
 
 var cfg = &Config{}
