@@ -10,3 +10,5 @@ temp/
 .hugo_build.lock
 playwright/
 testplugins/
+*.exe
+tmp-*

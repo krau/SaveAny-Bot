@@ -26,7 +26,7 @@ func BuildDirHelpStyling(dirs []database.Dir) []styling.StyledTextOption {
 		styling.Blockquote(func() string {
 			var sb strings.Builder
 			for _, dir := range dirs {
-				sb.WriteString(fmt.Sprintf("%d: ", dir.ID))
+				fmt.Fprintf(&sb, "%d: ", dir.ID)
 				sb.WriteString(dir.StorageName)
 				sb.WriteString(" - ")
 				sb.WriteString(dir.Path)
