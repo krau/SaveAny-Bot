@@ -2,7 +2,7 @@ package storagetypes
 
 import "time"
 
-// FileInfo 表示文件元数据
+// FileInfo represents file metadata
 type FileInfo struct {
 	Name    string
 	Path    string
