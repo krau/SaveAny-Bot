@@ -9,6 +9,8 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	storconfig "github.com/krau/SaveAny-Bot/config/storage"
@@ -24,11 +26,7 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 	args := strings.Split(update.EffectiveMessage.Text, " ")
 
 	if len(args) < 3 {
-		ctx.Reply(update, ext.ReplyTextString("用法: /import <storage_name> <dir_path> [target_chat_id] [filter]\n\n"+
-			"示例:\n"+
-			"/import 本机1 /downloads\n"+
-			"/import MyAlist /media/photos -1001234567890\n"+
-			"/import MyLocal /backup \".*\\\\.mp4$\""), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportUsage, nil)), nil)
 		return dispatcher.EndGroups
 	}
 
@@ -41,33 +39,42 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 	stor, err := storage.GetStorageByUserIDAndName(ctx, userID, storageName)
 	if err != nil {
 		logger.Errorf("Failed to get storage by user ID and name: %s", err)
-		ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("存储端 '%s' 不存在或您无权访问: %v", storageName, err)), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportErrorStorageNotFound, map[string]any{
+			"StorageName": storageName,
+			"Error":       err,
+		})), nil)
 		return dispatcher.EndGroups
 	}
 
 	// 2. 检查是否支持列举
 	listable, ok := stor.(storage.StorageListable)
 	if !ok {
-		ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("存储端 '%s' 不支持列举文件功能", storageName)), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportErrorStorageNotListable, map[string]any{
+			"StorageName": storageName,
+		})), nil)
 		return dispatcher.EndGroups
 	}
 
 	// 3. 检查是否支持读取
 	_, ok = stor.(storage.StorageReadable)
 	if !ok {
-		ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("存储端 '%s' 不支持读取文件功能", storageName)), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportErrorStorageNotReadable, map[string]any{
+			"StorageName": storageName,
+		})), nil)
 		return dispatcher.EndGroups
 	}
 
 	// 4. 获取目标 Telegram 存储
 	telegramStorage, err := storage.GetTelegramStorageByUserID(ctx, userID)
 	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("未找到可用的 Telegram 存储: %v", err)), nil)
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportErrorNoTelegramStorage, map[string]any{
+			"Error": err,
+		})), nil)
 		return dispatcher.EndGroups
 	}
 
 	// 5. 列举目录文件
-	replied, err := ctx.Reply(update, ext.ReplyTextString("正在获取文件列表..."), nil)
+	replied, err := ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgImportInfoFetchingFiles, nil)), nil)
 	if err != nil {
 		logger.Errorf("Failed to reply: %s", err)
 		return dispatcher.EndGroups
@@ -77,7 +84,7 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:      replied.ID,
-			Message: fmt.Sprintf("获取文件列表失败: %v", err),
+			Message: i18n.T(i18nk.BotMsgImportErrorListFilesFailed, map[string]any{"Error": err}),
 		})
 		return dispatcher.EndGroups
 	}
@@ -89,7 +96,7 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		if err != nil {
 			ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 				ID:      replied.ID,
-				Message: fmt.Sprintf("正则表达式无效: %v", err),
+				Message: i18n.T(i18nk.BotMsgImportErrorInvalidRegex, map[string]any{"Error": err}),
 			})
 			return dispatcher.EndGroups
 		}
@@ -109,7 +116,7 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 	if len(filteredFiles) == 0 {
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:      replied.ID,
-			Message: "目录中没有可导入的文件",
+			Message: i18n.T(i18nk.BotMsgImportErrorNoFilesToImport, nil),
 		})
 		return dispatcher.EndGroups
 	}
@@ -128,7 +135,7 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 		if err != nil {
 			ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 				ID:      replied.ID,
-				Message: fmt.Sprintf("无效的 Chat ID: %v", err),
+				Message: i18n.T(i18nk.BotMsgImportErrorInvalidChatId, map[string]any{"Error": err}),
 			})
 			return dispatcher.EndGroups
 		}
@@ -138,7 +145,7 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 	if targetChatID == 0 {
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:      replied.ID,
-			Message: "未指定目标频道 ID，且 Telegram 存储未配置默认 chat_id",
+			Message: i18n.T(i18nk.BotMsgImportErrorNoTargetChatId, nil),
 		})
 		return dispatcher.EndGroups
 	}
@@ -166,14 +173,18 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 	if err := core.AddTask(injectCtx, task); err != nil {
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:      replied.ID,
-			Message: fmt.Sprintf("添加任务失败: %v", err),
+			Message: i18n.T(i18nk.BotMsgImportErrorAddTaskFailed, map[string]any{"Error": err}),
 		})
 		return dispatcher.EndGroups
 	}
 
 	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 		ID:      replied.ID,
-		Message: fmt.Sprintf("✅ 已添加 %d 个文件到导入队列\n总大小: %.2f MB\n任务 ID: %s", len(elems), float64(totalSize)/(1024*1024), taskID),
+		Message: i18n.T(i18nk.BotMsgImportInfoTaskAdded, map[string]any{
+			"Count":  len(elems),
+			"SizeMB": fmt.Sprintf("%.2f", float64(totalSize)/(1024*1024)),
+			"TaskID": taskID,
+		}),
 	})
 
 	return dispatcher.EndGroups

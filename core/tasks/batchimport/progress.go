@@ -11,6 +11,8 @@ import (
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
@@ -42,7 +44,7 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 
 	entityBuilder := entity.Builder{}
 	if err := styling.Perform(&entityBuilder,
-		styling.Plain("正在导入: "),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressImportStartPrefix, nil)),
 		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
@@ -86,28 +88,32 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	entityBuilder := entity.Builder{}
 	var progressText strings.Builder
 
-	progressText.WriteString(fmt.Sprintf("导入进度: %d%%\n", percent))
-	progressText.WriteString(fmt.Sprintf("已上传: %.2f MB / %.2f MB\n",
+	progressText.WriteString(i18n.T(i18nk.BotMsgProgressImportProgressPrefix, nil))
+	progressText.WriteString(fmt.Sprintf("%d%%", percent))
+	progressText.WriteString(i18n.T(i18nk.BotMsgProgressImportUploadedPrefix, nil))
+	progressText.WriteString(fmt.Sprintf("%.2f MB / %.2f MB",
 		float64(info.Uploaded())/(1024*1024),
 		float64(info.TotalSize())/(1024*1024)))
 
 	if p.start.Unix() > 0 {
 		elapsed := time.Since(p.start)
 		speed := float64(info.Uploaded()) / elapsed.Seconds()
-		progressText.WriteString(fmt.Sprintf("速度: %s/s\n", dlutil.FormatSize(int64(speed))))
+		progressText.WriteString(i18n.T(i18nk.BotMsgProgressImportSpeedPrefix, nil))
+		progressText.WriteString(dlutil.FormatSize(int64(speed)) + "/s")
 
 		if info.Uploaded() > 0 {
 			remaining := time.Duration(float64(info.TotalSize()-info.Uploaded()) / speed * float64(time.Second))
-			progressText.WriteString(fmt.Sprintf("剩余时间: %s\n", formatDuration(remaining)))
+			progressText.WriteString(i18n.T(i18nk.BotMsgProgressImportRemainingTimePrefix, nil))
+			progressText.WriteString(formatDuration(remaining))
 		}
 	}
 
 	processing := info.Processing()
 	if len(processing) > 0 {
-		progressText.WriteString("\n正在处理:\n")
+		progressText.WriteString(i18n.T(i18nk.BotMsgProgressImportProcessingPrefix, nil))
 		for i, elem := range processing {
 			if i >= 3 {
-				progressText.WriteString(fmt.Sprintf("...和其他 %d 个文件\n", len(processing)-3))
+				progressText.WriteString(i18n.T(i18nk.BotMsgProgressImportProcessingMore, map[string]any{"Count": len(processing) - 3}))
 				break
 			}
 			fmt.Fprintf(&progressText, "- %s\n", elem.FileName())
@@ -150,29 +156,36 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	var resultText strings.Builder
 
 	if err != nil {
-		resultText.WriteString("❌ 导入失败\n")
-		fmt.Fprintf(&resultText, "错误: %v\n", err)
+		resultText.WriteString(i18n.T(i18nk.BotMsgProgressImportFailedPrefix, nil))
+		resultText.WriteString(i18n.T(i18nk.BotMsgProgressErrorPrefix, nil))
+		fmt.Fprintf(&resultText, "%v\n", err)
 	} else {
-		resultText.WriteString("✅ 导入完成\n")
+		resultText.WriteString(i18n.T(i18nk.BotMsgProgressImportSuccessPrefix, nil))
 	}
 
 	elapsed := time.Since(p.start)
-	resultText.WriteString(fmt.Sprintf("\n总文件数: %d\n", info.Count()))
-	resultText.WriteString(fmt.Sprintf("总大小: %.2f MB\n", float64(info.TotalSize())/(1024*1024)))
-	resultText.WriteString(fmt.Sprintf("已上传: %.2f MB\n", float64(info.Uploaded())/(1024*1024)))
-	resultText.WriteString(fmt.Sprintf("耗时: %s\n", formatDuration(elapsed)))
+	resultText.WriteString(i18n.T(i18nk.BotMsgProgressImportTotalFilesPrefix, nil))
+	fmt.Fprintf(&resultText, "%d\n", info.Count())
+	resultText.WriteString(i18n.T(i18nk.BotMsgProgressImportTotalSizePrefix, nil))
+	fmt.Fprintf(&resultText, "%.2f MB\n", float64(info.TotalSize())/(1024*1024))
+	resultText.WriteString(i18n.T(i18nk.BotMsgProgressImportUploadedPrefix, nil))
+	fmt.Fprintf(&resultText, "%.2f MB\n", float64(info.Uploaded())/(1024*1024))
+	resultText.WriteString(i18n.T(i18nk.BotMsgProgressImportElapsedTimePrefix, nil))
+	fmt.Fprintf(&resultText, "%s\n", formatDuration(elapsed))
 
 	if elapsed.Seconds() > 0 {
 		avgSpeed := float64(info.Uploaded()) / elapsed.Seconds()
-		resultText.WriteString(fmt.Sprintf("平均速度: %s/s\n", dlutil.FormatSize(int64(avgSpeed))))
+		resultText.WriteString(i18n.T(i18nk.BotMsgProgressImportAvgSpeedPrefix, nil))
+		fmt.Fprintf(&resultText, "%s/s\n", dlutil.FormatSize(int64(avgSpeed)))
 	}
 
 	failedFiles := info.FailedFiles()
 	if len(failedFiles) > 0 {
-		fmt.Fprintf(&resultText, "\n失败文件数: %d\n", len(failedFiles))
+		resultText.WriteString(i18n.T(i18nk.BotMsgProgressImportFailedFilesPrefix, nil))
+		fmt.Fprintf(&resultText, "%d\n", len(failedFiles))
 		for i, name := range failedFiles {
 			if i >= 5 {
-				fmt.Fprintf(&resultText, "...和其他 %d 个文件\n", len(failedFiles)-5)
+				resultText.WriteString(i18n.T(i18nk.BotMsgProgressImportProcessingMore, map[string]any{"Count": len(failedFiles) - 5}))
 				break
 			}
 			fmt.Fprintf(&resultText, "- %s\n", name)
