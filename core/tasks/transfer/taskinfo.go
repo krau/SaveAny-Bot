@@ -1,4 +1,4 @@
-package batchimport
+package transfer
 
 type TaskElementInfo interface {
 	FileName() string

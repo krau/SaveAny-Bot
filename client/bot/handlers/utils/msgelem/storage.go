@@ -53,6 +53,11 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 			Aria2URIs:  adddata.Aria2URIs,
 			YtdlpURLs:  adddata.YtdlpURLs,
 			YtdlpFlags: adddata.YtdlpFlags,
+
+			TransferSourceStorName: adddata.TransferSourceStorName,
+			TransferSourcePath:     adddata.TransferSourcePath,
+			TransferFiles:          adddata.TransferFiles,
+			TransferTargetPath:     adddata.TransferTargetPath,
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)

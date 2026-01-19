@@ -50,6 +50,11 @@ type Add struct {
 	// ytdlp
 	YtdlpURLs  []string
 	YtdlpFlags []string
+	// transfer
+	TransferSourceStorName string
+	TransferSourcePath     string
+	TransferFiles          []string // file paths relative to source storage
+	TransferTargetPath     string
 }
 
 type SetDefaultStorage struct {

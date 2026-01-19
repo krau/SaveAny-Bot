@@ -24,8 +24,8 @@ const (
 	TaskTypeAria2 TaskType = "aria2"
 	// TaskTypeYtdlp is a TaskType of type ytdlp.
 	TaskTypeYtdlp TaskType = "ytdlp"
-	// TaskTypeBatchimport is a TaskType of type batchimport.
-	TaskTypeBatchimport TaskType = "batchimport"
+	// TaskTypeTransfer is a TaskType of type transfer.
+	TaskTypeTransfer TaskType = "transfer"
 )
 
 var ErrInvalidTaskType = fmt.Errorf("not a valid TaskType, try [%s]", strings.Join(_TaskTypeNames, ", "))
@@ -37,7 +37,7 @@ var _TaskTypeNames = []string{
 	string(TaskTypeDirectlinks),
 	string(TaskTypeAria2),
 	string(TaskTypeYtdlp),
-	string(TaskTypeBatchimport),
+	string(TaskTypeTransfer),
 }
 
 // TaskTypeNames returns a list of possible string values of TaskType.
@@ -56,7 +56,7 @@ func TaskTypeValues() []TaskType {
 		TaskTypeDirectlinks,
 		TaskTypeAria2,
 		TaskTypeYtdlp,
-		TaskTypeBatchimport,
+		TaskTypeTransfer,
 	}
 }
 
@@ -79,7 +79,7 @@ var _TaskTypeValue = map[string]TaskType{
 	"directlinks": TaskTypeDirectlinks,
 	"aria2":       TaskTypeAria2,
 	"ytdlp":       TaskTypeYtdlp,
-	"batchimport": TaskTypeBatchimport,
+	"transfer":    TaskTypeTransfer,
 }
 
 // ParseTaskType attempts to convert a string to a TaskType.

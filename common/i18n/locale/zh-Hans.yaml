@@ -300,11 +300,11 @@ bot:
       error_download_failed: "yt-dlp 下载失败: {{.Error}}"
     transfer:
       usage: |
-        用法: /transfer <source_storage>:/<source_path> <target_storage>:/<target_path> [filter]
+        用法: /transfer <source_storage>:/<source_path> <target_path> [filter]
         示例:
-        /transfer local1:/downloads tg1:/backup
-        /transfer alist1:/media/photos local1:/photos
-        /transfer webdav1:/files tg1:/archive ".*\.mp4$"
+        /transfer local1:/downloads /backup
+        /transfer alist1:/media/photos /photos
+        /transfer webdav1:/files /archive ".*\.mp4$"
       error_invalid_source: "源路径格式无效，应为: storage_name:/path"
       error_invalid_target: "目标路径格式无效，应为: storage_name:/path"
       error_storage_not_found: "存储端 '{{.StorageName}}' 不存在或您无权访问: {{.Error}}"
@@ -318,6 +318,8 @@ bot:
       error_add_task_failed: "添加任务失败: {{.Error}}"
       info_task_added: "已添加 {{.Count}} 个文件到传输队列\n总大小: {{.SizeMB}} MB\n任务 ID: {{.TaskID}}"
       start_stats: "总文件数: {{.Count}}\n总大小: {{.SizeMB}} MB"
+      info_files_select_storage: "共 {{.Count}} 个文件 (总大小: {{.SizeMB}} MB)，请选择目标存储位置"
+      error_build_storage_select_keyboard_failed: "构建存储选择键盘失败: {{.Error}}"
     cancel:
       usage: "用法: /cancel <task_id>"
       error_cancel_failed: "取消任务失败: {{.Error}}"
@@ -366,15 +368,15 @@ bot:
       ytdlp_done: "yt-dlp 下载完成并已转存 ({{.Count}} 个文件)\n"
       downloaded_prefix: "\n已下载: "
       current_speed_prefix: "\n当前速度: "
-      transfer_start_prefix: "正在导入: "
-      transfer_progress_prefix: "导入进度: "
+      transfer_start_prefix: "正在转存: "
+      transfer_progress_prefix: "转存进度: "
       transfer_uploaded_prefix: "\n已上传: "
       transfer_speed_prefix: "\n速度: "
       transfer_remaining_time_prefix: "\n剩余时间: "
       transfer_processing_prefix: "\n正在处理:\n"
       transfer_processing_more: "...和其他 {{.Count}} 个文件\n"
-      transfer_failed_prefix: "导入失败\n"
-      transfer_success_prefix: "导入完成\n"
+      transfer_failed_prefix: "转存失败\n"
+      transfer_success_prefix: "转存完成\n"
       transfer_total_files_prefix: "\n总文件数: "
       transfer_total_size_prefix: "\n总大小: "
       transfer_elapsed_time_prefix: "\n耗时: "

@@ -299,11 +299,11 @@ bot:
       error_download_failed: "yt-dlp download failed: {{.Error}}"
     transfer:
       usage: |
-        Usage: /transfer <source_storage>:/<source_path> <target_storage>:/<target_path> [filter]
+        Usage: /transfer <source_storage>:/<source_path> <target_path> [filter]
         Examples:
-        /transfer local1:/downloads tg1:/backup
-        /transfer alist1:/media/photos local1:/photos
-        /transfer webdav1:/files tg1:/archive ".*\.mp4$"
+        /transfer local1:/downloads /backup
+        /transfer alist1:/media/photos /photos
+        /transfer webdav1:/files /archive ".*\.mp4$"
       error_invalid_source: "Invalid source path format, should be: storage_name:/path"
       error_invalid_target: "Invalid target path format, should be: storage_name:/path"
       error_storage_not_found: "Storage '{{.StorageName}}' not found or access denied: {{.Error}}"
@@ -317,6 +317,8 @@ bot:
       error_add_task_failed: "Failed to add task: {{.Error}}"
       info_task_added: "Added {{.Count}} files to transfer queue\nTotal size: {{.SizeMB}} MB\nTask ID: {{.TaskID}}"
       start_stats: "Total files: {{.Count}}\nTotal size: {{.SizeMB}} MB"
+      info_files_select_storage: "Total {{.Count}} files ({{.SizeMB}} MB), please select target storage"
+      error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
     cancel:
       usage: "Usage: /cancel <task_id>"
       error_cancel_failed: "Failed to cancel task: {{.Error}}"
@@ -365,15 +367,15 @@ bot:
       ytdlp_done: "yt-dlp download completed and transferred ({{.Count}} files)\n"
       downloaded_prefix: "\nDownloaded: "
       current_speed_prefix: "\nCurrent speed: "
-      transfer_start_prefix: "Importing: "
-      transfer_progress_prefix: "Import progress: "
+      transfer_start_prefix: "Transfering: "
+      transfer_progress_prefix: "Transfer progress: "
       transfer_uploaded_prefix: "\nUploaded: "
       transfer_speed_prefix: "\nSpeed: "
       transfer_remaining_time_prefix: "\nRemaining time: "
       transfer_processing_prefix: "\nProcessing:\n"
       transfer_processing_more: "...and {{.Count}} more files\n"
-      transfer_failed_prefix: "Import failed\n"
-      transfer_success_prefix: "Import completed\n"
+      transfer_failed_prefix: "Transfer failed\n"
+      transfer_success_prefix: "Transfer completed\n"
       transfer_total_files_prefix: "\nTotal files: "
       transfer_total_size_prefix: "\nTotal size: "
       transfer_elapsed_time_prefix: "\nElapsed time: "

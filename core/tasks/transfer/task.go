@@ -1,4 +1,4 @@
-package batchimport
+package transfer
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func (t *Task) Title() string {
 
 // Type implements core.Executable.
 func (t *Task) Type() tasktype.TaskType {
-	return tasktype.TaskTypeBatchimport
+	return tasktype.TaskTypeTransfer
 }
 
 // TaskID implements core.Executable.
@@ -69,7 +69,7 @@ func NewTaskElement(
 	}
 }
 
-func NewBatchImportTask(
+func NewTransferTask(
 	id string,
 	ctx context.Context,
 	elems []TaskElement,

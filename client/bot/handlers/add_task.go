@@ -101,6 +101,8 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		shortcut.CreateAndAddAria2TaskWithEdit(ctx, selectedStorage, dirPath, data.Aria2URIs, client, msgID, userID)
 	case tasktype.TaskTypeYtdlp:
 		shortcut.CreateAndAddYtdlpTaskWithEdit(ctx, selectedStorage, dirPath, data.YtdlpURLs, data.YtdlpFlags, msgID, userID)
+	case tasktype.TaskTypeTransfer:
+		return handleTransferCallback(ctx, userID, selectedStorage, dirPath, data, msgID)
 	default:
 		return fmt.Errorf("unexcept task type: %s", data.TaskType)
 	}
