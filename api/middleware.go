@@ -91,7 +91,12 @@ func getClientIP(r *http.Request) string {
 	}
 
 	// Fall back to RemoteAddr
-	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		// If SplitHostPort fails, RemoteAddr might not have a port
+		// In this case, just return RemoteAddr as is
+		return r.RemoteAddr
+	}
 	return ip
 }
 

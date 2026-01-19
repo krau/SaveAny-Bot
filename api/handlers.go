@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"path"
@@ -171,7 +170,7 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		logger.Errorf("Failed to create task: %v", err)
-		respondError(w, fmt.Sprintf("failed to create task: %v", err), http.StatusInternalServerError)
+		respondError(w, "failed to create task", http.StatusInternalServerError)
 		return
 	}
 
@@ -182,7 +181,7 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("Failed to add task: %v", err)
 		updateTaskStatus(taskID, "failed", err.Error())
-		respondError(w, fmt.Sprintf("failed to add task: %v", err), http.StatusInternalServerError)
+		respondError(w, "failed to add task to queue", http.StatusInternalServerError)
 		return
 	}
 
@@ -242,7 +241,8 @@ func handleCancelTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := core.CancelTask(r.Context(), taskID); err != nil {
-		respondError(w, fmt.Sprintf("failed to cancel task: %v", err), http.StatusInternalServerError)
+		log.FromContext(r.Context()).Errorf("Failed to cancel task %s: %v", taskID, err)
+		respondError(w, "failed to cancel task", http.StatusInternalServerError)
 		return
 	}
 
@@ -365,7 +365,11 @@ func sendWebhook(taskID, status, errorMsg string) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		log.Errorf("Webhook returned error status %d: %s", resp.StatusCode, string(body))
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Errorf("Webhook returned error status %d, failed to read response body: %v", resp.StatusCode, err)
+		} else {
+			log.Errorf("Webhook returned error status %d: %s", resp.StatusCode, string(body))
+		}
 	}
 }
