@@ -291,7 +291,7 @@ bot:
       error_no_valid_links: "No valid links to download"
       info_files_select_storage: "Total {{.Count}} files, please select storage"
     ytdlp:
-      usage: "Usage: /ytdlp <URL1> <URL2> ..."
+      usage: "Usage: /ytdlp [OPTIONS] <URL1> [URL2] ...\nExamples:\n  /ytdlp https://example.com/video\n  /ytdlp --format best https://example.com/video\n  /ytdlp --extract-audio --audio-format mp3 https://example.com/video"
       error_no_valid_urls: "No valid URLs"
       info_urls_select_storage: "Found {{.Count}} links, please select storage"
       info_downloading: "Downloading via yt-dlp..."
