@@ -43,6 +43,8 @@ func handleYtdlpCmd(ctx *ext.Context, update *ext.Update) error {
 				nextArg := strings.TrimSpace(args[i+1])
 				if nextArg != "" && !strings.HasPrefix(nextArg, "-") {
 					// Check if it's clearly a URL (has ://)
+					// This handles common video URLs (http://, https://)
+					// For other yt-dlp inputs, users should ensure proper formatting
 					if strings.Contains(nextArg, "://") {
 						// It's a URL, don't consume it as a flag value
 						continue

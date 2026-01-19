@@ -80,7 +80,8 @@ func (t *Task) Execute(ctx context.Context) error {
 func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, error) {
 	logger := log.FromContext(ctx)
 
-	// Configure yt-dlp command with default settings
+	// Configure yt-dlp command with essential settings
+	// Always set output path to ensure files go to temp directory
 	cmd := ytdlp.New().
 		Output(filepath.Join(tempDir, "%(title)s.%(ext)s"))
 
@@ -91,6 +92,8 @@ func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, err
 			RecodeVideo("mp4").
 			RestrictFilenames()
 	}
+	// Note: If custom flags are provided, users have full control over format/quality
+	// The output path is always set above to ensure downloads go to the correct directory
 
 	if t.Progress != nil {
 		t.Progress.OnProgress(ctx, t, "Downloading...")
