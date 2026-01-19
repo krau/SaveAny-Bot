@@ -2,7 +2,7 @@
 
 # API Test Script for SaveAny-Bot HTTP API
 
-API_URL="http://localhost:18080"
+API_URL="http://localhost:8080"
 TOKEN="test-token-12345"
 HEADERS=(-H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json")
 

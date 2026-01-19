@@ -104,7 +104,7 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		stor, err = storage.GetStorageByUserIDAndName(r.Context(), req.UserID, req.StorageName)
 		if err != nil {
 			logger.Errorf("Failed to get storage: %v", err)
-			respondError(w, fmt.Sprintf("storage not found: %v", err), http.StatusBadRequest)
+			respondError(w, "storage not found", http.StatusBadRequest)
 			return
 		}
 	} else {
@@ -127,7 +127,7 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	chatID, msgID, err := tgutil.ParseMessageLink(botCtx, req.TelegramURL)
 	if err != nil {
 		logger.Errorf("Failed to parse Telegram URL: %v", err)
-		respondError(w, fmt.Sprintf("invalid telegram URL: %v", err), http.StatusBadRequest)
+		respondError(w, "invalid telegram URL format", http.StatusBadRequest)
 		return
 	}
 
@@ -135,7 +135,7 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	msg, err := tgutil.GetMessageByID(botCtx, chatID, msgID)
 	if err != nil {
 		logger.Errorf("Failed to get message: %v", err)
-		respondError(w, fmt.Sprintf("failed to get telegram message: %v", err), http.StatusInternalServerError)
+		respondError(w, "failed to retrieve message", http.StatusBadRequest)
 		return
 	}
 
@@ -150,7 +150,7 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	tgFile, err := tfile.FromMediaMessage(media, botCtx.Raw, msg)
 	if err != nil {
 		logger.Errorf("Failed to create TGFile: %v", err)
-		respondError(w, fmt.Sprintf("failed to create file from message: %v", err), http.StatusBadRequest)
+		respondError(w, "invalid message format", http.StatusBadRequest)
 		return
 	}
 
