@@ -24,10 +24,10 @@ import (
 
 // Request/Response types
 type CreateTaskRequest struct {
-	TelegramURL  string `json:"telegram_url"`
-	StorageName  string `json:"storage_name,omitempty"`
-	DirPath      string `json:"dir_path,omitempty"`
-	UserID       int64  `json:"user_id"`
+	TelegramURL string `json:"telegram_url"`
+	StorageName string `json:"storage_name,omitempty"`
+	DirPath     string `json:"dir_path,omitempty"`
+	UserID      int64  `json:"user_id"`
 }
 
 type CreateTaskResponse struct {
@@ -36,11 +36,14 @@ type CreateTaskResponse struct {
 }
 
 type TaskStatusResponse struct {
-	TaskID    string    `json:"task_id"`
-	Status    string    `json:"status"` // queued, running, completed, failed, canceled
-	Title     string    `json:"title"`
-	CreatedAt time.Time `json:"created_at"`
-	Error     string    `json:"error,omitempty"`
+	TaskID      string    `json:"task_id"`
+	Status      string    `json:"status"` // queued, running, completed, failed, canceled
+	Title       string    `json:"title"`
+	CreatedAt   time.Time `json:"created_at"`
+	Error       string    `json:"error,omitempty"`
+	Downloaded  int64     `json:"downloaded,omitempty"`   // Bytes downloaded
+	Total       int64     `json:"total,omitempty"`        // Total bytes
+	ProgressPct float64   `json:"progress_pct,omitempty"` // Progress percentage (0-100)
 }
 
 type ListTasksResponse struct {
@@ -64,11 +67,14 @@ var (
 )
 
 type taskStatus struct {
-	ID        string
-	Status    string
-	Title     string
-	CreatedAt time.Time
-	Error     string
+	ID          string
+	Status      string
+	Title       string
+	CreatedAt   time.Time
+	Error       string
+	Downloaded  int64
+	Total       int64
+	ProgressPct float64
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -212,11 +218,14 @@ func handleGetTask(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(TaskStatusResponse{
-		TaskID:    status.ID,
-		Status:    status.Status,
-		Title:     status.Title,
-		CreatedAt: status.CreatedAt,
-		Error:     status.Error,
+		TaskID:      status.ID,
+		Status:      status.Status,
+		Title:       status.Title,
+		CreatedAt:   status.CreatedAt,
+		Error:       status.Error,
+		Downloaded:  status.Downloaded,
+		Total:       status.Total,
+		ProgressPct: status.ProgressPct,
 	})
 }
 
@@ -301,7 +310,15 @@ func (a *apiProgressTracker) OnStart(ctx context.Context, info tftask.TaskInfo) 
 }
 
 func (a *apiProgressTracker) OnProgress(ctx context.Context, info tftask.TaskInfo, downloaded int64, total int64) {
-	// No-op for API tasks
+	taskStatusesMu.Lock()
+	defer taskStatusesMu.Unlock()
+	if ts, exists := taskStatuses[a.taskID]; exists {
+		ts.Downloaded = downloaded
+		ts.Total = total
+		if total > 0 {
+			ts.ProgressPct = float64(downloaded) / float64(total) * 100.0
+		}
+	}
 }
 
 func (a *apiProgressTracker) OnDone(ctx context.Context, info tftask.TaskInfo, err error) {
@@ -332,11 +349,14 @@ func sendWebhook(taskID, status, errorMsg string) {
 	logger := log.WithPrefix("webhook")
 
 	payload := TaskStatusResponse{
-		TaskID:    ts.ID,
-		Status:    status,
-		Title:     ts.Title,
-		CreatedAt: ts.CreatedAt,
-		Error:     errorMsg,
+		TaskID:      ts.ID,
+		Status:      status,
+		Title:       ts.Title,
+		CreatedAt:   ts.CreatedAt,
+		Error:       errorMsg,
+		Downloaded:  ts.Downloaded,
+		Total:       ts.Total,
+		ProgressPct: ts.ProgressPct,
 	}
 
 	body, err := json.Marshal(payload)

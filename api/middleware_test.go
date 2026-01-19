@@ -61,7 +61,7 @@ func TestIsIPAllowed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isIPAllowed(tt.clientIP, tt.allowedIPs)
 			if result != tt.expected {
-				t.Errorf("isIPAllowed(%q, %v) = %v, want %v", 
+				t.Errorf("isIPAllowed(%q, %v) = %v, want %v",
 					tt.clientIP, tt.allowedIPs, result, tt.expected)
 			}
 		})
@@ -110,11 +110,11 @@ func TestAuthMiddleware_HealthCheck(t *testing.T) {
 
 func TestGetClientIP(t *testing.T) {
 	tests := []struct {
-		name           string
-		remoteAddr     string
-		xForwardedFor  string
-		xRealIP        string
-		expectedIP     string
+		name          string
+		remoteAddr    string
+		xForwardedFor string
+		xRealIP       string
+		expectedIP    string
 	}{
 		{
 			name:       "RemoteAddr only",
