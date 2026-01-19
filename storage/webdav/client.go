@@ -2,6 +2,7 @@ package webdav
 
 import (
 	"context"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,7 +26,39 @@ const (
 	WebdavMethodMkcol    WebdavMethod = "MKCOL"
 	WebdavMethodPropfind WebdavMethod = "PROPFIND"
 	WebdavMethodPut      WebdavMethod = "PUT"
+	WebdavMethodGet      WebdavMethod = "GET"
 )
+
+// WebDAV XML structures for PROPFIND response
+type Multistatus struct {
+	XMLName   xml.Name   `xml:"multistatus"`
+	Responses []Response `xml:"response"`
+}
+
+type Response struct {
+	Href     string   `xml:"href"`
+	Propstat Propstat `xml:"propstat"`
+}
+
+type Propstat struct {
+	Prop Prop   `xml:"prop"`
+	Status string `xml:"status"`
+}
+
+type Prop struct {
+	ResourceType  ResourceType `xml:"resourcetype"`
+	GetContentLength int64     `xml:"getcontentlength"`
+	GetLastModified  string    `xml:"getlastmodified"`
+	DisplayName      string    `xml:"displayname"`
+}
+
+type ResourceType struct {
+	Collection *struct{} `xml:"collection"`
+}
+
+func (rt ResourceType) IsCollection() bool {
+	return rt.Collection != nil
+}
 
 func NewClient(baseURL, username, password string, httpClient *http.Client) *Client {
 	if !strings.HasSuffix(baseURL, "/") {
@@ -131,5 +164,79 @@ func (c *Client) WriteFile(ctx context.Context, remotePath string, content io.Re
 		return nil
 	}
 	return fmt.Errorf("PUT: %s", resp.Status)
+}
 
+// ListDir lists files and directories in the given path
+func (c *Client) ListDir(ctx context.Context, dirPath string) ([]Response, error) {
+	dirPath = strings.Trim(dirPath, "/")
+	u, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return nil, err
+	}
+	u.Path = path.Join(u.Path, dirPath)
+	if !strings.HasSuffix(u.Path, "/") {
+		u.Path += "/"
+	}
+
+	resp, err := c.doRequest(ctx, WebdavMethodPropfind, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusMultiStatus {
+		return nil, fmt.Errorf("PROPFIND: %s", resp.Status)
+	}
+
+	var multistatus Multistatus
+	if err := xml.NewDecoder(resp.Body).Decode(&multistatus); err != nil {
+		return nil, fmt.Errorf("failed to decode PROPFIND response: %w", err)
+	}
+
+	// Filter out the directory itself from results
+	var results []Response
+	basePath := u.Path
+	for _, r := range multistatus.Responses {
+		decodedHref, err := url.PathUnescape(r.Href)
+		if err != nil {
+			decodedHref = r.Href
+		}
+		// Skip the directory itself
+		if strings.TrimSuffix(decodedHref, "/") == strings.TrimSuffix(basePath, "/") {
+			continue
+		}
+		results = append(results, r)
+	}
+
+	return results, nil
+}
+
+// ReadFile downloads a file and returns a ReadCloser
+func (c *Client) ReadFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
+	filePath = strings.Trim(filePath, "/")
+	u, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return nil, 0, err
+	}
+	u.Path = path.Join(u.Path, filePath)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	if c.Username != "" && c.Password != "" {
+		req.SetBasicAuth(c.Username, c.Password)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, 0, fmt.Errorf("GET: %s", resp.Status)
+	}
+
+	return resp.Body, resp.ContentLength, nil
 }

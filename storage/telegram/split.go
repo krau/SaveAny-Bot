@@ -99,12 +99,6 @@ func (w *splitWriter) finalize() error {
 }
 
 func CreateSplitZip(ctx context.Context, reader io.Reader, size int64, fileName, outputBase string, partSize int64) error {
-	// seek the reader if possible
-	if rs, ok := reader.(io.ReadSeeker); ok {
-		if _, err := rs.Seek(0, io.SeekStart); err != nil {
-			return fmt.Errorf("failed to seek reader: %w", err)
-		}
-	}
 	outputDir := filepath.Dir(outputBase)
 	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
