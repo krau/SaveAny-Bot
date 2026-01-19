@@ -103,7 +103,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 		return err
 	}
 	ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
-		ID:      u.CallbackQuery.GetMsgID(),
+		ID: u.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgUpdateInfoUpgradingWithVersion, map[string]any{
 			"Current": config.Version,
 		}),
@@ -111,7 +111,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 	latest, err := ghselfupdate.UpdateSelf(currentV, config.GitRepo)
 	if err != nil {
 		ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
-			ID:      u.CallbackQuery.GetMsgID(),
+			ID: u.CallbackQuery.GetMsgID(),
 			Message: i18n.T(i18nk.BotMsgUpdateErrorUpgradeFailed, map[string]any{
 				"Error": err.Error(),
 			}),
@@ -119,7 +119,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
-		ID:      u.CallbackQuery.GetMsgID(),
+		ID: u.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgUpdateInfoUpgradeSuccess, map[string]any{
 			"Version": latest.Version.String(),
 		}),

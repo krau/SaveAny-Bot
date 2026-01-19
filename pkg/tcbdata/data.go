@@ -48,7 +48,8 @@ type Add struct {
 	// aria2
 	Aria2URIs []string
 	// ytdlp
-	YtdlpURLs []string
+	YtdlpURLs  []string
+	YtdlpFlags []string
 }
 
 type SetDefaultStorage struct {
