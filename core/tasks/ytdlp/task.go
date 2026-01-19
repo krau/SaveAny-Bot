@@ -15,6 +15,7 @@ type Task struct {
 	ID       string
 	ctx      context.Context
 	URLs     []string
+	Flags    []string
 	Storage  storage.Storage
 	StorPath string
 	Progress ProgressTracker
@@ -43,6 +44,7 @@ func NewTask(
 	id string,
 	ctx context.Context,
 	urls []string,
+	flags []string,
 	stor storage.Storage,
 	storPath string,
 	progressTracker ProgressTracker,
@@ -51,6 +53,7 @@ func NewTask(
 		ID:       id,
 		ctx:      ctx,
 		URLs:     urls,
+		Flags:    flags,
 		Storage:  stor,
 		StorPath: storPath,
 		Progress: progressTracker,

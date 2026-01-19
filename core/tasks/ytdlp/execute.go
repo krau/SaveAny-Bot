@@ -80,22 +80,31 @@ func (t *Task) Execute(ctx context.Context) error {
 func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, error) {
 	logger := log.FromContext(ctx)
 
-	// Configure yt-dlp command
+	// Configure yt-dlp command with default settings
 	cmd := ytdlp.New().
-		FormatSort("res,ext:mp4:m4a").
-		RecodeVideo("mp4").
-		Output(filepath.Join(tempDir, "%(title)s.%(ext)s")).
-		RestrictFilenames()
+		Output(filepath.Join(tempDir, "%(title)s.%(ext)s"))
+
+	// If no custom flags are provided, use default behavior
+	if len(t.Flags) == 0 {
+		cmd = cmd.
+			FormatSort("res,ext:mp4:m4a").
+			RecodeVideo("mp4").
+			RestrictFilenames()
+	}
 
 	if t.Progress != nil {
 		t.Progress.OnProgress(ctx, t, "Downloading...")
 	}
 
-	// Execute download with URLs as arguments
-	logger.Infof("Executing yt-dlp for %d URL(s)", len(t.URLs))
+	// Execute download with URLs and custom flags
+	logger.Infof("Executing yt-dlp for %d URL(s) with %d custom flag(s)", len(t.URLs), len(t.Flags))
+
+	// Combine URLs and flags as arguments
+	// The Run method will pass flags as raw command-line arguments
+	args := append(t.Flags, t.URLs...)
 
 	// Run with context for cancellation support
-	result, err := cmd.Run(ctx, t.URLs...)
+	result, err := cmd.Run(ctx, args...)
 	if err != nil {
 		// Check if context was canceled
 		if errors.Is(err, context.Canceled) {

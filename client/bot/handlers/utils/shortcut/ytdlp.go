@@ -15,7 +15,7 @@ import (
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
-func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, urls []string, msgID int, userID int64) error {
+func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, urls []string, flags []string, msgID int, userID int64) error {
 	logger := log.FromContext(ctx)
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 
@@ -29,13 +29,14 @@ func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 		return dispatcher.EndGroups
 	}
 
-	logger.Infof("Creating yt-dlp task for %d URL(s)", len(urls))
+	logger.Infof("Creating yt-dlp task for %d URL(s) with %d flag(s)", len(urls), len(flags))
 
 	// Create yt-dlp task
 	task := ytdlp.NewTask(
 		xid.New().String(),
 		injectCtx,
 		urls,
+		flags,
 		stor,
 		stor.JoinStoragePath(dirPath),
 		ytdlp.NewProgress(msgID, userID),

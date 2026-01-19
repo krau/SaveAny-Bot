@@ -290,7 +290,7 @@ bot:
       error_no_valid_links: "没有有效的链接可供下载"
       info_files_select_storage: "共 {{.Count}} 个文件, 请选择存储位置"
     ytdlp:
-      usage: "用法: /ytdlp <URL1> <URL2> ..."
+      usage: "用法: /ytdlp [选项] <URL1> [URL2] ...\n示例:\n  /ytdlp https://example.com/video\n  /ytdlp --format best https://example.com/video\n  /ytdlp --extract-audio --audio-format mp3 https://example.com/video"
       error_no_valid_urls: "没有有效的 URL"
       info_urls_select_storage: "共 {{.Count}} 个链接, 请选择存储位置"
       info_downloading: "正在通过 yt-dlp 下载..."

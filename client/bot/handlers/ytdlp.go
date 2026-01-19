@@ -7,7 +7,6 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
-	"github.com/duke-git/lancet/v2/slice"
 
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -25,29 +24,53 @@ func handleYtdlpCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	urls := args[1:]
-	// Validate and clean URLs
-	for i, link := range urls {
-		urls[i] = strings.TrimSpace(link)
-		u, err := url.Parse(link)
-		if err != nil || u.Scheme == "" || u.Host == "" {
-			logger.Warnf("Invalid URL: %s", link)
-			urls[i] = ""
+	// Separate URLs and flags from arguments
+	var urls []string
+	var flags []string
+	
+	for i := 1; i < len(args); i++ {
+		arg := strings.TrimSpace(args[i])
+		if arg == "" {
+			continue
+		}
+		
+		// Check if it's a flag (starts with - or --)
+		if strings.HasPrefix(arg, "-") {
+			flags = append(flags, arg)
+			// Check if the next argument is a value for this flag (not starting with -)
+			if i+1 < len(args) && !strings.HasPrefix(strings.TrimSpace(args[i+1]), "-") {
+				nextArg := strings.TrimSpace(args[i+1])
+				// Only treat as flag value if it's not a valid URL
+				u, err := url.Parse(nextArg)
+				if err != nil || u.Scheme == "" || u.Host == "" {
+					flags = append(flags, nextArg)
+					i++ // Skip the next argument as it's been consumed
+					continue
+				}
+			}
+		} else {
+			// Try to parse as URL
+			u, err := url.Parse(arg)
+			if err != nil || u.Scheme == "" || u.Host == "" {
+				logger.Warnf("Invalid URL: %s", arg)
+				continue
+			}
+			urls = append(urls, arg)
 		}
 	}
-	urls = slice.Compact(urls)
 
 	if len(urls) == 0 {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgYtdlpErrorNoValidUrls)), nil)
 		return dispatcher.EndGroups
 	}
 
-	logger.Debugf("Preparing yt-dlp download for %d URL(s)", len(urls))
+	logger.Debugf("Preparing yt-dlp download for %d URL(s) with %d flag(s)", len(urls), len(flags))
 
 	// Build storage selection keyboard
 	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, update.GetUserChat().GetID()), tcbdata.Add{
-		TaskType:  tasktype.TaskTypeYtdlp,
-		YtdlpURLs: urls,
+		TaskType:   tasktype.TaskTypeYtdlp,
+		YtdlpURLs:  urls,
+		YtdlpFlags: flags,
 	})
 	if err != nil {
 		return err
