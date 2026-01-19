@@ -89,8 +89,8 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		respondError(w, "telegram_url is required", http.StatusBadRequest)
 		return
 	}
-	if req.UserID == 0 {
-		respondError(w, "user_id is required", http.StatusBadRequest)
+	if req.UserID <= 0 {
+		respondError(w, "user_id is required and must be positive", http.StatusBadRequest)
 		return
 	}
 
@@ -329,6 +329,8 @@ func sendWebhook(taskID, status, errorMsg string) {
 		return
 	}
 
+	logger := log.WithPrefix("webhook")
+
 	payload := TaskStatusResponse{
 		TaskID:    ts.ID,
 		Status:    status,
@@ -339,7 +341,7 @@ func sendWebhook(taskID, status, errorMsg string) {
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		log.Errorf("Failed to marshal webhook payload: %v", err)
+		logger.Errorf("Failed to marshal webhook payload: %v", err)
 		return
 	}
 
@@ -348,7 +350,7 @@ func sendWebhook(taskID, status, errorMsg string) {
 
 	req, err := http.NewRequestWithContext(ctx, "POST", cfg.API.WebhookURL, bytes.NewReader(body))
 	if err != nil {
-		log.Errorf("Failed to create webhook request: %v", err)
+		logger.Errorf("Failed to create webhook request: %v", err)
 		return
 	}
 
@@ -359,7 +361,7 @@ func sendWebhook(taskID, status, errorMsg string) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Errorf("Failed to send webhook: %v", err)
+		logger.Errorf("Failed to send webhook: %v", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -367,9 +369,9 @@ func sendWebhook(taskID, status, errorMsg string) {
 	if resp.StatusCode >= 400 {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Errorf("Webhook returned error status %d, failed to read response body: %v", resp.StatusCode, err)
+			logger.Errorf("Webhook returned error status %d, failed to read response body: %v", resp.StatusCode, err)
 		} else {
-			log.Errorf("Webhook returned error status %d: %s", resp.StatusCode, string(body))
+			logger.Errorf("Webhook returned error status %d: %s", resp.StatusCode, string(body))
 		}
 	}
 }

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -euo pipefail
 
 # API Test Script for SaveAny-Bot HTTP API
 

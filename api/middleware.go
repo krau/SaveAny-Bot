@@ -93,9 +93,12 @@ func getClientIP(r *http.Request) string {
 	// Fall back to RemoteAddr
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		// If SplitHostPort fails, RemoteAddr might not have a port
-		// In this case, just return RemoteAddr as is
-		return r.RemoteAddr
+		// If SplitHostPort fails, try to parse RemoteAddr as IP directly
+		if parsedIP := net.ParseIP(r.RemoteAddr); parsedIP != nil {
+			return r.RemoteAddr
+		}
+		// If all else fails, return empty string (will fail IP check)
+		return ""
 	}
 	return ip
 }
@@ -112,7 +115,8 @@ func isIPAllowed(clientIP string, allowedIPs []string) bool {
 			if err != nil {
 				continue
 			}
-			if ipNet.Contains(net.ParseIP(clientIP)) {
+			ip := net.ParseIP(clientIP)
+			if ip != nil && ipNet.Contains(ip) {
 				return true
 			}
 		}
