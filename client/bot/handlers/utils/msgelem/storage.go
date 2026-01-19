@@ -57,7 +57,6 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 			TransferSourceStorName: adddata.TransferSourceStorName,
 			TransferSourcePath:     adddata.TransferSourcePath,
 			TransferFiles:          adddata.TransferFiles,
-			TransferTargetPath:     adddata.TransferTargetPath,
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)

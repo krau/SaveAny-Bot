@@ -299,11 +299,11 @@ bot:
       error_download_failed: "yt-dlp download failed: {{.Error}}"
     transfer:
       usage: |
-        Usage: /transfer <source_storage>:/<source_path> <target_path> [filter]
+        Usage: /transfer <source_storage>:/<source_path> [filter]
         Examples:
-        /transfer local1:/downloads /backup
-        /transfer alist1:/media/photos /photos
-        /transfer webdav1:/files /archive ".*\.mp4$"
+        /transfer local1:/downloads
+        /transfer alist1:/media/photos
+        /transfer webdav1:/files ".*\.mp4$"
       error_invalid_source: "Invalid source path format, should be: storage_name:/path"
       error_invalid_target: "Invalid target path format, should be: storage_name:/path"
       error_storage_not_found: "Storage '{{.StorageName}}' not found or access denied: {{.Error}}"

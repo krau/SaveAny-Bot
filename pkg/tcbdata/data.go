@@ -54,7 +54,6 @@ type Add struct {
 	TransferSourceStorName string
 	TransferSourcePath     string
 	TransferFiles          []string // file paths relative to source storage
-	TransferTargetPath     string
 }
 
 type SetDefaultStorage struct {

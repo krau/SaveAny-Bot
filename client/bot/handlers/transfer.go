@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"path"
 	"regexp"
 	"strings"
 
@@ -28,7 +27,7 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	args := strutil.ParseArgsRespectQuotes(update.EffectiveMessage.Text)
 
-	if len(args) < 3 {
+	if len(args) < 2 {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgTransferUsage, nil)), nil)
 		return dispatcher.EndGroups
 	}
@@ -41,9 +40,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 	sourceStorageName := sourceParts[0]
 	sourcePath := sourceParts[1]
-
-	// Parse target path (without storage name)
-	targetPath := args[2]
 
 	userID := update.GetUserChat().GetID()
 
@@ -94,8 +90,8 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 
 	// Optional filter
 	var filter *regexp.Regexp
-	if len(args) >= 4 {
-		filter, err = regexp.Compile(args[3])
+	if len(args) >= 3 {
+		filter, err = regexp.Compile(args[2])
 		if err != nil {
 			ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 				ID:      replied.ID,
@@ -139,7 +135,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		TransferSourceStorName: sourceStorageName,
 		TransferSourcePath:     sourcePath,
 		TransferFiles:          filePaths,
-		TransferTargetPath:     targetPath,
 	})
 	if err != nil {
 		logger.Errorf("Failed to build storage selection keyboard: %s", err)
@@ -209,7 +204,6 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 	}
 
 	// Build task elements for the selected files
-	targetPath := path.Join(dirPath, data.TransferTargetPath)
 	elems := make([]transfer.TaskElement, 0, len(data.TransferFiles))
 	var totalSize int64
 	for _, filePath := range data.TransferFiles {
@@ -218,7 +212,7 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 			logger.Warnf("File not found in source storage: %s", filePath)
 			continue
 		}
-		elem := transfer.NewTaskElement(sourceStorage, fileInfo, targetStorage, targetPath)
+		elem := transfer.NewTaskElement(sourceStorage, fileInfo, targetStorage, dirPath)
 		elems = append(elems, *elem)
 		totalSize += fileInfo.Size
 	}

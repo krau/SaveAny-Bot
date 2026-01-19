@@ -300,11 +300,11 @@ bot:
       error_download_failed: "yt-dlp 下载失败: {{.Error}}"
     transfer:
       usage: |
-        用法: /transfer <source_storage>:/<source_path> <target_path> [filter]
+        用法: /transfer <source_storage>:/<source_path> [filter]
         示例:
-        /transfer local1:/downloads /backup
-        /transfer alist1:/media/photos /photos
-        /transfer webdav1:/files /archive ".*\.mp4$"
+        /transfer local1:/downloads
+        /transfer alist1:/media/photos
+        /transfer webdav1:/files ".*\.mp4$"
       error_invalid_source: "源路径格式无效，应为: storage_name:/path"
       error_invalid_target: "目标路径格式无效，应为: storage_name:/path"
       error_storage_not_found: "存储端 '{{.StorageName}}' 不存在或您无权访问: {{.Error}}"
