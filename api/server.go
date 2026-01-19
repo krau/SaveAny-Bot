@@ -19,6 +19,11 @@ func Init(ctx context.Context) error {
 		return nil
 	}
 
+	// Validate that token is configured when API is enabled
+	if cfg.API.Token == "" {
+		return fmt.Errorf("API is enabled but token is not configured. Please set 'api.token' in your configuration file for security")
+	}
+
 	logger := log.FromContext(ctx).WithPrefix("api")
 
 	mux := http.NewServeMux()
