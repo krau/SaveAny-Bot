@@ -37,15 +37,19 @@ func handleYtdlpCmd(ctx *ext.Context, update *ext.Update) error {
 		// Check if it's a flag (starts with - or --)
 		if strings.HasPrefix(arg, "-") {
 			flags = append(flags, arg)
-			// Check if the next argument is a value for this flag (not starting with -)
-			if i+1 < len(args) && !strings.HasPrefix(strings.TrimSpace(args[i+1]), "-") {
+			// Check if the next argument might be a value for this flag
+			// Don't consume it if it starts with - or looks like a URL with scheme
+			if i+1 < len(args) {
 				nextArg := strings.TrimSpace(args[i+1])
-				// Only treat as flag value if it's not a valid URL
-				u, err := url.Parse(nextArg)
-				if err != nil || u.Scheme == "" || u.Host == "" {
+				if nextArg != "" && !strings.HasPrefix(nextArg, "-") {
+					// Check if it's clearly a URL (has ://)
+					if strings.Contains(nextArg, "://") {
+						// It's a URL, don't consume it as a flag value
+						continue
+					}
+					// Otherwise, treat it as a flag value
 					flags = append(flags, nextArg)
 					i++ // Skip the next argument as it's been consumed
-					continue
 				}
 			}
 		} else {

@@ -99,8 +99,8 @@ func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, err
 	// Execute download with URLs and custom flags
 	logger.Infof("Executing yt-dlp for %d URL(s) with %d custom flag(s)", len(t.URLs), len(t.Flags))
 
-	// Combine URLs and flags as arguments
-	// The Run method will pass flags as raw command-line arguments
+	// Combine flags and URLs as arguments (flags first, then URLs)
+	// yt-dlp accepts: yt-dlp [OPTIONS] URL [URL...]
 	args := append(t.Flags, t.URLs...)
 
 	// Run with context for cancellation support
