@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/charmbracelet/log"
@@ -84,15 +85,15 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	}
 	defer reader.Close()
 
-	// Build Telegram storage path: /<chat_id>/<filename>
-	storagePath := fmt.Sprintf("/%d/%s", elem.TargetChatID, elem.FileInfo.Name)
+	// Build target storage path: /target_path/filename
+	storagePath := path.Join(elem.TargetPath, elem.FileInfo.Name)
 
-	// 注入文件大小到 context
+	// Inject file size into context
 	ctx = context.WithValue(ctx, ctxkey.ContentLength, size)
 
 	if config.C().Stream {
 		if err := elem.TargetStorage.Save(ctx, reader, storagePath); err != nil {
-			return fmt.Errorf("failed to upload file to telegram: %w", err)
+			return fmt.Errorf("failed to upload file to storage: %w", err)
 		}
 	} else {
 		logger.Info("Downloading to temporary file for ReadSeeker support")
@@ -107,9 +108,9 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			return fmt.Errorf("failed to seek temp file: %w", err)
 		}
 
-		logger.Infof("Uploading file to Telegram storage (size: %d bytes)", size)
+		logger.Infof("Uploading file to storage (size: %d bytes)", size)
 		if err := elem.TargetStorage.Save(ctx, tempFile, storagePath); err != nil {
-			return fmt.Errorf("failed to upload file to telegram: %w", err)
+			return fmt.Errorf("failed to upload file to storage: %w", err)
 		}
 	}
 

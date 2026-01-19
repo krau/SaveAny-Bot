@@ -21,7 +21,7 @@ type TaskElement struct {
 	SourcePath    string
 	FileInfo      storagetypes.FileInfo
 	TargetStorage storage.Storage
-	TargetChatID  int64
+	TargetPath    string
 }
 
 type Task struct {
@@ -56,7 +56,7 @@ func NewTaskElement(
 	sourceStorage storage.Storage,
 	fileInfo storagetypes.FileInfo,
 	targetStorage storage.Storage,
-	targetChatID int64,
+	targetPath string,
 ) *TaskElement {
 	id := xid.New().String()
 	return &TaskElement{
@@ -65,7 +65,7 @@ func NewTaskElement(
 		SourcePath:    fileInfo.Path,
 		FileInfo:      fileInfo,
 		TargetStorage: targetStorage,
-		TargetChatID:  targetChatID,
+		TargetPath:    targetPath,
 	}
 }
 
