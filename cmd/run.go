@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/api"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/cache"
@@ -76,7 +77,11 @@ func initAll(ctx context.Context, cmd *cobra.Command) (<-chan struct{}, error) {
 			logger.Fatal("User login failed", "error", err)
 		}
 	}
-	return bot.Init(ctx), nil
+	exitChan := bot.Init(ctx)
+	if err := api.Init(ctx); err != nil {
+		return nil, fmt.Errorf("failed to init API server: %w", err)
+	}
+	return exitChan, nil
 }
 
 func cleanCache() {

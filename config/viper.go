@@ -33,6 +33,7 @@ type Config struct {
 	Storages []storage.StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
 	Parser   parserConfig            `toml:"parser" mapstructure:"parser" json:"parser"`
 	Hook     hookConfig              `toml:"hook" mapstructure:"hook" json:"hook"`
+	API      apiConfig               `toml:"api" mapstructure:"api" json:"api"`
 }
 
 type aria2Config struct {
@@ -40,6 +41,14 @@ type aria2Config struct {
 	Url      string `toml:"url" mapstructure:"url" json:"url"`
 	Secret   string `toml:"secret" mapstructure:"secret" json:"secret"`
 	KeepFile bool   `toml:"keep_file" mapstructure:"keep_file" json:"keep_file"`
+}
+
+type apiConfig struct {
+	Enable      bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	Port        int    `toml:"port" mapstructure:"port" json:"port"`
+	Token       string `toml:"token" mapstructure:"token" json:"token"`
+	WebhookURL  string `toml:"webhook_url" mapstructure:"webhook_url" json:"webhook_url"`
+	TrustedIPs  []string `toml:"trusted_ips" mapstructure:"trusted_ips" json:"trusted_ips"`
 }
 
 var cfg = &Config{}
@@ -115,6 +124,12 @@ func Init(ctx context.Context, configFile ...string) error {
 		// 数据库
 		"db.path":    "data/saveany.db",
 		"db.session": "data/session.db",
+
+		// API
+		"api.enable":      false,
+		"api.port":        8080,
+		"api.token":       "",
+		"api.webhook_url": "",
 	}
 
 	for key, value := range defaultConfigs {

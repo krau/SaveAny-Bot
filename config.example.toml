@@ -29,6 +29,19 @@ secret = ""
 # 转存完成后删除 Aria2 下载的本地文件
 remove_after_transfer = true
 
+# HTTP API 配置
+[api]
+# 启用 HTTP API 服务
+enable = false
+# API 服务监听端口
+port = 8080
+# API 访问令牌 (留空则不验证)
+token = ""
+# 任务完成回调 Webhook URL (留空则不回调)
+webhook_url = ""
+# 可信任的 IP 地址列表 (留空则不限制), 支持单个 IP 或 CIDR 格式
+# trusted_ips = ["127.0.0.1", "192.168.1.0/24"]
+
 # 存储列表
 [[storages]]
 # 标识名, 需要唯一
