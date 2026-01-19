@@ -32,7 +32,7 @@ func CreateAndAddtelegraphWithEdit(
 		tphpage.Path,
 		pics,
 		stor,
-		stor.JoinStoragePath(dirPath),
+		dirPath,
 		tphutil.DefaultClient(),
 		tphtask.NewProgress(trackMsgID, userID),
 	)

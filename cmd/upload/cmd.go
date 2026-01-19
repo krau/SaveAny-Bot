@@ -90,7 +90,7 @@ func Upload(cmd *cobra.Command, args []string) error {
 	fileName := fileInfo.Name()
 	fileSize := fileInfo.Size()
 
-	uploadPath := stor.JoinStoragePath(path.Join(dirPath, fileName))
+	uploadPath := path.Join(dirPath, fileName)
 
 	ctx = context.WithValue(ctx, ctxkey.ContentLength, fileSize)
 	ctx = tgutil.ExtWithContext(ctx, bot.ExtContext())

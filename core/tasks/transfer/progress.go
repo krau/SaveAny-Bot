@@ -95,11 +95,11 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	var progressText strings.Builder
 
 	progressText.WriteString(i18n.T(i18nk.BotMsgProgressTransferProgressPrefix, nil))
-	progressText.WriteString(fmt.Sprintf("%d%%", percent))
+	fmt.Fprintf(&progressText, "%d%%", percent)
 	progressText.WriteString(i18n.T(i18nk.BotMsgProgressTransferUploadedPrefix, nil))
-	progressText.WriteString(fmt.Sprintf("%.2f MB / %.2f MB",
-		float64(info.Uploaded())/(1024*1024),
-		float64(info.TotalSize())/(1024*1024)))
+	fmt.Fprintf(&progressText, "%.2f MB / %.2f MB",
+	float64(info.Uploaded())/(1024*1024),
+	float64(info.TotalSize())/(1024*1024))
 
 	if p.start.Unix() > 0 {
 		elapsed := time.Since(p.start)

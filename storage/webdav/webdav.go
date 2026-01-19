@@ -53,7 +53,7 @@ func (w *Webdav) JoinStoragePath(p string) string {
 
 func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	w.logger.Infof("Saving file to %s", storagePath)
-
+	storagePath = w.JoinStoragePath(storagePath)
 	ext := path.Ext(storagePath)
 	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath

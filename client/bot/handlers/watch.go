@@ -309,7 +309,7 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 				}
 			}
 		startCreateTask:
-			storagePath := stor.JoinStoragePath(path.Join(dirPath, file.Name()))
+			storagePath := path.Join(dirPath, file.Name())
 			injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 			taskid := xid.New().String()
 			task, err := coretfile.NewTGFileTask(taskid, injectCtx, file, stor, storagePath, nil)
@@ -403,7 +403,7 @@ func processWatchMediaGroup(ctx *ext.Context, user *database.User, stor storage.
 		logger.Infof("Creating album folder for group %d: %s with %d files", groupID, albumDir, len(afiles))
 
 		for _, af := range afiles {
-			afstorPath := af.storage.JoinStoragePath(path.Join(dirPath, albumDir, af.file.Name()))
+			afstorPath := path.Join(dirPath, albumDir, af.file.Name())
 			taskid := xid.New().String()
 			task, err := coretfile.NewTGFileTask(taskid, injectCtx, af.file, albumStor, afstorPath, nil)
 			if err != nil {

@@ -51,6 +51,7 @@ func (l *Local) JoinStoragePath(path string) string {
 
 func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	l.logger.Infof("Saving file to %s", storagePath)
+	storagePath = l.JoinStoragePath(storagePath)
 
 	ext := filepath.Ext(storagePath)
 	base := strings.TrimSuffix(storagePath, ext)

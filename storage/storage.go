@@ -21,7 +21,6 @@ type Storage interface {
 	Init(ctx context.Context, cfg storcfg.StorageConfig) error
 	Type() storenum.StorageType
 	Name() string
-	JoinStoragePath(p string) string
 	Save(ctx context.Context, reader io.Reader, storagePath string) error
 	Exists(ctx context.Context, storagePath string) bool
 }

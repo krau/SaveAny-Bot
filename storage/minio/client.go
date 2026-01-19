@@ -77,13 +77,13 @@ func (m *Minio) JoinStoragePath(p string) string {
 
 func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	m.logger.Infof("Saving file from reader to %s", storagePath)
-
+	storagePath = m.JoinStoragePath(storagePath)
 	ext := path.Ext(storagePath)
 	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath
 	for i := 1; m.Exists(ctx, candidate); i++ {
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-		if i > 100 {
+		if i > 10 {
 			m.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
 			candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
 			break

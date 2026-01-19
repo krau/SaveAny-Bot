@@ -66,15 +66,12 @@ func (t *Telegram) Name() string {
 	return t.config.Name
 }
 
-func (t *Telegram) JoinStoragePath(p string) string {
-	return path.Clean(p)
-}
-
 func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
 	return false
 }
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
+	storagePath = path.Clean(storagePath)
 	tctx := tgutil.ExtFromContext(ctx)
 	if tctx == nil {
 		return fmt.Errorf("failed to get telegram context")

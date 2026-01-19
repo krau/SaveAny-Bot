@@ -59,7 +59,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 		}
 	}
 startCreateTask:
-	storagePath := stor.JoinStoragePath(path.Join(dirPath, file.Name()))
+	storagePath := path.Join(dirPath, file.Name())
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	taskid := xid.New().String()
 	task, err := tftask.NewTGFileTask(taskid, injectCtx, file, stor, storagePath,
@@ -151,7 +151,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 			}
 		}
 		if !dirPath.NeedNewForAlbum() {
-			storPath := fileStor.JoinStoragePath(path.Join(dirPath.String(), file.Name()))
+			storPath := path.Join(dirPath.String(), file.Name())
 			elem, err := batchtfile.NewTaskElement(fileStor, storPath, file)
 			if err != nil {
 				logger.Errorf("Failed to create task element: %s", err)
@@ -188,7 +188,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		albumDir := strings.TrimSuffix(path.Base(afiles[0].file.Name()), path.Ext(afiles[0].file.Name()))
 		albumStor := afiles[0].storage
 		for _, af := range afiles {
-			afstorPath := af.storage.JoinStoragePath(path.Join(dirPath, albumDir, af.file.Name()))
+			afstorPath := path.Join(dirPath, albumDir, af.file.Name())
 			elem, err := batchtfile.NewTaskElement(albumStor, afstorPath, af.file)
 			if err != nil {
 				logger.Errorf("Failed to create task element for album file: %s", err)

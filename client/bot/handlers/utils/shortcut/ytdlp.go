@@ -38,7 +38,7 @@ func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 		urls,
 		flags,
 		stor,
-		stor.JoinStoragePath(dirPath),
+		dirPath,
 		ytdlp.NewProgress(msgID, userID),
 	)
 

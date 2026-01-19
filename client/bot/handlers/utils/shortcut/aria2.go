@@ -46,7 +46,7 @@ func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 	logger.Infof("Aria2 download added with GID: %s", gid)
 
 	// Create task with the GID
-	task := aria2dl.NewTask(xid.New().String(), injectCtx, gid, uris, aria2Client, stor, stor.JoinStoragePath(dirPath), aria2dl.NewProgress(msgID, userID))
+	task := aria2dl.NewTask(xid.New().String(), injectCtx, gid, uris, aria2Client, stor, dirPath, aria2dl.NewProgress(msgID, userID))
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("Failed to add task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
