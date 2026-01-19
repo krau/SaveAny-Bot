@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
@@ -226,19 +227,46 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 
 	// Create tasks for all files
 	taskIDs := make([]string, 0, len(files))
-	dirPath := req.DirPath
-	if dirPath == "" {
-		dirPath = "/"
+	baseDirPath := req.DirPath
+	if baseDirPath == "" {
+		baseDirPath = "/"
 	}
 
 	// Create context with bot extension
 	injectCtx := tgutil.ExtWithContext(r.Context(), botCtx)
 
+	// Apply storage rules if enabled for the user
+	useRule := userDB.ApplyRule && userDB.Rules != nil
+
 	for _, tgFile := range files {
-		storagePath := stor.JoinStoragePath(path.Join(dirPath, tgFile.Name()))
+		// Determine storage and directory path for this specific file
+		fileStor := stor
+		dirPath := baseDirPath
+		
+		// Apply rules if enabled
+		if useRule {
+			matched, matchedStorName, matchedDirPath := ruleutil.ApplyRule(injectCtx, userDB.Rules, ruleutil.NewInput(tgFile))
+			if matched {
+				// Rule matched, apply overrides
+				if matchedDirPath != "" && matchedDirPath != "{{album}}" {
+					dirPath = matchedDirPath.String()
+				}
+				if matchedStorName.Usable() {
+					var err error
+					fileStor, err = storage.GetStorageByUserIDAndName(injectCtx, userDB.ChatID, matchedStorName.String())
+					if err != nil {
+						logger.Errorf("Failed to get storage from rule: %v", err)
+						// Fall back to original storage
+						fileStor = stor
+					}
+				}
+			}
+		}
+
+		storagePath := fileStor.JoinStoragePath(path.Join(dirPath, tgFile.Name()))
 		taskID := xid.New().String()
 
-		task, err := tftask.NewTGFileTask(taskID, injectCtx, tgFile, stor, storagePath, &apiProgressTracker{
+		task, err := tftask.NewTGFileTask(taskID, injectCtx, tgFile, fileStor, storagePath, &apiProgressTracker{
 			taskID: taskID,
 		})
 		if err != nil {
