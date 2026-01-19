@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM alpine:latest
 
-RUN apk add --no-cache curl ffmpeg
+RUN apk add --no-cache curl ffmpeg yt-dlp
 
 WORKDIR /app
 
