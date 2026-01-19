@@ -38,7 +38,7 @@ func handleTaskCmd(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 		ctx.Reply(update, ext.ReplyTextStyledTextArray([]styling.StyledTextOption{
-				styling.Plain(i18n.T(i18nk.BotMsgTasksCancelRequestedPrefix)),
+			styling.Plain(i18n.T(i18nk.BotMsgTasksCancelRequestedPrefix)),
 			styling.Code(taskID),
 		}), nil)
 	default:

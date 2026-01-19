@@ -84,7 +84,7 @@ func handleAria2DlCmd(ctx *ext.Context, update *ext.Update) error {
 		return nil
 	}
 	logger.Debug("Preparing aria2 download", "links", links)
-	
+
 	// Initialize aria2 client to check connection
 	aria2ClientInitOnce.Do(func() {
 		aria2Client, aria2ClientInitErr = aria2.NewClient(config.C().Aria2.Url, config.C().Aria2.Secret)

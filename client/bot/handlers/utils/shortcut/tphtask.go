@@ -25,7 +25,7 @@ func CreateAndAddtelegraphWithEdit(
 	pics []string,
 	stor storage.Storage,
 	trackMsgID int) error {
-		
+
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	task := tphtask.NewTask(xid.New().String(),
 		injectCtx,
@@ -39,7 +39,7 @@ func CreateAndAddtelegraphWithEdit(
 	if err := core.AddTask(injectCtx, task); err != nil {
 		log.FromContext(ctx).Errorf("Failed to add task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:      trackMsgID,
+			ID: trackMsgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
 				"Error": err.Error(),
 			}),

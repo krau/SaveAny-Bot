@@ -27,13 +27,13 @@ func handleYtdlpCmd(ctx *ext.Context, update *ext.Update) error {
 	// Separate URLs and flags from arguments
 	var urls []string
 	var flags []string
-	
+
 	for i := 1; i < len(args); i++ {
 		arg := strings.TrimSpace(args[i])
 		if arg == "" {
 			continue
 		}
-		
+
 		// Check if it's a flag (starts with - or --)
 		if strings.HasPrefix(arg, "-") {
 			flags = append(flags, arg)

@@ -114,7 +114,7 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, groupID int64) {
 	if err != nil {
 		logger.Errorf("Failed to build storage selection keyboard: %s", err)
 		ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
-			ID:      msg.ID,
+			ID: msg.ID,
 			Message: i18n.T(i18nk.BotMsgMediaGroupErrorBuildStorageSelectKeyboardFailed, map[string]any{
 				"Error": err.Error(),
 			}),

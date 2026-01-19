@@ -50,7 +50,7 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 
 			DirectLinks: adddata.DirectLinks,
 
-			Aria2URIs: adddata.Aria2URIs,
+			Aria2URIs:  adddata.Aria2URIs,
 			YtdlpURLs:  adddata.YtdlpURLs,
 			YtdlpFlags: adddata.YtdlpFlags,
 		}

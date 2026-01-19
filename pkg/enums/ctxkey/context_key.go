@@ -1,5 +1,6 @@
 package ctxkey
 
-//go:generate go-enum --values --names --flag --nocase --noprefix
 // ENUM(content-length)
+//
+//go:generate go-enum --values --names --flag --nocase --noprefix
 type ContextKey string

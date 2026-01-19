@@ -29,7 +29,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 	if err != nil {
 		logger.Errorf("Failed to get user by chat ID: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:      trackMsgID,
+			ID: trackMsgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorGetUserWithErrFailed, map[string]any{
 				"Error": err.Error(),
 			}),
@@ -49,7 +49,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 			if err != nil {
 				logger.Errorf("Failed to get storage by user ID and name: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-					ID:      trackMsgID,
+					ID: trackMsgID,
 					Message: i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
 						"Error": err.Error(),
 					}),
@@ -69,7 +69,7 @@ startCreateTask:
 	if err != nil {
 		logger.Errorf("create task failed: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:      trackMsgID,
+			ID: trackMsgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskCreateFailed, map[string]any{
 				"Error": err.Error(),
 			}),
@@ -79,7 +79,7 @@ startCreateTask:
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("add task failed: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:      trackMsgID,
+			ID: trackMsgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
 				"Error": err.Error(),
 			}),
@@ -103,7 +103,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 	if err != nil {
 		logger.Errorf("Failed to get user by chat ID: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:      trackMsgID,
+			ID: trackMsgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorGetUserWithErrFailed, map[string]any{
 				"Error": err.Error(),
 			}),
@@ -142,7 +142,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 			if err != nil {
 				logger.Errorf("Failed to get storage by user ID and name: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-					ID:      trackMsgID,
+					ID: trackMsgID,
 					Message: i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
 						"Error": err.Error(),
 					}),
@@ -156,10 +156,10 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 			if err != nil {
 				logger.Errorf("Failed to create task element: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-					ID:      trackMsgID,
-						Message: i18n.T(i18nk.BotMsgCommonErrorTaskCreateFailed, map[string]any{
-							"Error": err.Error(),
-						}),
+					ID: trackMsgID,
+					Message: i18n.T(i18nk.BotMsgCommonErrorTaskCreateFailed, map[string]any{
+						"Error": err.Error(),
+					}),
 				})
 				return dispatcher.EndGroups
 			}
@@ -193,7 +193,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 			if err != nil {
 				logger.Errorf("Failed to create task element for album file: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-					ID:      trackMsgID,
+					ID: trackMsgID,
 					Message: i18n.T(i18nk.BotMsgCommonErrorTaskCreateFailed, map[string]any{
 						"Error": err.Error(),
 					}),
@@ -210,7 +210,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("Failed to add batch task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:      trackMsgID,
+			ID: trackMsgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
 				"Error": err.Error(),
 			}),
@@ -218,8 +218,8 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		return dispatcher.EndGroups
 	}
 	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-		ID:          trackMsgID,
-		Message:     i18n.T(i18nk.BotMsgCommonInfoBatchTasksAdded, map[string]any{
+		ID: trackMsgID,
+		Message: i18n.T(i18nk.BotMsgCommonInfoBatchTasksAdded, map[string]any{
 			"Count": len(files),
 		}),
 		ReplyMarkup: nil,

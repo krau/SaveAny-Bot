@@ -22,7 +22,7 @@ func CreateAndAddParsedTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirP
 	if err := core.AddTask(injectCtx, task); err != nil {
 		log.FromContext(ctx).Errorf("Failed to add task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID:      msgID,
+			ID: msgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
 				"Error": err.Error(),
 			}),
