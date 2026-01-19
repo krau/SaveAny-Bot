@@ -170,7 +170,7 @@ func handleImportCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
-		ID:      replied.ID,
+		ID: replied.ID,
 		Message: i18n.T(i18nk.BotMsgImportInfoTaskAdded, map[string]any{
 			"Count":  len(elems),
 			"SizeMB": fmt.Sprintf("%.2f", float64(totalSize)/(1024*1024)),
