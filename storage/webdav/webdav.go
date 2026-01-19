@@ -90,10 +90,10 @@ func (w *Webdav) Exists(ctx context.Context, storagePath string) bool {
 // ListFiles implements storage.StorageListable
 func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error) {
 	w.logger.Infof("Listing files in %s", dirPath)
-	
+
 	// Join with base path
 	fullPath := path.Join(w.config.BasePath, dirPath)
-	
+
 	responses, err := w.client.ListDir(ctx, fullPath)
 	if err != nil {
 		w.logger.Errorf("Failed to list directory %s: %v", fullPath, err)
@@ -108,7 +108,7 @@ func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 			w.logger.Warnf("Failed to unescape href %q: %v; using original value", resp.Href, err)
 			decodedHref = resp.Href
 		}
-		
+
 		// Extract filename from href
 		name := path.Base(strings.TrimSuffix(decodedHref, "/"))
 		if name == "" || name == "." {
@@ -128,15 +128,18 @@ func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 		}
 
 		isDir := resp.Propstat.Prop.ResourceType.IsCollection()
-		
+
+		filePath := strings.TrimPrefix(decodedHref, path.Join("/", strings.Trim(path.Dir(fullPath), "/")))
+		filePath = strings.TrimPrefix(filePath, "/")
+
 		fileInfo := storagetypes.FileInfo{
 			Name:    name,
-			Path:    strings.TrimPrefix(decodedHref, w.config.BasePath),
+			Path:    path.Join(dirPath, name),
 			Size:    resp.Propstat.Prop.GetContentLength,
 			IsDir:   isDir,
 			ModTime: modTime,
 		}
-		
+
 		files = append(files, fileInfo)
 	}
 
@@ -147,10 +150,10 @@ func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 // OpenFile implements storage.StorageReadable
 func (w *Webdav) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
 	w.logger.Infof("Opening file %s", filePath)
-	
+
 	// Join with base path
 	fullPath := path.Join(w.config.BasePath, filePath)
-	
+
 	reader, size, err := w.client.ReadFile(ctx, fullPath)
 	if err != nil {
 		w.logger.Errorf("Failed to open file %s: %v", fullPath, err)
