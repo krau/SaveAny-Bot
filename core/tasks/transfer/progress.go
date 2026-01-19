@@ -40,7 +40,7 @@ func NewProgressTracker(messageID int, chatID int64) ProgressTracker {
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	p.start = time.Now()
 	p.lastUpdatePercent.Store(0)
-	log.FromContext(ctx).Debugf("Batch import task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
+	log.FromContext(ctx).Debugf("Transfer task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 
 	sizeMB := float64(info.TotalSize()) / (1024 * 1024)
 	statsText := i18n.T(i18nk.BotMsgTransferStartStats, map[string]any{
@@ -75,7 +75,10 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 
 	ext := tgutil.ExtFromContext(ctx)
 	if ext != nil {
-		ext.EditMessage(p.ChatID, req)
+		_, err := ext.EditMessage(p.ChatID, req)
+		if err != nil {
+			log.FromContext(ctx).Errorf("Failed to send progress start message: %s", err)
+		}
 	}
 }
 
@@ -98,8 +101,8 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	fmt.Fprintf(&progressText, "%d%%", percent)
 	progressText.WriteString(i18n.T(i18nk.BotMsgProgressTransferUploadedPrefix, nil))
 	fmt.Fprintf(&progressText, "%.2f MB / %.2f MB",
-	float64(info.Uploaded())/(1024*1024),
-	float64(info.TotalSize())/(1024*1024))
+		float64(info.Uploaded())/(1024*1024),
+		float64(info.TotalSize())/(1024*1024))
 
 	if p.start.Unix() > 0 {
 		elapsed := time.Since(p.start)
@@ -156,7 +159,7 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
-	log.FromContext(ctx).Debugf("Batch import task progress tracking done for message %d in chat %d", p.MessageID, p.ChatID)
+	log.FromContext(ctx).Debugf("Transfer task progress tracking done for message %d in chat %d", p.MessageID, p.ChatID)
 
 	entityBuilder := entity.Builder{}
 	var resultText strings.Builder

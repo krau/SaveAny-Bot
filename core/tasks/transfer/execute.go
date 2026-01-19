@@ -17,8 +17,8 @@ import (
 
 // Execute implements core.Executable.
 func (t *Task) Execute(ctx context.Context) error {
-	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("batch_import[%s]", t.ID))
-	logger.Info("Starting batch import task")
+	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("transfer[%s]", t.ID))
+	logger.Info("Starting transfer task")
 	t.Progress.OnStart(ctx, t)
 
 	workers := config.C().Workers
@@ -60,9 +60,9 @@ func (t *Task) Execute(ctx context.Context) error {
 
 	err := eg.Wait()
 	if err != nil {
-		logger.Errorf("Error during batch import processing: %v", err)
+		logger.Errorf("Error during transfer processing: %v", err)
 	} else {
-		logger.Info("Batch import task completed successfully")
+		logger.Info("Transfer task completed successfully")
 	}
 
 	t.Progress.OnDone(ctx, t, err)
