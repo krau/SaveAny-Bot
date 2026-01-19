@@ -90,6 +90,27 @@ enable = false
 session = "data/usersession.db"
 ```
 
+### Aria2 配置
+
+Aria2 是一个强大的下载管理器，支持 HTTP/HTTPS、FTP、BitTorrent 等多种协议。启用后，Bot 可以使用 `/aria2dl` 命令通过 Aria2 下载文件。
+
+- `enable`: 是否启用 Aria2 支持，默认为 `false`
+- `url`: Aria2 RPC 地址，通常为 `http://localhost:6800/jsonrpc`
+- `secret`: Aria2 RPC 密钥，如果你在 Aria2 中配置了 `rpc-secret`，需要在此填写
+- `remove_after_transfer`: 转存完成后是否删除 Aria2 下载的本地文件，默认为 `true`
+
+{{< hint info >}}
+Aria2 需要单独安装和运行。你可以参考 [Aria2 官方文档](https://aria2.github.io/) 了解如何安装和配置 Aria2。
+{{< /hint >}}
+
+```toml
+[aria2]
+enable = true
+url = "http://localhost:6800/jsonrpc"
+secret = "your-rpc-secret"
+remove_after_transfer = true
+```
+
 ### 存储端列表
 
 存储端列表用于定义 Bot 支持的存储位置, 每个存储端需要指定名称、类型和相关配置, 使用双中括号语法 `[[storages]]` 定义.

@@ -112,6 +112,142 @@ Regex-match the message text. For example:
 
 This will watch the chat with ID `12345678`, and only save messages whose text contains `hello`.
 
+## Direct Download Links
+
+Use the `/dl` command to directly download one or more HTTP/HTTPS files to storage.
+
+```bash
+/dl <url1> [url2] [url3] ...
+```
+
+Examples:
+
+```bash
+/dl https://example.com/file.zip
+/dl https://example.com/file1.zip https://example.com/file2.zip
+```
+
+The bot will validate the link format and then ask you to select the target storage location.
+
+## Aria2 Download
+
+{{< hint warning >}}
+This feature requires enabling Aria2 in the configuration file and configuring the RPC connection.
+{{< /hint >}}
+
+Use the `/aria2dl` command to download files via the Aria2 download manager, supporting HTTP/HTTPS, FTP, BitTorrent, and other protocols.
+
+```bash
+/aria2dl <uri1> [uri2] [uri3] ...
+```
+
+Examples:
+
+```bash
+# Download HTTP link
+/aria2dl https://example.com/file.zip
+
+# Download magnet link
+/aria2dl magnet:?xt=urn:btih:...
+
+# Download torrent file (need to upload .torrent file first)
+/aria2dl https://example.com/file.torrent
+```
+
+Configure Aria2:
+
+Add to `config.toml`:
+
+```toml
+[aria2]
+enable = true
+url = "http://localhost:6800/jsonrpc"
+secret = "your-rpc-secret"  # If rpc-secret is configured
+remove_after_transfer = true  # Remove local files after transfer
+```
+
+## yt-dlp Video Download
+
+{{< hint warning >}}
+This feature requires the yt-dlp command-line tool installed on your system.
+{{< /hint >}}
+
+Use the `/ytdlp` command to download videos and audio from supported video websites, including YouTube, Bilibili, Twitter, and 1000+ other sites.
+
+```bash
+/ytdlp <url1> [url2] [flags...]
+```
+
+Examples:
+
+```bash
+# Basic download
+/ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+# Download multiple videos
+/ytdlp https://www.youtube.com/watch?v=video1 https://www.youtube.com/watch?v=video2
+
+# Use custom parameters
+/ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ -f best
+/ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ --extract-audio --audio-format mp3
+```
+
+Common parameters:
+
+- `-f <format>`: Specify download format (e.g., `best`, `worst`, `bestvideo+bestaudio`)
+- `--extract-audio`: Extract audio
+- `--audio-format <format>`: Audio format (e.g., `mp3`, `m4a`, `wav`)
+- `--write-sub`: Download subtitles
+- `--write-thumbnail`: Download thumbnail
+
+For more parameters, see [yt-dlp documentation](https://github.com/yt-dlp/yt-dlp#usage-and-options).
+
+## Storage Transfer
+
+Use the `/transfer` command to transfer files directly between different storages without going through Telegram.
+
+```bash
+/transfer <source_storage>:/<source_path> [filter]
+```
+
+Parameters:
+
+- `source_storage`: Source storage name
+- `source_path`: Source path
+- `filter`: Optional regex filter to transfer only matching files
+
+Examples:
+
+```bash
+# Transfer entire directory
+/transfer local1:/downloads
+
+# Transfer files from specified path
+/transfer alist1:/media/photos
+
+# Transfer only mp4 files
+/transfer webdav1:/videos ".*\.mp4$"
+
+# Transfer image files
+/transfer local1:/pictures "(?i)\.(jpg|png|gif)$"
+```
+
+The bot will:
+
+1. List all files in the source path
+2. Apply the filter (if provided)
+3. Display file count and total size
+4. Ask you to select the target storage
+5. Ask you to select the target directory (if configured for that storage)
+6. Start the transfer task
+
+Notes:
+
+- Source storage must support listing and reading
+- Target storage must support writing
+- Real-time progress is displayed during transfer
+- Transfer tasks can be cancelled
+
 ## Save Files Outside Telegram
 
 Besides files on Telegram, the bot can also save files from other websites via JavaScript plugins or built-in parsers.

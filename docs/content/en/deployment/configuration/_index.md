@@ -92,6 +92,27 @@ enable = false
 session = "data/usersession.db"
 ```
 
+### Aria2 Configuration
+
+Aria2 is a powerful download manager that supports HTTP/HTTPS, FTP, BitTorrent, and other protocols. When enabled, the bot can use the `/aria2dl` command to download files via Aria2.
+
+- `enable`: Whether to enable Aria2 support, default is `false`
+- `url`: Aria2 RPC address, typically `http://localhost:6800/jsonrpc`
+- `secret`: Aria2 RPC secret, if you configured `rpc-secret` in Aria2, you need to fill it in here
+- `remove_after_transfer`: Whether to remove local files downloaded by Aria2 after transfer, default is `true`
+
+{{< hint info >}}
+Aria2 needs to be installed and running separately. You can refer to the [Aria2 official documentation](https://aria2.github.io/) to learn how to install and configure Aria2.
+{{< /hint >}}
+
+```toml
+[aria2]
+enable = true
+url = "http://localhost:6800/jsonrpc"
+secret = "your-rpc-secret"
+remove_after_transfer = true
+```
+
 ### Storage Endpoints List
 
 The storage endpoints list is used to define the storage locations supported by the Bot. Each storage endpoint needs to specify a name, type, and related configuration, using the double bracket syntax `[[storages]]`.

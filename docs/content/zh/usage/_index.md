@@ -112,6 +112,142 @@ IS-ALBUM true MyWebdav NEW-FOR-ALBUM
 
 这将会监听 ID 为 12345678 的聊天, 并且只保存消息文本中包含 "hello" 的消息.
 
+## 直接下载链接
+
+使用 `/dl` 命令可以直接下载一个或多个 HTTP/HTTPS 链接的文件到存储中.
+
+```bash
+/dl <url1> [url2] [url3] ...
+```
+
+示例:
+
+```bash
+/dl https://example.com/file.zip
+/dl https://example.com/file1.zip https://example.com/file2.zip
+```
+
+Bot 会验证链接格式, 然后让你选择目标存储位置.
+
+## Aria2 下载
+
+{{< hint warning >}}
+该功能需要在配置文件中启用 Aria2 并配置 RPC 连接.
+{{< /hint >}}
+
+使用 `/aria2dl` 命令可以通过 Aria2 下载管理器下载文件, 支持 HTTP/HTTPS、FTP、BitTorrent 等多种协议.
+
+```bash
+/aria2dl <uri1> [uri2] [uri3] ...
+```
+
+示例:
+
+```bash
+# 下载 HTTP 链接
+/aria2dl https://example.com/file.zip
+
+# 下载磁力链接
+/aria2dl magnet:?xt=urn:btih:...
+
+# 下载种子文件 (需要先上传 .torrent 文件)
+/aria2dl https://example.com/file.torrent
+```
+
+配置 Aria2:
+
+在 `config.toml` 中添加:
+
+```toml
+[aria2]
+enable = true
+url = "http://localhost:6800/jsonrpc"
+secret = "your-rpc-secret"  # 如果配置了 rpc-secret
+remove_after_transfer = true  # 转存完成后删除本地文件
+```
+
+## yt-dlp 视频下载
+
+{{< hint warning >}}
+该功能需要在系统中安装 yt-dlp 命令行工具.
+{{< /hint >}}
+
+使用 `/ytdlp` 命令可以下载支持的视频网站的视频和音频, 支持 YouTube、Bilibili、Twitter 等 1000+ 个网站.
+
+```bash
+/ytdlp <url1> [url2] [flags...]
+```
+
+示例:
+
+```bash
+# 基本下载
+/ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+# 下载多个视频
+/ytdlp https://www.youtube.com/watch?v=video1 https://www.youtube.com/watch?v=video2
+
+# 使用自定义参数
+/ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ -f best
+/ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ --extract-audio --audio-format mp3
+```
+
+常用参数:
+
+- `-f <format>`: 指定下载格式 (如 `best`, `worst`, `bestvideo+bestaudio`)
+- `--extract-audio`: 提取音频
+- `--audio-format <format>`: 音频格式 (如 `mp3`, `m4a`, `wav`)
+- `--write-sub`: 下载字幕
+- `--write-thumbnail`: 下载缩略图
+
+更多参数请参考 [yt-dlp 文档](https://github.com/yt-dlp/yt-dlp#usage-and-options).
+
+## 存储间传输
+
+使用 `/transfer` 命令可以在不同存储之间直接传输文件, 无需经过 Telegram.
+
+```bash
+/transfer <source_storage>:/<source_path> [filter]
+```
+
+参数说明:
+
+- `source_storage`: 源存储名称
+- `source_path`: 源路径
+- `filter`: 可选的正则表达式过滤器, 只传输匹配的文件
+
+示例:
+
+```bash
+# 传输整个目录
+/transfer local1:/downloads
+
+# 传输指定路径的文件
+/transfer alist1:/media/photos
+
+# 只传输 mp4 文件
+/transfer webdav1:/videos ".*\.mp4$"
+
+# 传输图片文件
+/transfer local1:/pictures "(?i)\.(jpg|png|gif)$"
+```
+
+Bot 会:
+
+1. 列出源路径下的所有文件
+2. 应用过滤器 (如果提供)
+3. 显示文件数量和总大小
+4. 让你选择目标存储
+5. 让你选择目标目录 (如果该存储配置了目录)
+6. 开始传输任务
+
+注意:
+
+- 源存储必须支持列举和读取功能
+- 目标存储必须支持写入功能
+- 传输过程显示实时进度
+- 支持取消正在进行的传输任务
+
 ## 转存 Telegram 之外的文件
 
 除了 Telegram 上的文件, Bot 还可通过 JavaScript 插件或内置解析器来支持转存其他网站的文件.
