@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -225,7 +226,7 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create tasks for all files
+	// Create tasks for all files with proper album handling
 	taskIDs := make([]string, 0, len(files))
 	baseDirPath := req.DirPath
 	if baseDirPath == "" {
@@ -238,18 +239,17 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	// Apply storage rules if enabled for the user
 	useRule := userDB.ApplyRule && userDB.Rules != nil
 
-	for _, tgFile := range files {
-		// Determine storage and directory path for this specific file
+	// Helper to apply rules to a file
+	applyRule := func(file tfile.TGFileMessage) (storage.Storage, ruleutil.MatchedDirPath) {
 		fileStor := stor
-		dirPath := baseDirPath
+		dirPath := ruleutil.MatchedDirPath(baseDirPath)
 		
-		// Apply rules if enabled
 		if useRule {
-			matched, matchedStorName, matchedDirPath := ruleutil.ApplyRule(injectCtx, userDB.Rules, ruleutil.NewInput(tgFile))
+			matched, matchedStorName, matchedDirPath := ruleutil.ApplyRule(injectCtx, userDB.Rules, ruleutil.NewInput(file))
 			if matched {
 				// Rule matched, apply overrides
-				if matchedDirPath != "" && matchedDirPath != "{{album}}" {
-					dirPath = matchedDirPath.String()
+				if matchedDirPath != "" {
+					dirPath = matchedDirPath
 				}
 				if matchedStorName.Usable() {
 					var err error
@@ -262,31 +262,144 @@ func handleCreateTask(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		return fileStor, dirPath
+	}
 
-		storagePath := fileStor.JoinStoragePath(path.Join(dirPath, tgFile.Name()))
-		taskID := xid.New().String()
+	// Separate files into regular and album files
+	type albumFile struct {
+		file    tfile.TGFileMessage
+		storage storage.Storage
+		dirPath ruleutil.MatchedDirPath
+	}
+	albumFiles := make(map[int64][]albumFile)
+	
+	for _, tgFile := range files {
+		fileStor, dirPath := applyRule(tgFile)
+		
+		// Check if this needs album handling (NEW-FOR-ALBUM rule)
+		if dirPath.NeedNewForAlbum() {
+			groupId, isGroup := tgFile.Message().GetGroupedID()
+			if !isGroup || groupId == 0 {
+				logger.Warnf("File %s has NEW-FOR-ALBUM rule but is not in a group, treating as regular file", tgFile.Name())
+				// Treat as regular file with base dir path
+				storagePath := fileStor.JoinStoragePath(path.Join(baseDirPath, tgFile.Name()))
+				taskID := xid.New().String()
 
-		task, err := tftask.NewTGFileTask(taskID, injectCtx, tgFile, fileStor, storagePath, &apiProgressTracker{
-			taskID: taskID,
-		})
-		if err != nil {
-			logger.Errorf("Failed to create task: %v", err)
-			respondError(w, "failed to create task", http.StatusInternalServerError)
-			return
+				task, err := tftask.NewTGFileTask(taskID, injectCtx, tgFile, fileStor, storagePath, &apiProgressTracker{
+					taskID: taskID,
+				})
+				if err != nil {
+					logger.Errorf("Failed to create task: %v", err)
+					respondError(w, "failed to create task", http.StatusInternalServerError)
+					return
+				}
+
+				trackTask(taskID, task.Title(), "queued")
+				if err := core.AddTask(injectCtx, task); err != nil {
+					logger.Errorf("Failed to add task: %v", err)
+					updateTaskStatus(taskID, "failed", err.Error())
+					respondError(w, "failed to add task to queue", http.StatusInternalServerError)
+					return
+				}
+
+				taskIDs = append(taskIDs, taskID)
+				continue
+			}
+			
+			// Group by album ID
+			if _, ok := albumFiles[groupId]; !ok {
+				albumFiles[groupId] = make([]albumFile, 0)
+			}
+			albumFiles[groupId] = append(albumFiles[groupId], albumFile{
+				file:    tgFile,
+				storage: fileStor,
+				dirPath: dirPath,
+			})
+		} else {
+			// Regular file - create task immediately
+			storagePath := fileStor.JoinStoragePath(path.Join(dirPath.String(), tgFile.Name()))
+			taskID := xid.New().String()
+
+			task, err := tftask.NewTGFileTask(taskID, injectCtx, tgFile, fileStor, storagePath, &apiProgressTracker{
+				taskID: taskID,
+			})
+			if err != nil {
+				logger.Errorf("Failed to create task: %v", err)
+				respondError(w, "failed to create task", http.StatusInternalServerError)
+				return
+			}
+
+			trackTask(taskID, task.Title(), "queued")
+			if err := core.AddTask(injectCtx, task); err != nil {
+				logger.Errorf("Failed to add task: %v", err)
+				updateTaskStatus(taskID, "failed", err.Error())
+				respondError(w, "failed to add task to queue", http.StatusInternalServerError)
+				return
+			}
+
+			taskIDs = append(taskIDs, taskID)
+		}
+	}
+
+	// Handle album files - group them into subdirectories
+	for _, afiles := range albumFiles {
+		if len(afiles) <= 1 {
+			// Single file in album, treat as regular
+			for _, af := range afiles {
+				storagePath := af.storage.JoinStoragePath(path.Join(baseDirPath, af.file.Name()))
+				taskID := xid.New().String()
+
+				task, err := tftask.NewTGFileTask(taskID, injectCtx, af.file, af.storage, storagePath, &apiProgressTracker{
+					taskID: taskID,
+				})
+				if err != nil {
+					logger.Errorf("Failed to create task: %v", err)
+					respondError(w, "failed to create task", http.StatusInternalServerError)
+					return
+				}
+
+				trackTask(taskID, task.Title(), "queued")
+				if err := core.AddTask(injectCtx, task); err != nil {
+					logger.Errorf("Failed to add task: %v", err)
+					updateTaskStatus(taskID, "failed", err.Error())
+					respondError(w, "failed to add task to queue", http.StatusInternalServerError)
+					return
+				}
+
+				taskIDs = append(taskIDs, taskID)
+			}
+			continue
 		}
 
-		// Track task status
-		trackTask(taskID, task.Title(), "queued")
+		// Multiple files in album - create subdirectory named after first file
+		// Remove extension from first file's name to use as directory name
+		albumDir := strings.TrimSuffix(path.Base(afiles[0].file.Name()), path.Ext(afiles[0].file.Name()))
+		albumStor := afiles[0].storage
 
-		// Add task to queue
-		if err := core.AddTask(injectCtx, task); err != nil {
-			logger.Errorf("Failed to add task: %v", err)
-			updateTaskStatus(taskID, "failed", err.Error())
-			respondError(w, "failed to add task to queue", http.StatusInternalServerError)
-			return
+		for _, af := range afiles {
+			// All files go into the album subdirectory
+			storagePath := albumStor.JoinStoragePath(path.Join(baseDirPath, albumDir, af.file.Name()))
+			taskID := xid.New().String()
+
+			task, err := tftask.NewTGFileTask(taskID, injectCtx, af.file, albumStor, storagePath, &apiProgressTracker{
+				taskID: taskID,
+			})
+			if err != nil {
+				logger.Errorf("Failed to create task for album file: %v", err)
+				respondError(w, "failed to create task", http.StatusInternalServerError)
+				return
+			}
+
+			trackTask(taskID, task.Title(), "queued")
+			if err := core.AddTask(injectCtx, task); err != nil {
+				logger.Errorf("Failed to add task: %v", err)
+				updateTaskStatus(taskID, "failed", err.Error())
+				respondError(w, "failed to add task to queue", http.StatusInternalServerError)
+				return
+			}
+
+			taskIDs = append(taskIDs, taskID)
 		}
-
-		taskIDs = append(taskIDs, taskID)
 	}
 
 	// Send success response
