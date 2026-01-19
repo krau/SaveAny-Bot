@@ -21,8 +21,6 @@ port = 8080
 token = "your-secret-token-here"
 # Task completion callback webhook URL (leave empty to disable)
 webhook_url = "https://your-server.com/webhook"
-# Trusted IP addresses (leave empty to allow all), supports single IP or CIDR notation
-trusted_ips = ["127.0.0.1", "192.168.1.0/24"]
 ```
 
 ## Authentication
@@ -32,8 +30,6 @@ If `token` is configured, all API requests (except `/health`) must include an `A
 ```
 Authorization: Bearer your-secret-token-here
 ```
-
-If `trusted_ips` is configured, requests will only be accepted from specified IP addresses.
 
 ## Endpoints
 
@@ -256,7 +252,6 @@ print(f"Task status: {status['status']}")
 ## Security Recommendations
 
 1. **Always use a strong token** for production environments
-2. **Enable IP whitelist** (`trusted_ips`) to restrict access
-3. **Use HTTPS** in production by placing the API behind a reverse proxy (e.g., Nginx, Caddy)
-4. **Keep logs secure** as they may contain sensitive information
-5. **Validate user permissions** - ensure `user_id` in requests corresponds to authorized users in your config
+2. **Use HTTPS** in production by placing the API behind a reverse proxy (e.g., Nginx, Caddy)
+3. **Keep logs secure** as they may contain sensitive information
+4. **Validate user permissions** - ensure `user_id` in requests corresponds to authorized users in your config

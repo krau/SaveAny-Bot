@@ -44,11 +44,10 @@ type aria2Config struct {
 }
 
 type apiConfig struct {
-	Enable      bool   `toml:"enable" mapstructure:"enable" json:"enable"`
-	Port        int    `toml:"port" mapstructure:"port" json:"port"`
-	Token       string `toml:"token" mapstructure:"token" json:"token"`
-	WebhookURL  string `toml:"webhook_url" mapstructure:"webhook_url" json:"webhook_url"`
-	TrustedIPs  []string `toml:"trusted_ips" mapstructure:"trusted_ips" json:"trusted_ips"`
+	Enable     bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	Port       int    `toml:"port" mapstructure:"port" json:"port"`
+	Token      string `toml:"token" mapstructure:"token" json:"token"`
+	WebhookURL string `toml:"webhook_url" mapstructure:"webhook_url" json:"webhook_url"`
 }
 
 var cfg = &Config{}

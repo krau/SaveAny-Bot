@@ -39,8 +39,6 @@ port = 8080
 token = ""
 # 任务完成回调 Webhook URL (留空则不回调)
 webhook_url = ""
-# 可信任的 IP 地址列表 (留空则不限制), 支持单个 IP 或 CIDR 格式
-# trusted_ips = ["127.0.0.1", "192.168.1.0/24"]
 
 # 存储列表
 [[storages]]

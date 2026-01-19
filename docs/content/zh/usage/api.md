@@ -21,8 +21,6 @@ port = 8080
 token = "your-secret-token-here"
 # 任务完成回调 Webhook URL (留空则不回调)
 webhook_url = "https://your-server.com/webhook"
-# 可信任的 IP 地址列表 (留空则不限制), 支持单个 IP 或 CIDR 格式
-trusted_ips = ["127.0.0.1", "192.168.1.0/24"]
 ```
 
 ## 认证
@@ -32,8 +30,6 @@ trusted_ips = ["127.0.0.1", "192.168.1.0/24"]
 ```
 Authorization: Bearer your-secret-token-here
 ```
-
-如果配置了 `trusted_ips`，请求只会从指定的 IP 地址被接受。
 
 ## 端点
 
@@ -256,7 +252,6 @@ print(f"任务状态: {status['status']}")
 ## 安全建议
 
 1. **生产环境始终使用强令牌**
-2. **启用 IP 白名单** (`trusted_ips`) 限制访问
-3. **生产环境使用 HTTPS**，通过反向代理（如 Nginx、Caddy）放置 API
-4. **保护日志安全**，因为它们可能包含敏感信息
-5. **验证用户权限** - 确保请求中的 `user_id` 对应于配置中的授权用户
+2. **生产环境使用 HTTPS**，通过反向代理（如 Nginx、Caddy）放置 API
+3. **保护日志安全**，因为它们可能包含敏感信息
+4. **验证用户权限** - 确保请求中的 `user_id` 对应于配置中的授权用户
