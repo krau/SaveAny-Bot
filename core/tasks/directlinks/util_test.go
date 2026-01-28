@@ -65,6 +65,11 @@ func TestFilenameFromURL(t *testing.T) {
 			url:      "https://cdn.example.com/a/b/c/d/e/video.mkv",
 			expected: "video.mkv",
 		},
+		{
+			name:     "malformed url with invalid characters",
+			url:      "://invalid url",
+			expected: "",
+		},
 	}
 
 	for _, tt := range tests {

@@ -49,9 +49,12 @@ func (t *Task) Execute(ctx context.Context) error {
 				filename := parseFilename(name)
 				file.Name = filename
 			}
-			// Fallback: extract filename from URL if Content-Disposition is empty
+			// Fallback: extract filename from URL if no filename was determined from Content-Disposition
 			if file.Name == "" {
 				file.Name = filenameFromURL(file.URL)
+			}
+			if file.Name == "" {
+				return fmt.Errorf("could not determine filename for %s", file.URL)
 			}
 
 			return nil
