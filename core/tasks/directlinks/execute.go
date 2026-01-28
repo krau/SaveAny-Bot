@@ -45,9 +45,13 @@ func (t *Task) Execute(ctx context.Context) error {
 			fetchedTotalBytes.Add(resp.ContentLength)
 			file.Size = resp.ContentLength
 			if name := resp.Header.Get("Content-Disposition"); name != "" {
-				// Set file name
+				// Set file name from Content-Disposition header
 				filename := parseFilename(name)
 				file.Name = filename
+			}
+			// Fallback: extract filename from URL if Content-Disposition is empty
+			if file.Name == "" {
+				file.Name = filenameFromURL(file.URL)
 			}
 
 			return nil

@@ -173,6 +173,35 @@ func parseFilenameFallback(cd string) string {
 	return decodeFilenameParam(value)
 }
 
+// filenameFromURL extracts filename from a URL path.
+// It uses the last path segment and removes any query parameters.
+// Returns empty string if the URL cannot be parsed or has no valid path.
+func filenameFromURL(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+
+	// Get the path and extract the base name
+	path := u.Path
+	if path == "" || path == "/" {
+		return ""
+	}
+
+	// Find the last path segment
+	idx := strings.LastIndex(path, "/")
+	if idx >= 0 && idx < len(path)-1 {
+		filename := path[idx+1:]
+		// URL decode the filename
+		if decoded, err := url.QueryUnescape(filename); err == nil {
+			return decoded
+		}
+		return filename
+	}
+
+	return ""
+}
+
 var progressUpdatesLevels = []struct {
 	size        int64 // 文件大小阈值
 	stepPercent int   // 每多少 % 更新一次
