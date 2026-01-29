@@ -144,6 +144,41 @@ func tryDecodeGBK(s string) string {
 	return ""
 }
 
+// parseFilenameFromURL extracts filename from URL path
+// This is used as a fallback when Content-Disposition is not available
+func parseFilenameFromURL(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+
+	// Get the path part and extract the last segment
+	path := parsed.Path
+	if path == "" {
+		return ""
+	}
+
+	// URL decode the path first
+	decodedPath, err := url.PathUnescape(path)
+	if err != nil {
+		decodedPath = path
+	}
+
+	// Get the last segment of the path
+	lastSlash := strings.LastIndex(decodedPath, "/")
+	if lastSlash == -1 {
+		return decodedPath
+	}
+	filename := decodedPath[lastSlash+1:]
+
+	// Remove query string if somehow still present
+	if idx := strings.Index(filename, "?"); idx != -1 {
+		filename = filename[:idx]
+	}
+
+	return filename
+}
+
 // parseFilenameFallback manually parses filename= when mime.ParseMediaType fails
 func parseFilenameFallback(cd string) string {
 	// Look for filename= (case-insensitive)

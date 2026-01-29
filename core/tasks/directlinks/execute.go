@@ -45,9 +45,17 @@ func (t *Task) Execute(ctx context.Context) error {
 			fetchedTotalBytes.Add(resp.ContentLength)
 			file.Size = resp.ContentLength
 			if name := resp.Header.Get("Content-Disposition"); name != "" {
-				// Set file name
 				filename := parseFilename(name)
-				file.Name = filename
+				if filename != "" {
+					file.Name = filename
+				}
+			}
+			// extract filename from URL if Content-Disposition is empty or invalid
+			if file.Name == "" {
+				file.Name = parseFilenameFromURL(file.URL)
+			}
+			if file.Name == "" {
+				return fmt.Errorf("failed to determine filename for %s: Content-Disposition header is empty and URL does not contain a valid filename", file.URL)
 			}
 
 			return nil
