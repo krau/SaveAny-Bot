@@ -29,6 +29,7 @@ title: 介绍
   - S3
   - WebDAV
   - 本地磁盘
+  - Rclone (通过命令行调用)
   - Telegram (重传回指定聊天)
 
 ## [贡献者](https://github.com/krau/SaveAny-Bot/graphs/contributors)

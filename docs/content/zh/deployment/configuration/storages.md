@@ -87,3 +87,59 @@ skip_large = false
 # 当 skip_large 启用时, 该选项无效.
 spilt_size_mb = 2000
 ```
+
+## Rclone
+
+`type=rclone`
+
+通过 [rclone](https://rclone.org/) 命令行工具支持多种云存储服务. 需要先安装 rclone 并配置好远程存储.
+
+```toml
+# rclone 配置的远程名称, 可以是任何在 rclone.conf 中配置的远程
+remote = "mydrive"
+# 在远程存储中的基础路径, 所有文件将存储在此路径下
+base_path = "/telegram"
+# rclone 配置文件的路径, 可选, 留空使用默认路径 (~/.config/rclone/rclone.conf)
+config_path = ""
+# 传递给 rclone 命令的额外参数, 可选
+flags = ["--transfers", "4", "--checkers", "8"]
+```
+
+### 配置 rclone 远程
+
+首先需要配置 rclone 远程, 运行 `rclone config` 命令进行交互式配置, 或直接编辑 `rclone.conf` 文件.
+
+rclone 支持多种云存储服务, 包括但不限于:
+- Google Drive
+- Dropbox
+- OneDrive
+- Amazon S3 及兼容服务
+- SFTP
+- FTP
+- 更多服务请参考 [rclone 官方文档](https://rclone.org/overview/)
+
+### 使用示例
+
+配置 Google Drive 后, 可以这样配置存储:
+
+```toml
+[[storages]]
+name = "GoogleDrive"
+type = "rclone"
+enable = true
+remote = "gdrive"
+base_path = "/SaveAnyBot"
+```
+
+如果使用自定义的 rclone 配置文件:
+
+```toml
+[[storages]]
+name = "MyRemote"
+type = "rclone"
+enable = true
+remote = "myremote"
+base_path = "/backup"
+config_path = "/path/to/rclone.conf"
+flags = ["--progress"]
+```

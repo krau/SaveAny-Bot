@@ -33,6 +33,7 @@
   - S3
   - WebDAV
   - 本地磁盘
+  - Rclone
   - Telegram (重传回指定聊天)
 
 ## 快速开始
