@@ -76,6 +76,9 @@ func (t *Task) StorageName() string {
 
 // StoragePath implements TaskInfo.
 func (t *Task) StoragePath() string {
+	if len(t.files) == 1 {
+		return t.StorPath + "/" + t.files[0].Name
+	}
 	return t.StorPath
 }
 
