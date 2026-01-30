@@ -81,3 +81,59 @@ force_file = false # Force sending as file, default is false
 skip_large = false # Skip large files, default is false. If enabled, files exceeding Telegram's limit will not be uploaded.
 spilt_size_mb = 2000 # Split size in MB, default is 2000 MB (2 GB). Files larger than this will be split into multiple parts (zip format). Ignored when skip_large is true.
 ```
+
+## Rclone
+
+`type=rclone`
+
+Supports multiple cloud storage services through the [rclone](https://rclone.org/) command-line tool. You need to install rclone and configure remote storage first.
+
+```toml
+# Remote name configured in rclone, can be any remote defined in rclone.conf
+remote = "mydrive"
+# Base path in the remote storage, all files will be stored under this path
+base_path = "/telegram"
+# Path to rclone config file, optional, leave empty to use default path (~/.config/rclone/rclone.conf)
+config_path = ""
+# Additional flags to pass to rclone commands, optional
+flags = ["--transfers", "4", "--checkers", "8"]
+```
+
+### Configuring rclone Remote
+
+First, you need to configure an rclone remote. Run `rclone config` for interactive configuration, or directly edit the `rclone.conf` file.
+
+rclone supports many cloud storage services, including but not limited to:
+- Google Drive
+- Dropbox
+- OneDrive
+- Amazon S3 and compatible services
+- SFTP
+- FTP
+- For more services, please refer to the [rclone official documentation](https://rclone.org/overview/)
+
+### Usage Examples
+
+After configuring Google Drive, you can configure the storage like this:
+
+```toml
+[[storages]]
+name = "GoogleDrive"
+type = "rclone"
+enable = true
+remote = "gdrive"
+base_path = "/SaveAnyBot"
+```
+
+If using a custom rclone config file:
+
+```toml
+[[storages]]
+name = "MyRemote"
+type = "rclone"
+enable = true
+remote = "myremote"
+base_path = "/backup"
+config_path = "/path/to/rclone.conf"
+flags = ["--progress"]
+```

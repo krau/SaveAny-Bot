@@ -16,6 +16,7 @@ var storageFactories = map[storenum.StorageType]func(cfg *BaseConfig) (StorageCo
 	storenum.Minio:    createStorageConfig(&MinioStorageConfig{}),
 	storenum.S3:       createStorageConfig(&S3StorageConfig{}),
 	storenum.Telegram: createStorageConfig(&TelegramStorageConfig{}),
+	storenum.Rclone:   createStorageConfig(&RcloneStorageConfig{}),
 }
 
 func createStorageConfig(configType StorageConfig) func(cfg *BaseConfig) (StorageConfig, error) {

@@ -4,6 +4,6 @@ package storage
 
 // StorageType
 /* ENUM(
-local, webdav, alist, minio, telegram, s3
+local, webdav, alist, minio, telegram, s3, rclone
 ) */
 type StorageType string
