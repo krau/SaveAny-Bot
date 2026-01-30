@@ -35,6 +35,7 @@
   - S3
   - WebDAV
   - Local filesystem
+  - Rclone (via command line)
   - Telegram (re-upload to specified chats)
 
 ## 📦 Quick Start

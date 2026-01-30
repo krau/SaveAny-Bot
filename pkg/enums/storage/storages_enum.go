@@ -24,6 +24,8 @@ const (
 	Telegram StorageType = "telegram"
 	// S3 is a StorageType of type s3.
 	S3 StorageType = "s3"
+	// Rclone is a StorageType of type rclone.
+	Rclone StorageType = "rclone"
 )
 
 var ErrInvalidStorageType = fmt.Errorf("not a valid StorageType, try [%s]", strings.Join(_StorageTypeNames, ", "))
@@ -35,6 +37,7 @@ var _StorageTypeNames = []string{
 	string(Minio),
 	string(Telegram),
 	string(S3),
+	string(Rclone),
 }
 
 // StorageTypeNames returns a list of possible string values of StorageType.
@@ -53,6 +56,7 @@ func StorageTypeValues() []StorageType {
 		Minio,
 		Telegram,
 		S3,
+		Rclone,
 	}
 }
 
@@ -75,6 +79,7 @@ var _StorageTypeValue = map[string]StorageType{
 	"minio":    Minio,
 	"telegram": Telegram,
 	"s3":       S3,
+	"rclone":   Rclone,
 }
 
 // ParseStorageType attempts to convert a string to a StorageType.
