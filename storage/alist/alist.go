@@ -104,7 +104,7 @@ func (a *Alist) Name() string {
 
 func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) error {
 	a.logger.Infof("Saving file to %s", storagePath)
-
+	storagePath = a.JoinStoragePath(storagePath)
 	ext := path.Ext(storagePath)
 	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath
