@@ -124,6 +124,7 @@ remove_after_transfer = true
   - `alist`: Alist
   - `webdav`: WebDAV
   - `s3`: aws S3 及其他兼容 S3 的服务
+  - `rclone`: 调用 rclone 实现上传
   - `telegram`: 上传到 Telegram
 
 示例, 这是一个包含本地存储和 webdav 存储的配置:

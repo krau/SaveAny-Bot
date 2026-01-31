@@ -126,6 +126,7 @@ Each storage endpoint requires at least the following fields:
   - `alist`: Alist
   - `webdav`: WebDAV
   - `s3`: aws S3 and other S3 compatible services
+  - `rclone`: Uses rclone to implement uploads
   - `telegram`: Upload to Telegram
 
 Example, this is a configuration that includes local storage and webdav storage:
