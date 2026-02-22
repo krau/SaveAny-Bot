@@ -10,18 +10,25 @@ import (
 	"slices"
 
 	"github.com/charmbracelet/log"
+	"github.com/celestix/gotgproto/ext"
+	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/parsers"
+	"github.com/krau/SaveAny-Bot/pkg/api"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/spf13/cobra"
 )
+
+var apiServer *api.Server
+var apiStore *api.TaskStore
 
 func Run(cmd *cobra.Command, _ []string) {
 	ctx, cancel := context.WithCancel(cmd.Context())
@@ -76,7 +83,47 @@ func initAll(ctx context.Context, cmd *cobra.Command) (<-chan struct{}, error) {
 			logger.Fatal("User login failed", "error", err)
 		}
 	}
-	return bot.Init(ctx), nil
+	exitChan := bot.Init(ctx)
+	
+	// Initialize API server
+	if config.C().API.Enable {
+		apiStore = api.NewTaskStore()
+		apiServer = api.NewServer(ctx, &api.Config{
+			Enable: config.C().API.Enable,
+			Host:   config.C().API.Host,
+			Port:   config.C().API.Port,
+			Token:  config.C().API.Token,
+		}, apiStore)
+		
+		// Set the bot's ext.Context
+		apiServer.SetExtContext(bot.ExtContext())
+		
+		// Set the add task function
+		apiServer.SetAddTaskFunc(func(ctx context.Context, task interface{}) error {
+			if t, ok := task.(core.Executable); ok {
+				return core.AddTask(ctx, t)
+			}
+			return fmt.Errorf("task does not implement Executable interface")
+		})
+		
+		// Set the parse link function
+		apiServer.SetParseLinkFunc(func(ctx *ext.Context, link string) (int64, int, error) {
+			return tgutil.ParseMessageLink(ctx, link)
+		})
+		
+		// Set the get message function
+		apiServer.SetGetMessageFunc(func(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, error) {
+			return tgutil.GetMessageByID(ctx, chatID, msgID)
+		})
+		
+		if err := apiServer.Start(); err != nil {
+			logger.Error("Failed to start API server", "error", err)
+		} else {
+			logger.Info("API server started", "host", config.C().API.Host, "port", config.C().API.Port)
+		}
+	}
+	
+	return exitChan, nil
 }
 
 func cleanCache() {
