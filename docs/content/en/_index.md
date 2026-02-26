@@ -24,7 +24,7 @@ Save Any Bot is a tool that allows you to save files from Telegram to various st
 - Integrate with yt-dlp to download and save media from 1000+ websites
 - Aria2 integration to download files from URLs/magnets and save to storages
 - Write JS parser plugins to save files from almost any website
-- Supports multiple storage backends:
+- Supports multiple storage backhttps://pin.it/240XMOOrmends:
     - Alist
     - S3
     - WebDAV
