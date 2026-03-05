@@ -358,7 +358,7 @@ func TestConcurrentProgressStore(t *testing.T) {
 	numGoroutines := 100
 
 	// Concurrent registrations
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
@@ -368,7 +368,7 @@ func TestConcurrentProgressStore(t *testing.T) {
 	}
 
 	// Concurrent reads
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
@@ -378,7 +378,7 @@ func TestConcurrentProgressStore(t *testing.T) {
 	}
 
 	// Concurrent updates
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
@@ -393,7 +393,7 @@ func TestConcurrentProgressStore(t *testing.T) {
 	wg.Wait()
 
 	// Verify all tasks exist
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		taskID := fmt.Sprintf("concurrent-test-%d", i)
 		if _, ok := GetTask(taskID); !ok {
 			t.Errorf("task %s not found after concurrent operations", taskID)
@@ -411,11 +411,11 @@ func TestProgressTrackerConcurrentUpdates(t *testing.T) {
 	updatesPerGoroutine := 100
 
 	// Concurrent progress updates
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			for j := 0; j < updatesPerGoroutine; j++ {
+			for j := range updatesPerGoroutine {
 				tracker.OnProgress(int64(id*updatesPerGoroutine+j), j)
 			}
 		}(i)
@@ -594,7 +594,7 @@ func TestGetTaskTypesHandler(t *testing.T) {
 			}
 
 			if tt.method == http.MethodGet {
-				var resp map[string]interface{}
+				var resp map[string]any
 				if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 					t.Errorf("failed to unmarshal response: %v", err)
 				}

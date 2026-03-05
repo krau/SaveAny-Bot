@@ -82,17 +82,13 @@ func TestConcurrencySafety(t *testing.T) {
 	var wg sync.WaitGroup
 	n := 1000
 	// producers
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for i := range n {
 			q.Add(newTask(fmt.Sprintf("p%d", i)))
 		}
-	}()
+	})
 	// consumers
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		count := 0
 		for count < n {
 			_, err := q.Get()
@@ -101,6 +97,6 @@ func TestConcurrencySafety(t *testing.T) {
 			}
 			count++
 		}
-	}()
+	})
 	wg.Wait()
 }
