@@ -24,6 +24,7 @@ type Config struct {
 	Stream       bool        `toml:"stream" mapstructure:"stream" json:"stream"`
 	Proxy        string      `toml:"proxy" mapstructure:"proxy" json:"proxy"`
 	Aria2        aria2Config `toml:"aria2" mapstructure:"aria2" json:"aria2"`
+	API          apiConfig   `toml:"api" mapstructure:"api" json:"api"`
 
 	Cache    cacheConfig             `toml:"cache" mapstructure:"cache" json:"cache"`
 	Users    []userConfig            `toml:"users" mapstructure:"users" json:"users"`
@@ -40,6 +41,13 @@ type aria2Config struct {
 	Url      string `toml:"url" mapstructure:"url" json:"url"`
 	Secret   string `toml:"secret" mapstructure:"secret" json:"secret"`
 	KeepFile bool   `toml:"keep_file" mapstructure:"keep_file" json:"keep_file"`
+}
+
+type apiConfig struct {
+	Enable bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	Host   string `toml:"host" mapstructure:"host" json:"host"`
+	Port   int    `toml:"port" mapstructure:"port" json:"port"`
+	Token  string `toml:"token" mapstructure:"token" json:"token"`
 }
 
 var cfg = &Config{}
@@ -115,6 +123,12 @@ func Init(ctx context.Context, configFile ...string) error {
 		// 数据库
 		"db.path":    "data/saveany.db",
 		"db.session": "data/session.db",
+
+		// API
+		"api.enable": false,
+		"api.host":   "0.0.0.0",
+		"api.port":   8080,
+		"api.token":  "",
 	}
 
 	for key, value := range defaultConfigs {

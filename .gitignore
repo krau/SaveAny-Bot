@@ -12,3 +12,4 @@ playwright/
 testplugins/
 *.exe
 tmp-*
+saveany-bot
