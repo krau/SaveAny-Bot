@@ -41,15 +41,15 @@ type Response struct {
 }
 
 type Propstat struct {
-	Prop Prop   `xml:"prop"`
+	Prop   Prop   `xml:"prop"`
 	Status string `xml:"status"`
 }
 
 type Prop struct {
-	ResourceType  ResourceType `xml:"resourcetype"`
-	GetContentLength int64     `xml:"getcontentlength"`
-	GetLastModified  string    `xml:"getlastmodified"`
-	DisplayName      string    `xml:"displayname"`
+	ResourceType     ResourceType `xml:"resourcetype"`
+	GetContentLength int64        `xml:"getcontentlength"`
+	GetLastModified  string       `xml:"getlastmodified"`
+	DisplayName      string       `xml:"displayname"`
 }
 
 type ResourceType struct {

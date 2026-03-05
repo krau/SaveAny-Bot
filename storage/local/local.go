@@ -87,12 +87,12 @@ func (l *Local) Exists(ctx context.Context, storagePath string) bool {
 // ListFiles implements StorageListable interface
 func (l *Local) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error) {
 	absPath := l.JoinStoragePath(dirPath)
-	
+
 	entries, err := os.ReadDir(absPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read directory %s: %w", absPath, err)
 	}
-	
+
 	files := make([]storagetypes.FileInfo, 0, len(entries))
 	for _, entry := range entries {
 		info, err := entry.Info()
@@ -100,7 +100,7 @@ func (l *Local) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.F
 			l.logger.Warnf("Failed to get file info for %s: %v", entry.Name(), err)
 			continue
 		}
-		
+
 		filePath := filepath.Join(dirPath, entry.Name())
 		files = append(files, storagetypes.FileInfo{
 			Name:    entry.Name(),
@@ -110,24 +110,24 @@ func (l *Local) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.F
 			ModTime: info.ModTime(),
 		})
 	}
-	
+
 	return files, nil
 }
 
 // OpenFile implements StorageReadable interface
 func (l *Local) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
 	absPath := l.JoinStoragePath(filePath)
-	
+
 	file, err := os.Open(absPath)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to open file %s: %w", absPath, err)
 	}
-	
+
 	stat, err := file.Stat()
 	if err != nil {
 		file.Close()
 		return nil, 0, fmt.Errorf("failed to stat file %s: %w", absPath, err)
 	}
-	
+
 	return file, stat.Size(), nil
 }

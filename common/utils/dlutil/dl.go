@@ -42,7 +42,7 @@ func FormatSize(bytes int64) string {
 		MB = KB * 1024
 		GB = MB * 1024
 	)
-	
+
 	switch {
 	case bytes >= GB:
 		return fmt.Sprintf("%.2f GB", float64(bytes)/float64(GB))
