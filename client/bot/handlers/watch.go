@@ -252,6 +252,16 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 				logger.Errorf("Failed to get storage by user ID %d and name %s: %v", user.ChatID, user.DefaultStorage, err)
 				continue
 			}
+			// Resolve the default directory path from user.DefaultDir
+			var defaultDirPath string
+			if user.DefaultDir != 0 {
+				dir, err := database.GetDirByID(ctx, user.DefaultDir)
+				if err != nil {
+					logger.Warnf("Failed to get default dir for user %d: %v, using root", user.ChatID, err)
+				} else {
+					defaultDirPath = dir.Path
+				}
+			}
 			switch user.FilenameStrategy {
 			case fnamest.Message.String():
 				file.SetName(tgutil.GenFileNameFromMessage(*file.Message()))
@@ -286,14 +296,14 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent) {
 
 			if needAlbumHandling {
 				// For media groups with NEW-FOR-ALBUM rule, collect all files of the same group
-				watchMediaGroupMgr.addFile(event.ChatID, user.ID, file, time.Duration(config.C().Telegram.MediaGroupTimeout)*time.Second, func(files []tfile.TGFileMessage) {
-					processWatchMediaGroup(ctx, user, stor, "", files)
+				watchMediaGroupMgr.addFile(event.ChatID, user.ID, file, time.Duration(max(config.C().Telegram.MediaGroupTimeout, 1))*time.Second, func(files []tfile.TGFileMessage) {
+					processWatchMediaGroup(ctx, user, stor, defaultDirPath, files)
 				})
 				continue
 			}
 
 			// Process single file or media group without album folder creation
-			var dirPath string
+			dirPath := defaultDirPath
 			if user.ApplyRule && user.Rules != nil {
 				matched, matchedStorageName, matchedDirPath := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
 				if !matched {
@@ -352,6 +362,7 @@ func processWatchMediaGroup(ctx *ext.Context, user *database.User, stor storage.
 	type albumFile struct {
 		file    tfile.TGFileMessage
 		storage storage.Storage
+		dirPath string
 	}
 	albumFiles := make(map[int64][]albumFile)
 
@@ -374,9 +385,11 @@ func processWatchMediaGroup(ctx *ext.Context, user *database.User, stor storage.
 			continue
 		}
 
-		if !ruleDirPath.NeedNewForAlbum() {
-			logger.Warnf("File %s does not need album folder, skipping", file.Name())
-			continue
+		// Use the effective dirPath: if rule returns NEW-FOR-ALBUM sentinel, fall back to the
+		// base dirPath passed in (which is defaultDirPath from the caller).
+		effectiveDirPath := string(ruleDirPath)
+		if ruleDirPath.NeedNewForAlbum() {
+			effectiveDirPath = dirPath
 		}
 
 		if _, ok := albumFiles[groupId]; !ok {
@@ -385,6 +398,7 @@ func processWatchMediaGroup(ctx *ext.Context, user *database.User, stor storage.
 		albumFiles[groupId] = append(albumFiles[groupId], albumFile{
 			file:    file,
 			storage: fileStor,
+			dirPath: effectiveDirPath,
 		})
 	}
 
@@ -403,7 +417,7 @@ func processWatchMediaGroup(ctx *ext.Context, user *database.User, stor storage.
 		logger.Infof("Creating album folder for group %d: %s with %d files", groupID, albumDir, len(afiles))
 
 		for _, af := range afiles {
-			afstorPath := path.Join(dirPath, albumDir, af.file.Name())
+			afstorPath := path.Join(af.dirPath, albumDir, af.file.Name())
 			taskid := xid.New().String()
 			task, err := coretfile.NewTGFileTask(taskid, injectCtx, af.file, albumStor, afstorPath, nil)
 			if err != nil {
