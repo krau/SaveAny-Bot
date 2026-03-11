@@ -1,1 +1,242 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>使用帮助 on Save Any Bot</title><link>https://sabot.unv.app/usage/</link><description>Recent content in 使用帮助 on Save Any Bot</description><generator>Hugo</generator><language>zh</language><atom:link href="https://sabot.unv.app/usage/index.xml" rel="self" type="application/rss+xml"/></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>使用帮助 on Save Any Bot</title><link>https://sabot.unv.app/usage/</link><description>Recent content in 使用帮助 on Save Any Bot</description><generator>Hugo</generator><language>zh</language><atom:link href="https://sabot.unv.app/usage/index.xml" rel="self" type="application/rss+xml"/><item><title>静默模式</title><link>https://sabot.unv.app/usage/silent/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/silent/</guid><description>&lt;h1 id="静默模式-silent">
+ 静默模式 (silent)
+ &lt;a class="anchor" href="#%e9%9d%99%e9%bb%98%e6%a8%a1%e5%bc%8f-silent">#&lt;/a>
+&lt;/h1>
+&lt;p>使用 &lt;code>/silent&lt;/code> 命令可以开关静默模式.&lt;/p>
+&lt;p>默认情况下不开启静默模式, Bot 会询问你每个文件的保存位置.&lt;/p>
+&lt;p>开启静默模式后, Bot 会直接保存文件到默认位置, 无需确认.&lt;/p>
+&lt;p>在开启静默模式之前, 需要使用 &lt;code>/storage&lt;/code> 命令设置默认保存位置.&lt;/p></description></item><item><title>存储规则</title><link>https://sabot.unv.app/usage/rules/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/rules/</guid><description>&lt;h1 id="存储规则">
+ 存储规则
+ &lt;a class="anchor" href="#%e5%ad%98%e5%82%a8%e8%a7%84%e5%88%99">#&lt;/a>
+&lt;/h1>
+&lt;p>允许你为 Bot 在上传文件到存储时设置一些重定向规则, 用于自动整理所保存的文件.&lt;/p>
+&lt;p>见: &lt;a href="https://github.com/krau/SaveAny-Bot/issues/28" target="_blank">#28&lt;/a>&lt;/p>
+&lt;p>目前支持的规则类型:&lt;/p>
+&lt;ol>
+&lt;li>FILENAME-REGEX&lt;/li>
+&lt;li>MESSAGE-REGEX&lt;/li>
+&lt;li>IS-ALBUM&lt;/li>
+&lt;/ol>
+&lt;p>添加规则的基本语法:&lt;/p>
+&lt;p>&amp;ldquo;规则类型 规则内容 存储名 路径&amp;rdquo;&lt;/p>
+&lt;p>注意空格的使用, 语法正确 bot 才能解析, 以下是一条合法的添加规则命令:&lt;/p>
+&lt;pre tabindex="0">&lt;code>/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /视频
+&lt;/code>&lt;/pre>&lt;p>此外, 规则中的存储名若使用 &amp;ldquo;CHOSEN&amp;rdquo; , 则表示存储到点击按钮选择的存储端的路径下&lt;/p>
+&lt;p>规则类型:&lt;/p>
+&lt;h2 id="filename-regex">
+ FILENAME-REGEX
+ &lt;a class="anchor" href="#filename-regex">#&lt;/a>
+&lt;/h2>
+&lt;p>根据文件名正则匹配, 规则内容要求为一个合法的正则表达式, 如&lt;/p>
+&lt;pre tabindex="0">&lt;code>FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /视频
+&lt;/code>&lt;/pre>&lt;p>表示将文件名后缀为 mp4,mkv,ts,avi,flv 的文件放到名为 MyAlist 存储下的 /视频 目录内 (同时受配置文件中的 &lt;code>base_path&lt;/code> 影响)&lt;/p>
+&lt;h2 id="message-regex">
+ MESSAGE-REGEX
+ &lt;a class="anchor" href="#message-regex">#&lt;/a>
+&lt;/h2>
+&lt;p>同上, 但是是根据消息本身的文本内容正则匹配&lt;/p>
+&lt;h2 id="is-album">
+ IS-ALBUM
+ &lt;a class="anchor" href="#is-album">#&lt;/a>
+&lt;/h2>
+&lt;p>匹配相册消息 (media group), 规则内容只能为 &lt;code>true&lt;/code> 或 &lt;code>false&lt;/code>.&lt;/p>
+&lt;p>规则中的路径若使用 &amp;ldquo;NEW-FOR-ALBUM&amp;rdquo; , 则表示为该组消息新建一个文件夹来存储它们. 见: &lt;a href="https://github.com/krau/SaveAny-Bot/issues/87">https://github.com/krau/SaveAny-Bot/issues/87&lt;/a>&lt;/p></description></item><item><title>监听聊天</title><link>https://sabot.unv.app/usage/watch/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/watch/</guid><description>&lt;h1 id="监听聊天">
+ 监听聊天
+ &lt;a class="anchor" href="#%e7%9b%91%e5%90%ac%e8%81%8a%e5%a4%a9">#&lt;/a>
+&lt;/h1>
+&lt;blockquote class="book-hint warning">
+ 
+该功能需开启 UserBot 集成.
+
+&lt;/blockquote>
+
+&lt;p>监听指定聊天的消息, 并自动保存到默认存储中, 遵从存储规则, 并且可以设置过滤器来只保存匹配的消息.&lt;/p>
+&lt;p>监听聊天:&lt;/p>
+&lt;pre tabindex="0">&lt;code>/watch &amp;lt;chat_id/username&amp;gt; [filter] 
+&lt;/code>&lt;/pre>&lt;p>取消监听:&lt;/p>
+&lt;pre tabindex="0">&lt;code>/unwatch &amp;lt;chat_id/username&amp;gt;
+&lt;/code>&lt;/pre>&lt;p>过滤器类型:&lt;/p>
+&lt;h2 id="msgre">
+ msgre
+ &lt;a class="anchor" href="#msgre">#&lt;/a>
+&lt;/h2>
+&lt;p>正则匹配消息文本, 例如:&lt;/p>
+&lt;pre tabindex="0">&lt;code>/watch 12345678 msgre:.*hello.*
+&lt;/code>&lt;/pre>&lt;p>这将会监听 ID 为 12345678 的聊天, 并且只保存消息文本中包含 &amp;ldquo;hello&amp;rdquo; 的消息.&lt;/p></description></item><item><title>直接下载链接</title><link>https://sabot.unv.app/usage/directlinks/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/directlinks/</guid><description>&lt;h1 id="直接下载链接">
+ 直接下载链接
+ &lt;a class="anchor" href="#%e7%9b%b4%e6%8e%a5%e4%b8%8b%e8%bd%bd%e9%93%be%e6%8e%a5">#&lt;/a>
+&lt;/h1>
+&lt;p>使用 &lt;code>/dl&lt;/code> 命令可以直接下载一个或多个 HTTP/HTTPS 链接的文件到存储中.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/dl &amp;lt;url1&amp;gt; &lt;span style="color:#f92672">[&lt;/span>url2&lt;span style="color:#f92672">]&lt;/span> &lt;span style="color:#f92672">[&lt;/span>url3&lt;span style="color:#f92672">]&lt;/span> ...
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>示例:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/dl https://example.com/file.zip
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/dl https://example.com/file1.zip https://example.com/file2.zip
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Bot 会验证链接格式, 然后让你选择目标存储位置.&lt;/p></description></item><item><title>Aria2 下载</title><link>https://sabot.unv.app/usage/aria2/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/aria2/</guid><description>&lt;h1 id="aria2-下载">
+ Aria2 下载
+ &lt;a class="anchor" href="#aria2-%e4%b8%8b%e8%bd%bd">#&lt;/a>
+&lt;/h1>
+&lt;blockquote class="book-hint warning">
+ 
+该功能需要在配置文件中启用 Aria2 并配置 RPC 连接.
+
+&lt;/blockquote>
+
+&lt;p>使用 &lt;code>/aria2dl&lt;/code> 命令可以通过 Aria2 下载管理器下载文件, 支持 HTTP/HTTPS、FTP、BitTorrent 等多种协议.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/aria2dl &amp;lt;uri1&amp;gt; &lt;span style="color:#f92672">[&lt;/span>uri2&lt;span style="color:#f92672">]&lt;/span> &lt;span style="color:#f92672">[&lt;/span>uri3&lt;span style="color:#f92672">]&lt;/span> ...
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>示例:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 下载 HTTP 链接&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/aria2dl https://example.com/file.zip
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 下载磁力链接&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/aria2dl magnet:?xt&lt;span style="color:#f92672">=&lt;/span>urn:btih:...
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 下载种子文件 (需要先上传 .torrent 文件)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/aria2dl https://example.com/file.torrent
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>配置 Aria2:&lt;/p>
+&lt;p>在 &lt;code>config.toml&lt;/code> 中添加:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">aria2&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">enable&lt;/span> = &lt;span style="color:#66d9ef">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">url&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;http://localhost:6800/jsonrpc&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">secret&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your-rpc-secret&amp;#34;&lt;/span> &lt;span style="color:#75715e"># 如果配置了 rpc-secret&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">remove_after_transfer&lt;/span> = &lt;span style="color:#66d9ef">true&lt;/span> &lt;span style="color:#75715e"># 转存完成后删除本地文件&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>yt-dlp 视频下载</title><link>https://sabot.unv.app/usage/ytdlp/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/ytdlp/</guid><description>&lt;h1 id="yt-dlp-视频下载">
+ yt-dlp 视频下载
+ &lt;a class="anchor" href="#yt-dlp-%e8%a7%86%e9%a2%91%e4%b8%8b%e8%bd%bd">#&lt;/a>
+&lt;/h1>
+&lt;blockquote class="book-hint warning">
+ 
+该功能需要在系统中安装 yt-dlp 命令行工具.
+
+&lt;/blockquote>
+
+&lt;p>使用 &lt;code>/ytdlp&lt;/code> 命令可以下载支持的视频网站的视频和音频, 支持 YouTube、Bilibili、Twitter 等 1000+ 个网站.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/ytdlp &amp;lt;url1&amp;gt; &lt;span style="color:#f92672">[&lt;/span>url2&lt;span style="color:#f92672">]&lt;/span> &lt;span style="color:#f92672">[&lt;/span>flags...&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>示例:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 基本下载&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/ytdlp https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>dQw4w9WgXcQ
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 下载多个视频&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/ytdlp https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>video1 https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>video2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 使用自定义参数&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/ytdlp https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>dQw4w9WgXcQ -f best
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/ytdlp https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>dQw4w9WgXcQ --extract-audio --audio-format mp3
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>常用参数:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>-f &amp;lt;format&amp;gt;&lt;/code>: 指定下载格式 (如 &lt;code>best&lt;/code>, &lt;code>worst&lt;/code>, &lt;code>bestvideo+bestaudio&lt;/code>)&lt;/li>
+&lt;li>&lt;code>--extract-audio&lt;/code>: 提取音频&lt;/li>
+&lt;li>&lt;code>--audio-format &amp;lt;format&amp;gt;&lt;/code>: 音频格式 (如 &lt;code>mp3&lt;/code>, &lt;code>m4a&lt;/code>, &lt;code>wav&lt;/code>)&lt;/li>
+&lt;li>&lt;code>--write-sub&lt;/code>: 下载字幕&lt;/li>
+&lt;li>&lt;code>--write-thumbnail&lt;/code>: 下载缩略图&lt;/li>
+&lt;/ul>
+&lt;p>更多参数请参考 &lt;a href="https://github.com/yt-dlp/yt-dlp#usage-and-options">yt-dlp 文档&lt;/a>.&lt;/p></description></item><item><title>存储间传输</title><link>https://sabot.unv.app/usage/transfer/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/transfer/</guid><description>&lt;h1 id="存储间传输">
+ 存储间传输
+ &lt;a class="anchor" href="#%e5%ad%98%e5%82%a8%e9%97%b4%e4%bc%a0%e8%be%93">#&lt;/a>
+&lt;/h1>
+&lt;p>使用 &lt;code>/transfer&lt;/code> 命令可以在不同存储之间直接传输文件, 无需经过 Telegram.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/transfer &amp;lt;source_storage&amp;gt;:/&amp;lt;source_path&amp;gt; &lt;span style="color:#f92672">[&lt;/span>filter&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>参数说明:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>source_storage&lt;/code>: 源存储名称&lt;/li>
+&lt;li>&lt;code>source_path&lt;/code>: 源路径&lt;/li>
+&lt;li>&lt;code>filter&lt;/code>: 可选的正则表达式过滤器, 只传输匹配的文件&lt;/li>
+&lt;/ul>
+&lt;p>示例:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 传输整个目录&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/transfer local1:/downloads
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 传输指定路径的文件&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/transfer alist1:/media/photos
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 只传输 mp4 文件&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/transfer webdav1:/videos &lt;span style="color:#e6db74">&amp;#34;.*\.mp4&lt;/span>$&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 传输图片文件&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/transfer local1:/pictures &lt;span style="color:#e6db74">&amp;#34;(?i)\.(jpg|png|gif)&lt;/span>$&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Bot 会:&lt;/p>
+&lt;ol>
+&lt;li>列出源路径下的所有文件&lt;/li>
+&lt;li>应用过滤器 (如果提供)&lt;/li>
+&lt;li>显示文件数量和总大小&lt;/li>
+&lt;li>让你选择目标存储&lt;/li>
+&lt;li>让你选择目标目录 (如果该存储配置了目录)&lt;/li>
+&lt;li>开始传输任务&lt;/li>
+&lt;/ol>
+&lt;p>注意:&lt;/p>
+&lt;ul>
+&lt;li>源存储必须支持列举和读取功能&lt;/li>
+&lt;li>目标存储必须支持写入功能&lt;/li>
+&lt;li>传输过程显示实时进度&lt;/li>
+&lt;li>支持取消正在进行的传输任务&lt;/li>
+&lt;/ul></description></item><item><title>转存 Telegram 之外的文件</title><link>https://sabot.unv.app/usage/parsers/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/parsers/</guid><description>&lt;h1 id="转存-telegram-之外的文件">
+ 转存 Telegram 之外的文件
+ &lt;a class="anchor" href="#%e8%bd%ac%e5%ad%98-telegram-%e4%b9%8b%e5%a4%96%e7%9a%84%e6%96%87%e4%bb%b6">#&lt;/a>
+&lt;/h1>
+&lt;p>除了 Telegram 上的文件, Bot 还可通过 JavaScript 插件或内置解析器来支持转存其他网站的文件.&lt;/p>
+&lt;blockquote>
+&lt;p>查看&lt;a href="../contribute">贡献解析器&lt;/a>文档了解详情&lt;/p>&lt;/blockquote>
+&lt;p>只需向 Bot 发送符合解析器要求的链接即可使用, 当前内置的解析器:&lt;/p>
+&lt;ul>
+&lt;li>Twitter&lt;/li>
+&lt;li>Kemono&lt;/li>
+&lt;/ul></description></item><item><title>HTTP API</title><link>https://sabot.unv.app/usage/api/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/api/</guid><description>&lt;h1 id="http-api">
+ HTTP API
+ &lt;a class="anchor" href="#http-api">#&lt;/a>
+&lt;/h1>
+&lt;p>SaveAny-Bot 提供了一套 HTTP API，允许你通过程序化方式创建下载/转存任务、查询任务状态、取消任务等，无需通过 Telegram 操作。&lt;/p>
+&lt;h2 id="启用-api">
+ 启用 API
+ &lt;a class="anchor" href="#%e5%90%af%e7%94%a8-api">#&lt;/a>
+&lt;/h2>
+&lt;p>在 &lt;code>config.toml&lt;/code> 中添加或修改以下配置：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">api&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">enable&lt;/span> = &lt;span style="color:#66d9ef">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">host&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;0.0.0.0&amp;#34;&lt;/span> &lt;span style="color:#75715e"># 监听地址，默认 0.0.0.0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">port&lt;/span> = &lt;span style="color:#ae81ff">8080&lt;/span> &lt;span style="color:#75715e"># 监听端口，默认 8080&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your-token&amp;#34;&lt;/span> &lt;span style="color:#75715e"># 鉴权 Token，强烈建议设置&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>也可通过环境变量覆盖（前缀 &lt;code>SAVEANY_&lt;/code>）：&lt;/p>
+&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th>环境变量&lt;/th>
+ &lt;th>对应配置项&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td>&lt;code>SAVEANY_API_ENABLE&lt;/code>&lt;/td>
+ &lt;td>&lt;code>api.enable&lt;/code>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>SAVEANY_API_HOST&lt;/code>&lt;/td>
+ &lt;td>&lt;code>api.host&lt;/code>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>SAVEANY_API_PORT&lt;/code>&lt;/td>
+ &lt;td>&lt;code>api.port&lt;/code>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>SAVEANY_API_TOKEN&lt;/code>&lt;/td>
+ &lt;td>&lt;code>api.token&lt;/code>&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;blockquote class="book-hint warning">
+ 
+若 `token` 为空，API 服务将**不进行任何鉴权**即可访问，存在安全风险。
+
+&lt;/blockquote>
+
+&lt;h2 id="鉴权">
+ 鉴权
+ &lt;a class="anchor" href="#%e9%89%b4%e6%9d%83">#&lt;/a>
+&lt;/h2>
+&lt;p>当配置了 &lt;code>token&lt;/code> 时，所有 API 请求均需在 HTTP 请求头中携带 Bearer Token：&lt;/p>
+&lt;pre tabindex="0">&lt;code>Authorization: Bearer &amp;lt;your-token&amp;gt;
+&lt;/code>&lt;/pre>&lt;p>鉴权失败时返回 &lt;code>401&lt;/code>：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-json" data-lang="json">&lt;span style="display:flex;">&lt;span>{ &lt;span style="color:#f92672">&amp;#34;error&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;unauthorized&amp;#34;&lt;/span>, &lt;span style="color:#f92672">&amp;#34;message&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;invalid token&amp;#34;&lt;/span> }
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="错误响应格式">
+ 错误响应格式
+ &lt;a class="anchor" href="#%e9%94%99%e8%af%af%e5%93%8d%e5%ba%94%e6%a0%bc%e5%bc%8f">#&lt;/a>
+&lt;/h2>
+&lt;p>所有错误均使用统一的 JSON 格式：&lt;/p></description></item></channel></rss>

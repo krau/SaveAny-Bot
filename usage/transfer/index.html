@@ -1,0 +1,63 @@
+<!doctype html><html lang=zh dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content='
+  存储间传输
+  #
+
+使用 /transfer 命令可以在不同存储之间直接传输文件, 无需经过 Telegram.
+/transfer <source_storage>:/<source_path> [filter]
+参数说明:
+
+source_storage: 源存储名称
+source_path: 源路径
+filter: 可选的正则表达式过滤器, 只传输匹配的文件
+
+示例:
+# 传输整个目录
+/transfer local1:/downloads
+
+# 传输指定路径的文件
+/transfer alist1:/media/photos
+
+# 只传输 mp4 文件
+/transfer webdav1:/videos ".*\.mp4$"
+
+# 传输图片文件
+/transfer local1:/pictures "(?i)\.(jpg|png|gif)$"
+Bot 会:
+
+列出源路径下的所有文件
+应用过滤器 (如果提供)
+显示文件数量和总大小
+让你选择目标存储
+让你选择目标目录 (如果该存储配置了目录)
+开始传输任务
+
+注意:
+
+源存储必须支持列举和读取功能
+目标存储必须支持写入功能
+传输过程显示实时进度
+支持取消正在进行的传输任务
+'><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/transfer/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="存储间传输"><meta property="og:description" content='存储间传输 # 使用 /transfer 命令可以在不同存储之间直接传输文件, 无需经过 Telegram.
+/transfer <source_storage>:/<source_path> [filter] 参数说明:
+source_storage: 源存储名称 source_path: 源路径 filter: 可选的正则表达式过滤器, 只传输匹配的文件 示例:
+# 传输整个目录 /transfer local1:/downloads # 传输指定路径的文件 /transfer alist1:/media/photos # 只传输 mp4 文件 /transfer webdav1:/videos ".*\.mp4$" # 传输图片文件 /transfer local1:/pictures "(?i)\.(jpg|png|gif)$" Bot 会:
+列出源路径下的所有文件 应用过滤器 (如果提供) 显示文件数量和总大小 让你选择目标存储 让你选择目标目录 (如果该存储配置了目录) 开始传输任务 注意:
+源存储必须支持列举和读取功能 目标存储必须支持写入功能 传输过程显示实时进度 支持取消正在进行的传输任务'><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="usage"><meta property="article:modified_time" content="2026-03-11T19:37:25+08:00"><title>存储间传输 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/transfer/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/transfer/ title="Storage Transfer"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+<label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
+简体中文</a></label><ul><li><a href=/en/usage/transfer/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>直接下载链接</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>yt-dlp 视频下载</a></li><li><a href=/usage/transfer/ class=active>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/api/>HTTP API</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>存储间传输</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents></nav></aside></header><article class="markdown book-article"><h1 id=存储间传输>存储间传输
+<a class=anchor href=#%e5%ad%98%e5%82%a8%e9%97%b4%e4%bc%a0%e8%be%93>#</a></h1><p>使用 <code>/transfer</code> 命令可以在不同存储之间直接传输文件, 无需经过 Telegram.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>/transfer &lt;source_storage&gt;:/&lt;source_path&gt; <span style=color:#f92672>[</span>filter<span style=color:#f92672>]</span>
+</span></span></code></pre></div><p>参数说明:</p><ul><li><code>source_storage</code>: 源存储名称</li><li><code>source_path</code>: 源路径</li><li><code>filter</code>: 可选的正则表达式过滤器, 只传输匹配的文件</li></ul><p>示例:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 传输整个目录</span>
+</span></span><span style=display:flex><span>/transfer local1:/downloads
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 传输指定路径的文件</span>
+</span></span><span style=display:flex><span>/transfer alist1:/media/photos
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 只传输 mp4 文件</span>
+</span></span><span style=display:flex><span>/transfer webdav1:/videos <span style=color:#e6db74>&#34;.*\.mp4</span>$<span style=color:#e6db74>&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 传输图片文件</span>
+</span></span><span style=display:flex><span>/transfer local1:/pictures <span style=color:#e6db74>&#34;(?i)\.(jpg|png|gif)</span>$<span style=color:#e6db74>&#34;</span>
+</span></span></code></pre></div><p>Bot 会:</p><ol><li>列出源路径下的所有文件</li><li>应用过滤器 (如果提供)</li><li>显示文件数量和总大小</li><li>让你选择目标存储</li><li>让你选择目标目录 (如果该存储配置了目录)</li><li>开始传输任务</li></ol><p>注意:</p><ul><li>源存储必须支持列举和读取功能</li><li>目标存储必须支持写入功能</li><li>传输过程显示实时进度</li><li>支持取消正在进行的传输任务</li></ul></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/38355dfd142f0f1a819a8837875b33da0d3a81b7 title='最后修改者 krau | 2026/03/11' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/03/11</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/transfer.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents></nav></div></aside></main></body></html>

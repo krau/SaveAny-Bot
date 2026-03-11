@@ -1,1 +1,148 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Usage on Save Any Bot</title><link>https://sabot.unv.app/en/usage/</link><description>Recent content in Usage on Save Any Bot</description><generator>Hugo</generator><language>en</language><atom:link href="https://sabot.unv.app/en/usage/index.xml" rel="self" type="application/rss+xml"/></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Usage on Save Any Bot</title><link>https://sabot.unv.app/en/usage/</link><description>Recent content in Usage on Save Any Bot</description><generator>Hugo</generator><language>en</language><atom:link href="https://sabot.unv.app/en/usage/index.xml" rel="self" type="application/rss+xml"/><item><title>Silent Mode</title><link>https://sabot.unv.app/en/usage/silent/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/silent/</guid><description>&lt;h1 id="silent-mode-silent">
+ Silent Mode (silent)
+ &lt;a class="anchor" href="#silent-mode-silent">#&lt;/a>
+&lt;/h1>
+&lt;p>Use the &lt;code>/silent&lt;/code> command to toggle silent mode.&lt;/p>
+&lt;p>By default, silent mode is off, and the bot will ask you for the save location of each file.&lt;/p>
+&lt;p>When silent mode is enabled, the bot will save files directly to the default location without confirmation.&lt;/p>
+&lt;p>Before enabling silent mode, you need to set the default save location using the &lt;code>/storage&lt;/code> command.&lt;/p></description></item><item><title>Storage Rules</title><link>https://sabot.unv.app/en/usage/rules/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/rules/</guid><description>&lt;h1 id="storage-rules">
+ Storage Rules
+ &lt;a class="anchor" href="#storage-rules">#&lt;/a>
+&lt;/h1>
+&lt;p>Storage rules allow you to define redirection rules when the bot uploads files to storage, so that saved files are automatically organized.&lt;/p>
+&lt;p>See: &lt;a href="https://github.com/krau/SaveAny-Bot/issues/28" target="_blank">#28&lt;/a>&lt;/p>
+&lt;p>Currently supported rule types:&lt;/p>
+&lt;ol>
+&lt;li>FILENAME-REGEX&lt;/li>
+&lt;li>MESSAGE-REGEX&lt;/li>
+&lt;li>IS-ALBUM&lt;/li>
+&lt;/ol>
+&lt;p>Basic syntax for adding rules:&lt;/p>
+&lt;p>&amp;ldquo;RuleType RuleContent StorageName Path&amp;rdquo;&lt;/p>
+&lt;p>Pay attention to spaces; the bot can only parse correctly formatted syntax. Below is an example of a valid rule command:&lt;/p>
+&lt;pre tabindex="0">&lt;code>/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /videos
+&lt;/code>&lt;/pre>&lt;p>In addition, if &lt;code>CHOSEN&lt;/code> is used as the storage name in the rule, it means files will be stored under the path of the storage you selected by clicking the inline button.&lt;/p></description></item><item><title>Watch Chats</title><link>https://sabot.unv.app/en/usage/watch/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/watch/</guid><description>&lt;h1 id="watch-chats">
+ Watch Chats
+ &lt;a class="anchor" href="#watch-chats">#&lt;/a>
+&lt;/h1>
+&lt;blockquote class="book-hint warning">
+ 
+This feature requires enabling UserBot integration.
+
+&lt;/blockquote>
+
+&lt;p>You can watch messages in a specific chat and automatically save them to the default storage, following storage rules. You can also add filters so that only matching messages are saved.&lt;/p>
+&lt;p>Watch a chat:&lt;/p>
+&lt;pre tabindex="0">&lt;code>/watch &amp;lt;chat_id/username&amp;gt; [filter]
+&lt;/code>&lt;/pre>&lt;p>Stop watching:&lt;/p>
+&lt;pre tabindex="0">&lt;code>/unwatch &amp;lt;chat_id/username&amp;gt;
+&lt;/code>&lt;/pre>&lt;p>Filter types:&lt;/p>
+&lt;h2 id="msgre">
+ msgre
+ &lt;a class="anchor" href="#msgre">#&lt;/a>
+&lt;/h2>
+&lt;p>Regex-match the message text. For example:&lt;/p>
+&lt;pre tabindex="0">&lt;code>/watch 12345678 msgre:.*hello.*
+&lt;/code>&lt;/pre>&lt;p>This will watch the chat with ID &lt;code>12345678&lt;/code>, and only save messages whose text contains &lt;code>hello&lt;/code>.&lt;/p></description></item><item><title>Direct Download Links</title><link>https://sabot.unv.app/en/usage/directlinks/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/directlinks/</guid><description>&lt;h1 id="direct-download-links">
+ Direct Download Links
+ &lt;a class="anchor" href="#direct-download-links">#&lt;/a>
+&lt;/h1>
+&lt;p>Use the &lt;code>/dl&lt;/code> command to directly download one or more HTTP/HTTPS files to storage.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/dl &amp;lt;url1&amp;gt; &lt;span style="color:#f92672">[&lt;/span>url2&lt;span style="color:#f92672">]&lt;/span> &lt;span style="color:#f92672">[&lt;/span>url3&lt;span style="color:#f92672">]&lt;/span> ...
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Examples:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/dl https://example.com/file.zip
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/dl https://example.com/file1.zip https://example.com/file2.zip
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The bot will validate the link format and then ask you to select the target storage location.&lt;/p></description></item><item><title>Aria2 Download</title><link>https://sabot.unv.app/en/usage/aria2/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/aria2/</guid><description>&lt;h1 id="aria2-download">
+ Aria2 Download
+ &lt;a class="anchor" href="#aria2-download">#&lt;/a>
+&lt;/h1>
+&lt;blockquote class="book-hint warning">
+ 
+This feature requires enabling Aria2 in the configuration file and configuring the RPC connection.
+
+&lt;/blockquote>
+
+&lt;p>Use the &lt;code>/aria2dl&lt;/code> command to download files via the Aria2 download manager, supporting HTTP/HTTPS, FTP, BitTorrent, and other protocols.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/aria2dl &amp;lt;uri1&amp;gt; &lt;span style="color:#f92672">[&lt;/span>uri2&lt;span style="color:#f92672">]&lt;/span> &lt;span style="color:#f92672">[&lt;/span>uri3&lt;span style="color:#f92672">]&lt;/span> ...
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Examples:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Download HTTP link&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/aria2dl https://example.com/file.zip
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Download magnet link&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/aria2dl magnet:?xt&lt;span style="color:#f92672">=&lt;/span>urn:btih:...
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Download torrent file (need to upload .torrent file first)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/aria2dl https://example.com/file.torrent
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Configure Aria2:&lt;/p></description></item><item><title>yt-dlp Video Download</title><link>https://sabot.unv.app/en/usage/ytdlp/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/ytdlp/</guid><description>&lt;h1 id="yt-dlp-video-download">
+ yt-dlp Video Download
+ &lt;a class="anchor" href="#yt-dlp-video-download">#&lt;/a>
+&lt;/h1>
+&lt;blockquote class="book-hint warning">
+ 
+This feature requires the yt-dlp command-line tool installed on your system.
+
+&lt;/blockquote>
+
+&lt;p>Use the &lt;code>/ytdlp&lt;/code> command to download videos and audio from supported video websites, including YouTube, Bilibili, Twitter, and 1000+ other sites.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/ytdlp &amp;lt;url1&amp;gt; &lt;span style="color:#f92672">[&lt;/span>url2&lt;span style="color:#f92672">]&lt;/span> &lt;span style="color:#f92672">[&lt;/span>flags...&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Examples:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Basic download&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/ytdlp https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>dQw4w9WgXcQ
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Download multiple videos&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/ytdlp https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>video1 https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>video2
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Use custom parameters&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/ytdlp https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>dQw4w9WgXcQ -f best
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/ytdlp https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>dQw4w9WgXcQ --extract-audio --audio-format mp3
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Common parameters:&lt;/p></description></item><item><title>Storage Transfer</title><link>https://sabot.unv.app/en/usage/transfer/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/transfer/</guid><description>&lt;h1 id="storage-transfer">
+ Storage Transfer
+ &lt;a class="anchor" href="#storage-transfer">#&lt;/a>
+&lt;/h1>
+&lt;p>Use the &lt;code>/transfer&lt;/code> command to transfer files directly between different storages without going through Telegram.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/transfer &amp;lt;source_storage&amp;gt;:/&amp;lt;source_path&amp;gt; &lt;span style="color:#f92672">[&lt;/span>filter&lt;span style="color:#f92672">]&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Parameters:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>source_storage&lt;/code>: Source storage name&lt;/li>
+&lt;li>&lt;code>source_path&lt;/code>: Source path&lt;/li>
+&lt;li>&lt;code>filter&lt;/code>: Optional regex filter to transfer only matching files&lt;/li>
+&lt;/ul>
+&lt;p>Examples:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Transfer entire directory&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/transfer local1:/downloads
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Transfer files from specified path&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/transfer alist1:/media/photos
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Transfer only mp4 files&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/transfer webdav1:/videos &lt;span style="color:#e6db74">&amp;#34;.*\.mp4&lt;/span>$&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Transfer image files&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/transfer local1:/pictures &lt;span style="color:#e6db74">&amp;#34;(?i)\.(jpg|png|gif)&lt;/span>$&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The bot will:&lt;/p></description></item><item><title>Save Files Outside Telegram</title><link>https://sabot.unv.app/en/usage/parsers/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/parsers/</guid><description>&lt;h1 id="save-files-outside-telegram">
+ Save Files Outside Telegram
+ &lt;a class="anchor" href="#save-files-outside-telegram">#&lt;/a>
+&lt;/h1>
+&lt;p>Besides files on Telegram, the bot can also save files from other websites via JavaScript plugins or built-in parsers.&lt;/p>
+&lt;blockquote>
+&lt;p>See the &lt;a href="../contribute">Contributing Parsers&lt;/a> document for details.&lt;/p>&lt;/blockquote>
+&lt;p>Just send links that match the requirements of a parser to the bot. Currently built-in parsers include:&lt;/p>
+&lt;ul>
+&lt;li>Twitter&lt;/li>
+&lt;li>Kemono&lt;/li>
+&lt;/ul></description></item><item><title>HTTP API</title><link>https://sabot.unv.app/en/usage/api/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/api/</guid><description>&lt;h1 id="http-api">
+ HTTP API
+ &lt;a class="anchor" href="#http-api">#&lt;/a>
+&lt;/h1>
+&lt;p>SaveAny-Bot provides an HTTP API that allows you to programmatically create download/transfer tasks, query task status, cancel tasks, and more — without going through Telegram.&lt;/p>
+&lt;h2 id="enabling-the-api">
+ Enabling the API
+ &lt;a class="anchor" href="#enabling-the-api">#&lt;/a>
+&lt;/h2>
+&lt;p>Add or modify the following section in &lt;code>config.toml&lt;/code>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>[&lt;span style="color:#a6e22e">api&lt;/span>]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">enable&lt;/span> = &lt;span style="color:#66d9ef">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">host&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;0.0.0.0&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Bind address, default 0.0.0.0&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">port&lt;/span> = &lt;span style="color:#ae81ff">8080&lt;/span> &lt;span style="color:#75715e"># Listen port, default 8080&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your-token&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Auth token — strongly recommended&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>You can also override these settings with environment variables (prefix &lt;code>SAVEANY_&lt;/code>):&lt;/p></description></item></channel></rss>

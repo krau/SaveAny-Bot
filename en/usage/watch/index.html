@@ -1,0 +1,38 @@
+<!doctype html><html lang=en dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="
+  Watch Chats
+  #
+
+
+  
+This feature requires enabling UserBot integration.
+
+
+
+You can watch messages in a specific chat and automatically save them to the default storage, following storage rules. You can also add filters so that only matching messages are saved.
+Watch a chat:
+/watch <chat_id/username> [filter]
+Stop watching:
+/unwatch <chat_id/username>
+Filter types:
+
+  msgre
+  #
+
+Regex-match the message text. For example:
+/watch 12345678 msgre:.*hello.*
+This will watch the chat with ID 12345678, and only save messages whose text contains hello."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/en/usage/watch/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="Watch Chats"><meta property="og:description" content="Watch Chats # This feature requires enabling UserBot integration. You can watch messages in a specific chat and automatically save them to the default storage, following storage rules. You can also add filters so that only matching messages are saved.
+Watch a chat:
+/watch <chat_id/username> [filter] Stop watching:
+/unwatch <chat_id/username> Filter types:
+msgre # Regex-match the message text. For example:
+/watch 12345678 msgre:.*hello.* This will watch the chat with ID 12345678, and only save messages whose text contains hello."><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="article:section" content="usage"><meta property="article:modified_time" content="2026-03-11T19:37:25+08:00"><title>Watch Chats | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/en/usage/watch/><link rel=alternate hreflang=zh href=https://sabot.unv.app/usage/watch/ title=监听聊天><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/en/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+<label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
+English</a></label><ul><li><a href=/usage/watch/>简体中文</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>Deployment Guide</span><ul><li><a href=/en/deployment/configuration/>Configuration Guide</a><ul><li><a href=/en/deployment/configuration/storages/>Storage Configuration</a></li></ul></li><li><a href=/en/deployment/installation/>Installation and Updates</a></li></ul></li><li><a href=/en/usage/>Usage</a><ul><li><a href=/en/usage/silent/>Silent Mode</a></li><li><a href=/en/usage/rules/>Storage Rules</a></li><li><a href=/en/usage/watch/ class=active>Watch Chats</a></li><li><a href=/en/usage/directlinks/>Direct Download Links</a></li><li><a href=/en/usage/aria2/>Aria2 Download</a></li><li><a href=/en/usage/ytdlp/>yt-dlp Video Download</a></li><li><a href=/en/usage/transfer/>Storage Transfer</a></li><li><a href=/en/usage/parsers/>Save Files Outside Telegram</a></li><li><a href=/en/usage/api/>HTTP API</a></li></ul></li><li><a href=/en/help/>Frequently Asked Questions</a><ul></ul></li><li><a href=/en/contribute/>Contributing</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>Watch Chats</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#msgre>msgre</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=watch-chats>Watch Chats
+<a class=anchor href=#watch-chats>#</a></h1><blockquote class="book-hint warning">This feature requires enabling UserBot integration.</blockquote><p>You can watch messages in a specific chat and automatically save them to the default storage, following storage rules. You can also add filters so that only matching messages are saved.</p><p>Watch a chat:</p><pre tabindex=0><code>/watch &lt;chat_id/username&gt; [filter]
+</code></pre><p>Stop watching:</p><pre tabindex=0><code>/unwatch &lt;chat_id/username&gt;
+</code></pre><p>Filter types:</p><h2 id=msgre>msgre
+<a class=anchor href=#msgre>#</a></h2><p>Regex-match the message text. For example:</p><pre tabindex=0><code>/watch 12345678 msgre:.*hello.*
+</code></pre><p>This will watch the chat with ID <code>12345678</code>, and only save messages whose text contains <code>hello</code>.</p></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/38355dfd142f0f1a819a8837875b33da0d3a81b7 title='Last modified by krau | 2026/03/11' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/03/11</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/en/usage/watch.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>Edit this page</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#msgre>msgre</a></li></ul></nav></div></aside></main></body></html>

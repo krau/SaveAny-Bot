@@ -1,0 +1,236 @@
+<!doctype html><html lang=zh dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content='
+  HTTP API
+  #
+
+SaveAny-Bot 提供了一套 HTTP API，允许你通过程序化方式创建下载/转存任务、查询任务状态、取消任务等，无需通过 Telegram 操作。
+
+  启用 API
+  #
+
+在 config.toml 中添加或修改以下配置：
+[api]
+enable = true
+host   = "0.0.0.0"   # 监听地址，默认 0.0.0.0
+port   = 8080         # 监听端口，默认 8080
+token  = "your-token" # 鉴权 Token，强烈建议设置
+也可通过环境变量覆盖（前缀 SAVEANY_）：
+
+  
+      
+          环境变量
+          对应配置项
+      
+  
+  
+      
+          SAVEANY_API_ENABLE
+          api.enable
+      
+      
+          SAVEANY_API_HOST
+          api.host
+      
+      
+          SAVEANY_API_PORT
+          api.port
+      
+      
+          SAVEANY_API_TOKEN
+          api.token
+      
+  
+
+
+  
+若 `token` 为空，API 服务将**不进行任何鉴权**即可访问，存在安全风险。
+
+
+
+
+  鉴权
+  #
+
+当配置了 token 时，所有 API 请求均需在 HTTP 请求头中携带 Bearer Token：
+Authorization: Bearer <your-token>
+鉴权失败时返回 401：
+{ "error": "unauthorized", "message": "invalid token" }
+
+  错误响应格式
+  #
+
+所有错误均使用统一的 JSON 格式：'><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/api/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="HTTP API"><meta property="og:description" content='HTTP API # SaveAny-Bot 提供了一套 HTTP API，允许你通过程序化方式创建下载/转存任务、查询任务状态、取消任务等，无需通过 Telegram 操作。
+启用 API # 在 config.toml 中添加或修改以下配置：
+[api] enable = true host = "0.0.0.0" # 监听地址，默认 0.0.0.0 port = 8080 # 监听端口，默认 8080 token = "your-token" # 鉴权 Token，强烈建议设置 也可通过环境变量覆盖（前缀 SAVEANY_）：
+环境变量 对应配置项 SAVEANY_API_ENABLE api.enable SAVEANY_API_HOST api.host SAVEANY_API_PORT api.port SAVEANY_API_TOKEN api.token 若 `token` 为空，API 服务将**不进行任何鉴权**即可访问，存在安全风险。 鉴权 # 当配置了 token 时，所有 API 请求均需在 HTTP 请求头中携带 Bearer Token：
+Authorization: Bearer <your-token> 鉴权失败时返回 401：
+{ "error": "unauthorized", "message": "invalid token" } 错误响应格式 # 所有错误均使用统一的 JSON 格式：'><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="usage"><meta property="article:modified_time" content="2026-03-11T19:37:25+08:00"><title>HTTP API | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/api/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/api/ title="HTTP API"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+<label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
+简体中文</a></label><ul><li><a href=/en/usage/api/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>直接下载链接</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>yt-dlp 视频下载</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/api/ class=active>HTTP API</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>HTTP API</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#启用-api>启用 API</a></li><li><a href=#鉴权>鉴权</a></li><li><a href=#错误响应格式>错误响应格式</a></li><li><a href=#接口列表>接口列表</a><ul><li><a href=#get-health--健康检查>GET /health — 健康检查</a></li><li><a href=#get-apiv1storages--列出存储>GET /api/v1/storages — 列出存储</a></li><li><a href=#get-apiv1task-types--列出支持的任务类型>GET /api/v1/task-types — 列出支持的任务类型</a></li><li><a href=#post-apiv1tasks--创建任务>POST /api/v1/tasks — 创建任务</a></li><li><a href=#get-apiv1tasks--列出所有任务>GET /api/v1/tasks — 列出所有任务</a></li><li><a href=#get-apiv1taskstask_id--查询任务>GET /api/v1/tasks/{task_id} — 查询任务</a></li><li><a href=#delete-apiv1taskstask_id--取消任务>DELETE /api/v1/tasks/{task_id} — 取消任务</a></li></ul></li><li><a href=#任务状态>任务状态</a></li><li><a href=#webhook-回调>Webhook 回调</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=http-api>HTTP API
+<a class=anchor href=#http-api>#</a></h1><p>SaveAny-Bot 提供了一套 HTTP API，允许你通过程序化方式创建下载/转存任务、查询任务状态、取消任务等，无需通过 Telegram 操作。</p><h2 id=启用-api>启用 API
+<a class=anchor href=#%e5%90%af%e7%94%a8-api>#</a></h2><p>在 <code>config.toml</code> 中添加或修改以下配置：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[<span style=color:#a6e22e>api</span>]
+</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>host</span>   = <span style=color:#e6db74>&#34;0.0.0.0&#34;</span>   <span style=color:#75715e># 监听地址，默认 0.0.0.0</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>port</span>   = <span style=color:#ae81ff>8080</span>         <span style=color:#75715e># 监听端口，默认 8080</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>token</span>  = <span style=color:#e6db74>&#34;your-token&#34;</span> <span style=color:#75715e># 鉴权 Token，强烈建议设置</span>
+</span></span></code></pre></div><p>也可通过环境变量覆盖（前缀 <code>SAVEANY_</code>）：</p><table><thead><tr><th>环境变量</th><th>对应配置项</th></tr></thead><tbody><tr><td><code>SAVEANY_API_ENABLE</code></td><td><code>api.enable</code></td></tr><tr><td><code>SAVEANY_API_HOST</code></td><td><code>api.host</code></td></tr><tr><td><code>SAVEANY_API_PORT</code></td><td><code>api.port</code></td></tr><tr><td><code>SAVEANY_API_TOKEN</code></td><td><code>api.token</code></td></tr></tbody></table><blockquote class="book-hint warning">若 `token` 为空，API 服务将**不进行任何鉴权**即可访问，存在安全风险。</blockquote><h2 id=鉴权>鉴权
+<a class=anchor href=#%e9%89%b4%e6%9d%83>#</a></h2><p>当配置了 <code>token</code> 时，所有 API 请求均需在 HTTP 请求头中携带 Bearer Token：</p><pre tabindex=0><code>Authorization: Bearer &lt;your-token&gt;
+</code></pre><p>鉴权失败时返回 <code>401</code>：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{ <span style=color:#f92672>&#34;error&#34;</span>: <span style=color:#e6db74>&#34;unauthorized&#34;</span>, <span style=color:#f92672>&#34;message&#34;</span>: <span style=color:#e6db74>&#34;invalid token&#34;</span> }
+</span></span></code></pre></div><h2 id=错误响应格式>错误响应格式
+<a class=anchor href=#%e9%94%99%e8%af%af%e5%93%8d%e5%ba%94%e6%a0%bc%e5%bc%8f>#</a></h2><p>所有错误均使用统一的 JSON 格式：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;error&#34;</span>:   <span style=color:#e6db74>&#34;error_code&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;message&#34;</span>: <span style=color:#e6db74>&#34;错误说明&#34;</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>常见错误码：</p><table><thead><tr><th>错误码</th><th>HTTP 状态</th><th>含义</th></tr></thead><tbody><tr><td><code>unauthorized</code></td><td>401</td><td>鉴权失败</td></tr><tr><td><code>method_not_allowed</code></td><td>405</td><td>HTTP 方法不正确</td></tr><tr><td><code>invalid_request</code></td><td>400</td><td>请求体/参数非法</td></tr><tr><td><code>task_creation_failed</code></td><td>400</td><td>任务创建失败</td></tr><tr><td><code>task_not_found</code></td><td>404</td><td>任务 ID 不存在</td></tr><tr><td><code>cancel_failed</code></td><td>500</td><td>取消任务失败</td></tr><tr><td><code>internal_error</code></td><td>500</td><td>服务器内部错误</td></tr></tbody></table><hr><h2 id=接口列表>接口列表
+<a class=anchor href=#%e6%8e%a5%e5%8f%a3%e5%88%97%e8%a1%a8>#</a></h2><h3 id=get-health--健康检查>GET /health — 健康检查
+<a class=anchor href=#get-health--%e5%81%a5%e5%ba%b7%e6%a3%80%e6%9f%a5>#</a></h3><p>无需鉴权。</p><p><strong>响应 <code>200 OK</code>：</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{ <span style=color:#f92672>&#34;status&#34;</span>: <span style=color:#e6db74>&#34;ok&#34;</span> }
+</span></span></code></pre></div><hr><h3 id=get-apiv1storages--列出存储>GET /api/v1/storages — 列出存储
+<a class=anchor href=#get-apiv1storages--%e5%88%97%e5%87%ba%e5%ad%98%e5%82%a8>#</a></h3><p>返回当前所有已加载的存储后端。</p><p><strong>响应 <code>200 OK</code>：</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storages&#34;</span>: [
+</span></span><span style=display:flex><span>    { <span style=color:#f92672>&#34;name&#34;</span>: <span style=color:#e6db74>&#34;local&#34;</span>,   <span style=color:#f92672>&#34;type&#34;</span>: <span style=color:#e6db74>&#34;local&#34;</span> },
+</span></span><span style=display:flex><span>    { <span style=color:#f92672>&#34;name&#34;</span>: <span style=color:#e6db74>&#34;MyMinio&#34;</span>, <span style=color:#f92672>&#34;type&#34;</span>: <span style=color:#e6db74>&#34;s3&#34;</span> }
+</span></span><span style=display:flex><span>  ]
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><hr><h3 id=get-apiv1task-types--列出支持的任务类型>GET /api/v1/task-types — 列出支持的任务类型
+<a class=anchor href=#get-apiv1task-types--%e5%88%97%e5%87%ba%e6%94%af%e6%8c%81%e7%9a%84%e4%bb%bb%e5%8a%a1%e7%b1%bb%e5%9e%8b>#</a></h3><p><strong>响应 <code>200 OK</code>：</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;types&#34;</span>: [
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;directlinks&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;ytdlp&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;aria2&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;parseditem&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;tgfiles&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;tphpics&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;transfer&#34;</span>
+</span></span><span style=display:flex><span>  ]
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><hr><h3 id=post-apiv1tasks--创建任务>POST /api/v1/tasks — 创建任务
+<a class=anchor href=#post-apiv1tasks--%e5%88%9b%e5%bb%ba%e4%bb%bb%e5%8a%a1>#</a></h3><p><strong>请求头：</strong></p><pre tabindex=0><code>Content-Type: application/json
+Authorization: Bearer &lt;token&gt;
+</code></pre><p><strong>请求体：</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:    <span style=color:#e6db74>&#34;&lt;任务类型&gt;&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storage&#34;</span>: <span style=color:#e6db74>&#34;&lt;存储名&gt;&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;path&#34;</span>:    <span style=color:#e6db74>&#34;&lt;子目录&gt;&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;webhook&#34;</span>: <span style=color:#e6db74>&#34;&lt;回调URL&gt;&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;params&#34;</span>:  { }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><table><thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead><tbody><tr><td><code>type</code></td><td>string</td><td>是</td><td>任务类型，见下文</td></tr><tr><td><code>storage</code></td><td>string</td><td>是</td><td>目标存储名，须与配置中的存储名一致</td></tr><tr><td><code>path</code></td><td>string</td><td>否</td><td>存储内的子目录路径</td></tr><tr><td><code>webhook</code></td><td>string</td><td>否</td><td>任务完成/失败时的回调地址</td></tr><tr><td><code>params</code></td><td>object</td><td>是</td><td>各任务类型的专属参数，见下文</td></tr></tbody></table><p><strong>响应 <code>201 Created</code>：</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;task_id&#34;</span>:    <span style=color:#e6db74>&#34;abc123xyz&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:       <span style=color:#e6db74>&#34;directlinks&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;status&#34;</span>:     <span style=color:#e6db74>&#34;queued&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;created_at&#34;</span>: <span style=color:#e6db74>&#34;2026-03-11T10:00:00Z&#34;</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h4 id=任务类型与-params>任务类型与 params
+<a class=anchor href=#%e4%bb%bb%e5%8a%a1%e7%b1%bb%e5%9e%8b%e4%b8%8e-params>#</a></h4><h5 id=directlinks--直接下载链接>directlinks — 直接下载链接
+<a class=anchor href=#directlinks--%e7%9b%b4%e6%8e%a5%e4%b8%8b%e8%bd%bd%e9%93%be%e6%8e%a5>#</a></h5><p>下载一个或多个 HTTP/HTTPS 直链文件。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:    <span style=color:#e6db74>&#34;directlinks&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storage&#34;</span>: <span style=color:#e6db74>&#34;local&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;path&#34;</span>:    <span style=color:#e6db74>&#34;downloads&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;params&#34;</span>: {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;urls&#34;</span>: [
+</span></span><span style=display:flex><span>      <span style=color:#e6db74>&#34;https://example.com/file.zip&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#e6db74>&#34;https://example.com/other.zip&#34;</span>
+</span></span><span style=display:flex><span>    ]
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><table><thead><tr><th>params 字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead><tbody><tr><td><code>urls</code></td><td>[]string</td><td>是</td><td>下载地址列表，至少 1 条</td></tr></tbody></table><h5 id=ytdlp--yt-dlp-视频下载>ytdlp — yt-dlp 视频下载
+<a class=anchor href=#ytdlp--yt-dlp-%e8%a7%86%e9%a2%91%e4%b8%8b%e8%bd%bd>#</a></h5><blockquote class="book-hint warning">需要在系统中安装 yt-dlp。</blockquote><p>通过 yt-dlp 下载视频/音频，支持 YouTube、Bilibili 等 1000+ 网站。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:    <span style=color:#e6db74>&#34;ytdlp&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storage&#34;</span>: <span style=color:#e6db74>&#34;local&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;path&#34;</span>:    <span style=color:#e6db74>&#34;videos&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;params&#34;</span>: {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;urls&#34;</span>:  [<span style=color:#e6db74>&#34;https://www.youtube.com/watch?v=xxx&#34;</span>],
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;flags&#34;</span>: [<span style=color:#e6db74>&#34;--extract-audio&#34;</span>, <span style=color:#e6db74>&#34;--audio-format&#34;</span>, <span style=color:#e6db74>&#34;mp3&#34;</span>]
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><table><thead><tr><th>params 字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead><tbody><tr><td><code>urls</code></td><td>[]string</td><td>是</td><td>媒体链接列表，至少 1 条</td></tr><tr><td><code>flags</code></td><td>[]string</td><td>否</td><td>额外的 yt-dlp 命令行参数</td></tr></tbody></table><h5 id=aria2--aria2-下载>aria2 — Aria2 下载
+<a class=anchor href=#aria2--aria2-%e4%b8%8b%e8%bd%bd>#</a></h5><blockquote class="book-hint warning">需要在配置文件中启用并配置 Aria2 RPC。</blockquote><p>通过 Aria2 下载管理器下载文件，支持 HTTP/HTTPS、FTP、BitTorrent（磁力链接、种子）等协议。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:    <span style=color:#e6db74>&#34;aria2&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storage&#34;</span>: <span style=color:#e6db74>&#34;local&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;path&#34;</span>:    <span style=color:#e6db74>&#34;downloads&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;params&#34;</span>: {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;urls&#34;</span>:    [<span style=color:#e6db74>&#34;magnet:?xt=urn:btih:...&#34;</span>],
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;options&#34;</span>: { <span style=color:#f92672>&#34;split&#34;</span>: <span style=color:#e6db74>&#34;4&#34;</span> }
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><table><thead><tr><th>params 字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead><tbody><tr><td><code>urls</code></td><td>[]string</td><td>是</td><td>下载地址列表，至少 1 条</td></tr><tr><td><code>options</code></td><td>map[string]string</td><td>否</td><td>Aria2 下载选项</td></tr></tbody></table><h5 id=parseditem--解析器下载>parseditem — 解析器下载
+<a class=anchor href=#parseditem--%e8%a7%a3%e6%9e%90%e5%99%a8%e4%b8%8b%e8%bd%bd>#</a></h5><p>将 URL 交由已注册的 JS 插件或内置解析器处理后下载。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:    <span style=color:#e6db74>&#34;parseditem&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storage&#34;</span>: <span style=color:#e6db74>&#34;local&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;path&#34;</span>:    <span style=color:#e6db74>&#34;parsed&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;params&#34;</span>: {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;url&#34;</span>: <span style=color:#e6db74>&#34;https://some-site.com/page&#34;</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><table><thead><tr><th>params 字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>是</td><td>待解析的页面 URL</td></tr></tbody></table><p>若没有任何解析器能处理该 URL，则返回 <code>400 task_creation_failed</code>。</p><h5 id=tgfiles--telegram-消息文件下载>tgfiles — Telegram 消息文件下载
+<a class=anchor href=#tgfiles--telegram-%e6%b6%88%e6%81%af%e6%96%87%e4%bb%b6%e4%b8%8b%e8%bd%bd>#</a></h5><p>通过 Telegram 消息链接下载文件。支持以下链接格式：</p><ul><li><code>https://t.me/username/123</code> — 公开频道/群组</li><li><code>https://t.me/c/123456789/123</code> — 私有频道（数字 ID）</li><li><code>https://t.me/c/123456789/111/456</code> — 话题消息</li><li><code>https://t.me/username/111/456</code> — 用户名频道下的话题消息</li></ul><p>若消息属于媒体组（相册），默认下载整组文件。在链接末尾追加 <code>?single</code> 可强制只下载单条消息的文件。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:    <span style=color:#e6db74>&#34;tgfiles&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storage&#34;</span>: <span style=color:#e6db74>&#34;local&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;path&#34;</span>:    <span style=color:#e6db74>&#34;telegram&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;params&#34;</span>: {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;message_links&#34;</span>: [
+</span></span><span style=display:flex><span>      <span style=color:#e6db74>&#34;https://t.me/username/123&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#e6db74>&#34;https://t.me/c/1234567890/456&#34;</span>
+</span></span><span style=display:flex><span>    ]
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><table><thead><tr><th>params 字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead><tbody><tr><td><code>message_links</code></td><td>[]string</td><td>是</td><td>Telegram 消息链接列表，至少 1 条</td></tr></tbody></table><h5 id=tphpics--telegraph-文章图片下载>tphpics — Telegraph 文章图片下载
+<a class=anchor href=#tphpics--telegraph-%e6%96%87%e7%ab%a0%e5%9b%be%e7%89%87%e4%b8%8b%e8%bd%bd>#</a></h5><p>下载 Telegra.ph 文章中的所有图片。</p><p>支持的链接前缀：<code>https://telegra.ph/</code>、<code>http://telegra.ph/</code>、<code>https://telegraph.co/</code>、<code>http://telegraph.co/</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:    <span style=color:#e6db74>&#34;tphpics&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storage&#34;</span>: <span style=color:#e6db74>&#34;local&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;path&#34;</span>:    <span style=color:#e6db74>&#34;telegraph&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;params&#34;</span>: {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;telegraph_url&#34;</span>: <span style=color:#e6db74>&#34;https://telegra.ph/Some-Article-01-01&#34;</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><table><thead><tr><th>params 字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead><tbody><tr><td><code>telegraph_url</code></td><td>string</td><td>是</td><td>Telegra.ph 文章 URL</td></tr></tbody></table><h5 id=transfer--存储间文件传输>transfer — 存储间文件传输
+<a class=anchor href=#transfer--%e5%ad%98%e5%82%a8%e9%97%b4%e6%96%87%e4%bb%b6%e4%bc%a0%e8%be%93>#</a></h5><p>在两个存储后端之间直接传输文件，无需经过 Telegram。源存储须支持列举（list）和读取（read）操作。</p><blockquote class="book-hint info">`transfer` 任务中，顶层的 `storage` 字段仍然必须填写（用于通过参数校验），但实际使用的存储由 `params` 中的 `source_storage` 和 `target_storage` 决定。</blockquote><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:    <span style=color:#e6db74>&#34;transfer&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storage&#34;</span>: <span style=color:#e6db74>&#34;local&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;params&#34;</span>: {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;source_storage&#34;</span>: <span style=color:#e6db74>&#34;MyS3&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;source_path&#34;</span>:    <span style=color:#e6db74>&#34;backups/&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;target_storage&#34;</span>: <span style=color:#e6db74>&#34;LocalDisk&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;target_path&#34;</span>:    <span style=color:#e6db74>&#34;restored/&#34;</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><table><thead><tr><th>params 字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead><tbody><tr><td><code>source_storage</code></td><td>string</td><td>是</td><td>源存储名</td></tr><tr><td><code>source_path</code></td><td>string</td><td>是</td><td>源存储中的路径，须包含至少一个文件</td></tr><tr><td><code>target_storage</code></td><td>string</td><td>是</td><td>目标存储名</td></tr><tr><td><code>target_path</code></td><td>string</td><td>是</td><td>目标存储中的路径</td></tr></tbody></table><hr><h3 id=get-apiv1tasks--列出所有任务>GET /api/v1/tasks — 列出所有任务
+<a class=anchor href=#get-apiv1tasks--%e5%88%97%e5%87%ba%e6%89%80%e6%9c%89%e4%bb%bb%e5%8a%a1>#</a></h3><p>返回所有 API 创建的任务（仅在内存中保留，重启后清空）。</p><p><strong>响应 <code>200 OK</code>：</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;tasks&#34;</span>: [
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;task_id&#34;</span>:    <span style=color:#e6db74>&#34;abc123xyz&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;type&#34;</span>:       <span style=color:#e6db74>&#34;directlinks&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;status&#34;</span>:     <span style=color:#e6db74>&#34;running&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;title&#34;</span>:      <span style=color:#e6db74>&#34;file.zip&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;storage&#34;</span>:    <span style=color:#e6db74>&#34;local&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;path&#34;</span>:       <span style=color:#e6db74>&#34;downloads&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;error&#34;</span>:      <span style=color:#e6db74>&#34;&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;created_at&#34;</span>: <span style=color:#e6db74>&#34;2026-03-11T10:00:00Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;updated_at&#34;</span>: <span style=color:#e6db74>&#34;2026-03-11T10:00:05Z&#34;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#f92672>&#34;progress&#34;</span>: {
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&#34;total_bytes&#34;</span>:      <span style=color:#ae81ff>10485760</span>,
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&#34;downloaded_bytes&#34;</span>: <span style=color:#ae81ff>5242880</span>,
+</span></span><span style=display:flex><span>        <span style=color:#f92672>&#34;percent&#34;</span>:          <span style=color:#ae81ff>50.0</span>
+</span></span><span style=display:flex><span>      }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  ],
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;total&#34;</span>: <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p><code>progress</code> 字段仅在 <code>total_bytes > 0</code> 时出现。<code>error</code> 字段仅在有错误时出现。</p><hr><h3 id=get-apiv1taskstask_id--查询任务>GET /api/v1/tasks/{task_id} — 查询任务
+<a class=anchor href=#get-apiv1taskstask_id--%e6%9f%a5%e8%af%a2%e4%bb%bb%e5%8a%a1>#</a></h3><p><strong>路径参数：</strong> <code>task_id</code> — 创建任务时返回的 ID。</p><p><strong>响应 <code>200 OK</code>：</strong> 同上列表中的单个任务对象。</p><p><strong>错误响应：</strong></p><ul><li><code>400 invalid_request</code> — 路径中未提供 task_id</li><li><code>404 task_not_found</code> — 任务不存在</li></ul><hr><h3 id=delete-apiv1taskstask_id--取消任务>DELETE /api/v1/tasks/{task_id} — 取消任务
+<a class=anchor href=#delete-apiv1taskstask_id--%e5%8f%96%e6%b6%88%e4%bb%bb%e5%8a%a1>#</a></h3><p><strong>路径参数：</strong> <code>task_id</code></p><p><strong>响应 <code>200 OK</code>：</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{ <span style=color:#f92672>&#34;message&#34;</span>: <span style=color:#e6db74>&#34;task cancelled successfully&#34;</span> }
+</span></span></code></pre></div><p><strong>错误响应：</strong></p><ul><li><code>400 invalid_request</code> — 路径中未提供 task_id</li><li><code>404 task_not_found</code> — 任务不存在</li><li><code>500 cancel_failed</code> — 取消操作失败</li></ul><hr><h2 id=任务状态>任务状态
+<a class=anchor href=#%e4%bb%bb%e5%8a%a1%e7%8a%b6%e6%80%81>#</a></h2><table><thead><tr><th>状态值</th><th>含义</th></tr></thead><tbody><tr><td><code>queued</code></td><td>已入队，等待执行</td></tr><tr><td><code>running</code></td><td>正在执行</td></tr><tr><td><code>completed</code></td><td>已成功完成</td></tr><tr><td><code>failed</code></td><td>执行失败</td></tr><tr><td><code>cancelled</code></td><td>已通过 DELETE 接口取消</td></tr></tbody></table><hr><h2 id=webhook-回调>Webhook 回调
+<a class=anchor href=#webhook-%e5%9b%9e%e8%b0%83>#</a></h2><p>创建任务时可设置 <code>webhook</code> 字段。当任务进入终态（<code>completed</code>、<code>failed</code>、<code>cancelled</code>）时，Bot 会向该地址发送一个 <code>POST</code> 请求。</p><p><strong>回调请求头：</strong></p><pre tabindex=0><code>Content-Type: application/json
+User-Agent: SaveAny-Bot/1.0
+</code></pre><p><strong>回调请求体：</strong></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;task_id&#34;</span>:      <span style=color:#e6db74>&#34;abc123xyz&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;type&#34;</span>:         <span style=color:#e6db74>&#34;directlinks&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;status&#34;</span>:       <span style=color:#e6db74>&#34;completed&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;storage&#34;</span>:      <span style=color:#e6db74>&#34;local&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;path&#34;</span>:         <span style=color:#e6db74>&#34;downloads&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;completed_at&#34;</span>: <span style=color:#e6db74>&#34;2026-03-11T10:01:00Z&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;error&#34;</span>:        <span style=color:#e6db74>&#34;&#34;</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p><code>completed_at</code> 仅在状态为 <code>completed</code> 或 <code>failed</code> 时出现。<code>error</code> 仅在有错误时出现。</p><p><strong>重试机制：</strong> 最多重试 3 次，重试间隔依次为 1 秒、2 秒、3 秒。每次请求超时为 30 秒。</p></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/38355dfd142f0f1a819a8837875b33da0d3a81b7 title='最后修改者 krau | 2026/03/11' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/03/11</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/api.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#启用-api>启用 API</a></li><li><a href=#鉴权>鉴权</a></li><li><a href=#错误响应格式>错误响应格式</a></li><li><a href=#接口列表>接口列表</a><ul><li><a href=#get-health--健康检查>GET /health — 健康检查</a></li><li><a href=#get-apiv1storages--列出存储>GET /api/v1/storages — 列出存储</a></li><li><a href=#get-apiv1task-types--列出支持的任务类型>GET /api/v1/task-types — 列出支持的任务类型</a></li><li><a href=#post-apiv1tasks--创建任务>POST /api/v1/tasks — 创建任务</a></li><li><a href=#get-apiv1tasks--列出所有任务>GET /api/v1/tasks — 列出所有任务</a></li><li><a href=#get-apiv1taskstask_id--查询任务>GET /api/v1/tasks/{task_id} — 查询任务</a></li><li><a href=#delete-apiv1taskstask_id--取消任务>DELETE /api/v1/tasks/{task_id} — 取消任务</a></li></ul></li><li><a href=#任务状态>任务状态</a></li><li><a href=#webhook-回调>Webhook 回调</a></li></ul></nav></div></aside></main></body></html>
