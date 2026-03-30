@@ -135,12 +135,6 @@ func Init(ctx context.Context, configFile ...string) error {
 		viper.SetDefault(key, value)
 	}
 
-	if err := viper.SafeWriteConfigAs("config.toml"); err != nil {
-		if _, ok := err.(viper.ConfigFileAlreadyExistsError); !ok {
-			return fmt.Errorf("error saving default config: %w", err)
-		}
-	}
-
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("Error reading config file, ", err)
 		return err
