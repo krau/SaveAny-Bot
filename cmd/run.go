@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"slices"
@@ -27,14 +27,27 @@ import (
 func Run(cmd *cobra.Command, _ []string) {
 	ctx, cancel := context.WithCancel(cmd.Context())
 	logger := log.NewWithOptions(os.Stdout, log.Options{
-		Level:           log.DebugLevel,
+		Level:           log.InfoLevel,
 		ReportTimestamp: true,
 		TimeFormat:      time.TimeOnly,
 		ReportCaller:    true,
 	})
+	log.SetDefault(logger)
 	ctx = log.WithContext(ctx, logger)
 
-	exitChan, err := initAll(ctx, cmd)
+	configFile := config.GetConfigFile(cmd)
+	if err := config.Init(ctx, configFile); err != nil {
+		logger.Fatal("Init failed", "error", err)
+	}
+
+	level, err := log.ParseLevel(strings.TrimSpace(config.C().Log.Level))
+	if err != nil {
+		logger.Warn("Invalid log level, fallback to debug", "level", config.C().Log.Level, "error", err)
+		level = log.DebugLevel
+	}
+	logger.SetLevel(level)
+
+	exitChan, err := initAll(ctx)
 	if err != nil {
 		logger.Fatal("Init failed", "error", err)
 	}
@@ -51,11 +64,7 @@ func Run(cmd *cobra.Command, _ []string) {
 	cleanCache()
 }
 
-func initAll(ctx context.Context, cmd *cobra.Command) (<-chan struct{}, error) {
-	configFile := config.GetConfigFile(cmd)
-	if err := config.Init(ctx, configFile); err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
-	}
+func initAll(ctx context.Context) (<-chan struct{}, error) {
 	cache.Init()
 	logger := log.FromContext(ctx)
 	i18n.Init(config.C().Lang)

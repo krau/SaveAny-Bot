@@ -17,6 +17,7 @@ func RegisterFlags(cmd *cobra.Command) {
 	flags.Bool("stream", false, "enable stream mode")
 	flags.Bool("no-clean-cache", false, "do not clean cache on exit")
 	flags.String("proxy", "", "proxy URL (http, https, socks5, socks5h)")
+	flags.String("log-level", "", "log level (trace/debug, info, warn, error, fatal)")
 
 	// Telegram 配置
 	flags.String("telegram-token", "", "telegram bot token")
@@ -54,6 +55,7 @@ func bindFlags(cmd *cobra.Command) {
 	viper.BindPFlag("stream", flags.Lookup("stream"))
 	viper.BindPFlag("no_clean_cache", flags.Lookup("no-clean-cache"))
 	viper.BindPFlag("proxy", flags.Lookup("proxy"))
+	viper.BindPFlag("log.level", flags.Lookup("log-level"))
 
 	// Telegram
 	viper.BindPFlag("telegram.token", flags.Lookup("telegram-token"))

@@ -23,6 +23,7 @@ type Config struct {
 	Threads      int         `toml:"threads" mapstructure:"threads" json:"threads"`
 	Stream       bool        `toml:"stream" mapstructure:"stream" json:"stream"`
 	Proxy        string      `toml:"proxy" mapstructure:"proxy" json:"proxy"`
+	Log          logConfig   `toml:"log" mapstructure:"log" json:"log"`
 	Aria2        aria2Config `toml:"aria2" mapstructure:"aria2" json:"aria2"`
 	API          apiConfig   `toml:"api" mapstructure:"api" json:"api"`
 
@@ -100,10 +101,11 @@ func Init(ctx context.Context, configFile ...string) error {
 
 	defaultConfigs := map[string]any{
 		// 基础配置
-		"lang":    "zh-Hans",
-		"workers": 3,
-		"retry":   3,
-		"threads": 4,
+		"lang":      "zh-Hans",
+		"workers":   3,
+		"retry":     3,
+		"threads":   4,
+		"log.level": "debug",
 
 		// 缓存配置
 		"cache.ttl":          86400,

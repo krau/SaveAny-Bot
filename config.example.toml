@@ -5,6 +5,10 @@ retry = 3      # 下载失败重试次数
 threads = 4    # 单个任务下载使用的最大线程数
 stream = false # 使用流式传输模式, 建议仅在硬盘空间十分有限时使用.
 
+[log]
+# 日志级别, 可选: debug, info, warn, error, fatal
+level = "debug"
+
 [telegram]
 # Bot Token
 # 更换 Bot Token 后请删除会话数据库文件 (默认路径为 data/session.db )
