@@ -30,16 +30,21 @@ func NewServer(ctx context.Context) *Server {
 	mux.HandleFunc("/health", handlers.HealthCheckHandler)
 
 	// API v1 路由
-	mux.HandleFunc("/api/v1/tasks", handlers.CreateTaskHandler)
+	mux.HandleFunc("/api/v1/tasks", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handlers.ListTasksHandler(w, r)
+		case http.MethodPost:
+			handlers.CreateTaskHandler(w, r)
+		default:
+			MethodNotAllowedHandler(w, r)
+		}
+	})
 	mux.HandleFunc("/api/v1/tasks/", func(w http.ResponseWriter, r *http.Request) {
 		// 根据方法和路径分发
 		switch r.Method {
 		case http.MethodGet:
-			if r.URL.Path == "/api/v1/tasks" {
-				handlers.ListTasksHandler(w, r)
-			} else {
-				handlers.GetTaskHandler(w, r)
-			}
+			handlers.GetTaskHandler(w, r)
 		case http.MethodDelete:
 			handlers.CancelTaskHandler(w, r)
 		default:
