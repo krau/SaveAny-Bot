@@ -12,6 +12,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	config "github.com/krau/SaveAny-Bot/config/storage"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/rs/xid"
@@ -57,12 +58,14 @@ func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) erro
 	ext := path.Ext(storagePath)
 	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath
-	for i := 1; w.Exists(ctx, candidate); i++ {
-		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-		if i > 1000 {
-			w.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
-			candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
-			break
+	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
+		for i := 1; w.existsPath(ctx, candidate); i++ {
+			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+			if i > 1000 {
+				w.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
+				candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
+				break
+			}
 		}
 	}
 
@@ -79,6 +82,10 @@ func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) erro
 
 func (w *Webdav) Exists(ctx context.Context, storagePath string) bool {
 	w.logger.Debugf("Checking if file exists at %s", storagePath)
+	return w.existsPath(ctx, w.JoinStoragePath(storagePath))
+}
+
+func (w *Webdav) existsPath(ctx context.Context, storagePath string) bool {
 	exists, err := w.client.Exists(ctx, storagePath)
 	if err != nil {
 		w.logger.Errorf("Failed to check if file exists at %s: %v", storagePath, err)

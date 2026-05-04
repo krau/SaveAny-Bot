@@ -14,12 +14,15 @@ import (
 const (
 	// ContentLength is a ContextKey of type content-length.
 	ContentLength ContextKey = "content-length"
+	// OverwriteExisting is a ContextKey of type overwrite-existing.
+	OverwriteExisting ContextKey = "overwrite-existing"
 )
 
 var ErrInvalidContextKey = fmt.Errorf("not a valid ContextKey, try [%s]", strings.Join(_ContextKeyNames, ", "))
 
 var _ContextKeyNames = []string{
 	string(ContentLength),
+	string(OverwriteExisting),
 }
 
 // ContextKeyNames returns a list of possible string values of ContextKey.
@@ -33,6 +36,7 @@ func ContextKeyNames() []string {
 func ContextKeyValues() []ContextKey {
 	return []ContextKey{
 		ContentLength,
+		OverwriteExisting,
 	}
 }
 
@@ -49,7 +53,8 @@ func (x ContextKey) IsValid() bool {
 }
 
 var _ContextKeyValue = map[string]ContextKey{
-	"content-length": ContentLength,
+	"content-length":     ContentLength,
+	"overwrite-existing": OverwriteExisting,
 }
 
 // ParseContextKey attempts to convert a string to a ContextKey.

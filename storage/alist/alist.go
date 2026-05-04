@@ -108,8 +108,10 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 	ext := path.Ext(storagePath)
 	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath
-	for i := 1; a.Exists(ctx, candidate); i++ {
-		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
+		for i := 1; a.existsPath(ctx, candidate); i++ {
+			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+		}
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, a.baseURL+"/api/fs/put", reader)
@@ -158,6 +160,10 @@ func (a *Alist) JoinStoragePath(p string) string {
 }
 
 func (a *Alist) Exists(ctx context.Context, storagePath string) bool {
+	return a.existsPath(ctx, a.JoinStoragePath(storagePath))
+}
+
+func (a *Alist) existsPath(ctx context.Context, storagePath string) bool {
 	// POST  /api/fs/get
 	/*
 		body:

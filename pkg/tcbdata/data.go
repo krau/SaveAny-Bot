@@ -14,6 +14,12 @@ const (
 	TypeCancel     = "cancel"
 )
 
+const (
+	ConflictStrategyRename    = "rename"
+	ConflictStrategyOverwrite = "overwrite"
+	ConflictStrategySkip      = "skip"
+)
+
 // type TaskDataTGFiles struct {
 // 	Files   []tfile.TGFileMessage
 // 	AsBatch bool
@@ -34,6 +40,8 @@ type Add struct {
 	SelectedStorName string
 	DirID            uint
 	SettedDir        bool
+	SelectedDirPath  string
+	ConflictStrategy string
 	// tfiles
 	Files   []tfile.TGFileMessage
 	AsBatch bool
