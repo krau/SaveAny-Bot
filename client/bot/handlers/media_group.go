@@ -13,7 +13,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
-	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
+	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -53,9 +53,13 @@ func handleGroupMediaMessage(ctx *ext.Context, update *ext.Update, message *tg.M
 	if !supported {
 		return dispatcher.EndGroups
 	}
-	file, err := tfile.FromMediaMessage(media, ctx.Raw, message, tfile.WithNameIfEmpty(
-		tgutil.GenFileNameFromMessage(*message),
-	))
+	userId := update.GetUserChat().GetID()
+	userDB, err := database.GetUserByChatID(ctx, userId)
+	if err != nil {
+		return err
+	}
+	tfOpts := mediautil.TfileOptions(ctx, userDB, message)
+	file, err := tfile.FromMediaMessage(media, ctx.Raw, message, tfOpts...)
 	if err != nil {
 		logger.Errorf("Failed to get file from media: %s", err)
 		return dispatcher.EndGroups
