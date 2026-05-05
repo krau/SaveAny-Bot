@@ -22,6 +22,7 @@ type Config struct {
 	NoCleanCache bool        `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
 	Threads      int         `toml:"threads" mapstructure:"threads" json:"threads"`
 	Stream       bool        `toml:"stream" mapstructure:"stream" json:"stream"`
+	SaveMetadata bool        `toml:"save_metadata" mapstructure:"save_metadata" json:"save_metadata"`
 	Proxy        string      `toml:"proxy" mapstructure:"proxy" json:"proxy"`
 	Log          logConfig   `toml:"log" mapstructure:"log" json:"log"`
 	Aria2        aria2Config `toml:"aria2" mapstructure:"aria2" json:"aria2"`
@@ -105,6 +106,7 @@ func Init(ctx context.Context, configFile ...string) error {
 		"workers":   3,
 		"retry":     3,
 		"threads":   4,
+		"save_metadata":  false,
 		"log.level": "debug",
 
 		// 缓存配置

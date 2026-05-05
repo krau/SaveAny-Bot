@@ -1,12 +1,15 @@
 package batchtfile
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 
+	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/pkg/metadata"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
@@ -24,6 +27,15 @@ type TaskElement struct {
 	File      tfile.TGFile
 	localPath string
 	stream    bool
+	metadata  []byte
+}
+
+func (e *TaskElement) saveMetadata(ctx context.Context, actualPath string) error {
+	if len(e.metadata) == 0 {
+		return nil
+	}
+	_, err := e.Storage.Save(ctx, bytes.NewReader(e.metadata), actualPath+metadata.MetaSuffix)
+	return err
 }
 
 type Task struct {
@@ -49,11 +61,25 @@ func (t *Task) Type() tasktype.TaskType {
 }
 
 func NewTaskElement(
+	ctx context.Context,
 	stor storage.Storage,
 	path string,
 	file tfile.TGFile,
 ) (*TaskElement, error) {
 	id := xid.New().String()
+
+	var meta []byte
+	if config.C().SaveMetadata {
+		if fmsg, ok := file.(tfile.TGFileMessage); ok {
+			m := metadata.BuildFromMessage(ctx, fmsg.Message(), file.Name(), file.Size())
+			var err error
+			meta, err = m.ToJSON()
+			if err != nil {
+				log.FromContext(ctx).Warnf("failed to marshal metadata: %s", err)
+			}
+		}
+	}
+
 	_, ok := stor.(storage.StorageCannotStream)
 	if !config.C().Stream || ok {
 		cachePath, err := filepath.Abs(filepath.Join(config.C().Temp.BasePath, fmt.Sprintf("%s_%s", id, file.Name())))
@@ -66,14 +92,16 @@ func NewTaskElement(
 			Path:      path,
 			File:      file,
 			localPath: cachePath,
+			metadata:  meta,
 		}, nil
 	}
 	return &TaskElement{
-		ID:      id,
-		Storage: stor,
-		Path:    path,
-		File:    file,
-		stream:  true,
+		ID:       id,
+		Storage:  stor,
+		Path:     path,
+		File:     file,
+		stream:   true,
+		metadata: meta,
 	}, nil
 }
 

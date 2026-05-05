@@ -51,12 +51,13 @@ func (w *Webdav) JoinStoragePath(p string) string {
 	return path.Join(w.config.BasePath, p)
 }
 
-func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) error {
+func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) (string, error) {
 	w.logger.Infof("Saving file to %s", storagePath)
-	storagePath = w.JoinStoragePath(storagePath)
-	ext := path.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
-	candidate := storagePath
+	originalPath := storagePath
+	joinedPath := w.JoinStoragePath(storagePath)
+	ext := path.Ext(joinedPath)
+	base := strings.TrimSuffix(joinedPath, ext)
+	candidate := joinedPath
 	for i := 1; w.Exists(ctx, candidate); i++ {
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
 		if i > 1000 {
@@ -68,13 +69,16 @@ func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) erro
 
 	if err := w.client.MkDir(ctx, path.Dir(candidate)); err != nil {
 		w.logger.Errorf("Failed to create directory %s: %v", path.Dir(candidate), err)
-		return ErrFailedToCreateDirectory
+		return "", ErrFailedToCreateDirectory
 	}
 	if err := w.client.WriteFile(ctx, candidate, r); err != nil {
 		w.logger.Errorf("Failed to write file %s: %v", candidate, err)
-		return ErrFailedToWriteFile
+		return "", ErrFailedToWriteFile
 	}
-	return nil
+	if candidate != joinedPath {
+		return path.Join(path.Dir(originalPath), path.Base(candidate)), nil
+	}
+	return originalPath, nil
 }
 
 func (w *Webdav) Exists(ctx context.Context, storagePath string) bool {

@@ -49,31 +49,37 @@ func (l *Local) JoinStoragePath(path string) string {
 	return filepath.Join(l.config.BasePath, path)
 }
 
-func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error {
+func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) (string, error) {
 	l.logger.Infof("Saving file to %s", storagePath)
-	storagePath = l.JoinStoragePath(storagePath)
+	originalPath := storagePath
+	joinedPath := l.JoinStoragePath(storagePath)
 
-	ext := filepath.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
-	candidate := storagePath
+	ext := filepath.Ext(joinedPath)
+	base := strings.TrimSuffix(joinedPath, ext)
+	candidate := joinedPath
 	for i := 1; l.Exists(ctx, candidate); i++ {
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
 	}
 
 	absPath, err := filepath.Abs(candidate)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
-		return err
+		return "", err
 	}
 	file, err := os.Create(absPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer file.Close()
-	_, err = io.Copy(file, r)
-	return err
+	if _, err := io.Copy(file, r); err != nil {
+		return "", err
+	}
+	if candidate != joinedPath {
+		return filepath.Join(filepath.Dir(originalPath), filepath.Base(candidate)), nil
+	}
+	return originalPath, nil
 }
 
 func (l *Local) Exists(ctx context.Context, storagePath string) bool {

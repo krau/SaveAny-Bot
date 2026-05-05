@@ -57,9 +57,12 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	if elem.stream {
 		pr, pw := io.Pipe()
 		defer pr.Close()
+		var actualPath string
 		errg, uploadCtx := errgroup.WithContext(ctx)
 		errg.Go(func() error {
-			return elem.Storage.Save(uploadCtx, pr, elem.Path)
+			var err error
+			actualPath, err = elem.Storage.Save(uploadCtx, pr, elem.Path)
+			return err
 		})
 		wr := ioutil.NewProgressWriter(pw, func(n int) {
 			t.downloaded.Add(int64(n))
@@ -79,6 +82,9 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			return fmt.Errorf("failed to download file in stream mode: %w", err)
 		}
 		logger.Info("File downloaded successfully in stream mode")
+		if err := elem.saveMetadata(ctx, actualPath); err != nil {
+			logger.Warnf("failed to save metadata: %s", err)
+		}
 		return nil
 	}
 	logger.Info("Starting file download")
@@ -112,6 +118,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
+	var actualPath string
 	err = retry.Retry(func() error {
 		var file *os.File
 		file, err = os.Open(elem.localPath)
@@ -119,11 +126,17 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			return fmt.Errorf("failed to open cache file: %w", err)
 		}
 		defer file.Close()
-		if err = elem.Storage.Save(vctx, file, elem.Path); err != nil {
+		if actualPath, err = elem.Storage.Save(vctx, file, elem.Path); err != nil {
 			logger.Errorf("Failed to save file: %s, retrying...", err)
 			return err
 		}
 		return nil
 	}, retry.Context(vctx), retry.RetryTimes(uint(config.C().Retry)))
-	return err
+	if err != nil {
+		return err
+	}
+	if err := elem.saveMetadata(ctx, actualPath); err != nil {
+		logger.Warnf("failed to save metadata: %s", err)
+	}
+	return nil
 }

@@ -29,9 +29,9 @@ func (m *mockStorage) Init(ctx context.Context, config storconfig.StorageConfig)
 	return nil
 }
 
-func (m *mockStorage) Save(ctx context.Context, reader io.Reader, path string) error {
+func (m *mockStorage) Save(ctx context.Context, reader io.Reader, path string) (string, error) {
 	m.savePath = path
-	return nil
+	return path, nil
 }
 
 func (m *mockStorage) Exists(ctx context.Context, path string) bool {

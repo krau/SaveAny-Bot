@@ -15,9 +15,12 @@ func executeStream(ctx context.Context, task *Task) error {
 
 	pr, pw := io.Pipe()
 	defer pr.Close()
+	var actualPath string
 	errg, uploadCtx := errgroup.WithContext(ctx)
 	errg.Go(func() error {
-		return task.Storage.Save(uploadCtx, pr, task.Path)
+		var err error
+		actualPath, err = task.Storage.Save(uploadCtx, pr, task.Path)
+		return err
 	})
 	wr := newWriter(ctx, pw, task.Progress, task)
 	errg.Go(func() error {
@@ -40,5 +43,8 @@ func executeStream(ctx context.Context, task *Task) error {
 		return err
 	}
 	logger.Info("File downloaded successfully in stream mode")
+	if err := task.saveMetadata(ctx, actualPath); err != nil {
+		logger.Warnf("failed to save metadata: %s", err)
+	}
 	return nil
 }

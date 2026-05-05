@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/pkg/metadata"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -91,8 +92,10 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	// Inject file size into context
 	ctx = context.WithValue(ctx, ctxkey.ContentLength, size)
 
+	var actualPath string
 	if config.C().Stream {
-		if err := elem.TargetStorage.Save(ctx, reader, storagePath); err != nil {
+		actualPath, err = elem.TargetStorage.Save(ctx, reader, storagePath)
+		if err != nil {
 			return fmt.Errorf("failed to upload file to storage: %w", err)
 		}
 	} else {
@@ -109,13 +112,19 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		}
 
 		logger.Infof("Uploading file to storage (size: %d bytes)", size)
-		if err := elem.TargetStorage.Save(ctx, tempFile, storagePath); err != nil {
+		actualPath, err = elem.TargetStorage.Save(ctx, tempFile, storagePath)
+		if err != nil {
 			return fmt.Errorf("failed to upload file to storage: %w", err)
 		}
 	}
 
 	t.uploaded.Add(size)
 	t.Progress.OnProgress(ctx, t)
+
+	// transfer companion metadata file if exists
+	if err := t.transferMetadata(ctx, elem, actualPath); err != nil {
+		logger.Warnf("failed to transfer metadata: %s", err)
+	}
 
 	logger.Info("File uploaded successfully")
 	return nil
@@ -139,4 +148,20 @@ func (t *Task) downloadToTemp(reader io.Reader, filename string) (*os.File, erro
 	}
 
 	return tempFile, nil
+}
+
+func (t *Task) transferMetadata(ctx context.Context, elem TaskElement, actualPath string) error {
+	readable, ok := elem.SourceStorage.(storage.StorageReadable)
+	if !ok {
+		return nil
+	}
+	metaSourcePath := elem.SourcePath + metadata.MetaSuffix
+	reader, _, err := readable.OpenFile(ctx, metaSourcePath)
+	if err != nil {
+		log.FromContext(ctx).Debugf("Failed to open metadata file %s, skipping: %s", metaSourcePath, err)
+		return nil
+	}
+	defer reader.Close()
+	_, err = elem.TargetStorage.Save(ctx, reader, actualPath+metadata.MetaSuffix)
+	return err
 }

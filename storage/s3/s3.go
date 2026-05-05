@@ -63,12 +63,13 @@ func (m *S3) JoinStoragePath(p string) string {
 	return strings.TrimPrefix(path.Join(m.config.BasePath, p), "/")
 }
 
-func (m *S3) Save(ctx context.Context, r io.Reader, storagePath string) error {
+func (m *S3) Save(ctx context.Context, r io.Reader, storagePath string) (string, error) {
 	m.logger.Infof("Saving file from reader to %s", storagePath)
-	storagePath = m.JoinStoragePath(storagePath)
-	ext := path.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
-	candidate := storagePath
+	originalPath := storagePath
+	joinedPath := m.JoinStoragePath(storagePath)
+	ext := path.Ext(joinedPath)
+	base := strings.TrimSuffix(joinedPath, ext)
+	candidate := joinedPath
 
 	// Unique filename
 	for i := 1; m.Exists(ctx, candidate); i++ {
@@ -90,10 +91,13 @@ func (m *S3) Save(ctx context.Context, r io.Reader, storagePath string) error {
 
 	err := m.client.Put(ctx, candidate, r, size)
 	if err != nil {
-		return fmt.Errorf("failed to upload file to S3: %w", err)
+		return "", fmt.Errorf("failed to upload file to S3: %w", err)
 	}
 
-	return nil
+	if candidate != joinedPath {
+		return path.Join(path.Dir(originalPath), path.Base(candidate)), nil
+	}
+	return originalPath, nil
 }
 
 func (m *S3) Exists(ctx context.Context, storagePath string) bool {

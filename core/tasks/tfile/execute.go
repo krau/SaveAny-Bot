@@ -57,19 +57,24 @@ func (t *Task) Execute(ctx context.Context) error {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
+	var actualPath string
 	err = retry.Retry(func() error {
 		file, err := os.Open(t.localPath)
 		if err != nil {
 			return fmt.Errorf("failed to open cache file: %w", err)
 		}
 		defer file.Close()
-		if err = t.Storage.Save(vctx, file, t.Path); err != nil {
+		actualPath, err = t.Storage.Save(vctx, file, t.Path)
+		if err != nil {
 			return fmt.Errorf("failed to save file: %w", err)
 		}
 		return nil
 	}, retry.RetryTimes(uint(config.C().Retry)), retry.Context(vctx))
 	if err != nil {
 		return fmt.Errorf("failed to save file after retries: %w", err)
+	}
+	if err := t.saveMetadata(ctx, actualPath); err != nil {
+		logger.Warnf("failed to save metadata: %s", err)
 	}
 	return nil
 }

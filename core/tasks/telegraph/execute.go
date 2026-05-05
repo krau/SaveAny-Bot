@@ -75,12 +75,12 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 			if err != nil {
 				return fmt.Errorf("failed to seek cache file for picture %s: %w", filename, err)
 			}
-			err = t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, filename))
+			_, err = t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, filename))
 			if err != nil {
 				return fmt.Errorf("failed to save picture %s: %w", filename, err)
 			}
 		} else {
-			err = t.Stor.Save(ctx, body, path.Join(t.StorPath, filename))
+			_, err = t.Stor.Save(ctx, body, path.Join(t.StorPath, filename))
 		}
 
 		if err != nil {

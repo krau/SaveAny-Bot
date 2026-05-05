@@ -152,7 +152,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		}
 		if !dirPath.NeedNewForAlbum() {
 			storPath := path.Join(dirPath.String(), file.Name())
-			elem, err := batchtfile.NewTaskElement(fileStor, storPath, file)
+			elem, err := batchtfile.NewTaskElement(ctx, fileStor, storPath, file)
 			if err != nil {
 				logger.Errorf("Failed to create task element: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
@@ -189,7 +189,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		albumStor := afiles[0].storage
 		for _, af := range afiles {
 			afstorPath := path.Join(dirPath, albumDir, af.file.Name())
-			elem, err := batchtfile.NewTaskElement(albumStor, afstorPath, af.file)
+			elem, err := batchtfile.NewTaskElement(ctx, albumStor, afstorPath, af.file)
 			if err != nil {
 				logger.Errorf("Failed to create task element for album file: %s", err)
 				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{

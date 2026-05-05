@@ -1,10 +1,13 @@
 package tfile
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
 
+	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/pkg/metadata"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
@@ -23,6 +26,7 @@ type Task struct {
 	Progress  ProgressTracker
 	stream    bool // true if the file should be downloaded in stream mode
 	localPath string
+	metadata  []byte // pre-built JSON metadata, nil if save_metadata is disabled
 }
 
 // Title implements core.Exectable.
@@ -42,13 +46,24 @@ func NewTGFileTask(
 	path string,
 	progress ProgressTracker,
 ) (*Task, error) {
+	var meta []byte
+	if config.C().SaveMetadata {
+		if fmsg, ok := file.(tfile.TGFileMessage); ok {
+			m := metadata.BuildFromMessage(ctx, fmsg.Message(), file.Name(), file.Size())
+			var err error
+			meta, err = m.ToJSON()
+			if err != nil {
+				log.FromContext(ctx).Warnf("failed to marshal metadata: %s", err)
+			}
+		}
+	}
 	_, ok := stor.(storage.StorageCannotStream)
 	if !config.C().Stream || ok {
 		cachePath, err := filepath.Abs(filepath.Join(config.C().Temp.BasePath, fmt.Sprintf("%s_%s", id, file.Name())))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get absolute path for cache: %w", err)
 		}
-		tfile := &Task{
+		return &Task{
 			ID:        id,
 			Ctx:       ctx,
 			File:      file,
@@ -56,10 +71,10 @@ func NewTGFileTask(
 			Path:      path,
 			Progress:  progress,
 			localPath: cachePath,
-		}
-		return tfile, nil
+			metadata:  meta,
+		}, nil
 	}
-	tfileTask := &Task{
+	return &Task{
 		ID:       id,
 		Ctx:      ctx,
 		File:     file,
@@ -67,6 +82,14 @@ func NewTGFileTask(
 		Path:     path,
 		Progress: progress,
 		stream:   true,
+		metadata: meta,
+	}, nil
+}
+
+func (t *Task) saveMetadata(ctx context.Context, actualPath string) error {
+	if len(t.metadata) == 0 {
+		return nil
 	}
-	return tfileTask, nil
+	_, err := t.Storage.Save(ctx, bytes.NewReader(t.metadata), actualPath+metadata.MetaSuffix)
+	return err
 }
