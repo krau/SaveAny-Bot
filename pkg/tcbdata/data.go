@@ -16,9 +16,28 @@ const (
 
 const (
 	ConflictStrategyRename    = "rename"
+	ConflictStrategyAsk       = "ask"
 	ConflictStrategyOverwrite = "overwrite"
 	ConflictStrategySkip      = "skip"
 )
+
+func ConflictStrategyValues() []string {
+	return []string{
+		ConflictStrategyRename,
+		ConflictStrategyAsk,
+		ConflictStrategyOverwrite,
+		ConflictStrategySkip,
+	}
+}
+
+func IsConflictStrategy(strategy string) bool {
+	for _, value := range ConflictStrategyValues() {
+		if strategy == value {
+			return true
+		}
+	}
+	return false
+}
 
 // type TaskDataTGFiles struct {
 // 	Files   []tfile.TGFileMessage

@@ -275,10 +275,17 @@ bot:
     config:
       prompt_select_option: "请选择要配置的选项"
       button_filename_strategy: "文件名策略"
+      button_conflict_strategy: "重名文件保存策略"
       error_invalid_callback_data: "无效的回调数据"
       error_invalid_template: "无效的模板, 请检查语法\n{{.Error}}"
       info_filename_strategy_set: "已将文件名策略设置为: {{.Strategy}}"
+      info_conflict_strategy_set: "已将重名文件保存策略设置为: {{.Strategy}}"
       prompt_select_filename_strategy: "请选择文件名策略, 当前策略: {{.Strategy}}"
+      prompt_select_conflict_strategy: "请选择重名文件保存策略, 当前策略: {{.Strategy}}"
+      conflict_strategy_rename: "始终重命名"
+      conflict_strategy_ask: "每次询问"
+      conflict_strategy_overwrite: "始终覆盖"
+      conflict_strategy_skip: "始终跳过"
       fnametmpl_help: |-
         使用该命令设置文件名模板, 示例:
         /fnametmpl 图片_{{"{{.msgid}}"}}_{{"{{.msgdate}}"}}.jpg

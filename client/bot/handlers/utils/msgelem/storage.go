@@ -134,9 +134,13 @@ func BuildConflictStrategyMarkup(adddata tcbdata.Add) (*tg.ReplyInlineMarkup, er
 			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
 		})
 	}
-	return &tg.ReplyInlineMarkup{
-		Rows: []tg.KeyboardButtonRow{{Buttons: buttons}},
-	}, nil
+	rows := make([]tg.KeyboardButtonRow, 0, len(buttons))
+	for _, button := range buttons {
+		rows = append(rows, tg.KeyboardButtonRow{
+			Buttons: []tg.KeyboardButtonClass{button},
+		})
+	}
+	return &tg.ReplyInlineMarkup{Rows: rows}, nil
 }
 
 // Builds the inline keyboard for setting default storage

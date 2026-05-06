@@ -81,12 +81,17 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 
 	switch data.TaskType {
 	case tasktype.TaskTypeTgfiles:
+		strategy, err := getEffectiveConflictStrategy(ctx, userID, data.ConflictStrategy)
+		if err != nil {
+			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, err.Error()))
+			return dispatcher.EndGroups
+		}
 		conflicts, err := findTGFileConflicts(ctx, userID, selectedStorage, dirPath, data.Files)
 		if err != nil {
 			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, err.Error()))
 			return dispatcher.EndGroups
 		}
-		if len(conflicts) > 0 && data.ConflictStrategy == "" {
+		if len(conflicts) > 0 && strategy == tcbdata.ConflictStrategyAsk {
 			markup, err := msgelem.BuildConflictStrategyMarkup(data)
 			if err != nil {
 				ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectKeyboardFailed, map[string]any{
@@ -102,9 +107,9 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 		if data.AsBatch {
-			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files, msgID, data.ConflictStrategy)
+			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files, msgID, strategy)
 		}
-		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], msgID, data.ConflictStrategy)
+		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], msgID, strategy)
 	case tasktype.TaskTypeTphpics:
 		return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, data.TphPageNode, data.TphDirPath, data.TphPics, selectedStorage, msgID)
 	case tasktype.TaskTypeParseditem:
@@ -131,6 +136,17 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		return fmt.Errorf("unexcept task type: %s", data.TaskType)
 	}
 	return dispatcher.EndGroups
+}
+
+func getEffectiveConflictStrategy(ctx *ext.Context, userID int64, selected string) (string, error) {
+	if tcbdata.IsConflictStrategy(selected) {
+		return selected, nil
+	}
+	user, err := database.GetUserByChatID(ctx, userID)
+	if err != nil {
+		return "", errors.New(i18n.T(i18nk.BotMsgCommonErrorGetUserWithErrFailed, map[string]any{"Error": err.Error()}))
+	}
+	return effectiveUserConflictStrategy(user), nil
 }
 
 type tgFileConflict struct {

@@ -274,10 +274,17 @@ bot:
     config:
       prompt_select_option: "Please select an option to configure"
       button_filename_strategy: "Filename strategy"
+      button_conflict_strategy: "Duplicate file strategy"
       error_invalid_callback_data: "Invalid callback data"
       error_invalid_template: "Invalid template, please check syntax\n{{.Error}}"
       info_filename_strategy_set: "Filename strategy set to: {{.Strategy}}"
+      info_conflict_strategy_set: "Duplicate file strategy set to: {{.Strategy}}"
       prompt_select_filename_strategy: "Please select filename strategy, current strategy: {{.Strategy}}"
+      prompt_select_conflict_strategy: "Please select duplicate file strategy, current strategy: {{.Strategy}}"
+      conflict_strategy_rename: "Always rename"
+      conflict_strategy_ask: "Ask every time"
+      conflict_strategy_overwrite: "Always overwrite"
+      conflict_strategy_skip: "Always skip"
       fnametmpl_help: |-
         Use this command to set filename template, for example:
         /fnametmpl Image_{{"{{.msgid}}"}}_{{"{{.msgdate}}"}}.jpg

@@ -40,6 +40,9 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 		})
 		return dispatcher.EndGroups
 	}
+	if strategy == "" {
+		strategy = userConflictStrategy(user)
+	}
 	if user.ApplyRule && user.Rules != nil {
 		matched, matchedStorageName, matchedDirPath := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
 		if !matched {
@@ -64,7 +67,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 	}
 startCreateTask:
 	storagePath := path.Join(dirPath, file.Name())
-	if strategy == "" && stor.Exists(ctx, storagePath) {
+	if strategy == tcbdata.ConflictStrategyAsk && stor.Exists(ctx, storagePath) {
 		return promptTGFileConflictStrategy(ctx, userID, stor.Name(), dirPath, []tfile.TGFileMessage{file}, false, []string{fmt.Sprintf("[%s]:%s", stor.Name(), storagePath)}, trackMsgID)
 	}
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
@@ -131,6 +134,9 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		})
 		return dispatcher.EndGroups
 	}
+	if strategy == "" {
+		strategy = userConflictStrategy(user)
+	}
 
 	useRule := user.ApplyRule && user.Rules != nil
 
@@ -176,7 +182,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		if !dirPath.NeedNewForAlbum() {
 			storPath := path.Join(dirPath.String(), file.Name())
 			if fileStor.Exists(ctx, storPath) {
-				if strategy == "" {
+				if strategy == tcbdata.ConflictStrategyAsk {
 					conflicts = append(conflicts, fmt.Sprintf("[%s]:%s", fileStor.Name(), storPath))
 				}
 			}
@@ -222,7 +228,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		for _, af := range afiles {
 			afstorPath := path.Join(dirPath, albumDir, af.file.Name())
 			if albumStor.Exists(ctx, afstorPath) {
-				if strategy == "" {
+				if strategy == tcbdata.ConflictStrategyAsk {
 					conflicts = append(conflicts, fmt.Sprintf("[%s]:%s", albumStor.Name(), afstorPath))
 				}
 			}
@@ -245,7 +251,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		}
 	}
 
-	if strategy == "" && len(conflicts) > 0 {
+	if strategy == tcbdata.ConflictStrategyAsk && len(conflicts) > 0 {
 		return promptTGFileConflictStrategy(ctx, userID, stor.Name(), dirPath, files, true, conflicts, trackMsgID)
 	}
 
@@ -318,6 +324,13 @@ func firstConflictStrategy(strategies []string) string {
 		return ""
 	}
 	return strategies[0]
+}
+
+func userConflictStrategy(user *database.User) string {
+	if user != nil && tcbdata.IsConflictStrategy(user.ConflictStrategy) {
+		return user.ConflictStrategy
+	}
+	return tcbdata.ConflictStrategyRename
 }
 
 func buildBatchAddedMessage(count int, skipped []string) string {
