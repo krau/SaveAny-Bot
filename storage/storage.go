@@ -22,7 +22,7 @@ type Storage interface {
 	Init(ctx context.Context, cfg storcfg.StorageConfig) error
 	Type() storenum.StorageType
 	Name() string
-	Save(ctx context.Context, reader io.Reader, storagePath string) error
+	Save(ctx context.Context, reader io.Reader, storagePath string) (string, error)
 	Exists(ctx context.Context, storagePath string) bool
 }
 

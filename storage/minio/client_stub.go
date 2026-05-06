@@ -32,8 +32,8 @@ func (m *Minio) JoinStoragePath(p string) string {
 	return strings.TrimPrefix(path.Join("", p), "/")
 }
 
-func (m *Minio) Save(_ context.Context, _ io.Reader, _ string) error {
-	return fmt.Errorf("minio storage is not supported in this build")
+func (m *Minio) Save(_ context.Context, _ io.Reader, _ string) (string, error) {
+	return "", fmt.Errorf("minio storage is not supported in this build")
 }
 
 func (m *Minio) Exists(_ context.Context, _ string) bool {

@@ -205,7 +205,7 @@ func (t *Task) transferFile(ctx context.Context, filePath string) error {
 
 	logger.Infof("Transferring file %s to %s:%s", fileName, t.Storage.Name(), destPath)
 
-	if err := t.Storage.Save(ctx, f, destPath); err != nil {
+	if _, err := t.Storage.Save(ctx, f, destPath); err != nil {
 		return fmt.Errorf("failed to save file %s to storage: %w", fileName, err)
 	}
 

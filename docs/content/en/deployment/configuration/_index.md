@@ -45,6 +45,7 @@ Stream mode is very useful for deployment environments with limited disk space, 
 - `workers`: Number of tasks to process simultaneously, default is 3.
 - `threads`: Number of threads used when downloading files, default is 4. Only effective when Stream mode is not enabled.
 - `retry`: Number of retries when a task fails, default is 3.
+- `save_metadata`: Whether to save a `.meta.json` sidecar file alongside each saved file, containing message info (sender, date, tags, forward origin, etc.), default is `false`.
 - `proxy`: Global proxy configuration. After setting this, all network connections inside the program will try to use this proxy. Optional.
 
 ```toml
@@ -53,6 +54,7 @@ stream = false
 workers = 3
 threads = 4
 retry = 3
+save_metadata = false
 proxy = "socks5://127.0.0.1:7890"
 ```
 

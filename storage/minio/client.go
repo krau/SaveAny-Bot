@@ -75,12 +75,13 @@ func (m *Minio) JoinStoragePath(p string) string {
 	return strings.TrimPrefix(path.Join(m.config.BasePath, p), "/")
 }
 
-func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error {
+func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) (string, error) {
 	m.logger.Infof("Saving file from reader to %s", storagePath)
-	storagePath = m.JoinStoragePath(storagePath)
-	ext := path.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
-	candidate := storagePath
+	originalPath := storagePath
+	joinedPath := m.JoinStoragePath(storagePath)
+	ext := path.Ext(joinedPath)
+	base := strings.TrimSuffix(joinedPath, ext)
+	candidate := joinedPath
 	for i := 1; m.Exists(ctx, candidate); i++ {
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
 		if i > 10 {
@@ -98,10 +99,13 @@ func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error
 	}
 	_, err := m.client.PutObject(ctx, m.config.BucketName, candidate, r, size, minio.PutObjectOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to upload file to minio: %w", err)
+		return "", fmt.Errorf("failed to upload file to minio: %w", err)
 	}
 
-	return nil
+	if candidate != joinedPath {
+		return path.Join(path.Dir(originalPath), path.Base(candidate)), nil
+	}
+	return originalPath, nil
 }
 
 func (m *Minio) Exists(ctx context.Context, storagePath string) bool {

@@ -102,19 +102,20 @@ func (a *Alist) Name() string {
 	return a.config.Name
 }
 
-func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) error {
+func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) (string, error) {
 	a.logger.Infof("Saving file to %s", storagePath)
-	storagePath = a.JoinStoragePath(storagePath)
-	ext := path.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
-	candidate := storagePath
+	originalPath := storagePath
+	joinedPath := a.JoinStoragePath(storagePath)
+	ext := path.Ext(joinedPath)
+	base := strings.TrimSuffix(joinedPath, ext)
+	candidate := joinedPath
 	for i := 1; a.Exists(ctx, candidate); i++ {
 		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, a.baseURL+"/api/fs/put", reader)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Authorization", a.token)
 	req.Header.Set("File-Path", url.PathEscape(candidate))
@@ -128,29 +129,32 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 
 	resp, err := a.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		return "", fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to save file to Alist: %s", resp.Status)
+		return "", fmt.Errorf("failed to save file to Alist: %s", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	var putResp putResponse
 	if err := json.Unmarshal(body, &putResp); err != nil {
-		return fmt.Errorf("failed to unmarshal put response: %w", err)
+		return "", fmt.Errorf("failed to unmarshal put response: %w", err)
 	}
 
 	if putResp.Code != http.StatusOK {
-		return fmt.Errorf("failed to save file to Alist: %d, %s", putResp.Code, putResp.Message)
+		return "", fmt.Errorf("failed to save file to Alist: %d, %s", putResp.Code, putResp.Message)
 	}
 
-	return nil
+	if candidate != joinedPath {
+		return path.Join(path.Dir(originalPath), path.Base(candidate)), nil
+	}
+	return originalPath, nil
 }
 
 func (a *Alist) JoinStoragePath(p string) string {

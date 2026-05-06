@@ -16,7 +16,7 @@ func (m *MockStorage) Init(ctx context.Context, cfg storcfg.StorageConfig) error
 func (m *MockStorage) Type() storenum.StorageType                                    { return "mock" }
 func (m *MockStorage) Name() string                                                  { return "test-storage" }
 func (m *MockStorage) JoinStoragePath(p string) string                               { return "test-path" }
-func (m *MockStorage) Save(ctx context.Context, reader io.Reader, path string) error { return nil }
+func (m *MockStorage) Save(ctx context.Context, reader io.Reader, path string) (string, error) { return "", nil }
 func (m *MockStorage) Exists(ctx context.Context, path string) bool                  { return false }
 
 func TestNewTask(t *testing.T) {

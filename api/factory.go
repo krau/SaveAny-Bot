@@ -236,7 +236,7 @@ func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req 
 		// 批量文件任务
 		elems := make([]batchtfile.TaskElement, 0, len(files))
 		for _, file := range files {
-			elem, err := batchtfile.NewTaskElement(stor, req.Path, file)
+			elem, err := batchtfile.NewTaskElement(f.ctx, stor, req.Path, file)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create task element: %w", err)
 			}

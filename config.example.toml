@@ -4,6 +4,7 @@ workers = 4    # 同时下载文件数
 retry = 3      # 下载失败重试次数
 threads = 4    # 单个任务下载使用的最大线程数
 stream = false # 使用流式传输模式, 建议仅在硬盘空间十分有限时使用.
+save_metadata = false # 保存文件时同时生成 .meta.json 元数据侧车文件
 
 [log]
 # 日志级别, 可选: debug, info, warn, error, fatal

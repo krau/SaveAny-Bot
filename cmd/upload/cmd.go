@@ -113,7 +113,7 @@ func Upload(cmd *cobra.Command, args []string) error {
 		reader = file
 	}
 
-	if err := stor.Save(ctx, reader, uploadPath); err != nil {
+	if _, err := stor.Save(ctx, reader, uploadPath); err != nil {
 		if progressUI != nil {
 			progressUI.SetError(err)
 			progressUI.Wait()

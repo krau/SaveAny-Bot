@@ -130,7 +130,8 @@ func (t *Task) processLink(ctx context.Context, file *File) error {
 		}
 		ctx = context.WithValue(ctx, ctxkey.ContentLength, file.Size)
 		if t.stream {
-			return t.Storage.Save(ctx, resp.Body, filepath.Join(t.StorPath, file.Name))
+			_, err := t.Storage.Save(ctx, resp.Body, filepath.Join(t.StorPath, file.Name))
+			return err
 		}
 		cacheFile, err := fsutil.CreateFile(filepath.Join(config.C().Temp.BasePath,
 			fmt.Sprintf("direct_%s_%s", t.ID, file.Name)))
@@ -166,7 +167,8 @@ func (t *Task) processLink(ctx context.Context, file *File) error {
 		if err != nil {
 			return fmt.Errorf("failed to seek cache file for resource %s: %w", file.URL, err)
 		}
-		return t.Storage.Save(ctx, cacheFile, filepath.Join(t.StorPath, file.Name))
+		_, err = t.Storage.Save(ctx, cacheFile, filepath.Join(t.StorPath, file.Name))
+		return err
 	}, retry.RetryTimes(uint(config.C().Retry)), retry.Context(ctx))
 	if ctx.Err() != nil {
 		return ctx.Err()

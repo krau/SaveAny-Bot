@@ -101,7 +101,7 @@ func (r *Rclone) getRemotePath(storagePath string) string {
 	return remote + fullPath
 }
 
-func (r *Rclone) Save(ctx context.Context, reader io.Reader, storagePath string) error {
+func (r *Rclone) Save(ctx context.Context, reader io.Reader, storagePath string) (string, error) {
 	r.logger.Infof("Saving file to %s", storagePath)
 
 	ext := path.Ext(storagePath)
@@ -131,11 +131,11 @@ func (r *Rclone) Save(ctx context.Context, reader io.Reader, storagePath string)
 
 	if err := cmd.Run(); err != nil {
 		r.logger.Errorf("Failed to save file: %v, stderr: %s", err, stderr.String())
-		return fmt.Errorf("%w: %s", ErrFailedToSaveFile, stderr.String())
+		return "", fmt.Errorf("%w: %s", ErrFailedToSaveFile, stderr.String())
 	}
 
 	r.logger.Infof("Successfully saved file to %s", candidate)
-	return nil
+	return candidate, nil
 }
 
 func (r *Rclone) Exists(ctx context.Context, storagePath string) bool {

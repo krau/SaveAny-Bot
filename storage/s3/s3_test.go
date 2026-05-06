@@ -64,7 +64,7 @@ func TestS3(t *testing.T) {
 	reader := bytes.NewReader(content)
 	key := "foo/bar.txt"
 
-	if err := s.Save(ctx, reader, key); err != nil {
+	if _, err := s.Save(ctx, reader, key); err != nil {
 		t.Fatalf("Save failed: %v", err)
 	}
 
@@ -76,8 +76,10 @@ func TestS3(t *testing.T) {
 		t.Fatalf("Exists should return false for nonexistent key")
 	}
 
-	if err := s.Save(ctx, bytes.NewReader(content), key); err != nil {
+	if actualPath, err := s.Save(ctx, bytes.NewReader(content), key); err != nil {
 		t.Fatalf("Save with existing key failed: %v", err)
+	} else if actualPath != "foo/bar_1.txt" {
+		t.Fatalf("Expected renamed path foo/bar_1.txt, got %s", actualPath)
 	}
 
 	if !s.Exists(ctx, "foo/bar_1.txt") {
@@ -86,7 +88,7 @@ func TestS3(t *testing.T) {
 
 	var length int64 = int64(len(content))
 	ctx = context.WithValue(ctx, ctxkey.ContentLength, length)
-	if err := s.Save(ctx, bytes.NewReader(content), "size_test.txt"); err != nil {
+	if _, err := s.Save(ctx, bytes.NewReader(content), "size_test.txt"); err != nil {
 		t.Fatalf("Save with content length failed: %v", err)
 	}
 
