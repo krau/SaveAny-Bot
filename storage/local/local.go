@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/fileutil"
 	config "github.com/krau/SaveAny-Bot/config/storage"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 )
@@ -56,8 +57,10 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 	ext := filepath.Ext(storagePath)
 	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath
-	for i := 1; l.Exists(ctx, candidate); i++ {
-		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
+		for i := 1; l.existsPath(candidate); i++ {
+			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+		}
 	}
 
 	absPath, err := filepath.Abs(candidate)
@@ -77,6 +80,10 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 }
 
 func (l *Local) Exists(ctx context.Context, storagePath string) bool {
+	return l.existsPath(l.JoinStoragePath(storagePath))
+}
+
+func (l *Local) existsPath(storagePath string) bool {
 	absPath, err := filepath.Abs(storagePath)
 	if err != nil {
 		return false

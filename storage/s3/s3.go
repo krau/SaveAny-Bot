@@ -70,13 +70,15 @@ func (m *S3) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath
 
-	// Unique filename
-	for i := 1; m.Exists(ctx, candidate); i++ {
-		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-		if i > 10 {
-			m.logger.Errorf("Too many attempts for unique filename: %s", storagePath)
-			candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
-			break
+	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
+		// Unique filename
+		for i := 1; m.existsKey(ctx, candidate); i++ {
+			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+			if i > 10 {
+				m.logger.Errorf("Too many attempts for unique filename: %s", storagePath)
+				candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
+				break
+			}
 		}
 	}
 
@@ -99,5 +101,9 @@ func (m *S3) Save(ctx context.Context, r io.Reader, storagePath string) error {
 func (m *S3) Exists(ctx context.Context, storagePath string) bool {
 	m.logger.Debugf("Checking if file exists at %s", storagePath)
 
-	return m.client.Exists(ctx, storagePath)
+	return m.existsKey(ctx, m.JoinStoragePath(storagePath))
+}
+
+func (m *S3) existsKey(ctx context.Context, key string) bool {
+	return m.client.Exists(ctx, key)
 }

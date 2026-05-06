@@ -38,6 +38,8 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 		data := tcbdata.Add{
 			TaskType:         taskType,
 			SelectedStorName: storage.Name(),
+			SelectedDirPath:  adddata.SelectedDirPath,
+			ConflictStrategy: adddata.ConflictStrategy,
 
 			Files:   adddata.Files,
 			AsBatch: len(adddata.Files) > 1,
@@ -107,6 +109,38 @@ func BuildAddOneSelectStorageMessage(ctx context.Context, stors []storage.Storag
 		ReplyMarkup: markup,
 		ID:          msgId,
 	}, nil
+}
+
+func BuildConflictStrategyMarkup(adddata tcbdata.Add) (*tg.ReplyInlineMarkup, error) {
+	type option struct {
+		text     string
+		strategy string
+	}
+	options := []option{
+		{text: i18n.T(i18nk.BotMsgCommonButtonConflictRename, nil), strategy: tcbdata.ConflictStrategyRename},
+		{text: i18n.T(i18nk.BotMsgCommonButtonConflictOverwrite, nil), strategy: tcbdata.ConflictStrategyOverwrite},
+		{text: i18n.T(i18nk.BotMsgCommonButtonConflictSkip, nil), strategy: tcbdata.ConflictStrategySkip},
+	}
+	buttons := make([]tg.KeyboardButtonClass, 0, len(options))
+	for _, opt := range options {
+		data := adddata
+		data.ConflictStrategy = opt.strategy
+		dataid := xid.New().String()
+		if err := cache.Set(dataid, data); err != nil {
+			return nil, err
+		}
+		buttons = append(buttons, &tg.KeyboardButtonCallback{
+			Text: opt.text,
+			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
+		})
+	}
+	rows := make([]tg.KeyboardButtonRow, 0, len(buttons))
+	for _, button := range buttons {
+		rows = append(rows, tg.KeyboardButtonRow{
+			Buttons: []tg.KeyboardButtonClass{button},
+		})
+	}
+	return &tg.ReplyInlineMarkup{Rows: rows}, nil
 }
 
 // Builds the inline keyboard for setting default storage
