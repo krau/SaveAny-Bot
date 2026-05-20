@@ -8,6 +8,7 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/conflictutil"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config"
@@ -135,7 +136,7 @@ func handleConfigConflictSTCallback(ctx *ext.Context, update *ext.Update) error 
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID: update.CallbackQuery.GetMsgID(),
 			Message: i18n.T(i18nk.BotMsgConfigInfoConflictStrategySet, map[string]any{
-				"Strategy": conflictStrategyDisplay(selected),
+				"Strategy": conflictutil.Display(selected),
 			}),
 		})
 		return dispatcher.EndGroups
@@ -147,44 +148,22 @@ func handleConfigConflictSTCallback(ctx *ext.Context, update *ext.Update) error 
 		rows = append(rows, tg.KeyboardButtonRow{
 			Buttons: []tg.KeyboardButtonClass{
 				&tg.KeyboardButtonCallback{
-					Text: conflictStrategyDisplay(opt),
+					Text: conflictutil.Display(opt),
 					Data: fmt.Appendf(nil, "%s %s %s", tcbdata.TypeConfig, "conflictst", opt),
 				},
 			},
 		})
 	}
 	markup := &tg.ReplyInlineMarkup{Rows: rows}
-	currentSt := effectiveUserConflictStrategy(user)
+	currentSt := conflictutil.EffectiveStrategy(user)
 	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 		ID: update.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgConfigPromptSelectConflictStrategy, map[string]any{
-			"Strategy": conflictStrategyDisplay(currentSt),
+			"Strategy": conflictutil.Display(currentSt),
 		}),
 		ReplyMarkup: markup,
 	})
 	return dispatcher.EndGroups
-}
-
-func effectiveUserConflictStrategy(user *database.User) string {
-	if user != nil && tcbdata.IsConflictStrategy(user.ConflictStrategy) {
-		return user.ConflictStrategy
-	}
-	return tcbdata.ConflictStrategyRename
-}
-
-func conflictStrategyDisplay(strategy string) string {
-	switch strategy {
-	case tcbdata.ConflictStrategyRename:
-		return i18n.T(i18nk.BotMsgConfigConflictStrategyRename, nil)
-	case tcbdata.ConflictStrategyAsk:
-		return i18n.T(i18nk.BotMsgConfigConflictStrategyAsk, nil)
-	case tcbdata.ConflictStrategyOverwrite:
-		return i18n.T(i18nk.BotMsgConfigConflictStrategyOverwrite, nil)
-	case tcbdata.ConflictStrategySkip:
-		return i18n.T(i18nk.BotMsgConfigConflictStrategySkip, nil)
-	default:
-		return strategy
-	}
 }
 
 func handleConfigFnameTmpl(ctx *ext.Context, update *ext.Update) error {

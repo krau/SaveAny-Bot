@@ -1,7 +1,6 @@
 package shortcut
 
 import (
-	"fmt"
 	"path"
 	"strings"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/conflictutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -28,7 +28,7 @@ import (
 // 创建一个 tfile.TGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
 func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage.Storage, dirPath string, file tfile.TGFileMessage, trackMsgID int, conflictStrategy ...string) error {
 	logger := log.FromContext(ctx)
-	strategy := firstConflictStrategy(conflictStrategy)
+	strategy := selectedConflictStrategy(conflictStrategy)
 	user, err := database.GetUserByChatID(ctx, userID)
 	if err != nil {
 		logger.Errorf("Failed to get user by chat ID: %s", err)
@@ -40,9 +40,7 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 		})
 		return dispatcher.EndGroups
 	}
-	if strategy == "" {
-		strategy = userConflictStrategy(user)
-	}
+	strategy = conflictutil.ResolveStrategy(user, strategy)
 	if user.ApplyRule && user.Rules != nil {
 		matched, matchedStorageName, matchedDirPath := ruleutil.ApplyRule(ctx, user.Rules, ruleutil.NewInput(file))
 		if !matched {
@@ -67,22 +65,25 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage
 	}
 startCreateTask:
 	storagePath := path.Join(dirPath, file.Name())
-	if strategy == tcbdata.ConflictStrategyAsk && stor.Exists(ctx, storagePath) {
-		return promptTGFileConflictStrategy(ctx, userID, stor.Name(), dirPath, []tfile.TGFileMessage{file}, false, []string{fmt.Sprintf("[%s]:%s", stor.Name(), storagePath)}, trackMsgID)
+	if strategy == tcbdata.ConflictStrategyAsk || strategy == tcbdata.ConflictStrategySkip {
+		exists := stor.Exists(ctx, storagePath)
+		if exists && strategy == tcbdata.ConflictStrategyAsk {
+			return promptTGFileConflictStrategy(ctx, userID, stor.Name(), dirPath, []tfile.TGFileMessage{file}, false, []string{conflictutil.FormatPath(stor.Name(), storagePath)}, trackMsgID)
+		}
+		if exists {
+			ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+				ID: trackMsgID,
+				Message: i18n.T(i18nk.BotMsgCommonInfoAllConflictFilesSkipped, map[string]any{
+					"Skipped": file.Name(),
+				}),
+				ReplyMarkup: nil,
+			})
+			return dispatcher.EndGroups
+		}
 	}
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	if strategy == tcbdata.ConflictStrategyOverwrite {
 		injectCtx = storage.WithOverwrite(injectCtx)
-	}
-	if strategy == tcbdata.ConflictStrategySkip && stor.Exists(ctx, storagePath) {
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
-			ID: trackMsgID,
-			Message: i18n.T(i18nk.BotMsgCommonInfoAllConflictFilesSkipped, map[string]any{
-				"Skipped": file.Name(),
-			}),
-			ReplyMarkup: nil,
-		})
-		return dispatcher.EndGroups
 	}
 	taskid := xid.New().String()
 	task, err := tftask.NewTGFileTask(taskid, injectCtx, file, stor, storagePath,
@@ -122,7 +123,7 @@ startCreateTask:
 // 创建一个 batchtfile.BatchTGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
 func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage.Storage, dirPath string, files []tfile.TGFileMessage, trackMsgID int, conflictStrategy ...string) error {
 	logger := log.FromContext(ctx)
-	strategy := firstConflictStrategy(conflictStrategy)
+	strategy := selectedConflictStrategy(conflictStrategy)
 	user, err := database.GetUserByChatID(ctx, userID)
 	if err != nil {
 		logger.Errorf("Failed to get user by chat ID: %s", err)
@@ -134,9 +135,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		})
 		return dispatcher.EndGroups
 	}
-	if strategy == "" {
-		strategy = userConflictStrategy(user)
-	}
+	strategy = conflictutil.ResolveStrategy(user, strategy)
 
 	useRule := user.ApplyRule && user.Rules != nil
 
@@ -161,10 +160,11 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 	type albumFile struct {
 		file    tfile.TGFileMessage
 		storage storage.Storage
+		dirPath string
 	}
 	albumFiles := make(map[int64][]albumFile, 0)
 	for _, file := range files {
-		storName, dirPath := applyRule(file)
+		storName, matchedDirPath := applyRule(file)
 		fileStor := stor
 		if storName != stor.Name() && storName != "" {
 			fileStor, err = storage.GetStorageByUserIDAndName(ctx, user.ChatID, storName)
@@ -179,16 +179,18 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 				return dispatcher.EndGroups
 			}
 		}
-		if !dirPath.NeedNewForAlbum() {
-			storPath := path.Join(dirPath.String(), file.Name())
-			if fileStor.Exists(ctx, storPath) {
-				if strategy == tcbdata.ConflictStrategyAsk {
-					conflicts = append(conflicts, fmt.Sprintf("[%s]:%s", fileStor.Name(), storPath))
+		if !matchedDirPath.NeedNewForAlbum() {
+			storPath := path.Join(matchedDirPath.String(), file.Name())
+			if strategy == tcbdata.ConflictStrategyAsk || strategy == tcbdata.ConflictStrategySkip {
+				exists := fileStor.Exists(ctx, storPath)
+				if exists && strategy == tcbdata.ConflictStrategyAsk {
+					conflicts = append(conflicts, conflictutil.FormatPath(fileStor.Name(), storPath))
+					continue
 				}
-			}
-			if strategy == tcbdata.ConflictStrategySkip && fileStor.Exists(ctx, storPath) {
-				skipped = append(skipped, file.Name())
-				continue
+				if exists {
+					skipped = append(skipped, file.Name())
+					continue
+				}
 			}
 			elem, err := batchtfile.NewTaskElement(fileStor, storPath, file)
 			if err != nil {
@@ -208,12 +210,17 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 				logger.Warnf("File %s is not in a group, skipping album handling", file.Name())
 				continue
 			}
+			fileDirPath := matchedDirPath.String()
+			if matchedDirPath.NeedNewForAlbum() {
+				fileDirPath = dirPath
+			}
 			if _, ok := albumFiles[groupId]; !ok {
 				albumFiles[groupId] = make([]albumFile, 0)
 			}
 			albumFiles[groupId] = append(albumFiles[groupId], albumFile{
 				file:    file,
 				storage: fileStor,
+				dirPath: fileDirPath,
 			})
 		}
 	}
@@ -226,15 +233,17 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		albumDir := strings.TrimSuffix(path.Base(afiles[0].file.Name()), path.Ext(afiles[0].file.Name()))
 		albumStor := afiles[0].storage
 		for _, af := range afiles {
-			afstorPath := path.Join(dirPath, albumDir, af.file.Name())
-			if albumStor.Exists(ctx, afstorPath) {
-				if strategy == tcbdata.ConflictStrategyAsk {
-					conflicts = append(conflicts, fmt.Sprintf("[%s]:%s", albumStor.Name(), afstorPath))
+			afstorPath := path.Join(af.dirPath, albumDir, af.file.Name())
+			if strategy == tcbdata.ConflictStrategyAsk || strategy == tcbdata.ConflictStrategySkip {
+				exists := albumStor.Exists(ctx, afstorPath)
+				if exists && strategy == tcbdata.ConflictStrategyAsk {
+					conflicts = append(conflicts, conflictutil.FormatPath(albumStor.Name(), afstorPath))
+					continue
 				}
-			}
-			if strategy == tcbdata.ConflictStrategySkip && albumStor.Exists(ctx, afstorPath) {
-				skipped = append(skipped, af.file.Name())
-				continue
+				if exists {
+					skipped = append(skipped, af.file.Name())
+					continue
+				}
 			}
 			elem, err := batchtfile.NewTaskElement(albumStor, afstorPath, af.file)
 			if err != nil {
@@ -303,34 +312,17 @@ func promptTGFileConflictStrategy(ctx *ext.Context, userID int64, storageName, d
 	}
 	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 		ID:          trackMsgID,
-		Message:     i18n.T(i18nk.BotMsgCommonPromptSelectConflictStrategy, map[string]any{"Files": formatConflictPaths(conflicts)}),
+		Message:     i18n.T(i18nk.BotMsgCommonPromptSelectConflictStrategy, map[string]any{"Files": conflictutil.FormatPaths(conflicts)}),
 		ReplyMarkup: markup,
 	})
 	return dispatcher.EndGroups
 }
 
-func formatConflictPaths(conflicts []string) string {
-	const maxConflictLines = 10
-	if len(conflicts) <= maxConflictLines {
-		return strings.Join(conflicts, "\n")
-	}
-	return strings.Join(conflicts[:maxConflictLines], "\n") + "\n" + i18n.T(i18nk.BotMsgCommonPromptConflictMoreFiles, map[string]any{
-		"Count": len(conflicts) - maxConflictLines,
-	})
-}
-
-func firstConflictStrategy(strategies []string) string {
+func selectedConflictStrategy(strategies []string) string {
 	if len(strategies) == 0 {
 		return ""
 	}
 	return strategies[0]
-}
-
-func userConflictStrategy(user *database.User) string {
-	if user != nil && tcbdata.IsConflictStrategy(user.ConflictStrategy) {
-		return user.ConflictStrategy
-	}
-	return tcbdata.ConflictStrategyRename
 }
 
 func buildBatchAddedMessage(count int, skipped []string) string {

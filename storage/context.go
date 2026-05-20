@@ -28,8 +28,3 @@ func FromContext(ctx context.Context) Storage {
 func WithOverwrite(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxkey.OverwriteExisting, true)
 }
-
-func ShouldOverwrite(ctx context.Context) bool {
-	overwrite, ok := ctx.Value(ctxkey.OverwriteExisting).(bool)
-	return ok && overwrite
-}
