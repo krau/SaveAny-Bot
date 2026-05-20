@@ -81,12 +81,14 @@ func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error
 	ext := path.Ext(storagePath)
 	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath
-	for i := 1; m.Exists(ctx, candidate); i++ {
-		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-		if i > 10 {
-			m.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
-			candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
-			break
+	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
+		for i := 1; m.existsObject(ctx, candidate); i++ {
+			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+			if i > 10 {
+				m.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
+				candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
+				break
+			}
 		}
 	}
 	size := int64(-1)
@@ -106,6 +108,10 @@ func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error
 
 func (m *Minio) Exists(ctx context.Context, storagePath string) bool {
 	m.logger.Debugf("Checking if file exists at %s", storagePath)
+	return m.existsObject(ctx, m.JoinStoragePath(storagePath))
+}
+
+func (m *Minio) existsObject(ctx context.Context, storagePath string) bool {
 	_, err := m.client.StatObject(ctx, m.config.BucketName, storagePath, minio.StatObjectOptions{})
 	return err == nil
 }

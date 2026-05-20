@@ -14,6 +14,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	config "github.com/krau/SaveAny-Bot/config/storage"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/rs/xid"
@@ -107,12 +108,14 @@ func (r *Rclone) Save(ctx context.Context, reader io.Reader, storagePath string)
 	ext := path.Ext(storagePath)
 	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath
-	for i := 1; r.Exists(ctx, candidate); i++ {
-		candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-		if i > 100 {
-			r.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
-			candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
-			break
+	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
+		for i := 1; r.Exists(ctx, candidate); i++ {
+			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
+			if i > 100 {
+				r.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
+				candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
+				break
+			}
 		}
 	}
 

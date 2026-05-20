@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -30,6 +31,7 @@ type Progress struct {
 	ChatID            int64
 	start             time.Time
 	lastUpdatePercent atomic.Int32
+	skippedFiles      []string
 }
 
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
@@ -151,6 +153,14 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 			styling.Code(strconv.Itoa(info.Count())),
 			styling.Plain(i18n.T(i18nk.BotMsgProgressTotalSizePrefix, nil)),
 			styling.Code(fmt.Sprintf("%.2f MB", float64(info.TotalSize())/(1024*1024))),
+			func() styling.StyledTextOption {
+				if len(p.skippedFiles) == 0 {
+					return styling.Plain("")
+				}
+				return styling.Plain("\n\n" + i18n.T(i18nk.BotMsgCommonInfoConflictFilesSkipped, map[string]any{
+					"Skipped": strings.Join(p.skippedFiles, "\n"),
+				}))
+			}(),
 		)
 	}
 
@@ -173,8 +183,13 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 }
 
 func NewProgressTracker(messageID int, chatID int64) ProgressTracker {
+	return NewProgressTrackerWithSkipped(messageID, chatID, nil)
+}
+
+func NewProgressTrackerWithSkipped(messageID int, chatID int64, skippedFiles []string) ProgressTracker {
 	return &Progress{
-		MessageID: messageID,
-		ChatID:    chatID,
+		MessageID:    messageID,
+		ChatID:       chatID,
+		skippedFiles: skippedFiles,
 	}
 }

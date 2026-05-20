@@ -73,14 +73,16 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 		dirPath = dir.Path
+	} else if data.SelectedDirPath != "" {
+		dirPath = data.SelectedDirPath
 	}
 
 	switch data.TaskType {
 	case tasktype.TaskTypeTgfiles:
 		if data.AsBatch {
-			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files, msgID)
+			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files, msgID, data.ConflictStrategy)
 		}
-		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], msgID)
+		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], msgID, data.ConflictStrategy)
 	case tasktype.TaskTypeTphpics:
 		return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, data.TphPageNode, data.TphDirPath, data.TphPics, selectedStorage, msgID)
 	case tasktype.TaskTypeParseditem:

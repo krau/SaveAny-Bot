@@ -8,6 +8,7 @@ import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/conflictutil"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config"
@@ -25,6 +26,10 @@ func handleConfigCmd(ctx *ext.Context, update *ext.Update) error {
 						&tg.KeyboardButtonCallback{
 							Text: i18n.T(i18nk.BotMsgConfigButtonFilenameStrategy),
 							Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeConfig, "fnamest"),
+						},
+						&tg.KeyboardButtonCallback{
+							Text: i18n.T(i18nk.BotMsgConfigButtonConflictStrategy),
+							Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeConfig, "conflictst"),
 						},
 					},
 				},
@@ -51,6 +56,8 @@ func handleConfigCallback(ctx *ext.Context, update *ext.Update) error {
 	switch args[1] {
 	case "fnamest":
 		return handleConfigFnameSTCallback(ctx, update)
+	case "conflictst":
+		return handleConfigConflictSTCallback(ctx, update)
 	default:
 		return invaildDataAnswer()
 	}
@@ -104,6 +111,55 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 		ID: update.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgConfigPromptSelectFilenameStrategy, map[string]any{
 			"Strategy": fnamest.GetDisplay(currentSt, config.C().Lang),
+		}),
+		ReplyMarkup: markup,
+	})
+	return dispatcher.EndGroups
+}
+
+func handleConfigConflictSTCallback(ctx *ext.Context, update *ext.Update) error {
+	userID := update.CallbackQuery.GetUserID()
+	user, err := database.GetUserByChatID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	args := strings.Fields(string(update.CallbackQuery.Data))
+	if len(args) == 3 {
+		selected := args[2]
+		if !tcbdata.IsConflictStrategy(selected) {
+			return fmt.Errorf("invalid conflict strategy: %s", selected)
+		}
+		user.ConflictStrategy = selected
+		if err := database.UpdateUser(ctx, user); err != nil {
+			return err
+		}
+		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+			ID: update.CallbackQuery.GetMsgID(),
+			Message: i18n.T(i18nk.BotMsgConfigInfoConflictStrategySet, map[string]any{
+				"Strategy": conflictutil.Display(selected),
+			}),
+		})
+		return dispatcher.EndGroups
+	}
+
+	opts := tcbdata.ConflictStrategyValues()
+	rows := make([]tg.KeyboardButtonRow, 0, len(opts))
+	for _, opt := range opts {
+		rows = append(rows, tg.KeyboardButtonRow{
+			Buttons: []tg.KeyboardButtonClass{
+				&tg.KeyboardButtonCallback{
+					Text: conflictutil.Display(opt),
+					Data: fmt.Appendf(nil, "%s %s %s", tcbdata.TypeConfig, "conflictst", opt),
+				},
+			},
+		})
+	}
+	markup := &tg.ReplyInlineMarkup{Rows: rows}
+	currentSt := conflictutil.EffectiveStrategy(user)
+	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ID: update.CallbackQuery.GetMsgID(),
+		Message: i18n.T(i18nk.BotMsgConfigPromptSelectConflictStrategy, map[string]any{
+			"Strategy": conflictutil.Display(currentSt),
 		}),
 		ReplyMarkup: markup,
 	})
