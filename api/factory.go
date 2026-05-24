@@ -66,6 +66,19 @@ func (f *TaskFactory) CreateTask(req *CreateTaskRequest) (*CreateTaskResponse, e
 	}
 }
 
+func (f *TaskFactory) registerAndEnqueueTask(task core.Executable, taskType tasktype.TaskType, storageName, path, webhook string) error {
+	taskID := task.TaskID()
+	RegisterTask(taskID, string(taskType), storageName, path, task.Title(), webhook)
+
+	err := core.AddTask(f.ctx, NewExecutableWrapper(task))
+	if err != nil {
+		DeleteTask(taskID)
+		return fmt.Errorf("failed to add task: %w", err)
+	}
+
+	return nil
+}
+
 // createDirectLinksTask 创建直链下载任务
 func (f *TaskFactory) createDirectLinksTask(taskID string, createdAt time.Time, req *CreateTaskRequest, stor storage.Storage) (*CreateTaskResponse, error) {
 	var params DirectLinksParams
@@ -79,10 +92,9 @@ func (f *TaskFactory) createDirectLinksTask(taskID string, createdAt time.Time, 
 
 	task := directlinks.NewTask(taskID, f.ctx, params.URLs, stor, req.Path, nil)
 
-	RegisterTask(taskID, string(tasktype.TaskTypeDirectlinks), req.Storage, req.Path, task.Title(), req.Webhook)
-
-	if err := core.AddTask(f.ctx, NewExecutableWrapper(task)); err != nil {
-		return nil, fmt.Errorf("failed to add task: %w", err)
+	err := f.registerAndEnqueueTask(task, tasktype.TaskTypeDirectlinks, req.Storage, req.Path, req.Webhook)
+	if err != nil {
+		return nil, err
 	}
 
 	return &CreateTaskResponse{
@@ -106,10 +118,9 @@ func (f *TaskFactory) createYTDLPTask(taskID string, createdAt time.Time, req *C
 
 	task := ytdlp.NewTask(taskID, f.ctx, params.URLs, params.Flags, stor, req.Path, nil)
 
-	RegisterTask(taskID, string(tasktype.TaskTypeYtdlp), req.Storage, req.Path, task.Title(), req.Webhook)
-
-	if err := core.AddTask(f.ctx, NewExecutableWrapper(task)); err != nil {
-		return nil, fmt.Errorf("failed to add task: %w", err)
+	err := f.registerAndEnqueueTask(task, tasktype.TaskTypeYtdlp, req.Storage, req.Path, req.Webhook)
+	if err != nil {
+		return nil, err
 	}
 
 	return &CreateTaskResponse{
@@ -150,10 +161,9 @@ func (f *TaskFactory) createAria2Task(taskID string, createdAt time.Time, req *C
 
 	task := aria2dl.NewTask(taskID, f.ctx, gid, params.URLs, aria2Client, stor, req.Path, nil)
 
-	RegisterTask(taskID, string(tasktype.TaskTypeAria2), req.Storage, req.Path, task.Title(), req.Webhook)
-
-	if err := core.AddTask(f.ctx, NewExecutableWrapper(task)); err != nil {
-		return nil, fmt.Errorf("failed to add task: %w", err)
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeAria2, req.Storage, req.Path, req.Webhook)
+	if err != nil {
+		return nil, err
 	}
 
 	return &CreateTaskResponse{
@@ -196,10 +206,9 @@ func (f *TaskFactory) createParsedTask(taskID string, createdAt time.Time, req *
 
 	task := parsed.NewTask(taskID, f.ctx, stor, req.Path, item, nil)
 
-	RegisterTask(taskID, string(tasktype.TaskTypeParseditem), req.Storage, req.Path, task.Title(), req.Webhook)
-
-	if err := core.AddTask(f.ctx, NewExecutableWrapper(task)); err != nil {
-		return nil, fmt.Errorf("failed to add task: %w", err)
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeParseditem, req.Storage, req.Path, req.Webhook)
+	if err != nil {
+		return nil, err
 	}
 
 	return &CreateTaskResponse{
@@ -231,16 +240,15 @@ func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req 
 		return nil, fmt.Errorf("no files found in provided links")
 	}
 
+	var task core.Executable
+
 	if len(files) == 1 {
 		// 单个文件任务
 		tfileTask, err := tfile.NewTGFileTask(taskID, f.ctx, files[0], stor, req.Path, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create tfile task: %w", err)
 		}
-		RegisterTask(taskID, string(tasktype.TaskTypeTgfiles), req.Storage, req.Path, tfileTask.Title(), req.Webhook)
-		if err := core.AddTask(f.ctx, NewExecutableWrapper(tfileTask)); err != nil {
-			return nil, fmt.Errorf("failed to add task: %w", err)
-		}
+		task = tfileTask
 	} else {
 		// 批量文件任务
 		elems := make([]batchtfile.TaskElement, 0, len(files))
@@ -252,11 +260,12 @@ func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req 
 			elems = append(elems, *elem)
 		}
 
-		task := batchtfile.NewBatchTGFileTask(taskID, f.ctx, elems, nil, true)
-		RegisterTask(taskID, string(tasktype.TaskTypeTgfiles), req.Storage, req.Path, task.Title(), req.Webhook)
-		if err := core.AddTask(f.ctx, NewExecutableWrapper(task)); err != nil {
-			return nil, fmt.Errorf("failed to add task: %w", err)
-		}
+		task = batchtfile.NewBatchTGFileTask(taskID, f.ctx, elems, nil, true)
+	}
+
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeTgfiles, req.Storage, req.Path, req.Webhook)
+	if err != nil {
+		return nil, err
 	}
 
 	return &CreateTaskResponse{
@@ -291,10 +300,9 @@ func (f *TaskFactory) createTPHPicsTask(taskID string, createdAt time.Time, req 
 	client := telegraph.NewClient()
 	task := tphtask.NewTask(taskID, f.ctx, phPath, pics, stor, req.Path, client, nil)
 
-	RegisterTask(taskID, string(tasktype.TaskTypeTphpics), req.Storage, req.Path, task.Title(), req.Webhook)
-
-	if err := core.AddTask(f.ctx, NewExecutableWrapper(task)); err != nil {
-		return nil, fmt.Errorf("failed to add task: %w", err)
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeTphpics, req.Storage, req.Path, req.Webhook)
+	if err != nil {
+		return nil, err
 	}
 
 	return &CreateTaskResponse{
@@ -354,10 +362,9 @@ func (f *TaskFactory) createTransferTask(taskID string, createdAt time.Time, req
 
 	task := transfer.NewTransferTask(taskID, f.ctx, elems, nil, true)
 
-	RegisterTask(taskID, string(tasktype.TaskTypeTransfer), params.TargetStorage, params.TargetPath, task.Title(), req.Webhook)
-
-	if err := core.AddTask(f.ctx, NewExecutableWrapper(task)); err != nil {
-		return nil, fmt.Errorf("failed to add task: %w", err)
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeTransfer, params.TargetStorage, params.TargetPath, req.Webhook)
+	if err != nil {
+		return nil, err
 	}
 
 	return &CreateTaskResponse{
