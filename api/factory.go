@@ -20,6 +20,7 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/aria2"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
+	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/rs/xid"
@@ -68,9 +69,14 @@ func (f *TaskFactory) CreateTask(req *CreateTaskRequest) (*CreateTaskResponse, e
 
 func (f *TaskFactory) registerAndEnqueueTask(task core.Executable, taskType tasktype.TaskType, storageName, path, webhook string) error {
 	taskID := task.TaskID()
-	RegisterTask(taskID, string(taskType), storageName, path, task.Title(), webhook)
+	info := RegisterTask(taskID, string(taskType), storageName, path, task.Title(), webhook)
 
-	err := core.AddTask(f.ctx, NewExecutableWrapper(task))
+	// Inject the progress sink into the context so the task's Emit calls update
+	// the API store (and fire the webhook on terminal states) without the task
+	// knowing about the API.
+	taskCtx := taskevent.WithSink(f.ctx, info)
+
+	err := core.AddTask(taskCtx, task)
 	if err != nil {
 		DeleteTask(taskID)
 		return fmt.Errorf("failed to add task: %w", err)

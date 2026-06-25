@@ -8,6 +8,7 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/queue"
+	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 )
 
 var queueInstance *queue.TaskQueue[Executable]
@@ -30,11 +31,14 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 			break // queue closed and empty
 		}
 		exe := qtask.Data
+		taskCtx := qtask.Context()
 		logger.Infof("Processing task: %s", exe.TaskID())
-		if err := ExecCommandString(qtask.Context(), execHooks.TaskBeforeStart); err != nil {
+		taskevent.Emit(taskCtx, taskevent.Event{TaskID: exe.TaskID(), Phase: taskevent.PhaseStart})
+		if err := ExecCommandString(taskCtx, execHooks.TaskBeforeStart); err != nil {
 			logger.Errorf("Failed to execute before start hook for task %s: %v", exe.TaskID(), err)
 		}
-		if err := exe.Execute(qtask.Context()); err != nil {
+		err = exe.Execute(taskCtx)
+		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				logger.Infof("Task %s was canceled", exe.TaskID())
 				if err := ExecCommandString(ctx, execHooks.TaskCancel); err != nil {
@@ -52,6 +56,7 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 				logger.Errorf("Failed to execute success hook for task %s: %v", exe.TaskID(), err)
 			}
 		}
+		taskevent.Emit(taskCtx, taskevent.Event{TaskID: exe.TaskID(), Phase: taskevent.PhaseDone, Err: err})
 		qe.Done(qtask.ID)
 		<-semaphore
 	}

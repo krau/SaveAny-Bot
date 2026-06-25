@@ -14,6 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -62,8 +63,14 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			return elem.Storage.Save(uploadCtx, pr, elem.Path)
 		})
 		wr := ioutil.NewProgressWriter(pw, func(n int) {
-			t.downloaded.Add(int64(n))
+			downloaded := t.downloaded.Add(int64(n))
 			t.Progress.OnProgress(ctx, t)
+			taskevent.Emit(ctx, taskevent.Event{
+				TaskID:          t.ID,
+				Phase:           taskevent.PhaseProgress,
+				TotalBytes:      t.totalSize,
+				DownloadedBytes: downloaded,
+			})
 		})
 		errg.Go(func() error {
 			defer pw.Close()
@@ -92,8 +99,14 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		}
 	}()
 	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
-		t.downloaded.Add(int64(n))
+		downloaded := t.downloaded.Add(int64(n))
 		t.Progress.OnProgress(ctx, t)
+		taskevent.Emit(ctx, taskevent.Event{
+			TaskID:          t.ID,
+			Phase:           taskevent.PhaseProgress,
+			TotalBytes:      t.totalSize,
+			DownloadedBytes: downloaded,
+		})
 	})
 	_, err = tdler.NewDownloader(elem.File).Parallel(ctx, wrAt)
 	if err != nil {

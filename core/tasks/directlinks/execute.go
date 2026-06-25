@@ -15,6 +15,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -143,10 +144,16 @@ func (t *Task) processLink(ctx context.Context, file *File) error {
 			}
 		}()
 		wr := ioutil.NewProgressWriter(cacheFile, func(n int) {
-			t.downloadedBytes.Add(int64(n))
+			downloaded := t.downloadedBytes.Add(int64(n))
 			if t.Progress != nil {
 				t.Progress.OnProgress(ctx, t)
 			}
+			taskevent.Emit(ctx, taskevent.Event{
+				TaskID:          t.ID,
+				Phase:           taskevent.PhaseProgress,
+				TotalBytes:      t.totalBytes,
+				DownloadedBytes: downloaded,
+			})
 		})
 
 		copyResultCh := make(chan error, 1)

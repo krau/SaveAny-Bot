@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/aria2"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 )
 
 // Execute implements core.Executable.
@@ -77,6 +79,12 @@ func (t *Task) waitForDownload(ctx context.Context) error {
 			if t.Progress != nil {
 				t.Progress.OnProgress(ctx, t, status)
 			}
+			taskevent.Emit(ctx, taskevent.Event{
+				TaskID:          t.ID,
+				Phase:           taskevent.PhaseProgress,
+				TotalBytes:      parseInt64(status.TotalLength),
+				DownloadedBytes: parseInt64(status.CompletedLength),
+			})
 
 			// Check if download is complete
 			if status.IsDownloadComplete() {
@@ -247,4 +255,17 @@ func (t *Task) cancelAria2Download() {
 	if _, err := t.Aria2Client.RemoveDownloadResult(ctx, t.GID); err != nil {
 		logger.Debugf("Failed to remove download result for %s: %v", t.GID, err)
 	}
+}
+
+// parseInt64 parses an aria2 status string (decimal bytes) into int64,
+// returning 0 on failure so it can be used directly in progress events.
+func parseInt64(s string) int64 {
+	if s == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return n
 }

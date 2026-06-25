@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
@@ -117,7 +118,7 @@ func (h *Handlers) CancelTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 取消任务
+	// Cancel the task; the terminal status is set via the task event stream.
 	if err := core.CancelTask(r.Context(), taskID); err != nil {
 		WriteError(w, http.StatusInternalServerError, "cancel_failed", "failed to cancel task: "+err.Error())
 		return
@@ -184,27 +185,45 @@ func extractTaskIDFromPath(path string) string {
 	return parts[3]
 }
 
-// convertTaskProgressToResponse 将任务进度转换为响应格式
+// convertTaskProgressToResponse renders a task's current state, computing
+// percent and speed from the snapshot taken under the task's mutex.
 func convertTaskProgressToResponse(task *TaskProgressInfo) TaskInfoResponse {
+	status, total, downloaded, totalFiles, downloadedFiles, startedAt, errMsg, updatedAt := task.snapshot()
+
 	resp := TaskInfoResponse{
 		TaskID:    task.TaskID,
 		Type:      tasktype.TaskType(task.Type),
-		Status:    task.Status,
+		Status:    status,
 		Title:     task.Title,
 		Storage:   task.Storage,
 		Path:      task.Path,
-		Error:     task.Error,
+		Error:     errMsg,
 		CreatedAt: task.CreatedAt,
-		UpdatedAt: task.UpdatedAt,
+		UpdatedAt: updatedAt,
 	}
 
-	// 计算进度
-	if task.TotalBytes > 0 {
-		percent := float64(task.DownloadedBytes) * 100 / float64(task.TotalBytes)
+	var percent float64
+	var speedMBPS float64
+	if total > 0 {
+		percent = float64(downloaded) * 100 / float64(total)
+	} else if totalFiles > 0 {
+		percent = float64(downloadedFiles) * 100 / float64(totalFiles)
+	}
+	if !startedAt.IsZero() {
+		elapsed := time.Since(startedAt).Seconds()
+		if elapsed > 0 {
+			speedMBPS = float64(downloaded) / elapsed / (1024 * 1024)
+		}
+	}
+
+	if total > 0 || totalFiles > 0 {
 		resp.Progress = &TaskProgress{
-			TotalBytes:      task.TotalBytes,
-			DownloadedBytes: task.DownloadedBytes,
+			TotalBytes:      total,
+			DownloadedBytes: downloaded,
+			TotalFiles:      totalFiles,
+			DownloadedFiles: downloadedFiles,
 			Percent:         percent,
+			SpeedMBPS:       speedMBPS,
 		}
 	}
 
