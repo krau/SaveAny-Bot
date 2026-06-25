@@ -15,7 +15,7 @@ import (
 // https://github.com/iyear/tdl/blob/master/core/tclient/tclient.go
 func NewDefaultMiddlewares(ctx context.Context, timeout time.Duration) []telegram.Middleware {
 	return []telegram.Middleware{
-		recovery.New(ctx, newBackoff(timeout)),
+		recovery.New(ctx, func() backoff.BackOff { return newBackoff(timeout) }),
 		retry.New(config.C().Telegram.RpcRetry),
 		floodwait.NewSimpleWaiter(),
 	}

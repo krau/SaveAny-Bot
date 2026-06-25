@@ -14,19 +14,28 @@ import (
 )
 
 type recovery struct {
-	ctx     context.Context
-	backoff backoff.BackOff
+	ctx        context.Context
+	newBackoff func() backoff.BackOff
 }
 
-func New(ctx context.Context, backoff backoff.BackOff) telegram.Middleware {
+// New returns a recovery middleware.
+//
+// newBackoff is a factory that must return a fresh backoff.BackOff on every call: backoff implementations in
+// cenkalti/backoff/v4 (notably ExponentialBackOff) are not safe for concurrent
+// use, and the Telegram client invokes RPCs from many goroutines in parallel.
+//
+// Sharing a single instance corrupts its internal counters, breaks the
+// exponential interval, and defeats MaxElapsedTime - see issue #218.
+func New(ctx context.Context, newBackoff func() backoff.BackOff) telegram.Middleware {
 	return &recovery{
-		ctx:     ctx,
-		backoff: backoff,
+		ctx:        ctx,
+		newBackoff: newBackoff,
 	}
 }
 
 func (r *recovery) Handle(next tg.Invoker) telegram.InvokeFunc {
 	return func(ctx context.Context, input bin.Encoder, output bin.Decoder) error {
+		b := r.newBackoff()
 
 		return backoff.RetryNotify(func() error {
 			if err := next.Invoke(ctx, input, output); err != nil {
@@ -38,7 +47,7 @@ func (r *recovery) Handle(next tg.Invoker) telegram.InvokeFunc {
 			}
 
 			return nil
-		}, r.backoff, func(err error, duration time.Duration) {
+		}, b, func(err error, duration time.Duration) {
 			log.FromContext(ctx).Debug("Wait for connection recovery", "error", err, "duration", duration)
 		})
 	}
