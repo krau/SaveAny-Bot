@@ -117,7 +117,7 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.0
 	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c
 	github.com/duke-git/lancet/v2 v2.3.9
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
