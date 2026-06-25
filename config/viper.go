@@ -35,6 +35,7 @@ type Config struct {
 	Storages []storage.StorageConfig `toml:"-" mapstructure:"-" json:"storages"`
 	Parser   parserConfig            `toml:"parser" mapstructure:"parser" json:"parser"`
 	Hook     hookConfig              `toml:"hook" mapstructure:"hook" json:"hook"`
+	Ytdlp    YtdlpConfig             `toml:"ytdlp" mapstructure:"ytdlp" json:"ytdlp"`
 }
 
 type aria2Config struct {
@@ -131,6 +132,9 @@ func Init(ctx context.Context, configFile ...string) error {
 		"api.host":   "0.0.0.0",
 		"api.port":   8080,
 		"api.token":  "",
+
+		// yt-dlp
+		"ytdlp.recode": "mp4",
 	}
 
 	for key, value := range defaultConfigs {

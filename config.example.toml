@@ -33,6 +33,17 @@ secret = ""
 # 转存完成后删除 Aria2 下载的本地文件
 remove_after_transfer = true
 
+# yt-dlp 视频下载配置
+[ytdlp]
+# 默认下载的最高视频清晰度 (按高度限制), 如 1080, 720, 480; 0 表示不限制 (下载最佳画质)
+# 仅在使用 /ytdlp 命令且未手动指定任何参数时生效
+max_height = 1080
+# 直接指定 yt-dlp format 选择表达式, 留空则使用 max_height
+# 设置后优先级高于 max_height, 例如: "bv*[height<=720]+ba/b"
+format = ""
+# 下载后转封装的视频容器格式, 留空则不转封装. 默认 mp4
+recode = "mp4"
+
 # HTTP API 配置
 [api]
 # 启用 HTTP API

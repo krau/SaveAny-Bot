@@ -85,12 +85,10 @@ func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, err
 	cmd := ytdlp.New().
 		Output(filepath.Join(tempDir, "%(title)s.%(ext)s"))
 
-	// If no custom flags are provided, use default behavior
+	// Apply config-based format/quality defaults only when the user passes no
+	// custom flags. Any user flag means they take full control of yt-dlp.
 	if len(t.Flags) == 0 {
-		cmd = cmd.
-			FormatSort("res,ext:mp4:m4a").
-			RecodeVideo("mp4").
-			RestrictFilenames()
+		cmd = applyFormatConfig(cmd, config.C().Ytdlp)
 	}
 	// Note: If custom flags are provided, users have full control over format/quality
 	// The output path is always set above to ensure downloads go to the correct directory
