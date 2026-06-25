@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
+	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 )
 
 // setupTestServer creates a test server with handlers
@@ -403,32 +404,38 @@ func TestConcurrentProgressStore(t *testing.T) {
 
 // TestProgressTrackerConcurrentUpdates tests concurrent progress updates
 func TestProgressTrackerConcurrentUpdates(t *testing.T) {
-	tracker := NewProgressTracker("concurrent-progress", "directlinks", "local", "downloads", "Test", "")
-	tracker.OnStart(10000, 10)
+	info := RegisterTask("concurrent-progress", "directlinks", "local", "downloads", "Test", "")
+	info.Emit(taskevent.Event{TaskID: "concurrent-progress", Phase: taskevent.PhaseStart, TotalBytes: 10000})
 
 	var wg sync.WaitGroup
 	numGoroutines := 50
 	updatesPerGoroutine := 100
 
-	// Concurrent progress updates
+	// Concurrent progress updates via the Sink interface
 	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
 			for j := range updatesPerGoroutine {
-				tracker.OnProgress(int64(id*updatesPerGoroutine+j), j)
+				info.Emit(taskevent.Event{
+					TaskID:          "concurrent-progress",
+					Phase:           taskevent.PhaseProgress,
+					DownloadedBytes: int64(id*updatesPerGoroutine + j),
+					TotalBytes:      10000,
+				})
 			}
 		}(i)
 	}
 
 	wg.Wait()
 
-	info := tracker.GetInfo()
-	if info.Status != TaskStatusRunning {
-		t.Errorf("expected status Running after concurrent updates, got %s", info.Status)
+	status, _, downloaded, _, _, _, _, _ := info.snapshot()
+	if status != TaskStatusRunning {
+		t.Errorf("expected status Running after concurrent updates, got %s", status)
 	}
-	// Note: Due to race conditions in the simple implementation,
-	// we can't reliably check exact values without proper synchronization
+	if downloaded <= 0 {
+		t.Errorf("expected downloaded bytes > 0 after concurrent updates, got %d", downloaded)
+	}
 }
 
 // TestTaskFactoryValidation tests TaskFactory parameter validation
@@ -526,8 +533,7 @@ func TestEdgeCases(t *testing.T) {
 		{
 			name: "Progress tracker with empty webhook",
 			fn: func(t *testing.T) {
-				tracker := NewProgressTracker("test", "type", "storage", "path", "title", "")
-				info := tracker.GetInfo()
+				info := RegisterTask("test-empty-webhook", "type", "storage", "path", "title", "")
 				if info.Webhook != "" {
 					t.Error("expected empty webhook")
 				}

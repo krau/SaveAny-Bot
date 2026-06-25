@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 	"github.com/krau/SaveAny-Bot/storage"
 	"golang.org/x/sync/errgroup"
 )
@@ -116,6 +117,12 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 
 	t.uploaded.Add(size)
 	t.Progress.OnProgress(ctx, t)
+	taskevent.Emit(ctx, taskevent.Event{
+		TaskID:          t.ID,
+		Phase:           taskevent.PhaseProgress,
+		TotalBytes:      t.totalSize,
+		DownloadedBytes: t.uploaded.Load(),
+	})
 
 	logger.Info("File uploaded successfully")
 	return nil

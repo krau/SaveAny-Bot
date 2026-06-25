@@ -57,22 +57,19 @@ func NewServer(ctx context.Context) *Server {
 	// 404 处理
 	mux.HandleFunc("/", NotFoundHandler)
 
-	// 应用中间件
+	// Apply middleware chain.
 	var handler http.Handler = mux
 
-	// 添加认证中间件
+	// Apply auth middleware when a token is configured.
 	token := cfg.Token
-	if token == "" {
-		log.FromContext(ctx).Warn("API server is enabled but no token is set, this is insecure!")
-	}
 	if token != "" {
 		handler = AuthMiddleware()(handler)
 	}
 
-	// 添加日志中间件
+	// Add logging middleware.
 	handler = loggingMiddleware(handler)
 
-	// 添加恢复中间件
+	// Add recovery middleware.
 	handler = recoveryMiddleware(handler)
 
 	return &Server{
@@ -151,7 +148,8 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-// Start 初始化并启动 API 服务器
+// Start initializes and starts the API server. It refuses to start without a
+// token, since an open download proxy is a security risk.
 func Start(ctx context.Context) error {
 	cfg := config.C().API
 
@@ -160,9 +158,13 @@ func Start(ctx context.Context) error {
 	}
 
 	if cfg.Token == "" {
-		log.FromContext(ctx).Warn("API server is enabled but no token is set, this is insecure!")
+		return fmt.Errorf("API server is enabled but no token is set; refusing to start insecurely")
 	}
 
 	server := NewServer(ctx)
-	return server.Start(ctx)
+	if err := server.Start(ctx); err != nil {
+		return err
+	}
+	StartCleanupLoop(ctx)
+	return nil
 }

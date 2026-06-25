@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -30,9 +29,14 @@ func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 
 	webhookURL := info.Webhook
 
-	// 异步发送 webhook
+	// Async send with retries.
 	go func() {
-		logger := log.FromContext(ctx).With("task_id", payload.TaskID)
+		var logger *log.Logger
+		if ctx != nil {
+			logger = log.FromContext(ctx).With("task_id", payload.TaskID)
+		} else {
+			logger = log.Default().With("task_id", payload.TaskID)
+		}
 
 		payloadBytes, err := json.Marshal(payload)
 		if err != nil {
@@ -72,7 +76,7 @@ func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 	}()
 }
 
-// CreateWebhookPayload 创建 Webhook 负载
+// CreateWebhookPayload creates a Webhook payload.
 func CreateWebhookPayload(taskID string, taskType string, status TaskStatus, storage, path string, err error) *WebhookPayload {
 	payload := &WebhookPayload{
 		TaskID:  taskID,
@@ -92,39 +96,4 @@ func CreateWebhookPayload(taskID string, taskType string, status TaskStatus, sto
 	}
 
 	return payload
-}
-
-// WrapTaskWithWebhook 包装任务执行，添加 webhook 回调
-func WrapTaskWithWebhook(ctx context.Context, taskID string, fn func() error) error {
-	info, ok := GetTask(taskID)
-	if !ok {
-		return fmt.Errorf("task not found: %s", taskID)
-	}
-
-	err := fn()
-
-	// 确定任务状态
-	status := TaskStatusCompleted
-	if err != nil {
-		if err == context.Canceled {
-			status = TaskStatusCancelled
-		} else {
-			status = TaskStatusFailed
-		}
-	}
-
-	// 更新任务状态
-	if err != nil {
-		info.SetError(err.Error())
-	} else {
-		info.UpdateStatus(TaskStatusCompleted)
-	}
-
-	// 发送 webhook
-	if info.Webhook != "" {
-		payload := CreateWebhookPayload(taskID, info.Type, status, info.Storage, info.Path, err)
-		SendWebhook(ctx, payload)
-	}
-
-	return err
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/duke-git/lancet/v2/retry"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -27,8 +28,14 @@ func (t *Task) Execute(ctx context.Context) error {
 				logger.Errorf("Error processing picture %s: %v", pic, err)
 				return fmt.Errorf("failed to process picture %s: %w", pic, err)
 			}
-			t.downloaded.Add(1)
+			downloaded := t.downloaded.Add(1)
 			t.progress.OnProgress(gctx, t)
+			taskevent.Emit(gctx, taskevent.Event{
+				TaskID:          t.ID,
+				Phase:           taskevent.PhaseProgress,
+				TotalFiles:      t.totalpics,
+				DownloadedFiles: int(downloaded),
+			})
 			return nil
 		})
 	}

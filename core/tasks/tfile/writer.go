@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"sync/atomic"
+
+	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 )
 
 type ProgressWriterAt struct {
@@ -20,9 +22,16 @@ func (w *ProgressWriterAt) WriteAt(p []byte, off int64) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	downloaded := w.downloaded.Add(int64(at))
 	if w.progress != nil {
-		w.progress.OnProgress(w.ctx, w.info, w.downloaded.Add(int64(at)), w.total)
+		w.progress.OnProgress(w.ctx, w.info, downloaded, w.total)
 	}
+	taskevent.Emit(w.ctx, taskevent.Event{
+		TaskID:          w.info.TaskID(),
+		Phase:           taskevent.PhaseProgress,
+		TotalBytes:      w.total,
+		DownloadedBytes: downloaded,
+	})
 	return at, nil
 }
 
@@ -56,9 +65,16 @@ func (w *ProgressWriter) Write(p []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	downloaded := w.downloaded.Add(int64(at))
 	if w.progress != nil {
-		w.progress.OnProgress(w.ctx, w.info, w.downloaded.Add(int64(at)), w.total)
+		w.progress.OnProgress(w.ctx, w.info, downloaded, w.total)
 	}
+	taskevent.Emit(w.ctx, taskevent.Event{
+		TaskID:          w.info.TaskID(),
+		Phase:           taskevent.PhaseProgress,
+		TotalBytes:      w.total,
+		DownloadedBytes: downloaded,
+	})
 	return at, nil
 }
 

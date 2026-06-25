@@ -40,6 +40,8 @@ type CreateTaskResponse struct {
 type TaskProgress struct {
 	TotalBytes      int64   `json:"total_bytes,omitempty"`
 	DownloadedBytes int64   `json:"downloaded_bytes,omitempty"`
+	TotalFiles      int     `json:"total_files,omitempty"`
+	DownloadedFiles int     `json:"downloaded_files,omitempty"`
 	Percent         float64 `json:"percent,omitempty"`
 	SpeedMBPS       float64 `json:"speed_mbps,omitempty"`
 }
