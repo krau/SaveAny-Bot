@@ -24,6 +24,8 @@ func BuildRuleHelpStyling(enabled bool, rules []database.Rule) []styling.StyledT
 		styling.Plain(i18n.T(i18nk.BotMsgRuleHelpSwitchSuffix, nil)),
 		styling.Code("add"),
 		styling.Plain(i18n.T(i18nk.BotMsgRuleHelpAddSuffix, nil)),
+		styling.Code("preset"),
+		styling.Plain(i18n.T(i18nk.BotMsgRuleHelpPresetSuffix, nil)),
 		styling.Code("del"),
 		styling.Plain(i18n.T(i18nk.BotMsgRuleHelpDelSuffix, nil)),
 		styling.Plain(i18n.T(i18nk.BotMsgRuleHelpExistingRulesPrefix, nil)),

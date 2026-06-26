@@ -197,7 +197,11 @@ bot:
       help_switch_suffix: " - 开关规则模式\n"
       help_add_suffix: " <类型> <数据> <存储名> <路径> - 添加规则\n"
       help_del_suffix: " <规则ID> - 删除规则\n"
+      help_preset_suffix: " <存储名> [基础路径] - 导入内置文件类型分类规则(视频/图片/音频/文档/压缩包)\n"
       help_existing_rules_prefix: "\n当前已添加的规则:\n"
+      prompt_provide_storage_name: "请提供存储名称"
+      error_storage_not_found: "未找到存储: {{.Storage}}"
+      info_preset_imported: "已导入 {{.Count}} 条内置分类规则到存储 {{.Storage}}"
     dir:
       error_get_user_dirs_failed: "获取用户文件夹失败"
       error_get_user_failed: "获取用户失败"

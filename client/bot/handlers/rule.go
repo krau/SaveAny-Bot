@@ -13,6 +13,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/rule"
 )
@@ -84,6 +85,46 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleInfoCreateRuleSuccess, nil)), nil)
+	case "preset":
+		// /rule preset <storage> [base_path]
+		if len(args) < 3 {
+			ctx.Reply(update, ext.ReplyTextStyledTextArray(msgelem.BuildRuleHelpStyling(user.ApplyRule, user.Rules)), nil)
+			return dispatcher.EndGroups
+		}
+		storageName := args[2]
+		if !config.C().HasStorage(user.ChatID, storageName) {
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorStorageNotFound, map[string]any{
+				"Storage": storageName,
+			})), nil)
+			return dispatcher.EndGroups
+		}
+		basePath := ""
+		if len(args) >= 4 {
+			basePath = args[3]
+		}
+		presets := rule.PresetCategories(basePath)
+		imported := 0
+		for _, p := range presets {
+			rd := &database.Rule{
+				Type:        rule.FileNameRegex.String(),
+				Data:        p.Regex,
+				StorageName: storageName,
+				DirPath:     p.Dir,
+				UserID:      user.ID,
+			}
+			if err := database.CreateRule(ctx, rd); err != nil {
+				logger.Errorf("failed to create preset rule %s: %s", p.Name, err)
+				continue
+			}
+			imported++
+		}
+		if imported == 0 {
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorCreateRuleFailed, nil)), nil)
+			return dispatcher.EndGroups
+		}
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleInfoPresetImported, map[string]any{
+			"Count": imported,
+		})), nil)
 	case "del":
 		// /rule del <id>
 		if len(args) < 3 {

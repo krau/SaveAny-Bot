@@ -196,7 +196,11 @@ bot:
       help_switch_suffix: " - Toggle rule mode\n"
       help_add_suffix: " <type> <data> <storage_name> <path> - Add rule\n"
       help_del_suffix: " <rule_id> - Delete rule\n"
+      help_preset_suffix: " <storage_name> [base_path] - Import built-in filetype rules (video/image/audio/document/archive)\n"
       help_existing_rules_prefix: "\nCurrent rules:\n"
+      prompt_provide_storage_name: "Please provide a storage name"
+      error_storage_not_found: "Storage not found: {{.Storage}}"
+      info_preset_imported: "Imported {{.Count}} built-in classification rules into storage {{.Storage}}"
     dir:
       error_get_user_dirs_failed: "Failed to get user directories"
       error_get_user_failed: "Failed to get user"
