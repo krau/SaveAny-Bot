@@ -113,6 +113,51 @@ secret = "your-rpc-secret"
 remove_after_transfer = true
 ```
 
+### yt-dlp Configuration
+
+Configures the behavior of the `/ytdlp` command and the `ytdlp` HTTP-API task type when no custom flags are passed.
+
+- `max_height`: Default maximum video resolution by height in pixels (e.g. `1080`, `720`). `0` means no limit (best available). Ignored when `format` is set.
+- `format`: A raw yt-dlp format selector (`-f`). When set, it takes precedence over `max_height` and gives you full control, e.g. `bv*[height<=720]+ba/b`.
+- `recode`: The target video container yt-dlp recodes into after download (e.g. `mp4`). Leave empty to disable recoding.
+
+{{< hint info >}}
+These defaults only apply when using the `/ytdlp` command without passing any custom flags. Passing custom flags on the command (or `flags` in the API) overrides them.
+{{< /hint >}}
+
+```toml
+[ytdlp]
+max_height = 1080
+format = ""        # e.g. "bv*[height<=720]+ba/b"
+recode = "mp4"     # empty disables recoding
+```
+
+### HTTP API Configuration
+
+When enabled, SaveAny-Bot exposes an HTTP API for creating/querying/canceling tasks programmatically. See [HTTP API](../../usage/api) for the full endpoint reference.
+
+- `enable`: Whether to enable the HTTP API server, default is `false`.
+- `host`: Bind address, default `0.0.0.0`.
+- `port`: Listen port, default `8080`.
+- `token`: Authentication token. **Strongly recommended** — if empty, the API is exposed without any authentication.
+
+```toml
+[api]
+enable = false
+host = "0.0.0.0"
+port = 8080
+token = "your-token"
+```
+
+### Log Configuration
+
+- `level`: Log level. One of `debug`, `info`, `warn`, `error`, `fatal`. Default is `info`.
+
+```toml
+[log]
+level = "info"
+```
+
 ### Storage Endpoints List
 
 The storage endpoints list is used to define the storage locations supported by the Bot. Each storage endpoint needs to specify a name, type, and related configuration, using the double bracket syntax `[[storages]]`.

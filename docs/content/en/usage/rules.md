@@ -27,6 +27,45 @@ Pay attention to spaces; the bot can only parse correctly formatted syntax. Belo
 
 In addition, if `CHOSEN` is used as the storage name in the rule, it means files will be stored under the path of the storage you selected by clicking the inline button.
 
+You can also toggle whether rules are applied with `/rule switch`. When rule mode is off, all files go to the default storage.
+
+## Preset Rules
+
+Manually writing regex rules for common file types is tedious, so the bot ships a built-in set of preset categories (video, image, audio, document, archive) that you can import in one command:
+
+```
+/rule preset <storage> [base_path]
+```
+
+Parameters:
+
+- `storage`: Target storage name (must exist and be accessible to you)
+- `base_path`: Optional. Each preset category's subdirectory is created under this path. If omitted, the default category directory names are used directly.
+
+Examples:
+
+```
+# Import preset rules into "MyAlist" with the default directory layout
+/rule preset MyAlist
+
+# Import preset rules with a custom base path "downloads/sorted"
+/rule preset MyAlist downloads/sorted
+```
+
+This will create `FILENAME-REGEX` rules for each category, routing matched files to the corresponding subdirectory under `base_path`:
+
+| Category | Matched extensions | Default directory |
+|---|---|---|
+| video | mp4, mkv, ts, avi, flv, mov, webm, wmv, rmvb, m2ts | `视频` |
+| image | jpg, jpeg, png, gif, webp, bmp | `图片` |
+| audio | mp3, flac, wav, aac, m4a, ogg | `音频` |
+| document | pdf, doc, docx, xls, xlsx, ppt, pptx, txt, md, csv, epub, mobi, azw3, chm | `文档` |
+| archive | zip, rar, 7z, tar, gz, bz2, xz, ... | `压缩包` |
+
+{{< hint info >}}
+Preset rules are regular `FILENAME-REGEX` rules once imported. You can view, edit, or delete them individually with `/rule` and `/rule del <id>` like any other rule.
+{{< /hint >}}
+
 Rule types:
 
 ## FILENAME-REGEX
