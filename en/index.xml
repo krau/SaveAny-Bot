@@ -130,7 +130,21 @@ This feature requires the yt-dlp command-line tool installed on your system.
 &lt;ul>
 &lt;li>Twitter&lt;/li>
 &lt;li>Kemono&lt;/li>
-&lt;/ul></description></item><item><title>HTTP API</title><link>https://sabot.unv.app/en/usage/api/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/api/</guid><description>&lt;h1 id="http-api">
+&lt;/ul></description></item><item><title>File Naming &amp; Conflict Strategies</title><link>https://sabot.unv.app/en/usage/config/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/config/</guid><description>&lt;h1 id="file-naming--conflict-strategies">
+ File Naming &amp;amp; Conflict Strategies
+ &lt;a class="anchor" href="#file-naming--conflict-strategies">#&lt;/a>
+&lt;/h1>
+&lt;p>SaveAny-Bot lets you customize how saved files are named and how collisions with existing files are resolved, directly in Telegram via the &lt;code>/config&lt;/code> and &lt;code>/fnametmpl&lt;/code> commands.&lt;/p>
+&lt;h2 id="config--user-configuration">
+ &lt;code>/config&lt;/code> — User Configuration
+ &lt;a class="anchor" href="#config--user-configuration">#&lt;/a>
+&lt;/h2>
+&lt;p>The &lt;code>/config&lt;/code> command opens an inline menu where you can change two per-user settings:&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>Filename strategy&lt;/strong> — how the saved file is named&lt;/li>
+&lt;li>&lt;strong>Duplicate file strategy&lt;/strong> — what happens when a file with the same name already exists in the target storage&lt;/li>
+&lt;/ul>
+&lt;p>Settings are stored per user and apply to all of that user&amp;rsquo;s subsequent save/transfer tasks.&lt;/p></description></item><item><title>HTTP API</title><link>https://sabot.unv.app/en/usage/api/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/api/</guid><description>&lt;h1 id="http-api">
  HTTP API
  &lt;a class="anchor" href="#http-api">#&lt;/a>
 &lt;/h1>
@@ -145,7 +159,12 @@ This feature requires the yt-dlp command-line tool installed on your system.
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">host&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;0.0.0.0&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Bind address, default 0.0.0.0&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">port&lt;/span> = &lt;span style="color:#ae81ff">8080&lt;/span> &lt;span style="color:#75715e"># Listen port, default 8080&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your-token&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Auth token — strongly recommended&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>You can also override these settings with environment variables (prefix &lt;code>SAVEANY_&lt;/code>):&lt;/p></description></item><item><title>Installation and Updates</title><link>https://sabot.unv.app/en/deployment/installation/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/deployment/installation/</guid><description>&lt;h1 id="installation-and-updates">
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>You can also override these settings with environment variables (prefix &lt;code>SAVEANY_&lt;/code>):&lt;/p></description></item><item><title>CLI Subcommands</title><link>https://sabot.unv.app/en/usage/cli/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/usage/cli/</guid><description>&lt;h1 id="cli-subcommands">
+ CLI Subcommands
+ &lt;a class="anchor" href="#cli-subcommands">#&lt;/a>
+&lt;/h1>
+&lt;p>Besides running the Telegram bot with &lt;code>./saveany-bot&lt;/code> (no subcommand), the binary exposes two helper subcommands for moving local files into a storage backend: &lt;code>upload&lt;/code> (one-shot) and &lt;code>watch&lt;/code> (continuous).&lt;/p>
+&lt;p>These subcommands load the same &lt;code>config.toml&lt;/code> as the bot, initialize the database and caches, then perform their task. They do &lt;strong>not&lt;/strong> start the Telegram bot itself, although storages of type &lt;code>telegram&lt;/code> will spin up the bot client just for the upload.&lt;/p></description></item><item><title>Installation and Updates</title><link>https://sabot.unv.app/en/deployment/installation/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/deployment/installation/</guid><description>&lt;h1 id="installation-and-updates">
  Installation and Updates
  &lt;a class="anchor" href="#installation-and-updates">#&lt;/a>
 &lt;/h1>

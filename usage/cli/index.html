@@ -1,0 +1,88 @@
+<!doctype html><html lang=zh dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content='
+  命令行子命令
+  #
+
+除了直接运行 ./saveany-bot (不带子命令) 启动 Telegram Bot 外, 这个二进制文件还提供两个把本地文件上传到存储后端的辅助子命令: upload (一次性) 和 watch (持续监听).
+这些子命令会读取与 Bot 相同的 config.toml, 初始化数据库和缓存, 然后执行任务. 它们不会启动 Telegram Bot 本身, 但 telegram 类型的存储会在需要上传时临时启动 Bot 客户端来执行上传.
+
+  upload — 上传单个文件
+  #
+
+saveany-bot upload -f <文件> -s <存储名> [-d <目录>] [--no-progress]
+参数:
+
+  
+      
+          参数
+          必填
+          说明
+      
+  
+  
+      
+          -f, --file
+          是
+          待上传的本地文件路径
+      
+      
+          -s, --storage
+          是
+          目标存储名 (必须存在于 config.toml)
+      
+      
+          -d, --dir
+          否
+          存储中的目标目录, 默认使用存储的 base_path
+      
+      
+          --no-progress
+          否
+          关闭终端进度条
+      
+  
+
+示例:
+# 上传文件到 "MyAlist" 的默认目录
+./saveany-bot upload -f ./movie.mp4 -s MyAlist
+
+# 上传到指定子目录
+./saveany-bot upload -f ./movie.mp4 -s MyAlist -d movies/2026
+
+# 通过 Telegram 存储上传并关闭进度条
+./saveany-bot upload -f ./photo.jpg -s MyChannel --no-progress
+
+  watch — 监听目录并自动上传
+  #
+
+watch 子命令持续监听一个本地目录, 将新建或修改的文件上传到存储后端, 并保留相对监听根目录的子目录结构.'><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/cli/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="命令行子命令"><meta property="og:description" content='命令行子命令 # 除了直接运行 ./saveany-bot (不带子命令) 启动 Telegram Bot 外, 这个二进制文件还提供两个把本地文件上传到存储后端的辅助子命令: upload (一次性) 和 watch (持续监听).
+这些子命令会读取与 Bot 相同的 config.toml, 初始化数据库和缓存, 然后执行任务. 它们不会启动 Telegram Bot 本身, 但 telegram 类型的存储会在需要上传时临时启动 Bot 客户端来执行上传.
+upload — 上传单个文件 # saveany-bot upload -f <文件> -s <存储名> [-d <目录>] [--no-progress] 参数:
+参数 必填 说明 -f, --file 是 待上传的本地文件路径 -s, --storage 是 目标存储名 (必须存在于 config.toml) -d, --dir 否 存储中的目标目录, 默认使用存储的 base_path --no-progress 否 关闭终端进度条 示例:
+# 上传文件到 "MyAlist" 的默认目录 ./saveany-bot upload -f ./movie.mp4 -s MyAlist # 上传到指定子目录 ./saveany-bot upload -f ./movie.mp4 -s MyAlist -d movies/2026 # 通过 Telegram 存储上传并关闭进度条 ./saveany-bot upload -f ./photo.jpg -s MyChannel --no-progress watch — 监听目录并自动上传 # watch 子命令持续监听一个本地目录, 将新建或修改的文件上传到存储后端, 并保留相对监听根目录的子目录结构.'><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="usage"><meta property="article:modified_time" content="2026-06-28T18:00:02+08:00"><title>命令行子命令 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/cli/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/cli/ title="CLI Subcommands"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+<label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
+简体中文</a></label><ul><li><a href=/en/usage/cli/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>直接下载链接</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>yt-dlp 视频下载</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/ class=active>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>命令行子命令</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#upload--上传单个文件><code>upload</code> — 上传单个文件</a></li><li><a href=#watch--监听目录并自动上传><code>watch</code> — 监听目录并自动上传</a><ul><li><a href=#行为说明>行为说明</a></li></ul></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=命令行子命令>命令行子命令
+<a class=anchor href=#%e5%91%bd%e4%bb%a4%e8%a1%8c%e5%ad%90%e5%91%bd%e4%bb%a4>#</a></h1><p>除了直接运行 <code>./saveany-bot</code> (不带子命令) 启动 Telegram Bot 外, 这个二进制文件还提供两个把本地文件上传到存储后端的辅助子命令: <code>upload</code> (一次性) 和 <code>watch</code> (持续监听).</p><p>这些子命令会读取与 Bot 相同的 <code>config.toml</code>, 初始化数据库和缓存, 然后执行任务. 它们<strong>不会</strong>启动 Telegram Bot 本身, 但 <code>telegram</code> 类型的存储会在需要上传时临时启动 Bot 客户端来执行上传.</p><h2 id=upload--上传单个文件><code>upload</code> — 上传单个文件
+<a class=anchor href=#upload--%e4%b8%8a%e4%bc%a0%e5%8d%95%e4%b8%aa%e6%96%87%e4%bb%b6>#</a></h2><pre tabindex=0><code>saveany-bot upload -f &lt;文件&gt; -s &lt;存储名&gt; [-d &lt;目录&gt;] [--no-progress]
+</code></pre><p>参数:</p><table><thead><tr><th>参数</th><th>必填</th><th>说明</th></tr></thead><tbody><tr><td><code>-f, --file</code></td><td>是</td><td>待上传的本地文件路径</td></tr><tr><td><code>-s, --storage</code></td><td>是</td><td>目标存储名 (必须存在于 <code>config.toml</code>)</td></tr><tr><td><code>-d, --dir</code></td><td>否</td><td>存储中的目标目录, 默认使用存储的 <code>base_path</code></td></tr><tr><td><code>--no-progress</code></td><td>否</td><td>关闭终端进度条</td></tr></tbody></table><p>示例:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 上传文件到 &#34;MyAlist&#34; 的默认目录</span>
+</span></span><span style=display:flex><span>./saveany-bot upload -f ./movie.mp4 -s MyAlist
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 上传到指定子目录</span>
+</span></span><span style=display:flex><span>./saveany-bot upload -f ./movie.mp4 -s MyAlist -d movies/2026
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 通过 Telegram 存储上传并关闭进度条</span>
+</span></span><span style=display:flex><span>./saveany-bot upload -f ./photo.jpg -s MyChannel --no-progress
+</span></span></code></pre></div><h2 id=watch--监听目录并自动上传><code>watch</code> — 监听目录并自动上传
+<a class=anchor href=#watch--%e7%9b%91%e5%90%ac%e7%9b%ae%e5%bd%95%e5%b9%b6%e8%87%aa%e5%8a%a8%e4%b8%8a%e4%bc%a0>#</a></h2><p><code>watch</code> 子命令持续监听一个本地目录, 将新建或修改的文件上传到存储后端, 并保留相对监听根目录的子目录结构.</p><pre tabindex=0><code>saveany-bot watch -p &lt;路径&gt; -s &lt;存储名&gt; [-d &lt;目录&gt;] [选项]
+</code></pre><p>参数:</p><table><thead><tr><th>参数</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>-p, --path</code></td><td><em>(必填)</em></td><td>要监听的本地目录</td></tr><tr><td><code>-s, --storage</code></td><td><em>(必填)</em></td><td>目标存储名</td></tr><tr><td><code>-d, --dir</code></td><td>存储的 <code>base_path</code></td><td>存储中的目标目录</td></tr><tr><td><code>-r, --recursive</code></td><td><code>false</code></td><td>是否递归监听子目录</td></tr><tr><td><code>--overwrite</code></td><td><code>false</code></td><td>覆盖存储上已有的文件, 而非跳过</td></tr><tr><td><code>--initial-scan</code></td><td><code>false</code></td><td>启动时将目录中已存在的文件也上传</td></tr><tr><td><code>--debounce</code></td><td><code>2s</code></td><td>文件最后一次写入后, 等待多久再上传</td></tr><tr><td><code>--upload-workers</code></td><td><code>config.workers</code></td><td>并发上传数</td></tr><tr><td><code>--retry-delay</code></td><td><code>3s</code></td><td>上传重试之间的延迟</td></tr></tbody></table><blockquote class="book-hint info">写入完成检测: 监听器会按文件做防抖处理, 仅当文件大小在一个 debounce 窗口内保持不变时才上传, 因此不会上传未写完的半成品文件.<br>若某文件在上传过程中又被修改, 它会在当前上传完成后再上传一次, 而不是被重复排队.</blockquote><p>示例:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 递归监听 ./inbox 并且把新文件上传到 &#34;MyAlist&#34;</span>
+</span></span><span style=display:flex><span>./saveany-bot watch -p ./inbox -s MyAlist -r
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 自定义目标目录并覆盖已有文件</span>
+</span></span><span style=display:flex><span>./saveany-bot watch -p ./inbox -s MyAlist -d backup --overwrite
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 启动时把 ./inbox 中已有的内容也一并上传</span>
+</span></span><span style=display:flex><span>./saveany-bot watch -p ./inbox -s MyAlist --initial-scan
+</span></span></code></pre></div><h3 id=行为说明>行为说明
+<a class=anchor href=#%e8%a1%8c%e4%b8%ba%e8%af%b4%e6%98%8e>#</a></h3><ul><li>相对子目录结构会被保留: 以 <code>--path ./inbox</code> 为例, 写入 <code>./inbox/sub/file.txt</code> 的文件会被上传到 <code>&lt;目标目录>/sub/file.txt</code>.</li><li><code>watch</code> 会一直运行直到被中断 (如 <code>Ctrl-C</code> / <code>SIGINT</code>), 退出前会等待所有进行中的上传完成.</li><li>重试次数遵循 <code>config.toml</code> 中的全局 <code>retry</code> 值, 各次重试之间间隔 <code>--retry-delay</code>.</li><li><code>telegram</code> 类型的存储会自动启动 Bot 客户端来执行上传.</li></ul><blockquote class="book-hint warning">`watch` 子命令与 Bot 内的 `/watch` 命令 (监听 Telegram 聊天) 无关. 本子命令监听的是**本地文件系统目录**, 不依赖 Telegram.</blockquote></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/c9bb6c9e3c325c83ffef5bbe4fa54a58b82de2df title='最后修改者 krau | 2026/06/28' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/06/28</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/cli.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#upload--上传单个文件><code>upload</code> — 上传单个文件</a></li><li><a href=#watch--监听目录并自动上传><code>watch</code> — 监听目录并自动上传</a><ul><li><a href=#行为说明>行为说明</a></li></ul></li></ul></nav></div></aside></main></body></html>

@@ -1,0 +1,101 @@
+<!doctype html><html lang=zh dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="
+  文件命名与重名策略
+  #
+
+SaveAny-Bot 支持在 Telegram 中通过 /config 和 /fnametmpl 命令自定义保存文件的命名方式, 以及处理与已存在文件重名时的冲突策略.
+
+  /config — 用户配置
+  #
+
+/config 命令会弹出一个内联菜单, 你可以在其中修改以下两项用户级设置:
+
+文件名策略 — 保存文件的命名方式
+重名文件保存策略 — 目标存储中已存在同名文件时的处理方式
+
+设置按用户分别保存, 对该用户后续所有的保存/转存任务生效.
+
+  文件名策略
+  #
+
+
+  
+      
+          选项
+          行为
+      
+  
+  
+      
+          默认
+          使用媒体原始文件名, 没有原始文件名时使用生成名
+      
+      
+          优先从消息生成
+          优先根据消息内容 (如 caption、文本) 生成文件名, 而非原始文件名
+      
+      
+          自定义模板
+          使用 /fnametmpl 设置的自定义模板渲染文件名
+      
+  
+
+
+  重名文件保存策略
+  #
+
+
+  
+      
+          选项
+          行为
+      
+  
+  
+      
+          始终重命名 (默认)
+          保留已有文件, 将新文件以另一个名字保存
+      
+      
+          每次询问
+          每次遇到重名时通过内联按钮提示你选择
+      
+      
+          始终覆盖
+          用新文件替换已有文件
+      
+      
+          始终跳过
+          对重名文件不做处理
+      
+  
+
+
+  
+重名策略仅在能够检测文件是否已存在的存储后端生效. 不支持检测文件是否存在的存储后端会退化为覆盖行为.
+
+
+
+
+  /fnametmpl — 自定义文件名模板
+  #
+
+当文件名策略设置为 自定义模板 时, SaveAny-Bot 会用 /fnametmpl 配置的模板来渲染所保存文件的文件名."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/config/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="文件命名与重名策略"><meta property="og:description" content="文件命名与重名策略 # SaveAny-Bot 支持在 Telegram 中通过 /config 和 /fnametmpl 命令自定义保存文件的命名方式, 以及处理与已存在文件重名时的冲突策略.
+/config — 用户配置 # /config 命令会弹出一个内联菜单, 你可以在其中修改以下两项用户级设置:
+文件名策略 — 保存文件的命名方式 重名文件保存策略 — 目标存储中已存在同名文件时的处理方式 设置按用户分别保存, 对该用户后续所有的保存/转存任务生效.
+文件名策略 # 选项 行为 默认 使用媒体原始文件名, 没有原始文件名时使用生成名 优先从消息生成 优先根据消息内容 (如 caption、文本) 生成文件名, 而非原始文件名 自定义模板 使用 /fnametmpl 设置的自定义模板渲染文件名 重名文件保存策略 # 选项 行为 始终重命名 (默认) 保留已有文件, 将新文件以另一个名字保存 每次询问 每次遇到重名时通过内联按钮提示你选择 始终覆盖 用新文件替换已有文件 始终跳过 对重名文件不做处理 重名策略仅在能够检测文件是否已存在的存储后端生效. 不支持检测文件是否存在的存储后端会退化为覆盖行为. /fnametmpl — 自定义文件名模板 # 当文件名策略设置为 自定义模板 时, SaveAny-Bot 会用 /fnametmpl 配置的模板来渲染所保存文件的文件名."><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="usage"><meta property="article:modified_time" content="2026-06-28T18:00:02+08:00"><title>文件命名与重名策略 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/config/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/config/ title="File Naming & Conflict Strategies"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+<label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
+简体中文</a></label><ul><li><a href=/en/usage/config/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>直接下载链接</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>yt-dlp 视频下载</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/ class=active>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>文件命名与重名策略</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#config--用户配置><code>/config</code> — 用户配置</a><ul><li><a href=#文件名策略>文件名策略</a></li><li><a href=#重名文件保存策略>重名文件保存策略</a></li></ul></li><li><a href=#fnametmpl--自定义文件名模板><code>/fnametmpl</code> — 自定义文件名模板</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=文件命名与重名策略>文件命名与重名策略
+<a class=anchor href=#%e6%96%87%e4%bb%b6%e5%91%bd%e5%90%8d%e4%b8%8e%e9%87%8d%e5%90%8d%e7%ad%96%e7%95%a5>#</a></h1><p>SaveAny-Bot 支持在 Telegram 中通过 <code>/config</code> 和 <code>/fnametmpl</code> 命令自定义保存文件的命名方式, 以及处理与已存在文件重名时的冲突策略.</p><h2 id=config--用户配置><code>/config</code> — 用户配置
+<a class=anchor href=#config--%e7%94%a8%e6%88%b7%e9%85%8d%e7%bd%ae>#</a></h2><p><code>/config</code> 命令会弹出一个内联菜单, 你可以在其中修改以下两项用户级设置:</p><ul><li><strong>文件名策略</strong> — 保存文件的命名方式</li><li><strong>重名文件保存策略</strong> — 目标存储中已存在同名文件时的处理方式</li></ul><p>设置按用户分别保存, 对该用户后续所有的保存/转存任务生效.</p><h3 id=文件名策略>文件名策略
+<a class=anchor href=#%e6%96%87%e4%bb%b6%e5%90%8d%e7%ad%96%e7%95%a5>#</a></h3><table><thead><tr><th>选项</th><th>行为</th></tr></thead><tbody><tr><td><code>默认</code></td><td>使用媒体原始文件名, 没有原始文件名时使用生成名</td></tr><tr><td><code>优先从消息生成</code></td><td>优先根据消息内容 (如 caption、文本) 生成文件名, 而非原始文件名</td></tr><tr><td><code>自定义模板</code></td><td>使用 <code>/fnametmpl</code> 设置的自定义模板渲染文件名</td></tr></tbody></table><h3 id=重名文件保存策略>重名文件保存策略
+<a class=anchor href=#%e9%87%8d%e5%90%8d%e6%96%87%e4%bb%b6%e4%bf%9d%e5%ad%98%e7%ad%96%e7%95%a5>#</a></h3><table><thead><tr><th>选项</th><th>行为</th></tr></thead><tbody><tr><td><code>始终重命名</code> (默认)</td><td>保留已有文件, 将新文件以另一个名字保存</td></tr><tr><td><code>每次询问</code></td><td>每次遇到重名时通过内联按钮提示你选择</td></tr><tr><td><code>始终覆盖</code></td><td>用新文件替换已有文件</td></tr><tr><td><code>始终跳过</code></td><td>对重名文件不做处理</td></tr></tbody></table><blockquote class="book-hint info">重名策略仅在能够检测文件是否已存在的存储后端生效. 不支持检测文件是否存在的存储后端会退化为覆盖行为.</blockquote><h2 id=fnametmpl--自定义文件名模板><code>/fnametmpl</code> — 自定义文件名模板
+<a class=anchor href=#fnametmpl--%e8%87%aa%e5%ae%9a%e4%b9%89%e6%96%87%e4%bb%b6%e5%90%8d%e6%a8%a1%e6%9d%bf>#</a></h2><p>当文件名策略设置为 <code>自定义模板</code> 时, SaveAny-Bot 会用 <code>/fnametmpl</code> 配置的模板来渲染所保存文件的文件名.</p><pre tabindex=0><code>/fnametmpl [模板]
+</code></pre><ul><li>不带参数运行 <code>/fnametmpl</code> 会显示当前模板以及帮助说明</li><li>带模板字符串运行则会把它设为你的文件名模板</li></ul><p>模板使用 Go <a href=https://pkg.go.dev/text/template><code>text/template</code></a> 语法. 可用变量如下:</p><table><thead><tr><th>变量</th><th>说明</th></tr></thead><tbody><tr><td><code>{{.msgid}}</code></td><td>Telegram 消息 ID</td></tr><tr><td><code>{{.msgtags}}</code></td><td>消息中的标签, 以 <code>_</code> 连接输出</td></tr><tr><td><code>{{.msggen}}</code></td><td>根据消息生成的文件名</td></tr><tr><td><code>{{.msgdate}}</code></td><td>消息日期, 格式 <code>YYYY-MM-DD_HH-MM-SS</code></td></tr><tr><td><code>{{.msgraw}}</code></td><td>消息的原始文本内容 (不做处理)</td></tr><tr><td><code>{{.origname}}</code></td><td>媒体的原始文件名 (如有)</td></tr><tr><td><code>{{.chatid}}</code></td><td>消息所在聊天的 ID</td></tr></tbody></table><p>示例:</p><pre tabindex=0><code># 固定前缀 + 消息 ID + 日期
+/fnametmpl 图片_{{.msgid}}_{{.msgdate}}.jpg
+
+# 优先使用原始文件名, 没有则用生成名
+/fnametmpl {{.origname}}
+</code></pre><blockquote class="book-hint warning">模板仅在文件名策略设置为 `自定义模板` 时生效. 如果模板解析失败, SaveAny-Bot 会回退到默认的文件名生成逻辑.</blockquote></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/c9bb6c9e3c325c83ffef5bbe4fa54a58b82de2df title='最后修改者 krau | 2026/06/28' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/06/28</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/config.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#config--用户配置><code>/config</code> — 用户配置</a><ul><li><a href=#文件名策略>文件名策略</a></li><li><a href=#重名文件保存策略>重名文件保存策略</a></li></ul></li><li><a href=#fnametmpl--自定义文件名模板><code>/fnametmpl</code> — 自定义文件名模板</a></li></ul></nav></div></aside></main></body></html>

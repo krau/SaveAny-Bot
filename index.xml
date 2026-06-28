@@ -22,25 +22,25 @@
 &lt;p>注意空格的使用, 语法正确 bot 才能解析, 以下是一条合法的添加规则命令:&lt;/p>
 &lt;pre tabindex="0">&lt;code>/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /视频
 &lt;/code>&lt;/pre>&lt;p>此外, 规则中的存储名若使用 &amp;ldquo;CHOSEN&amp;rdquo; , 则表示存储到点击按钮选择的存储端的路径下&lt;/p>
-&lt;p>规则类型:&lt;/p>
-&lt;h2 id="filename-regex">
- FILENAME-REGEX
- &lt;a class="anchor" href="#filename-regex">#&lt;/a>
+&lt;p>你也可以使用 &lt;code>/rule switch&lt;/code> 来开关规则模式. 关闭规则模式时, 所有文件都将保存到默认存储.&lt;/p>
+&lt;h2 id="预设规则">
+ 预设规则
+ &lt;a class="anchor" href="#%e9%a2%84%e8%ae%be%e8%a7%84%e5%88%99">#&lt;/a>
 &lt;/h2>
-&lt;p>根据文件名正则匹配, 规则内容要求为一个合法的正则表达式, 如&lt;/p>
-&lt;pre tabindex="0">&lt;code>FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /视频
-&lt;/code>&lt;/pre>&lt;p>表示将文件名后缀为 mp4,mkv,ts,avi,flv 的文件放到名为 MyAlist 存储下的 /视频 目录内 (同时受配置文件中的 &lt;code>base_path&lt;/code> 影响)&lt;/p>
-&lt;h2 id="message-regex">
- MESSAGE-REGEX
- &lt;a class="anchor" href="#message-regex">#&lt;/a>
-&lt;/h2>
-&lt;p>同上, 但是是根据消息本身的文本内容正则匹配&lt;/p>
-&lt;h2 id="is-album">
- IS-ALBUM
- &lt;a class="anchor" href="#is-album">#&lt;/a>
-&lt;/h2>
-&lt;p>匹配相册消息 (media group), 规则内容只能为 &lt;code>true&lt;/code> 或 &lt;code>false&lt;/code>.&lt;/p>
-&lt;p>规则中的路径若使用 &amp;ldquo;NEW-FOR-ALBUM&amp;rdquo; , 则表示为该组消息新建一个文件夹来存储它们. 见: &lt;a href="https://github.com/krau/SaveAny-Bot/issues/87">https://github.com/krau/SaveAny-Bot/issues/87&lt;/a>&lt;/p></description></item><item><title>监听聊天</title><link>https://sabot.unv.app/usage/watch/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/watch/</guid><description>&lt;h1 id="监听聊天">
+&lt;p>为常见文件类型手动编写正则规则比较繁琐, 因此 Bot 内置了一组预设分类 (视频、图片、音频、文档、压缩包), 可以通过一条命令批量导入:&lt;/p>
+&lt;pre tabindex="0">&lt;code>/rule preset &amp;lt;存储名&amp;gt; [基础路径]
+&lt;/code>&lt;/pre>&lt;p>参数:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>存储名&lt;/code>: 目标存储名 (必须存在且你有权访问)&lt;/li>
+&lt;li>&lt;code>基础路径&lt;/code>: 可选. 各预设分类的子目录会创建在此路径下; 若不填则直接使用默认分类目录名&lt;/li>
+&lt;/ul>
+&lt;p>示例:&lt;/p>
+&lt;pre tabindex="0">&lt;code># 导入预设规则到 &amp;#34;MyAlist&amp;#34;, 使用默认目录布局
+/rule preset MyAlist
+
+# 在自定义基础路径 &amp;#34;downloads/sorted&amp;#34; 下导入预设规则
+/rule preset MyAlist downloads/sorted
+&lt;/code>&lt;/pre>&lt;p>此命令会为每个分类创建 &lt;code>FILENAME-REGEX&lt;/code> 规则, 将匹配的文件路由到 &lt;code>基础路径&lt;/code> 下对应的子目录:&lt;/p></description></item><item><title>监听聊天</title><link>https://sabot.unv.app/usage/watch/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/watch/</guid><description>&lt;h1 id="监听聊天">
  监听聊天
  &lt;a class="anchor" href="#%e7%9b%91%e5%90%ac%e8%81%8a%e5%a4%a9">#&lt;/a>
 &lt;/h1>
@@ -179,7 +179,88 @@
 &lt;ul>
 &lt;li>Twitter&lt;/li>
 &lt;li>Kemono&lt;/li>
-&lt;/ul></description></item><item><title>HTTP API</title><link>https://sabot.unv.app/usage/api/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/api/</guid><description>&lt;h1 id="http-api">
+&lt;/ul></description></item><item><title>文件命名与重名策略</title><link>https://sabot.unv.app/usage/config/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/config/</guid><description>&lt;h1 id="文件命名与重名策略">
+ 文件命名与重名策略
+ &lt;a class="anchor" href="#%e6%96%87%e4%bb%b6%e5%91%bd%e5%90%8d%e4%b8%8e%e9%87%8d%e5%90%8d%e7%ad%96%e7%95%a5">#&lt;/a>
+&lt;/h1>
+&lt;p>SaveAny-Bot 支持在 Telegram 中通过 &lt;code>/config&lt;/code> 和 &lt;code>/fnametmpl&lt;/code> 命令自定义保存文件的命名方式, 以及处理与已存在文件重名时的冲突策略.&lt;/p>
+&lt;h2 id="config--用户配置">
+ &lt;code>/config&lt;/code> — 用户配置
+ &lt;a class="anchor" href="#config--%e7%94%a8%e6%88%b7%e9%85%8d%e7%bd%ae">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>/config&lt;/code> 命令会弹出一个内联菜单, 你可以在其中修改以下两项用户级设置:&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>文件名策略&lt;/strong> — 保存文件的命名方式&lt;/li>
+&lt;li>&lt;strong>重名文件保存策略&lt;/strong> — 目标存储中已存在同名文件时的处理方式&lt;/li>
+&lt;/ul>
+&lt;p>设置按用户分别保存, 对该用户后续所有的保存/转存任务生效.&lt;/p>
+&lt;h3 id="文件名策略">
+ 文件名策略
+ &lt;a class="anchor" href="#%e6%96%87%e4%bb%b6%e5%90%8d%e7%ad%96%e7%95%a5">#&lt;/a>
+&lt;/h3>
+&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th>选项&lt;/th>
+ &lt;th>行为&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td>&lt;code>默认&lt;/code>&lt;/td>
+ &lt;td>使用媒体原始文件名, 没有原始文件名时使用生成名&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>优先从消息生成&lt;/code>&lt;/td>
+ &lt;td>优先根据消息内容 (如 caption、文本) 生成文件名, 而非原始文件名&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>自定义模板&lt;/code>&lt;/td>
+ &lt;td>使用 &lt;code>/fnametmpl&lt;/code> 设置的自定义模板渲染文件名&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;h3 id="重名文件保存策略">
+ 重名文件保存策略
+ &lt;a class="anchor" href="#%e9%87%8d%e5%90%8d%e6%96%87%e4%bb%b6%e4%bf%9d%e5%ad%98%e7%ad%96%e7%95%a5">#&lt;/a>
+&lt;/h3>
+&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th>选项&lt;/th>
+ &lt;th>行为&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td>&lt;code>始终重命名&lt;/code> (默认)&lt;/td>
+ &lt;td>保留已有文件, 将新文件以另一个名字保存&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>每次询问&lt;/code>&lt;/td>
+ &lt;td>每次遇到重名时通过内联按钮提示你选择&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>始终覆盖&lt;/code>&lt;/td>
+ &lt;td>用新文件替换已有文件&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>始终跳过&lt;/code>&lt;/td>
+ &lt;td>对重名文件不做处理&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;blockquote class="book-hint info">
+ 
+重名策略仅在能够检测文件是否已存在的存储后端生效. 不支持检测文件是否存在的存储后端会退化为覆盖行为.
+
+&lt;/blockquote>
+
+&lt;h2 id="fnametmpl--自定义文件名模板">
+ &lt;code>/fnametmpl&lt;/code> — 自定义文件名模板
+ &lt;a class="anchor" href="#fnametmpl--%e8%87%aa%e5%ae%9a%e4%b9%89%e6%96%87%e4%bb%b6%e5%90%8d%e6%a8%a1%e6%9d%bf">#&lt;/a>
+&lt;/h2>
+&lt;p>当文件名策略设置为 &lt;code>自定义模板&lt;/code> 时, SaveAny-Bot 会用 &lt;code>/fnametmpl&lt;/code> 配置的模板来渲染所保存文件的文件名.&lt;/p></description></item><item><title>HTTP API</title><link>https://sabot.unv.app/usage/api/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/api/</guid><description>&lt;h1 id="http-api">
  HTTP API
  &lt;a class="anchor" href="#http-api">#&lt;/a>
 &lt;/h1>
@@ -239,7 +320,63 @@
  错误响应格式
  &lt;a class="anchor" href="#%e9%94%99%e8%af%af%e5%93%8d%e5%ba%94%e6%a0%bc%e5%bc%8f">#&lt;/a>
 &lt;/h2>
-&lt;p>所有错误均使用统一的 JSON 格式：&lt;/p></description></item><item><title>安装与更新</title><link>https://sabot.unv.app/deployment/installation/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/deployment/installation/</guid><description>&lt;h1 id="安装与更新">
+&lt;p>所有错误均使用统一的 JSON 格式：&lt;/p></description></item><item><title>命令行子命令</title><link>https://sabot.unv.app/usage/cli/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/cli/</guid><description>&lt;h1 id="命令行子命令">
+ 命令行子命令
+ &lt;a class="anchor" href="#%e5%91%bd%e4%bb%a4%e8%a1%8c%e5%ad%90%e5%91%bd%e4%bb%a4">#&lt;/a>
+&lt;/h1>
+&lt;p>除了直接运行 &lt;code>./saveany-bot&lt;/code> (不带子命令) 启动 Telegram Bot 外, 这个二进制文件还提供两个把本地文件上传到存储后端的辅助子命令: &lt;code>upload&lt;/code> (一次性) 和 &lt;code>watch&lt;/code> (持续监听).&lt;/p>
+&lt;p>这些子命令会读取与 Bot 相同的 &lt;code>config.toml&lt;/code>, 初始化数据库和缓存, 然后执行任务. 它们&lt;strong>不会&lt;/strong>启动 Telegram Bot 本身, 但 &lt;code>telegram&lt;/code> 类型的存储会在需要上传时临时启动 Bot 客户端来执行上传.&lt;/p>
+&lt;h2 id="upload--上传单个文件">
+ &lt;code>upload&lt;/code> — 上传单个文件
+ &lt;a class="anchor" href="#upload--%e4%b8%8a%e4%bc%a0%e5%8d%95%e4%b8%aa%e6%96%87%e4%bb%b6">#&lt;/a>
+&lt;/h2>
+&lt;pre tabindex="0">&lt;code>saveany-bot upload -f &amp;lt;文件&amp;gt; -s &amp;lt;存储名&amp;gt; [-d &amp;lt;目录&amp;gt;] [--no-progress]
+&lt;/code>&lt;/pre>&lt;p>参数:&lt;/p>
+&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th>参数&lt;/th>
+ &lt;th>必填&lt;/th>
+ &lt;th>说明&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td>&lt;code>-f, --file&lt;/code>&lt;/td>
+ &lt;td>是&lt;/td>
+ &lt;td>待上传的本地文件路径&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>-s, --storage&lt;/code>&lt;/td>
+ &lt;td>是&lt;/td>
+ &lt;td>目标存储名 (必须存在于 &lt;code>config.toml&lt;/code>)&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>-d, --dir&lt;/code>&lt;/td>
+ &lt;td>否&lt;/td>
+ &lt;td>存储中的目标目录, 默认使用存储的 &lt;code>base_path&lt;/code>&lt;/td>
+ &lt;/tr>
+ &lt;tr>
+ &lt;td>&lt;code>--no-progress&lt;/code>&lt;/td>
+ &lt;td>否&lt;/td>
+ &lt;td>关闭终端进度条&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;p>示例:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 上传文件到 &amp;#34;MyAlist&amp;#34; 的默认目录&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>./saveany-bot upload -f ./movie.mp4 -s MyAlist
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 上传到指定子目录&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>./saveany-bot upload -f ./movie.mp4 -s MyAlist -d movies/2026
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 通过 Telegram 存储上传并关闭进度条&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>./saveany-bot upload -f ./photo.jpg -s MyChannel --no-progress
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="watch--监听目录并自动上传">
+ &lt;code>watch&lt;/code> — 监听目录并自动上传
+ &lt;a class="anchor" href="#watch--%e7%9b%91%e5%90%ac%e7%9b%ae%e5%bd%95%e5%b9%b6%e8%87%aa%e5%8a%a8%e4%b8%8a%e4%bc%a0">#&lt;/a>
+&lt;/h2>
+&lt;p>&lt;code>watch&lt;/code> 子命令持续监听一个本地目录, 将新建或修改的文件上传到存储后端, 并保留相对监听根目录的子目录结构.&lt;/p></description></item><item><title>安装与更新</title><link>https://sabot.unv.app/deployment/installation/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/deployment/installation/</guid><description>&lt;h1 id="安装与更新">
  安装与更新
  &lt;a class="anchor" href="#%e5%ae%89%e8%a3%85%e4%b8%8e%e6%9b%b4%e6%96%b0">#&lt;/a>
 &lt;/h1>
