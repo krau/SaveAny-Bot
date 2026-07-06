@@ -7,6 +7,8 @@ ARG BuildTime="Unknown"
 
 WORKDIR /app
 
+RUN apk add --no-cache ca-certificates
+
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
@@ -31,5 +33,9 @@ FROM scratch
 WORKDIR /app
 
 COPY --from=builder /app/saveany-bot .
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV SSL_CERT_DIR=/etc/ssl/certs
 
 ENTRYPOINT ["/app/saveany-bot"]
