@@ -146,6 +146,21 @@ bot:
       error_no_permission: |
         You are not in the whitelist and cannot use this bot.
         You can deploy your own instance: https://github.com/krau/SaveAny-Bot
+    file_selection:
+      prompt: |-
+        Select files to download ({{.Selected}}/{{.Total}} selected):{{if .MultiplePages}}
+        Page {{.Page}}/{{.Pages}}{{end}}
+
+        {{.Files}}
+      button_select_all: "Select all"
+      button_select_none: "Select none"
+      button_invert: "Invert"
+      button_page: "{{.Page}}/{{.Pages}}"
+      button_confirm: "Download {{.Count}}"
+      button_cancel: "Cancel"
+      error_invalid_action: "Invalid file selection action"
+      error_no_files_selected: "Please select at least one file"
+      info_cancelled: "File selection cancelled"
     save:
       error_invalid_id_or_username: "Invalid ID or username: {{.Error}}"
     watch:

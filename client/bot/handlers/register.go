@@ -62,6 +62,7 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeSetDefault), handleSetDefaultCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeCancel), handleCancelCallback))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeConfig), handleConfigCallback))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeFileSelect), handleFileSelectionCallback))
 	// Prefer an attached savable file over Telegram links embedded in its
 	// caption. Unsupported media such as web page previews continues to the
 	// link handlers below.

@@ -12,6 +12,7 @@ const (
 	TypeSetDefault = "setdefault"
 	TypeConfig     = "config"
 	TypeCancel     = "cancel"
+	TypeFileSelect = "fsel"
 )
 
 const (

@@ -203,6 +203,27 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 	stor := storage.FromContext(ctx)
 	if stor == nil {
 		// not in silent mode
+		if len(files) > 1 {
+			text, markup, err := startFileSelection(update.GetUserChat().GetID(), files)
+			if err != nil {
+				log.FromContext(ctx).Errorf("Failed to build file selection message: %s", err)
+				if _, editErr := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
+					ID:      replied.ID,
+					Message: i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectMessageFailed, map[string]any{"Error": err.Error()}),
+				}); editErr != nil {
+					log.FromContext(ctx).Errorf("Failed to edit file selection error message: %s", editErr)
+				}
+				return dispatcher.EndGroups
+			}
+			if _, err := ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
+				ID:          replied.ID,
+				Message:     text,
+				ReplyMarkup: markup,
+			}); err != nil {
+				log.FromContext(ctx).Errorf("Failed to edit file selection message: %s", err)
+			}
+			return dispatcher.EndGroups
+		}
 		stors := storage.GetUserStorages(ctx, update.GetUserChat().GetID())
 		markup, err := msgelem.BuildAddSelectStorageKeyboard(stors, tcbdata.Add{
 			Files: files,
@@ -215,13 +236,9 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 			})
 			return dispatcher.EndGroups
 		}
-		fileNames := make([]string, 0, len(files))
-		for _, file := range files {
-			fileNames = append(fileNames, file.Name())
-		}
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:          replied.ID,
-			Message:     buildFoundFilesSelectStorageMessage(fileNames),
+			Message:     buildFoundFilesSelectStorageMessage(fileNamesFromTGFiles(files)),
 			ReplyMarkup: markup,
 		})
 		return dispatcher.EndGroups

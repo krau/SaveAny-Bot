@@ -147,6 +147,21 @@ bot:
       error_no_permission: |
         您不在白名单中, 无法使用此 Bot.
         您可以部署自己的实例: https://github.com/krau/SaveAny-Bot
+    file_selection:
+      prompt: |-
+        请选择要下载的文件 (已选择 {{.Selected}}/{{.Total}}):{{if .MultiplePages}}
+        第 {{.Page}}/{{.Pages}} 页{{end}}
+
+        {{.Files}}
+      button_select_all: "全选"
+      button_select_none: "全不选"
+      button_invert: "反选"
+      button_page: "{{.Page}}/{{.Pages}}"
+      button_confirm: "确认下载 {{.Count}} 个"
+      button_cancel: "取消"
+      error_invalid_action: "无效的文件选择操作"
+      error_no_files_selected: "请至少选择一个文件"
+      info_cancelled: "已取消文件选择"
     save:
       error_invalid_id_or_username: "无效的ID或用户名: {{.Error}}"
     watch:
