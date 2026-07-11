@@ -52,6 +52,7 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewMessage(filters.Message.ChatType(filters.ChatTypeChat), func(ctx *ext.Context, u *ext.Update) error {
 		return dispatcher.EndGroups
 	}))
+	disp.AddHandler(handlers.NewMessage(filters.Message.All, logIncomingMessage))
 	disp.AddHandler(handlers.NewMessage(filters.Message.All, checkPermission))
 	for _, info := range CommandHandlers {
 		disp.AddHandler(handlers.NewCommand(info.Cmd, info.handler))

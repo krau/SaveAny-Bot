@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
@@ -24,6 +26,35 @@ import (
 
 	"github.com/krau/SaveAny-Bot/storage"
 )
+
+const maxTelegramMessageRunes = 4096
+
+func buildFoundFilesSelectStorageMessage(fileNames []string) string {
+	fileLines := make([]string, 0, len(fileNames))
+	for index, fileName := range fileNames {
+		// Keep each file on one line so names containing line breaks cannot
+		// disrupt the list layout.
+		fileName = strings.Join(strings.Fields(fileName), " ")
+		fileLines = append(fileLines, fmt.Sprintf("%d. %s", index+1, fileName))
+	}
+
+	for shown := len(fileLines); shown >= 0; shown-- {
+		message := i18n.T(i18nk.BotMsgCommonInfoFoundFilesSelectStorage, map[string]any{
+			"Count":     len(fileLines),
+			"Files":     strings.Join(fileLines[:shown], "\n"),
+			"MoreCount": len(fileLines) - shown,
+		})
+		if utf8.RuneCountInString(message) <= maxTelegramMessageRunes {
+			return message
+		}
+	}
+
+	return i18n.T(i18nk.BotMsgCommonInfoFoundFilesSelectStorage, map[string]any{
+		"Count":     len(fileLines),
+		"Files":     "",
+		"MoreCount": len(fileLines),
+	})
+}
 
 func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
@@ -184,9 +215,13 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 			})
 			return dispatcher.EndGroups
 		}
+		fileNames := make([]string, 0, len(files))
+		for _, file := range files {
+			fileNames = append(fileNames, file.Name())
+		}
 		ctx.EditMessage(update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:          replied.ID,
-			Message:     i18n.T(i18nk.BotMsgCommonInfoFoundFilesSelectStorage, map[string]any{"Count": len(files)}),
+			Message:     buildFoundFilesSelectStorageMessage(fileNames),
 			ReplyMarkup: markup,
 		})
 		return dispatcher.EndGroups

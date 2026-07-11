@@ -43,9 +43,11 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 		}), nil)
 		return dispatcher.EndGroups
 	}
-	editReplied(i18n.T(i18nk.BotMsgCommonInfoFoundFilesSelectStorage, map[string]any{
-		"Count": len(files),
-	}), markup)
+	fileNames := make([]string, 0, len(files))
+	for _, file := range files {
+		fileNames = append(fileNames, file.Name())
+	}
+	editReplied(buildFoundFilesSelectStorageMessage(fileNames), markup)
 	return dispatcher.EndGroups
 }
 

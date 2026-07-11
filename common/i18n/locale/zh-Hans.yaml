@@ -102,7 +102,12 @@ bot:
       error_no_savable_messages_in_range: "没有找到指定范围内的可保存消息"
       error_build_storage_select_message_failed: "构建存储选择消息失败: {{.Error}}"
       error_build_storage_select_keyboard_failed: "构建存储选择键盘失败: {{.Error}}"
-      info_found_files_select_storage: "找到 {{.Count}} 个文件, 请选择存储位置"
+      info_found_files_select_storage: |-
+        找到 {{.Count}} 个文件:
+        {{.Files}}{{if .MoreCount}}
+        ... 还有 {{.MoreCount}} 个文件未显示{{end}}
+
+        请选择存储位置
       error_get_user_failed: "获取用户失败"
       error_get_user_with_err_failed: "获取用户失败: {{.Error}}"
       error_default_storage_not_set: "请先设置默认存储, 使用 /storage 命令"
