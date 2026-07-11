@@ -13,8 +13,8 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
-	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -125,11 +125,13 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, groupID int64) {
 		})
 		return
 	}
+	fileNames := make([]string, 0, len(items))
+	for _, item := range items {
+		fileNames = append(fileNames, item.Name())
+	}
 	ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
-		ID: msg.ID,
-		Message: i18n.T(i18nk.BotMsgMediaGroupInfoGroupFoundFilesSelectStorage, map[string]any{
-			"Count": len(items),
-		}),
+		ID:          msg.ID,
+		Message:     buildFoundFilesSelectStorageMessage(fileNames),
 		ReplyMarkup: markup,
 	})
 }
