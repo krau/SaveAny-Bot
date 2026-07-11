@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
@@ -14,6 +15,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -94,7 +96,8 @@ func startFileSelection(userID int64, files []tfile.TGFileMessage) (string, *tg.
 
 	state := newFileSelectionState(userID, files)
 	dataID := xid.New().String()
-	if err := cache.Set(dataID, state); err != nil {
+	ttl := time.Duration(config.C().Cache.FileSelectionTTL) * time.Second
+	if err := cache.SetWithTTL(dataID, state, ttl); err != nil {
 		return "", nil, fmt.Errorf("failed to cache file selection: %w", err)
 	}
 
@@ -257,6 +260,8 @@ func handleFileSelectionCallback(ctx *ext.Context, update *ext.Update) error {
 			ReplyMarkup: markup,
 		}); err != nil {
 			logger.Errorf("Failed to edit file selection message: %s", err)
+		} else {
+			cache.Delete(dataID)
 		}
 		return dispatcher.EndGroups
 	case fileSelectionActionCancel:
@@ -269,6 +274,8 @@ func handleFileSelectionCallback(ctx *ext.Context, update *ext.Update) error {
 			Message: i18n.T(i18nk.BotMsgFileSelectionInfoCancelled),
 		}); err != nil {
 			logger.Errorf("Failed to cancel file selection: %s", err)
+		} else {
+			cache.Delete(dataID)
 		}
 		return dispatcher.EndGroups
 	case fileSelectionActionNoOperation:

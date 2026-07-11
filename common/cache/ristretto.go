@@ -30,12 +30,20 @@ func Init() {
 }
 
 func Set(key string, value any) error {
-	ok := cache.SetWithTTL(key, value, 0, time.Duration(config.C().Cache.TTL)*time.Second)
+	return SetWithTTL(key, value, time.Duration(config.C().Cache.TTL)*time.Second)
+}
+
+func SetWithTTL(key string, value any, ttl time.Duration) error {
+	ok := cache.SetWithTTL(key, value, 0, ttl)
 	if !ok {
 		return fmt.Errorf("failed to set value in cache")
 	}
 	cache.Wait()
 	return nil
+}
+
+func Delete(key string) {
+	cache.Del(key)
 }
 
 func Get[T any](key string) (T, bool) {
