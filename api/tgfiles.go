@@ -60,6 +60,7 @@ func resolveChatID(_ context.Context, idOrUsername string) (int64, error) {
 }
 
 // ParseMessageLink 解析 Telegram 消息链接
+// 支持的域名: t.me, telegram.me
 // 支持格式:
 // - https://t.me/username/123
 // - https://t.me/c/123456789/123
@@ -268,5 +269,15 @@ func ExtractFilesFromLinks(ctx context.Context, links []string) ([]tfile.TGFileM
 
 // isValidMessageLink 检查是否是有效的 Telegram 消息链接
 func isValidMessageLink(link string) bool {
-	return strings.HasPrefix(link, "https://t.me/") || strings.HasPrefix(link, "http://t.me/")
+	for _, prefix := range []string{
+		"https://t.me/",
+		"http://t.me/",
+		"https://telegram.me/",
+		"http://telegram.me/",
+	} {
+		if strings.HasPrefix(link, prefix) {
+			return true
+		}
+	}
+	return false
 }
