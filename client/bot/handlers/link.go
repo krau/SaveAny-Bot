@@ -9,7 +9,6 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
-	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
@@ -33,19 +32,15 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 		ctx.EditMessage(update.EffectiveChat().GetID(), req)
 		return dispatcher.EndGroups
 	}
-	markup, err := msgelem.BuildAddSelectStorageKeyboard(stors, tcbdata.Add{
-		Files: files,
-	})
+	text, markup, err := startFileSelection(userId, files)
 	if err != nil {
-		logger.Errorf("Failed to build storage selection keyboard: %s", err)
-		editReplied(i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectKeyboardFailed, map[string]any{
+		logger.Errorf("Failed to build file selection message: %s", err)
+		editReplied(i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectMessageFailed, map[string]any{
 			"Error": err.Error(),
 		}), nil)
 		return dispatcher.EndGroups
 	}
-	editReplied(i18n.T(i18nk.BotMsgCommonInfoFoundFilesSelectStorage, map[string]any{
-		"Count": len(files),
-	}), markup)
+	editReplied(text, markup)
 	return dispatcher.EndGroups
 }
 

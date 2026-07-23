@@ -101,7 +101,12 @@ bot:
       error_no_savable_messages_in_range: "No savable messages found in the specified range"
       error_build_storage_select_message_failed: "Failed to build storage selection message: {{.Error}}"
       error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
-      info_found_files_select_storage: "Found {{.Count}} files, please select storage"
+      info_found_files_select_storage: |-
+        Found {{.Count}} files:
+        {{.Files}}{{if .MoreCount}}
+        ... {{.MoreCount}} more files not shown{{end}}
+
+        Please select storage
       error_get_user_failed: "Failed to get user"
       error_get_user_with_err_failed: "Failed to get user: {{.Error}}"
       error_default_storage_not_set: "Please set a default storage first with /storage"
@@ -141,6 +146,21 @@ bot:
       error_no_permission: |
         You are not in the whitelist and cannot use this bot.
         You can deploy your own instance: https://github.com/krau/SaveAny-Bot
+    file_selection:
+      prompt: |-
+        Select files to download ({{.Selected}}/{{.Total}} selected):{{if .MultiplePages}}
+        Page {{.Page}}/{{.Pages}}{{end}}
+
+        {{.Files}}
+      button_select_all: "Select all"
+      button_select_none: "Select none"
+      button_invert: "Invert"
+      button_page: "{{.Page}}/{{.Pages}}"
+      button_confirm: "Download {{.Count}}"
+      button_cancel: "Cancel"
+      error_invalid_action: "Invalid file selection action"
+      error_no_files_selected: "Please select at least one file"
+      info_cancelled: "File selection cancelled"
     save:
       error_invalid_id_or_username: "Invalid ID or username: {{.Error}}"
     watch:

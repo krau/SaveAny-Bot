@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
+	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -11,6 +12,29 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/storage"
 )
+
+func logIncomingMessage(ctx *ext.Context, update *ext.Update) error {
+	message := update.EffectiveMessage
+	if message == nil {
+		return dispatcher.ContinueGroups
+	}
+
+	var senderID int64
+	if user := update.EffectiveUser(); user != nil {
+		senderID = user.ID
+	}
+
+	log.FromContext(ctx).Info(
+		"Bot received message",
+		"message_id", message.ID,
+		"chat_id", update.EffectiveChat().GetID(),
+		"sender_id", senderID,
+		"text", message.Text,
+		"has_media", message.Media != nil,
+	)
+
+	return dispatcher.ContinueGroups
+}
 
 func checkPermission(ctx *ext.Context, update *ext.Update) error {
 	userID := update.GetUserChat().GetID()

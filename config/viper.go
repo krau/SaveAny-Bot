@@ -109,9 +109,10 @@ func Init(ctx context.Context, configFile ...string) error {
 		"log.level": "debug",
 
 		// 缓存配置
-		"cache.ttl":          86400,
-		"cache.num_counters": 1e5,
-		"cache.max_cost":     1e6,
+		"cache.ttl":                86400,
+		"cache.file_selection_ttl": 1800,
+		"cache.num_counters":       1e5,
+		"cache.max_cost":           1e6,
 
 		// Telegram
 		"telegram.app_id":          1025907,

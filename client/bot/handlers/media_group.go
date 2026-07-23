@@ -13,8 +13,8 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
-	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -109,6 +109,27 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, groupID int64) {
 		shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, stor, "", items, msg.ID)
 		return
 	}
+	if len(items) > 1 {
+		text, markup, err := startFileSelection(userId, items)
+		if err != nil {
+			logger.Errorf("Failed to build file selection message: %s", err)
+			if _, editErr := ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
+				ID:      msg.ID,
+				Message: i18n.T(i18nk.BotMsgCommonErrorBuildStorageSelectMessageFailed, map[string]any{"Error": err.Error()}),
+			}); editErr != nil {
+				logger.Errorf("Failed to edit file selection error message: %s", editErr)
+			}
+			return
+		}
+		if _, err := ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
+			ID:          msg.ID,
+			Message:     text,
+			ReplyMarkup: markup,
+		}); err != nil {
+			logger.Errorf("Failed to edit file selection message: %s", err)
+		}
+		return
+	}
 
 	stors := storage.GetUserStorages(ctx, userId)
 	markup, err := msgelem.BuildAddSelectStorageKeyboard(stors, tcbdata.Add{
@@ -126,10 +147,8 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, groupID int64) {
 		return
 	}
 	ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
-		ID: msg.ID,
-		Message: i18n.T(i18nk.BotMsgMediaGroupInfoGroupFoundFilesSelectStorage, map[string]any{
-			"Count": len(items),
-		}),
+		ID:          msg.ID,
+		Message:     buildFoundFilesSelectStorageMessage(fileNamesFromTGFiles(items)),
 		ReplyMarkup: markup,
 	})
 }
