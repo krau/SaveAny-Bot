@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/celestix/gotgproto/ext"
@@ -13,6 +14,34 @@ import (
 	"github.com/krau/ffmpeg-go"
 	"github.com/yapingcat/gomedia/go-mp4"
 )
+
+// sourceFile returns a filesystem path to the media for ffmpeg/ffprobe. Those
+// tools need a SEEKABLE input: feeding them a pipe (pipe:0) fails for
+// non-faststart MP4s whose moov atom is at the END of the file, because ffmpeg
+// cannot seek backwards on a stream to read it. That silently broke thumbnail
+// and metadata extraction for a large share of downloaded videos. If rs is
+// already an *os.File we use it directly; otherwise we spool it to a temp file
+// and return a cleanup func.
+func sourceFile(rs io.ReadSeeker) (path string, cleanup func(), err error) {
+	noop := func() {}
+	if f, ok := rs.(*os.File); ok {
+		return f.Name(), noop, nil
+	}
+	if _, err = rs.Seek(0, io.SeekStart); err != nil {
+		return "", noop, err
+	}
+	tf, err := os.CreateTemp("", "saveany-media-*.tmp")
+	if err != nil {
+		return "", noop, err
+	}
+	if _, err = io.Copy(tf, rs); err != nil {
+		tf.Close()
+		os.Remove(tf.Name())
+		return "", noop, err
+	}
+	tf.Close()
+	return tf.Name(), func() { os.Remove(tf.Name()) }, nil
+}
 
 type VideoMetadata struct {
 	Duration int
@@ -52,16 +81,14 @@ func getMP4Meta(rs io.ReadSeeker) (metadata *VideoMetadata, err error) {
 
 // getVideoMetadata uses ffprobe to get video metadata
 func getVideoMetadata(rs io.ReadSeeker) (*VideoMetadata, error) {
-	pipeReader, pipeWriter := io.Pipe()
+	path, cleanup, err := sourceFile(rs)
+	if err != nil {
+		return nil, err
+	}
+	defer cleanup()
 
-	go func() {
-		defer pipeWriter.Close()
-		rs.Seek(0, io.SeekStart)
-		io.Copy(pipeWriter, rs)
-	}()
-
-	result, err := ffmpeg.ProbeReaderWithTimeout(
-		pipeReader,
+	result, err := ffmpeg.ProbeWithTimeout(
+		path,
 		time.Second*10,
 		ffmpeg.KwArgs{
 			"select_streams": "v:0",
@@ -114,25 +141,22 @@ func extractThumbFrame(rs io.ReadSeeker) ([]byte, error) {
 }
 
 func extractFrameAt(rs io.ReadSeeker, timestamp float64) ([]byte, error) {
-	pipeReader, pipeWriter := io.Pipe()
-
-	go func() {
-		defer pipeWriter.Close()
-		rs.Seek(0, io.SeekStart)
-		io.Copy(pipeWriter, rs)
-	}()
+	path, cleanup, err := sourceFile(rs)
+	if err != nil {
+		return nil, err
+	}
+	defer cleanup()
 
 	var out bytes.Buffer
 
-	err := ffmpeg.
-		Input("pipe:0", ffmpeg.KwArgs{
+	err = ffmpeg.
+		Input(path, ffmpeg.KwArgs{
 			"ss": fmt.Sprintf("%.3f", timestamp),
 		}).
 		Output("pipe:1", ffmpeg.KwArgs{
 			"vframes": 1,
 			"f":       "mjpeg",
 		}).
-		WithInput(pipeReader).
 		WithOutput(&out).
 		OverWriteOutput().
 		Run()
