@@ -53,7 +53,7 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain(i18n.T(i18nk.BotMsgProgressBatchStartPrefix, nil)),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
+		styling.Code(batchProgressSummary(info.TotalSize(), info.Count())),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
@@ -103,7 +103,7 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain(i18n.T(i18nk.BotMsgProgressBatchProcessingPrefix, nil)),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalSize())/(1024*1024), info.Count())),
+		styling.Code(batchProgressSummary(info.TotalSize(), info.Count())),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressProcessingListPrefix, nil)),
 		func() styling.StyledTextOption {
 			var lines []string
@@ -161,7 +161,7 @@ func (p *Progress) OnUploadStart(ctx context.Context, info TaskInfo, total int64
 	entityBuilder := entity.Builder{}
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain(i18n.T(i18nk.BotMsgProgressBatchUploadingPrefix, nil)),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(total)/(1024*1024), info.Count())),
+		styling.Code(batchProgressSummary(total, info.Count())),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build batch upload entities: %s", err)
 		return
@@ -203,7 +203,7 @@ func (p *Progress) OnUploadProgress(ctx context.Context, info TaskInfo, uploaded
 	entityBuilder := entity.Builder{}
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain(i18n.T(i18nk.BotMsgProgressBatchUploadingPrefix, nil)),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(total)/(1024*1024), info.Count())),
+		styling.Code(batchProgressSummary(total, info.Count())),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressAvgSpeedPrefix, nil)),
 		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(uploaded, time.Unix(0, p.startAt.Load()))/(1024*1024))),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressCurrentProgressPrefix, nil)),
@@ -238,6 +238,13 @@ func shouldUpdateUploadProgress(total, uploaded int64, lastPercent int, elapsed 
 		return false
 	}
 	return shouldUpdateProgress(total, uploaded, lastPercent) || elapsed >= uploadProgressMaxInterval
+}
+
+func batchProgressSummary(total int64, count int) string {
+	return i18n.T(i18nk.BotMsgProgressBatchSummary, map[string]any{
+		"SizeMB": fmt.Sprintf("%.2f", float64(total)/(1024*1024)),
+		"Count":  count,
+	})
 }
 
 func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {

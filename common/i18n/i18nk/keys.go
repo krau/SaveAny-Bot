@@ -153,6 +153,7 @@ const (
 	BotMsgProgressBatchDonePrefix                         Key = "bot.msg.progress.batch_done_prefix"
 	BotMsgProgressBatchProcessingPrefix                   Key = "bot.msg.progress.batch_processing_prefix"
 	BotMsgProgressBatchStartPrefix                        Key = "bot.msg.progress.batch_start_prefix"
+	BotMsgProgressBatchSummary                            Key = "bot.msg.progress.batch_summary"
 	BotMsgProgressBatchUploadingPrefix                    Key = "bot.msg.progress.batch_uploading_prefix"
 	BotMsgProgressCurrentProgressPrefix                   Key = "bot.msg.progress.current_progress_prefix"
 	BotMsgProgressCurrentSpeedPrefix                      Key = "bot.msg.progress.current_speed_prefix"

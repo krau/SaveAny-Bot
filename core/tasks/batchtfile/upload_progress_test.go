@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/krau/SaveAny-Bot/common/i18n"
 )
 
 type uploadProgressRecorder struct {
@@ -40,6 +42,23 @@ func TestShouldUpdateUploadProgress(t *testing.T) {
 				t.Fatalf("shouldUpdateUploadProgress() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBatchProgressSummaryLocalized(t *testing.T) {
+	t.Cleanup(func() { i18n.Init("zh-Hans") })
+	tests := []struct {
+		lang string
+		want string
+	}{
+		{lang: "en", want: "3.00 MB (2 files)"},
+		{lang: "zh-Hans", want: "3.00 MB (2 个文件)"},
+	}
+	for _, tt := range tests {
+		i18n.Init(tt.lang)
+		if got := batchProgressSummary(3*1024*1024, 2); got != tt.want {
+			t.Fatalf("batchProgressSummary() with %s locale = %q, want %q", tt.lang, got, tt.want)
+		}
 	}
 }
 
