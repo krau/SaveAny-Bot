@@ -2,6 +2,7 @@ package tgutil
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -359,7 +360,14 @@ func GetGroupedMessages(ctx *ext.Context, chatID int64, msg *tg.Message) ([]*tg.
 			groupedMessages = append(groupedMessages, m)
 		}
 	}
+	sortMessagesByID(groupedMessages)
 	return groupedMessages, nil
+}
+
+func sortMessagesByID(messages []*tg.Message) {
+	sort.Slice(messages, func(i, j int) bool {
+		return messages[i].GetID() < messages[j].GetID()
+	})
 }
 
 func ExtractMessageEntityUrls(msg *tg.Message) []string {

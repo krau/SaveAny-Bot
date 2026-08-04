@@ -12,6 +12,7 @@ import (
 
 	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
+	"github.com/duke-git/lancet/v2/retry"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gabriel-vasile/mimetype"
@@ -26,6 +27,7 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/consts/tglimit"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/rs/xid"
 	"golang.org/x/time/rate"
 )
@@ -39,6 +41,19 @@ const (
 type Telegram struct {
 	config  storconfig.TelegramStorageConfig
 	limiter *rate.Limiter
+}
+
+type preparedMedia struct {
+	peer     tg.InputPeerClass
+	uploader *uploader.Uploader
+	media    message.MultiMediaOption
+}
+
+type batchMediaItem struct {
+	item          storagetypes.BatchItem
+	chatID        int64
+	albumEligible bool
+	useSingleSave bool
 }
 
 func (t *Telegram) Init(ctx context.Context, cfg storconfig.StorageConfig) error {
@@ -71,37 +86,76 @@ func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
 }
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
-	storagePath = path.Clean(storagePath)
 	tctx := tgutil.ExtFromContext(ctx)
 	if tctx == nil {
 		return fmt.Errorf("failed to get telegram context")
 	}
-	size := func() int64 {
-		if length := ctx.Value(ctxkey.ContentLength); length != nil {
-			if l, ok := length.(int64); ok {
-				return l
-			}
-		}
-		return -1 // unknown size
-	}()
+	size := contentLength(ctx)
 	if t.config.SkipLarge && size > MaxUploadFileSize {
 		log.FromContext(ctx).Warnf("Skipping file larger than Telegram limit (%d bytes): %d bytes", MaxUploadFileSize, size)
 		return nil
 	}
-	rs, seekable := r.(io.ReadSeeker)
-	splitSize := t.config.SplitSizeMB * 1024 * 1024
-	if splitSize <= 0 {
-		splitSize = DefaultSplitSize
+	if size > t.splitSize() {
+		filename, chatID := t.target(tctx, path.Clean(storagePath))
+		if filename == "" {
+			if rs, ok := r.(io.ReadSeeker); ok {
+				mtype, err := mimetype.DetectReader(rs)
+				if err != nil {
+					return fmt.Errorf("failed to detect mimetype: %w", err)
+				}
+				filename = xid.New().String() + mtype.Extension()
+				if _, err := rs.Seek(0, io.SeekStart); err != nil {
+					return fmt.Errorf("failed to seek reader: %w", err)
+				}
+			}
+		}
+		upler := t.newUploader(tctx, size)
+		peer := tryGetInputPeer(tctx, chatID)
+		if peer == nil || peer.Zero() {
+			return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
+		}
+		if err := t.limiter.Wait(ctx); err != nil {
+			return fmt.Errorf("rate limit failed: %w", err)
+		}
+		return t.splitUpload(tctx, r, filename, upler, peer, size, t.splitSize())
 	}
 
 	if err := t.limiter.Wait(ctx); err != nil {
 		return fmt.Errorf("rate limit failed: %w", err)
 	}
+	prepared, err := t.prepareMedia(ctx, tctx, r, storagePath, size, nil)
+	if err != nil {
+		return err
+	}
+	_, err = tctx.Sender.
+		WithUploader(prepared.uploader).
+		To(prepared.peer).
+		Media(ctx, prepared.media)
+	return err
+}
 
+func contentLength(ctx context.Context) int64 {
+	if length := ctx.Value(ctxkey.ContentLength); length != nil {
+		if size, ok := length.(int64); ok {
+			return size
+		}
+	}
+	return -1
+}
+
+func (t *Telegram) splitSize() int64 {
+	splitSize := t.config.SplitSizeMB * 1024 * 1024
+	if splitSize <= 0 {
+		return DefaultSplitSize
+	}
+	return splitSize
+}
+
+func (t *Telegram) target(tctx *ext.Context, storagePath string) (string, int64) {
 	// 去除前导斜杠并分隔路径, 当 len(parts):
 	// ==0, 存储到配置文件中的 chat_id, 随机文件名
 	// ==1, 视作只有文件名, 存储到配置文件中的 chat_id
-	// ==2, parts[0]: 视作要存储到的 chat_id, parts[1]: filename
+	// >=2, parts[0]: 视作要存储到的 chat_id, 最后一项为 filename
 	parts := slice.Compact(strings.Split(strings.TrimPrefix(storagePath, "/"), "/"))
 	filename := ""
 	chatID := t.config.ChatID
@@ -111,37 +165,53 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 	if len(parts) >= 2 && validator.IsAlphaNumeric(parts[0]) {
 		cid, err := tgutil.ParseChatID(tctx, parts[0])
 		if err != nil {
-			// id不合法时使用配置文件中的 chat_id
-			log.FromContext(ctx).Warnf("Failed to parse chat ID from path, using configured chat_id: %s", err)
+			log.FromContext(tctx).Warnf("Failed to parse chat ID from path, using configured chat_id: %s", err)
 			cid = chatID
 		}
 		chatID = cid
 	}
-	upler := uploader.NewUploader(tctx.Raw).
+	return filename, chatID
+}
+
+func (t *Telegram) newUploader(tctx *ext.Context, size int64) *uploader.Uploader {
+	return uploader.NewUploader(tctx.Raw).
 		WithPartSize(tglimit.MaxUploadPartSize).
 		WithThreads(dlutil.BestThreads(size, config.C().Threads))
+}
+
+func mediaCaption(filename string, override *string) []message.StyledTextOption {
+	if override == nil {
+		return []message.StyledTextOption{styling.Plain(filename)}
+	}
+	if *override == "" {
+		return nil
+	}
+	return []message.StyledTextOption{styling.Plain(*override)}
+}
+
+func (t *Telegram) prepareMedia(ctx context.Context, tctx *ext.Context, r io.Reader, storagePath string, size int64, captionOverride *string) (*preparedMedia, error) {
+	storagePath = path.Clean(storagePath)
+	filename, chatID := t.target(tctx, storagePath)
+	upler := t.newUploader(tctx, size)
 	peer := tryGetInputPeer(tctx, chatID)
 	if peer == nil || peer.Zero() {
-		return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
+		return nil, fmt.Errorf("failed to get input peer for chat ID %d", chatID)
 	}
+
+	rs, seekable := r.(io.ReadSeeker)
 	var mtype *mimetype.MIME
 	if seekable {
 		var err error
 		mtype, err = mimetype.DetectReader(rs)
 		if err != nil {
-			return fmt.Errorf("failed to detect mimetype: %w", err)
+			return nil, fmt.Errorf("failed to detect mimetype: %w", err)
 		}
 		if filename == "" {
 			filename = xid.New().String() + mtype.Extension()
 		}
-
 		if _, err := rs.Seek(0, io.SeekStart); err != nil {
-			return fmt.Errorf("failed to seek reader: %w", err)
+			return nil, fmt.Errorf("failed to seek reader: %w", err)
 		}
-	}
-	if size > splitSize {
-		// large file, use split uploader
-		return t.splitUpload(tctx, r, filename, upler, peer, size, splitSize)
 	}
 
 	var file tg.InputFileClass
@@ -152,21 +222,20 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		file, err = upler.Upload(ctx, uploader.NewUpload(filename, r, size))
 	}
 	if err != nil {
-		return fmt.Errorf("failed to upload file to telegram: %w", err)
+		return nil, fmt.Errorf("failed to upload file to telegram: %w", err)
 	}
-	caption := styling.Plain(filename)
+	caption := mediaCaption(filename, captionOverride)
 	forceFile := t.config.ForceFile
-
 	if mtype != nil && strings.HasPrefix(mtype.String(), "image/") && size >= tglimit.MaxPhotoSize {
 		forceFile = true
 	}
-	doc := message.UploadedDocument(file, caption).
+	doc := message.UploadedDocument(file, caption...).
 		Filename(filename).
 		ForceFile(forceFile)
 	if mtype != nil {
 		doc = doc.MIME(mtype.String())
 	}
-	var media message.MediaOption = doc
+	var media message.MultiMediaOption = doc
 	if mtype != nil && rs != nil {
 		switch mtypeStr := mtype.String(); {
 		case strings.HasPrefix(mtypeStr, "video/"):
@@ -205,12 +274,128 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		case strings.HasPrefix(mtypeStr, "audio/"):
 			media = doc.Audio().Title(filename)
 		case strings.HasPrefix(mtypeStr, "image/") && !strings.HasSuffix(mtypeStr, "webp"):
-			media = message.UploadedPhoto(file, caption)
+			media = message.UploadedPhoto(file, caption...)
 		}
 	}
-	sender := tctx.Sender
-	_, err = sender.WithUploader(upler).To(peer).Media(ctx, media)
-	return err
+	return &preparedMedia{
+		peer:     peer,
+		uploader: upler,
+		media:    media,
+	}, nil
+}
+
+// SaveBatch preserves each source photo/video group as a Telegram album.
+func (t *Telegram) SaveBatch(ctx context.Context, items []storagetypes.BatchItem) error {
+	tctx := tgutil.ExtFromContext(ctx)
+	if tctx == nil {
+		return fmt.Errorf("failed to get telegram context")
+	}
+
+	inspected := make([]batchMediaItem, 0, len(items))
+	for _, item := range items {
+		mediaItem, err := t.inspectBatchItem(tctx, item)
+		if err != nil {
+			return err
+		}
+		inspected = append(inspected, mediaItem)
+	}
+	for _, group := range planMediaGroups(inspected) {
+		if err := t.saveMediaGroup(ctx, tctx, group); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *Telegram) inspectBatchItem(tctx *ext.Context, item storagetypes.BatchItem) (batchMediaItem, error) {
+	_, chatID := t.target(tctx, path.Clean(item.StoragePath))
+	result := batchMediaItem{item: item, chatID: chatID}
+	if (t.config.SkipLarge && item.Size > MaxUploadFileSize) || item.Size > t.splitSize() {
+		result.useSingleSave = true
+		return result, nil
+	}
+	mtype, err := mimetype.DetectReader(item.Reader)
+	if err != nil {
+		return result, fmt.Errorf("failed to detect batch item mimetype: %w", err)
+	}
+	if _, err := item.Reader.Seek(0, io.SeekStart); err != nil {
+		return result, fmt.Errorf("failed to seek batch item: %w", err)
+	}
+	mtypeStr := mtype.String()
+	forceFile := t.config.ForceFile || strings.HasPrefix(mtypeStr, "image/") && item.Size >= tglimit.MaxPhotoSize
+	result.albumEligible = !forceFile && (strings.HasPrefix(mtypeStr, "video/") ||
+		strings.HasPrefix(mtypeStr, "image/") && mtypeStr != "image/webp" && mtypeStr != "image/gif")
+	return result, nil
+}
+
+func planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
+	groups := make([][]batchMediaItem, 0, len(items))
+	for i := 0; i < len(items); {
+		item := items[i]
+		if item.useSingleSave || !item.albumEligible || item.item.SourceGroupKey == "" {
+			groups = append(groups, items[i:i+1])
+			i++
+			continue
+		}
+		end := i + 1
+		for end < len(items) && end-i < 10 {
+			next := items[end]
+			if next.useSingleSave || !next.albumEligible || next.chatID != item.chatID || next.item.SourceGroupKey != item.item.SourceGroupKey {
+				break
+			}
+			end++
+		}
+		groups = append(groups, items[i:end])
+		i = end
+	}
+	return groups
+}
+
+func (t *Telegram) saveMediaGroup(ctx context.Context, tctx *ext.Context, group []batchMediaItem) error {
+	return retry.Retry(func() error {
+		if len(group) == 1 && group[0].useSingleSave {
+			item := group[0].item
+			if _, err := item.Reader.Seek(0, io.SeekStart); err != nil {
+				return fmt.Errorf("failed to seek batch item: %w", err)
+			}
+			itemCtx := context.WithValue(ctx, ctxkey.ContentLength, item.Size)
+			return t.Save(itemCtx, item.Reader, item.StoragePath)
+		}
+		if err := t.limiter.Wait(ctx); err != nil {
+			return fmt.Errorf("rate limit failed: %w", err)
+		}
+
+		prepared := make([]preparedMedia, 0, len(group))
+		for _, mediaItem := range group {
+			item := mediaItem.item
+			if _, err := item.Reader.Seek(0, io.SeekStart); err != nil {
+				return fmt.Errorf("failed to seek batch item: %w", err)
+			}
+			var captionOverride *string
+			if item.PreserveCaption {
+				captionOverride = &item.Caption
+			}
+			media, err := t.prepareMedia(ctx, tctx, item.Reader, item.StoragePath, item.Size, captionOverride)
+			if err != nil {
+				return err
+			}
+			prepared = append(prepared, *media)
+		}
+
+		builder := tctx.Sender.WithUploader(prepared[0].uploader).To(prepared[0].peer)
+		if len(prepared) == 1 {
+			_, err := builder.Media(ctx, prepared[0].media)
+			return err
+		}
+		media := make([]message.MultiMediaOption, len(prepared))
+		for i := range prepared {
+			media[i] = prepared[i].media
+		}
+		if _, err := builder.Album(ctx, media[0], media[1:]...); err != nil {
+			return fmt.Errorf("failed to send media album: %w", err)
+		}
+		return nil
+	}, retry.Context(ctx), retry.RetryTimes(uint(config.C().Retry)))
 }
 
 func (t *Telegram) CannotStream() string {
