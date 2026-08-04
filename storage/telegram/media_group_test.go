@@ -1,6 +1,8 @@
 package telegram
 
 import (
+	"bytes"
+	"io"
 	"testing"
 
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
@@ -93,6 +95,31 @@ func TestMediaCaption(t *testing.T) {
 				t.Fatalf("got %d caption options, want %d", got, tt.wantLen)
 			}
 		})
+	}
+}
+
+func TestInspectBatchItemRewindsBeforeMimetypeDetection(t *testing.T) {
+	data := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
+	reader := bytes.NewReader(data)
+	if _, err := reader.Seek(4, io.SeekStart); err != nil {
+		t.Fatalf("failed to set initial reader offset: %v", err)
+	}
+
+	mediaItem, err := new(Telegram).inspectBatchItem(nil, storagetypes.BatchItem{
+		Reader:      reader,
+		StoragePath: "photo.png",
+		Size:        int64(len(data)),
+	})
+	if err != nil {
+		t.Fatalf("inspectBatchItem returned an error: %v", err)
+	}
+	if !mediaItem.albumEligible {
+		t.Fatal("albumEligible = false, want true for PNG input")
+	}
+	if offset, err := reader.Seek(0, io.SeekCurrent); err != nil {
+		t.Fatalf("failed to get final reader offset: %v", err)
+	} else if offset != 0 {
+		t.Fatalf("reader offset = %d, want 0", offset)
 	}
 }
 

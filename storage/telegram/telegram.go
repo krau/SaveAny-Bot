@@ -314,6 +314,9 @@ func (t *Telegram) inspectBatchItem(tctx *ext.Context, item storagetypes.BatchIt
 		result.useSingleSave = true
 		return result, nil
 	}
+	if _, err := item.Reader.Seek(0, io.SeekStart); err != nil {
+		return result, fmt.Errorf("failed to seek batch item before mimetype detection: %w", err)
+	}
 	mtype, err := mimetype.DetectReader(item.Reader)
 	if err != nil {
 		return result, fmt.Errorf("failed to detect batch item mimetype: %w", err)
