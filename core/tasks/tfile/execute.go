@@ -68,7 +68,10 @@ func (t *Task) Execute(ctx context.Context) error {
 		defer file.Close()
 		uploadProgress, tracksUpload := t.Progress.(UploadProgressTracker)
 		if !tracksUpload {
-			return t.Storage.Save(vctx, file, t.Path)
+			if err = t.Storage.Save(vctx, file, t.Path); err != nil {
+				return fmt.Errorf("failed to save file: %w", err)
+			}
+			return nil
 		}
 
 		uploadProgress.OnUploadStart(vctx, t, fileStat.Size())
