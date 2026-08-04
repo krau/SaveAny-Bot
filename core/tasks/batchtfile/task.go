@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
@@ -18,12 +19,15 @@ import (
 var _ core.Executable = (*Task)(nil)
 
 type TaskElement struct {
-	ID        string
-	Storage   storage.Storage
-	Path      string
-	File      tfile.TGFile
-	localPath string
-	stream    bool
+	ID              string
+	Storage         storage.Storage
+	Path            string
+	File            tfile.TGFile
+	localPath       string
+	stream          bool
+	sourceGroupKey  string
+	sourceCaption   string
+	preserveCaption bool
 }
 
 type Task struct {
@@ -54,6 +58,7 @@ func NewTaskElement(
 	file tfile.TGFile,
 ) (*TaskElement, error) {
 	id := xid.New().String()
+	groupKey, caption, preserveCaption := sourceMetadata(file)
 	_, ok := stor.(storage.StorageCannotStream)
 	if !config.C().Stream || ok {
 		cachePath, err := filepath.Abs(filepath.Join(config.C().Temp.BasePath, fmt.Sprintf("%s_%s", id, file.Name())))
@@ -61,20 +66,40 @@ func NewTaskElement(
 			return nil, fmt.Errorf("failed to get absolute path for cache: %w", err)
 		}
 		return &TaskElement{
-			ID:        id,
-			Storage:   stor,
-			Path:      path,
-			File:      file,
-			localPath: cachePath,
+			ID:              id,
+			Storage:         stor,
+			Path:            path,
+			File:            file,
+			localPath:       cachePath,
+			sourceGroupKey:  groupKey,
+			sourceCaption:   caption,
+			preserveCaption: preserveCaption,
 		}, nil
 	}
 	return &TaskElement{
-		ID:      id,
-		Storage: stor,
-		Path:    path,
-		File:    file,
-		stream:  true,
+		ID:              id,
+		Storage:         stor,
+		Path:            path,
+		File:            file,
+		stream:          true,
+		sourceGroupKey:  groupKey,
+		sourceCaption:   caption,
+		preserveCaption: preserveCaption,
 	}, nil
+}
+
+func sourceMetadata(file tfile.TGFile) (groupKey, caption string, preserveCaption bool) {
+	messageFile, ok := file.(tfile.TGFileMessage)
+	if !ok || messageFile.Message() == nil {
+		return "", "", false
+	}
+	msg := messageFile.Message()
+	groupID, grouped := msg.GetGroupedID()
+	if !grouped || groupID == 0 {
+		return "", "", false
+	}
+	chatID := tgutil.ChatIdFromPeer(msg.GetPeerID())
+	return fmt.Sprintf("%T:%d:%d", msg.GetPeerID(), chatID, groupID), msg.GetMessage(), true
 }
 
 func NewBatchTGFileTask(

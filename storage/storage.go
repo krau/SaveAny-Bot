@@ -31,6 +31,13 @@ type StorageCannotStream interface {
 	CannotStream() string
 }
 
+// StorageBatchSaver can preserve relationships between files when saving a
+// logical batch, such as a Telegram media album.
+type StorageBatchSaver interface {
+	Storage
+	SaveBatch(ctx context.Context, items []storagetypes.BatchItem) error
+}
+
 // StorageListable 表示支持列举目录内容的存储
 type StorageListable interface {
 	Storage
