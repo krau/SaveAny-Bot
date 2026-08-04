@@ -353,6 +353,7 @@ bot:
     progress:
       batch_start_prefix: "Starting batch download task\nTotal size: "
       batch_processing_prefix: "Processing batch download task\nTotal size: "
+      batch_uploading_prefix: "Uploading batch task\nTotal size: "
       downloading_prefix: "Downloading\nTotal size: "
       processing_list_prefix: "\nProcessing:\n"
       processing_none: "  - None"

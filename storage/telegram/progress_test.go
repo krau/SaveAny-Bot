@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gotd/td/telegram/uploader"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 )
 
 func TestUploadProgressAggregatesUploaderParts(t *testing.T) {
@@ -56,5 +57,24 @@ func TestUploadProgressResetForSplitFiles(t *testing.T) {
 	}
 	if uploaded != 30 || total != 120 {
 		t.Fatalf("progress after reset = %d/%d, want 30/120", uploaded, total)
+	}
+}
+
+func TestBatchItemUploadProgressPreservesItemIndex(t *testing.T) {
+	var gotIndex int
+	var gotUploaded, gotTotal int64
+	progress := batchItemUploadProgress(batchMediaItem{
+		index: 4,
+		item:  storagetypes.BatchItem{Size: 100},
+	}, func(index int, uploaded, total int64) {
+		gotIndex = index
+		gotUploaded = uploaded
+		gotTotal = total
+	})
+	if err := progress.Chunk(context.Background(), uploader.ProgressState{ID: 1, Uploaded: 25, Total: 100}); err != nil {
+		t.Fatalf("Chunk() failed: %v", err)
+	}
+	if gotIndex != 4 || gotUploaded != 25 || gotTotal != 100 {
+		t.Fatalf("batch progress = index %d, %d/%d; want index 4, 25/100", gotIndex, gotUploaded, gotTotal)
 	}
 }

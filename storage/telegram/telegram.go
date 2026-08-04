@@ -51,6 +51,7 @@ type preparedMedia struct {
 
 type batchMediaItem struct {
 	item          storagetypes.BatchItem
+	index         int
 	chatID        int64
 	albumEligible bool
 	useSingleSave bool
@@ -314,21 +315,40 @@ func (t *Telegram) prepareMedia(
 
 // SaveBatch preserves each source photo/video group as a Telegram album.
 func (t *Telegram) SaveBatch(ctx context.Context, items []storagetypes.BatchItem) error {
+	return t.saveBatch(ctx, items, nil)
+}
+
+// SaveBatchWithProgress preserves source media groups while reporting native
+// Telegram upload progress for each input item.
+func (t *Telegram) SaveBatchWithProgress(
+	ctx context.Context,
+	items []storagetypes.BatchItem,
+	onProgress func(index int, uploaded, total int64),
+) error {
+	return t.saveBatch(ctx, items, onProgress)
+}
+
+func (t *Telegram) saveBatch(
+	ctx context.Context,
+	items []storagetypes.BatchItem,
+	onProgress func(index int, uploaded, total int64),
+) error {
 	tctx := tgutil.ExtFromContext(ctx)
 	if tctx == nil {
 		return fmt.Errorf("failed to get telegram context")
 	}
 
 	inspected := make([]batchMediaItem, 0, len(items))
-	for _, item := range items {
+	for index, item := range items {
 		mediaItem, err := t.inspectBatchItem(tctx, item)
 		if err != nil {
 			return err
 		}
+		mediaItem.index = index
 		inspected = append(inspected, mediaItem)
 	}
 	for _, group := range planMediaGroups(inspected) {
-		if err := t.saveMediaGroup(ctx, tctx, group); err != nil {
+		if err := t.saveMediaGroup(ctx, tctx, group, onProgress); err != nil {
 			return err
 		}
 	}
@@ -382,15 +402,38 @@ func planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
 	return groups
 }
 
-func (t *Telegram) saveMediaGroup(ctx context.Context, tctx *ext.Context, group []batchMediaItem) error {
+func batchItemUploadProgress(
+	mediaItem batchMediaItem,
+	onProgress func(index int, uploaded, total int64),
+) *uploadProgress {
+	if onProgress == nil {
+		return nil
+	}
+	return newUploadProgress(mediaItem.item.Size, func(uploaded, total int64) {
+		onProgress(mediaItem.index, uploaded, total)
+	})
+}
+
+func (t *Telegram) saveMediaGroup(
+	ctx context.Context,
+	tctx *ext.Context,
+	group []batchMediaItem,
+	onProgress func(index int, uploaded, total int64),
+) error {
 	return retry.Retry(func() error {
 		if len(group) == 1 && group[0].useSingleSave {
-			item := group[0].item
+			mediaItem := group[0]
+			item := mediaItem.item
 			if _, err := item.Reader.Seek(0, io.SeekStart); err != nil {
 				return fmt.Errorf("failed to seek batch item: %w", err)
 			}
 			itemCtx := context.WithValue(ctx, ctxkey.ContentLength, item.Size)
-			return t.Save(itemCtx, item.Reader, item.StoragePath)
+			if onProgress == nil {
+				return t.Save(itemCtx, item.Reader, item.StoragePath)
+			}
+			return t.SaveWithProgress(itemCtx, item.Reader, item.StoragePath, func(uploaded, total int64) {
+				onProgress(mediaItem.index, uploaded, total)
+			})
 		}
 		if err := t.limiter.Wait(ctx); err != nil {
 			return fmt.Errorf("rate limit failed: %w", err)
@@ -406,7 +449,8 @@ func (t *Telegram) saveMediaGroup(ctx context.Context, tctx *ext.Context, group 
 			if item.PreserveCaption {
 				captionOverride = &item.Caption
 			}
-			media, err := t.prepareMedia(ctx, tctx, item.Reader, item.StoragePath, item.Size, captionOverride, nil)
+			progress := batchItemUploadProgress(mediaItem, onProgress)
+			media, err := t.prepareMedia(ctx, tctx, item.Reader, item.StoragePath, item.Size, captionOverride, progress)
 			if err != nil {
 				return err
 			}

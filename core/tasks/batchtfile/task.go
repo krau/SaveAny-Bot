@@ -40,6 +40,9 @@ type Task struct {
 	totalSize    int64
 	processing   map[string]TaskElementInfo
 	processingMu sync.RWMutex
+	uploadOnce   sync.Once
+	uploadMu     sync.Mutex
+	uploaded     map[string]int64
 	failed       map[string]error // [TODO] errors for each element
 }
 
@@ -123,6 +126,7 @@ func NewBatchTGFileTask(
 			return total
 		}(),
 		processing:   make(map[string]TaskElementInfo),
+		uploaded:     make(map[string]int64),
 		IgnoreErrors: ignoreErrors,
 		processingMu: sync.RWMutex{},
 		failed:       make(map[string]error),

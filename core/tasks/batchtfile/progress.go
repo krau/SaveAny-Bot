@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -29,14 +30,24 @@ type ProgressTracker interface {
 type Progress struct {
 	MessageID         int
 	ChatID            int64
-	start             time.Time
+	startAt           atomic.Int64
 	lastUpdatePercent atomic.Int32
+	lastUpdateAt      atomic.Int64
+	uploadStarted     atomic.Bool
+	updateMu          sync.Mutex
 	skippedFiles      []string
 }
 
+const (
+	uploadProgressMinInterval = time.Second
+	uploadProgressMaxInterval = 3 * time.Second
+)
+
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
-	p.start = time.Now()
+	p.startAt.Store(time.Now().UnixNano())
 	p.lastUpdatePercent.Store(0)
+	p.lastUpdateAt.Store(0)
+	p.uploadStarted.Store(false)
 	log.FromContext(ctx).Debugf("Batch task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
@@ -70,15 +81,24 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
-	if !shouldUpdateProgress(info.TotalSize(), info.Downloaded(), int(p.lastUpdatePercent.Load())) {
+	if p.uploadStarted.Load() {
 		return
 	}
-	percent := int((info.Downloaded() * 100) / info.TotalSize())
+	p.updateMu.Lock()
+	defer p.updateMu.Unlock()
+	if p.uploadStarted.Load() {
+		return
+	}
+	downloaded := min(info.Downloaded(), info.TotalSize())
+	if !shouldUpdateProgress(info.TotalSize(), downloaded, int(p.lastUpdatePercent.Load())) {
+		return
+	}
+	percent := int((downloaded * 100) / info.TotalSize())
 	if p.lastUpdatePercent.Load() == int32(percent) {
 		return
 	}
 	p.lastUpdatePercent.Store(int32(percent))
-	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.TaskID(), info.Downloaded(), info.TotalSize())
+	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.TaskID(), downloaded, info.TotalSize())
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
@@ -96,14 +116,17 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 			return styling.Plain(slice.Join(lines, "\n"))
 		}(),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressAvgSpeedPrefix, nil)),
-		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(info.Downloaded(), p.start)/(1024*1024))),
+		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(downloaded, time.Unix(0, p.startAt.Load()))/(1024*1024))),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressCurrentProgressPrefix, nil)),
-		styling.Bold(fmt.Sprintf("%.2f%%", float64(info.Downloaded())/float64(info.TotalSize())*100)),
+		styling.Bold(fmt.Sprintf("%.2f%%", float64(downloaded)/float64(info.TotalSize())*100)),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
 	}
 	text, entities := entityBuilder.Complete()
+	if p.uploadStarted.Load() {
+		return
+	}
 	req := &tg.MessagesEditMessageRequest{
 		ID: p.MessageID,
 	}
@@ -123,6 +146,98 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 		ext.EditMessage(p.ChatID, req)
 		return
 	}
+}
+
+func (p *Progress) OnUploadStart(ctx context.Context, info TaskInfo, total int64) {
+	p.uploadStarted.Store(true)
+	p.updateMu.Lock()
+	defer p.updateMu.Unlock()
+	start := time.Now()
+	p.startAt.Store(start.UnixNano())
+	p.lastUpdatePercent.Store(0)
+	p.lastUpdateAt.Store(start.UnixNano())
+	log.FromContext(ctx).Debugf("Batch upload progress tracking started: %s", info.TaskID())
+
+	entityBuilder := entity.Builder{}
+	if err := styling.Perform(&entityBuilder,
+		styling.Plain(i18n.T(i18nk.BotMsgProgressBatchUploadingPrefix, nil)),
+		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(total)/(1024*1024), info.Count())),
+	); err != nil {
+		log.FromContext(ctx).Errorf("Failed to build batch upload entities: %s", err)
+		return
+	}
+
+	text, entities := entityBuilder.Complete()
+	req := &tg.MessagesEditMessageRequest{ID: p.MessageID}
+	req.SetMessage(text)
+	req.SetEntities(entities)
+	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
+		Rows: []tg.KeyboardButtonRow{{
+			Buttons: []tg.KeyboardButtonClass{tgutil.BuildCancelButton(info.TaskID())},
+		}},
+	})
+	if ext := tgutil.ExtFromContext(ctx); ext != nil {
+		ext.EditMessage(p.ChatID, req)
+	}
+}
+
+func (p *Progress) OnUploadProgress(ctx context.Context, info TaskInfo, uploaded, total int64) {
+	if total <= 0 || uploaded <= 0 {
+		return
+	}
+	p.updateMu.Lock()
+	defer p.updateMu.Unlock()
+	uploaded = min(uploaded, total)
+	now := time.Now()
+	lastUpdateAt := time.Unix(0, p.lastUpdateAt.Load())
+	lastPercent := int(p.lastUpdatePercent.Load())
+	if !shouldUpdateUploadProgress(total, uploaded, lastPercent, now.Sub(lastUpdateAt)) {
+		return
+	}
+
+	percent := int32((uploaded * 100) / total)
+	p.lastUpdatePercent.Store(percent)
+	p.lastUpdateAt.Store(now.UnixNano())
+	log.FromContext(ctx).Debugf("Batch upload progress update: %s, %d/%d", info.TaskID(), uploaded, total)
+
+	entityBuilder := entity.Builder{}
+	if err := styling.Perform(&entityBuilder,
+		styling.Plain(i18n.T(i18nk.BotMsgProgressBatchUploadingPrefix, nil)),
+		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(total)/(1024*1024), info.Count())),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressAvgSpeedPrefix, nil)),
+		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(uploaded, time.Unix(0, p.startAt.Load()))/(1024*1024))),
+		styling.Plain(i18n.T(i18nk.BotMsgProgressCurrentProgressPrefix, nil)),
+		styling.Bold(fmt.Sprintf("%.2f%%", float64(uploaded)/float64(total)*100)),
+	); err != nil {
+		log.FromContext(ctx).Errorf("Failed to build batch upload entities: %s", err)
+		return
+	}
+
+	text, entities := entityBuilder.Complete()
+	req := &tg.MessagesEditMessageRequest{ID: p.MessageID}
+	req.SetMessage(text)
+	req.SetEntities(entities)
+	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
+		Rows: []tg.KeyboardButtonRow{{
+			Buttons: []tg.KeyboardButtonClass{tgutil.BuildCancelButton(info.TaskID())},
+		}},
+	})
+	if ext := tgutil.ExtFromContext(ctx); ext != nil {
+		ext.EditMessage(p.ChatID, req)
+	}
+}
+
+func shouldUpdateUploadProgress(total, uploaded int64, lastPercent int, elapsed time.Duration) bool {
+	if total <= 0 || uploaded <= 0 {
+		return false
+	}
+	if uploaded >= total {
+		return lastPercent < 100 && elapsed >= uploadProgressMinInterval
+	}
+	if elapsed < uploadProgressMinInterval {
+		return false
+	}
+	return shouldUpdateProgress(total, uploaded, lastPercent) || elapsed >= uploadProgressMaxInterval
 }
 
 func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {

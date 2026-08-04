@@ -38,6 +38,18 @@ type StorageBatchSaver interface {
 	SaveBatch(ctx context.Context, items []storagetypes.BatchItem) error
 }
 
+// StorageBatchProgressSaver reports confirmed upload progress for each item in
+// a logical batch. The item index matches the items slice passed to
+// SaveBatchWithProgress.
+type StorageBatchProgressSaver interface {
+	StorageBatchSaver
+	SaveBatchWithProgress(
+		ctx context.Context,
+		items []storagetypes.BatchItem,
+		onProgress func(index int, uploaded, total int64),
+	) error
+}
+
 // StorageProgressSaver reports bytes after the backend has accepted them for
 // upload. Backends with native progress support should implement this instead
 // of relying on progress inferred from reads of the input stream.
@@ -66,6 +78,7 @@ type StorageReadable interface {
 var Storages = make(map[string]Storage)
 
 var _ StorageProgressSaver = (*telegram.Telegram)(nil)
+var _ StorageBatchProgressSaver = (*telegram.Telegram)(nil)
 
 type StorageConstructor func() Storage
 

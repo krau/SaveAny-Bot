@@ -161,8 +161,34 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 			PreserveCaption: elem.preserveCaption,
 		})
 	}
+	t.startUpload(ctx)
+	if progressSaver, ok := group.batchSaver.(storage.StorageBatchProgressSaver); ok {
+		err := progressSaver.SaveBatchWithProgress(ctx, items, func(index int, uploaded, total int64) {
+			if index < 0 || index >= len(group.elems) {
+				return
+			}
+			t.uploadCallback(ctx, group.elems[index].ID)(uploaded, total)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to save batch: %w", err)
+		}
+		for index, elem := range group.elems {
+			t.uploadCallback(ctx, elem.ID)(items[index].Size, items[index].Size)
+		}
+		return nil
+	}
+	for i := range items {
+		items[i].Reader = ioutil.NewProgressReader(
+			items[i].Reader,
+			items[i].Size,
+			t.uploadCallback(ctx, group.elems[i].ID),
+		)
+	}
 	if err := group.batchSaver.SaveBatch(ctx, items); err != nil {
 		return fmt.Errorf("failed to save batch: %w", err)
+	}
+	for index, elem := range group.elems {
+		t.uploadCallback(ctx, elem.ID)(items[index].Size, items[index].Size)
 	}
 	return nil
 }
@@ -289,6 +315,8 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
+	t.startUpload(vctx)
+	onProgress := t.uploadCallback(vctx, elem.ID)
 	err = retry.Retry(func() error {
 		var file *os.File
 		file, err = os.Open(elem.localPath)
@@ -296,11 +324,20 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			return fmt.Errorf("failed to open cache file: %w", err)
 		}
 		defer file.Close()
-		if err = elem.Storage.Save(vctx, file, elem.Path); err != nil {
+		onProgress(0, fileStat.Size())
+		if progressSaver, ok := elem.Storage.(storage.StorageProgressSaver); ok {
+			err = progressSaver.SaveWithProgress(vctx, file, elem.Path, onProgress)
+		} else {
+			err = elem.Storage.Save(vctx, ioutil.NewProgressReader(file, fileStat.Size(), onProgress), elem.Path)
+		}
+		if err != nil {
 			logger.Errorf("Failed to save file: %s, retrying...", err)
 			return err
 		}
 		return nil
 	}, retry.Context(vctx), retry.RetryTimes(uint(config.C().Retry)))
+	if err == nil {
+		onProgress(fileStat.Size(), fileStat.Size())
+	}
 	return err
 }
