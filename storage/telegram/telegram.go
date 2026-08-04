@@ -86,6 +86,23 @@ func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
 }
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
+	return t.save(ctx, r, storagePath, nil)
+}
+
+// SaveWithProgress saves a file while reporting Telegram-confirmed upload
+// progress after each uploaded part.
+func (t *Telegram) SaveWithProgress(
+	ctx context.Context,
+	r io.Reader,
+	storagePath string,
+	onProgress func(uploaded, total int64),
+) error {
+	size, _ := ctx.Value(ctxkey.ContentLength).(int64)
+	return t.save(ctx, r, storagePath, newUploadProgress(size, onProgress))
+}
+
+func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, progress *uploadProgress) error {
+	storagePath = path.Clean(storagePath)
 	tctx := tgutil.ExtFromContext(ctx)
 	if tctx == nil {
 		return fmt.Errorf("failed to get telegram context")
@@ -109,7 +126,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 				}
 			}
 		}
-		upler := t.newUploader(tctx, size)
+		upler := t.newUploader(tctx, size, progress)
 		peer := tryGetInputPeer(tctx, chatID)
 		if peer == nil || peer.Zero() {
 			return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
@@ -117,13 +134,13 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		if err := t.limiter.Wait(ctx); err != nil {
 			return fmt.Errorf("rate limit failed: %w", err)
 		}
-		return t.splitUpload(tctx, r, filename, upler, peer, size, t.splitSize())
+		return t.splitUpload(tctx, r, filename, upler, peer, size, t.splitSize(), progress)
 	}
 
 	if err := t.limiter.Wait(ctx); err != nil {
 		return fmt.Errorf("rate limit failed: %w", err)
 	}
-	prepared, err := t.prepareMedia(ctx, tctx, r, storagePath, size, nil)
+	prepared, err := t.prepareMedia(ctx, tctx, r, storagePath, size, nil, progress)
 	if err != nil {
 		return err
 	}
@@ -173,10 +190,14 @@ func (t *Telegram) target(tctx *ext.Context, storagePath string) (string, int64)
 	return filename, chatID
 }
 
-func (t *Telegram) newUploader(tctx *ext.Context, size int64) *uploader.Uploader {
-	return uploader.NewUploader(tctx.Raw).
+func (t *Telegram) newUploader(tctx *ext.Context, size int64, progress *uploadProgress) *uploader.Uploader {
+	upler := uploader.NewUploader(tctx.Raw).
 		WithPartSize(tglimit.MaxUploadPartSize).
 		WithThreads(dlutil.BestThreads(size, config.C().Threads))
+	if progress != nil {
+		upler = upler.WithProgress(progress)
+	}
+	return upler
 }
 
 func mediaCaption(filename string, override *string) []message.StyledTextOption {
@@ -189,10 +210,18 @@ func mediaCaption(filename string, override *string) []message.StyledTextOption 
 	return []message.StyledTextOption{styling.Plain(*override)}
 }
 
-func (t *Telegram) prepareMedia(ctx context.Context, tctx *ext.Context, r io.Reader, storagePath string, size int64, captionOverride *string) (*preparedMedia, error) {
+func (t *Telegram) prepareMedia(
+	ctx context.Context,
+	tctx *ext.Context,
+	r io.Reader,
+	storagePath string,
+	size int64,
+	captionOverride *string,
+	progress *uploadProgress,
+) (*preparedMedia, error) {
 	storagePath = path.Clean(storagePath)
 	filename, chatID := t.target(tctx, storagePath)
-	upler := t.newUploader(tctx, size)
+	upler := t.newUploader(tctx, size, progress)
 	peer := tryGetInputPeer(tctx, chatID)
 	if peer == nil || peer.Zero() {
 		return nil, fmt.Errorf("failed to get input peer for chat ID %d", chatID)
@@ -213,7 +242,6 @@ func (t *Telegram) prepareMedia(ctx context.Context, tctx *ext.Context, r io.Rea
 			return nil, fmt.Errorf("failed to seek reader: %w", err)
 		}
 	}
-
 	var file tg.InputFileClass
 	var err error
 	if size <= 0 {
@@ -378,7 +406,7 @@ func (t *Telegram) saveMediaGroup(ctx context.Context, tctx *ext.Context, group 
 			if item.PreserveCaption {
 				captionOverride = &item.Caption
 			}
-			media, err := t.prepareMedia(ctx, tctx, item.Reader, item.StoragePath, item.Size, captionOverride)
+			media, err := t.prepareMedia(ctx, tctx, item.Reader, item.StoragePath, item.Size, captionOverride, nil)
 			if err != nil {
 				return err
 			}
@@ -405,7 +433,15 @@ func (t *Telegram) CannotStream() string {
 	return "Telegram storage must use a ReaderSeeker"
 }
 
-func (t *Telegram) splitUpload(ctx *ext.Context, r io.Reader, filename string, upler *uploader.Uploader, peer tg.InputPeerClass, fileSize, splitSize int64) error {
+func (t *Telegram) splitUpload(
+	ctx *ext.Context,
+	r io.Reader,
+	filename string,
+	upler *uploader.Uploader,
+	peer tg.InputPeerClass,
+	fileSize, splitSize int64,
+	progress *uploadProgress,
+) error {
 	tempId := xid.New().String()
 	outputBase := filepath.Join(config.C().Temp.BasePath, tempId, strings.Split(filename, ".")[0])
 	defer func() {
@@ -422,6 +458,17 @@ func (t *Telegram) splitUpload(ctx *ext.Context, r io.Reader, filename string, u
 		return fmt.Errorf("failed to glob split files: %w", err)
 	}
 	inputFiles := make([]tg.InputFileClass, 0, len(matched))
+	if progress != nil {
+		var uploadSize int64
+		for _, partPath := range matched {
+			partInfo, err := os.Stat(partPath)
+			if err != nil {
+				return fmt.Errorf("failed to stat split part %s: %w", partPath, err)
+			}
+			uploadSize += partInfo.Size()
+		}
+		progress.reset(uploadSize)
+	}
 	for _, partPath := range matched {
 		// 串行上传, 不然容易被tg风控
 		err = func() error {
