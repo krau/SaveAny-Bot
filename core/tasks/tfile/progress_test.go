@@ -1,9 +1,19 @@
 package tfile
 
 import (
+	"context"
+	"sync"
 	"testing"
 	"time"
 )
+
+type progressTestTaskInfo struct{}
+
+func (progressTestTaskInfo) TaskID() string      { return "task" }
+func (progressTestTaskInfo) FileName() string    { return "file.bin" }
+func (progressTestTaskInfo) FileSize() int64     { return 100 << 20 }
+func (progressTestTaskInfo) StoragePath() string { return "file.bin" }
+func (progressTestTaskInfo) StorageName() string { return "test" }
 
 func TestShouldUpdateUploadProgress(t *testing.T) {
 	tests := []struct {
@@ -32,5 +42,31 @@ func TestShouldUpdateUploadProgress(t *testing.T) {
 				t.Fatalf("shouldUpdateUploadProgress() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestUploadProgressConcurrentCallbacks(t *testing.T) {
+	progress := new(Progress)
+	ctx := context.Background()
+	info := progressTestTaskInfo{}
+	const total = int64(100 << 20)
+
+	progress.OnUploadStart(ctx, info, total)
+	progress.lastUpdateAt.Store(time.Now().Add(-uploadProgressMaxInterval).UnixNano())
+
+	var wg sync.WaitGroup
+	for uploaded := int64(1 << 20); uploaded <= total; uploaded += 1 << 20 {
+		uploaded := uploaded
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			progress.OnUploadProgress(ctx, info, uploaded, total)
+		}()
+	}
+	wg.Wait()
+
+	percent := progress.lastUpdatePercent.Load()
+	if percent <= 0 || percent > 100 {
+		t.Fatalf("last upload percentage = %d, want a value in (0, 100]", percent)
 	}
 }

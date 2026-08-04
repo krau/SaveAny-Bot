@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -37,6 +38,7 @@ type Progress struct {
 	start             time.Time
 	lastUpdatePercent atomic.Int32
 	lastUpdateAt      atomic.Int64
+	updateMu          sync.Mutex
 }
 
 const (
@@ -45,6 +47,8 @@ const (
 )
 
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
+	p.updateMu.Lock()
+	defer p.updateMu.Unlock()
 	p.start = time.Now()
 	p.lastUpdatePercent.Store(0)
 	log.FromContext(ctx).Debugf("Progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
@@ -84,6 +88,8 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo, downloaded, total int64) {
+	p.updateMu.Lock()
+	defer p.updateMu.Unlock()
 	if !shouldUpdateProgress(total, downloaded, int(p.lastUpdatePercent.Load())) {
 		return
 	}
@@ -134,6 +140,8 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo, downloaded, to
 }
 
 func (p *Progress) OnUploadStart(ctx context.Context, info TaskInfo, total int64) {
+	p.updateMu.Lock()
+	defer p.updateMu.Unlock()
 	p.start = time.Now()
 	p.lastUpdatePercent.Store(0)
 	p.lastUpdateAt.Store(p.start.UnixNano())
@@ -170,6 +178,8 @@ func (p *Progress) OnUploadProgress(ctx context.Context, info TaskInfo, uploaded
 	if total <= 0 || uploaded <= 0 {
 		return
 	}
+	p.updateMu.Lock()
+	defer p.updateMu.Unlock()
 	if uploaded > total {
 		uploaded = total
 	}
