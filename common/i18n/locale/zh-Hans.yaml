@@ -354,6 +354,8 @@ bot:
     progress:
       batch_start_prefix: "开始执行批量下载任务\n总大小: "
       batch_processing_prefix: "正在处理批量下载任务\n总大小: "
+      batch_summary: "{{.SizeMB}} MB ({{.Count}} 个文件)"
+      batch_uploading_prefix: "正在上传批量任务\n总大小: "
       downloading_prefix: "正在下载\n总大小: "
       processing_list_prefix: "\n正在处理:\n"
       processing_none: "  - 无"
