@@ -86,6 +86,8 @@ func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
 }
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
+	storagePath = path.Clean(storagePath)
+	captionOverride := sourceCaptionOverride(ctx)
 	tctx := tgutil.ExtFromContext(ctx)
 	if tctx == nil {
 		return fmt.Errorf("failed to get telegram context")
@@ -95,8 +97,9 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		log.FromContext(ctx).Warnf("Skipping file larger than Telegram limit (%d bytes): %d bytes", MaxUploadFileSize, size)
 		return nil
 	}
-	if size > t.splitSize() {
-		filename, chatID := t.target(tctx, path.Clean(storagePath))
+	splitSize := min(t.splitSize(), int64(MaxUploadFileSize))
+	if size > splitSize {
+		filename, chatID := t.target(tctx, storagePath)
 		if filename == "" {
 			if rs, ok := r.(io.ReadSeeker); ok {
 				mtype, err := mimetype.DetectReader(rs)
@@ -117,7 +120,43 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		if err := t.limiter.Wait(ctx); err != nil {
 			return fmt.Errorf("rate limit failed: %w", err)
 		}
-		return t.splitUpload(tctx, r, filename, upler, peer, size, t.splitSize())
+		if t.config.SplitLargeVideo {
+			rs, ok := r.(io.ReadSeeker)
+			if ok {
+				mtype, detectErr := mimetype.DetectReader(rs)
+				if _, seekErr := rs.Seek(0, io.SeekStart); seekErr != nil {
+					return fmt.Errorf("failed to seek large file after mimetype detection: %w", seekErr)
+				}
+				if detectErr != nil {
+					log.FromContext(ctx).Warnf("Failed to detect large file type, falling back to ZIP split: %s", detectErr)
+				} else if strings.HasPrefix(mtype.String(), "video/") {
+					parts, cleanup, splitErr := createLosslessVideoParts(
+						ctx,
+						rs,
+						filename,
+						size,
+						splitSize,
+					)
+					if splitErr != nil {
+						if ctx.Err() != nil {
+							return ctx.Err()
+						}
+						log.FromContext(ctx).Warnf("Lossless video split failed, falling back to ZIP split: %s", splitErr)
+					} else {
+						defer cleanup()
+						log.FromContext(ctx).Infof("Uploading oversized video as %d lossless-playable parts", len(parts))
+						for _, part := range parts {
+							log.FromContext(ctx).Infof("Prepared lossless video part %s (%d bytes)", part.Name, part.Size)
+						}
+						return t.uploadLosslessVideoParts(ctx, tctx, storagePath, parts, captionOverride)
+					}
+					if _, seekErr := rs.Seek(0, io.SeekStart); seekErr != nil {
+						return fmt.Errorf("failed to seek large video before ZIP fallback: %w", seekErr)
+					}
+				}
+			}
+		}
+		return t.splitUpload(tctx, r, filename, upler, peer, size, splitSize)
 	}
 
 	if err := t.limiter.Wait(ctx); err != nil {
@@ -141,6 +180,14 @@ func contentLength(ctx context.Context) int64 {
 		}
 	}
 	return -1
+}
+
+func sourceCaptionOverride(ctx context.Context) *string {
+	caption, ok := storagetypes.SourceCaptionFromContext(ctx)
+	if !ok {
+		return nil
+	}
+	return &caption
 }
 
 func (t *Telegram) splitSize() int64 {
@@ -310,7 +357,8 @@ func (t *Telegram) SaveBatch(ctx context.Context, items []storagetypes.BatchItem
 func (t *Telegram) inspectBatchItem(tctx *ext.Context, item storagetypes.BatchItem) (batchMediaItem, error) {
 	_, chatID := t.target(tctx, path.Clean(item.StoragePath))
 	result := batchMediaItem{item: item, chatID: chatID}
-	if (t.config.SkipLarge && item.Size > MaxUploadFileSize) || item.Size > t.splitSize() {
+	if (t.config.SkipLarge && item.Size > MaxUploadFileSize) ||
+		item.Size > min(t.splitSize(), int64(MaxUploadFileSize)) {
 		result.useSingleSave = true
 		return result, nil
 	}
@@ -362,6 +410,9 @@ func (t *Telegram) saveMediaGroup(ctx context.Context, tctx *ext.Context, group 
 				return fmt.Errorf("failed to seek batch item: %w", err)
 			}
 			itemCtx := context.WithValue(ctx, ctxkey.ContentLength, item.Size)
+			if item.PreserveCaption {
+				itemCtx = storagetypes.WithSourceCaption(itemCtx, item.Caption)
+			}
 			return t.Save(itemCtx, item.Reader, item.StoragePath)
 		}
 		if err := t.limiter.Wait(ctx); err != nil {

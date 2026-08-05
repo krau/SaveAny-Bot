@@ -82,10 +82,12 @@ chat_id = "123456789"
 force_file = false
 # 是否跳过大文件, 默认为 false. 如果启用, 超过 Telegram 限制的文件将不会上传.
 skip_large = false
+# 超限视频是否使用 FFmpeg 无损分割成可独立播放的小视频；失败时回退到 ZIP 分卷.
+split_large_video = false
 # 分卷大小, 单位 MB, 默认为 2000 MB (2 GB). 
-# 超过该大小的文件将被分割成多个部分上传.(使用 zip 格式)
+# 超过该大小的文件将被分割成多个部分上传；非视频使用 ZIP 格式.
 # 当 skip_large 启用时, 该选项无效.
-spilt_size_mb = 2000
+split_size_mb = 2000
 ```
 
 ## Rclone
