@@ -12,6 +12,8 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
+	tfilepkg "github.com/krau/SaveAny-Bot/pkg/tfile"
 )
 
 func (t *Task) Execute(ctx context.Context) error {
@@ -57,6 +59,9 @@ func (t *Task) Execute(ctx context.Context) error {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
+	if caption, ok := sourceCaption(t.File); ok {
+		vctx = storagetypes.WithSourceCaption(vctx, caption)
+	}
 	err = retry.Retry(func() error {
 		file, err := os.Open(t.localPath)
 		if err != nil {
@@ -72,4 +77,12 @@ func (t *Task) Execute(ctx context.Context) error {
 		return fmt.Errorf("failed to save file after retries: %w", err)
 	}
 	return nil
+}
+
+func sourceCaption(file tfilepkg.TGFile) (string, bool) {
+	messageFile, ok := file.(tfilepkg.TGFileMessage)
+	if !ok || messageFile.Message() == nil {
+		return "", false
+	}
+	return messageFile.Message().GetMessage(), true
 }
