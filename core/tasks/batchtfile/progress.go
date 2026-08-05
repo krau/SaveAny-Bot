@@ -28,14 +28,15 @@ type ProgressTracker interface {
 }
 
 type Progress struct {
-	MessageID         int
-	ChatID            int64
-	startAt           atomic.Int64
-	lastUpdatePercent atomic.Int32
-	lastUpdateAt      atomic.Int64
-	uploadStarted     atomic.Bool
-	updateMu          sync.Mutex
-	skippedFiles      []string
+	MessageID                 int
+	ChatID                    int64
+	downloadStartAt           atomic.Int64
+	downloadLastUpdatePercent atomic.Int32
+	uploadStartAt             atomic.Int64
+	uploadLastUpdatePercent   atomic.Int32
+	uploadLastUpdateAt        atomic.Int64
+	updateMu                  sync.Mutex
+	skippedFiles              []string
 }
 
 const (
@@ -44,10 +45,11 @@ const (
 )
 
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
-	p.startAt.Store(time.Now().UnixNano())
-	p.lastUpdatePercent.Store(0)
-	p.lastUpdateAt.Store(0)
-	p.uploadStarted.Store(false)
+	p.downloadStartAt.Store(time.Now().UnixNano())
+	p.downloadLastUpdatePercent.Store(0)
+	p.uploadStartAt.Store(0)
+	p.uploadLastUpdatePercent.Store(0)
+	p.uploadLastUpdateAt.Store(0)
 	log.FromContext(ctx).Debugf("Batch task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
@@ -81,23 +83,17 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
-	if p.uploadStarted.Load() {
-		return
-	}
 	p.updateMu.Lock()
 	defer p.updateMu.Unlock()
-	if p.uploadStarted.Load() {
-		return
-	}
 	downloaded := min(info.Downloaded(), info.TotalSize())
-	if !shouldUpdateProgress(info.TotalSize(), downloaded, int(p.lastUpdatePercent.Load())) {
+	if !shouldUpdateProgress(info.TotalSize(), downloaded, int(p.downloadLastUpdatePercent.Load())) {
 		return
 	}
 	percent := int((downloaded * 100) / info.TotalSize())
-	if p.lastUpdatePercent.Load() == int32(percent) {
+	if p.downloadLastUpdatePercent.Load() == int32(percent) {
 		return
 	}
-	p.lastUpdatePercent.Store(int32(percent))
+	p.downloadLastUpdatePercent.Store(int32(percent))
 	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.TaskID(), downloaded, info.TotalSize())
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
@@ -116,7 +112,7 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 			return styling.Plain(slice.Join(lines, "\n"))
 		}(),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressAvgSpeedPrefix, nil)),
-		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(downloaded, time.Unix(0, p.startAt.Load()))/(1024*1024))),
+		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(downloaded, time.Unix(0, p.downloadStartAt.Load()))/(1024*1024))),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressCurrentProgressPrefix, nil)),
 		styling.Bold(fmt.Sprintf("%.2f%%", float64(downloaded)/float64(info.TotalSize())*100)),
 	); err != nil {
@@ -124,9 +120,6 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 		return
 	}
 	text, entities := entityBuilder.Complete()
-	if p.uploadStarted.Load() {
-		return
-	}
 	req := &tg.MessagesEditMessageRequest{
 		ID: p.MessageID,
 	}
@@ -149,13 +142,12 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnUploadStart(ctx context.Context, info TaskInfo, total int64) {
-	p.uploadStarted.Store(true)
 	p.updateMu.Lock()
 	defer p.updateMu.Unlock()
 	start := time.Now()
-	p.startAt.Store(start.UnixNano())
-	p.lastUpdatePercent.Store(0)
-	p.lastUpdateAt.Store(start.UnixNano())
+	p.uploadStartAt.Store(start.UnixNano())
+	p.uploadLastUpdatePercent.Store(0)
+	p.uploadLastUpdateAt.Store(start.UnixNano())
 	log.FromContext(ctx).Debugf("Batch upload progress tracking started: %s", info.TaskID())
 
 	entityBuilder := entity.Builder{}
@@ -189,15 +181,15 @@ func (p *Progress) OnUploadProgress(ctx context.Context, info TaskInfo, uploaded
 	defer p.updateMu.Unlock()
 	uploaded = min(uploaded, total)
 	now := time.Now()
-	lastUpdateAt := time.Unix(0, p.lastUpdateAt.Load())
-	lastPercent := int(p.lastUpdatePercent.Load())
+	lastUpdateAt := time.Unix(0, p.uploadLastUpdateAt.Load())
+	lastPercent := int(p.uploadLastUpdatePercent.Load())
 	if !shouldUpdateUploadProgress(total, uploaded, lastPercent, now.Sub(lastUpdateAt)) {
 		return
 	}
 
 	percent := int32((uploaded * 100) / total)
-	p.lastUpdatePercent.Store(percent)
-	p.lastUpdateAt.Store(now.UnixNano())
+	p.uploadLastUpdatePercent.Store(percent)
+	p.uploadLastUpdateAt.Store(now.UnixNano())
 	log.FromContext(ctx).Debugf("Batch upload progress update: %s, %d/%d", info.TaskID(), uploaded, total)
 
 	entityBuilder := entity.Builder{}
@@ -205,7 +197,7 @@ func (p *Progress) OnUploadProgress(ctx context.Context, info TaskInfo, uploaded
 		styling.Plain(i18n.T(i18nk.BotMsgProgressBatchUploadingPrefix, nil)),
 		styling.Code(batchProgressSummary(total, info.Count())),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressAvgSpeedPrefix, nil)),
-		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(uploaded, time.Unix(0, p.startAt.Load()))/(1024*1024))),
+		styling.Bold(fmt.Sprintf("%.2f MB/s", dlutil.GetSpeed(uploaded, time.Unix(0, p.uploadStartAt.Load()))/(1024*1024))),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressCurrentProgressPrefix, nil)),
 		styling.Bold(fmt.Sprintf("%.2f%%", float64(uploaded)/float64(total)*100)),
 	); err != nil {

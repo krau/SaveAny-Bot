@@ -31,6 +31,7 @@ func (t *Task) uploadCallback(ctx context.Context, id string) func(uploaded, tot
 		}
 
 		t.uploadMu.Lock()
+		defer t.uploadMu.Unlock()
 		if t.uploaded == nil {
 			t.uploaded = make(map[string]int64)
 		}
@@ -39,8 +40,6 @@ func (t *Task) uploadCallback(ctx context.Context, id string) func(uploaded, tot
 		for _, current := range t.uploaded {
 			aggregate += current
 		}
-		t.uploadMu.Unlock()
-
 		if aggregate > t.totalSize {
 			aggregate = t.totalSize
 		}

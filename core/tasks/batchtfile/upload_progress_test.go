@@ -23,6 +23,14 @@ type uploadProgressRecorder struct {
 	total      int64
 }
 
+type orderedUploadProgressRecorder struct {
+	firstEntered  chan struct{}
+	releaseFirst  chan struct{}
+	secondEntered chan struct{}
+	mu            sync.Mutex
+	notifications []int64
+}
+
 type fallbackBatchSaver struct {
 	saveBatchCalled bool
 }
@@ -126,6 +134,42 @@ func (r *uploadProgressRecorder) OnUploadProgress(_ context.Context, _ TaskInfo,
 	r.total = total
 }
 
+func (*orderedUploadProgressRecorder) OnStart(context.Context, TaskInfo)       {}
+func (*orderedUploadProgressRecorder) OnProgress(context.Context, TaskInfo)    {}
+func (*orderedUploadProgressRecorder) OnDone(context.Context, TaskInfo, error) {}
+func (*orderedUploadProgressRecorder) OnUploadStart(context.Context, TaskInfo, int64) {
+}
+
+func (r *orderedUploadProgressRecorder) OnUploadProgress(_ context.Context, _ TaskInfo, uploaded, _ int64) {
+	if uploaded == 100 {
+		close(r.firstEntered)
+		<-r.releaseFirst
+	}
+	if uploaded == 200 {
+		close(r.secondEntered)
+	}
+	r.mu.Lock()
+	r.notifications = append(r.notifications, uploaded)
+	r.mu.Unlock()
+}
+
+func TestDownloadProgressContinuesAfterUploadStarts(t *testing.T) {
+	task := &Task{
+		ID:         "interleaved",
+		totalSize:  20 << 20,
+		processing: make(map[string]TaskElementInfo),
+	}
+	progress := new(Progress)
+	progress.OnStart(t.Context(), task)
+	progress.OnUploadStart(t.Context(), task, task.totalSize)
+	task.downloaded.Store(10 << 20)
+	progress.OnProgress(t.Context(), task)
+
+	if got := progress.downloadLastUpdatePercent.Load(); got != 50 {
+		t.Fatalf("download progress after upload start = %d%%, want 50%%", got)
+	}
+}
+
 func TestUploadProgressAggregatesItemsAndHandlesRetry(t *testing.T) {
 	recorder := new(uploadProgressRecorder)
 	task := &Task{Progress: recorder, totalSize: 300, uploaded: make(map[string]int64)}
@@ -177,6 +221,49 @@ func TestUploadProgressConcurrentItems(t *testing.T) {
 	}
 	if recorder.uploaded != 200 || recorder.total != 200 {
 		t.Fatalf("aggregate progress = %d/%d, want 200/200", recorder.uploaded, recorder.total)
+	}
+}
+
+func TestUploadProgressNotificationsRemainOrdered(t *testing.T) {
+	recorder := &orderedUploadProgressRecorder{
+		firstEntered:  make(chan struct{}),
+		releaseFirst:  make(chan struct{}),
+		secondEntered: make(chan struct{}),
+	}
+	task := &Task{Progress: recorder, totalSize: 200, uploaded: make(map[string]int64)}
+	first := task.uploadCallback(t.Context(), "first")
+	second := task.uploadCallback(t.Context(), "second")
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		first(100, 100)
+	}()
+	<-recorder.firstEntered
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		second(100, 100)
+	}()
+
+	overtook := false
+	select {
+	case <-recorder.secondEntered:
+		overtook = true
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(recorder.releaseFirst)
+	wg.Wait()
+
+	if overtook {
+		t.Fatal("later aggregate notification overtook an earlier callback")
+	}
+	recorder.mu.Lock()
+	defer recorder.mu.Unlock()
+	if len(recorder.notifications) != 2 || recorder.notifications[0] != 100 || recorder.notifications[1] != 200 {
+		t.Fatalf("upload notifications = %v, want [100 200]", recorder.notifications)
 	}
 }
 
