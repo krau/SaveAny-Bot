@@ -80,7 +80,7 @@ chat_id = "123456789" # Telegram chat ID, the bot will send files to this chat
 force_file = false # Force sending as file, default is false
 skip_large = false # Skip large files, default is false. If enabled, files exceeding Telegram's limit will not be uploaded.
 split_large_video = false # Losslessly split oversized videos into independently playable parts. Falls back to ZIP parts on failure.
-split_size_mb = 2000 # Split size in MB, default is 2000 MB (2 GB). Oversized non-video files use ZIP parts. Ignored when skip_large is true.
+split_size_mb = 0 # Split size in MB. 0 uses the uploader account limit: 2000 MB for bots/regular users and 4000 MB for Premium users. Oversized non-video files use ZIP parts. Ignored when skip_large is true.
 ```
 
 ## Rclone

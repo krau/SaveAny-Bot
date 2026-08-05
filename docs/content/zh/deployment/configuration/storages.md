@@ -84,10 +84,10 @@ force_file = false
 skip_large = false
 # 超限视频是否使用 FFmpeg 无损分割成可独立播放的小视频；失败时回退到 ZIP 分卷.
 split_large_video = false
-# 分卷大小, 单位 MB, 默认为 2000 MB (2 GB). 
+# 分卷大小, 单位 MB. 设为 0 时使用实际上传账号的限制：Bot/普通用户为 2000 MB，Premium 用户为 4000 MB.
 # 超过该大小的文件将被分割成多个部分上传；非视频使用 ZIP 格式.
 # 当 skip_large 启用时, 该选项无效.
-split_size_mb = 2000
+split_size_mb = 0
 ```
 
 ## Rclone

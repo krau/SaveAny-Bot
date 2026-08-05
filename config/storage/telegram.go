@@ -14,7 +14,8 @@ type TelegramStorageConfig struct {
 	RateBurst       int   `toml:"rate_burst" mapstructure:"rate_burst" json:"rate_burst"`
 	SkipLarge       bool  `toml:"skip_large" mapstructure:"skip_large" json:"skip_large"` // skip files larger than Telegram limit(2GB)
 	SplitLargeVideo bool  `toml:"split_large_video" mapstructure:"split_large_video" json:"split_large_video"`
-	// split files larger than Telegram limit(2GB) into parts of specified size, in MB, leave 0 to set default(2000MB)
+	// split files larger than the uploader account limit into parts of specified size, in MB
+	// leave 0 to use the account limit (2000MB for bots/regular users, 4000MB for Premium users)
 	// only effective when SkipLarge is false
 	// use zip when splitting non-video files or when lossless video splitting is disabled/unavailable
 	SplitSizeMB int64 `toml:"split_size_mb" mapstructure:"split_size_mb" json:"split_size_mb"`

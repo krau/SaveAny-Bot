@@ -34,8 +34,9 @@ import (
 
 const (
 	// https://core.telegram.org/api/config#upload-max-fileparts-default
-	DefaultSplitSize  = 4000 * 524288 // 4000 * 512 KB
-	MaxUploadFileSize = 4000 * 524288 // 4000 * 512 KB
+	DefaultSplitSize         = 4000 * 524288 // 4000 * 512 KB
+	MaxUploadFileSize        = 4000 * 524288 // 4000 * 512 KB
+	PremiumMaxUploadFileSize = 8000 * 524288 // 8000 * 512 KB
 )
 
 type Telegram struct {
@@ -93,11 +94,12 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 		return fmt.Errorf("failed to get telegram context")
 	}
 	size := contentLength(ctx)
-	if t.config.SkipLarge && size > MaxUploadFileSize {
-		log.FromContext(ctx).Warnf("Skipping file larger than Telegram limit (%d bytes): %d bytes", MaxUploadFileSize, size)
+	maxUploadSize := maxUploadFileSize(tctx)
+	if t.config.SkipLarge && size > maxUploadSize {
+		log.FromContext(ctx).Warnf("Skipping file larger than Telegram limit (%d bytes): %d bytes", maxUploadSize, size)
 		return nil
 	}
-	splitSize := min(t.splitSize(), int64(MaxUploadFileSize))
+	splitSize := t.splitSize(maxUploadSize)
 	if size > splitSize {
 		filename, chatID := t.target(tctx, storagePath)
 		if filename == "" {
@@ -190,12 +192,19 @@ func sourceCaptionOverride(ctx context.Context) *string {
 	return &caption
 }
 
-func (t *Telegram) splitSize() int64 {
+func maxUploadFileSize(tctx *ext.Context) int64 {
+	if tctx != nil && tctx.Self != nil && !tctx.Self.GetBot() && tctx.Self.GetPremium() {
+		return PremiumMaxUploadFileSize
+	}
+	return MaxUploadFileSize
+}
+
+func (t *Telegram) splitSize(maxUploadSize int64) int64 {
 	splitSize := t.config.SplitSizeMB * 1024 * 1024
 	if splitSize <= 0 {
-		return DefaultSplitSize
+		return maxUploadSize
 	}
-	return splitSize
+	return min(splitSize, maxUploadSize)
 }
 
 func (t *Telegram) target(tctx *ext.Context, storagePath string) (string, int64) {
@@ -357,8 +366,9 @@ func (t *Telegram) SaveBatch(ctx context.Context, items []storagetypes.BatchItem
 func (t *Telegram) inspectBatchItem(tctx *ext.Context, item storagetypes.BatchItem) (batchMediaItem, error) {
 	_, chatID := t.target(tctx, path.Clean(item.StoragePath))
 	result := batchMediaItem{item: item, chatID: chatID}
-	if (t.config.SkipLarge && item.Size > MaxUploadFileSize) ||
-		item.Size > min(t.splitSize(), int64(MaxUploadFileSize)) {
+	maxUploadSize := maxUploadFileSize(tctx)
+	if (t.config.SkipLarge && item.Size > maxUploadSize) ||
+		item.Size > t.splitSize(maxUploadSize) {
 		result.useSingleSave = true
 		return result, nil
 	}
