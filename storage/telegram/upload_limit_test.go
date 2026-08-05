@@ -1,10 +1,12 @@
 package telegram
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 )
 
 func TestMaxUploadFileSize(t *testing.T) {
@@ -92,5 +94,26 @@ func TestSplitSizeUsesUploaderLimit(t *testing.T) {
 				t.Fatalf("splitSize() = %d, want %d", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestBatchUploadLimitAppliesPerFile(t *testing.T) {
+	telegramStorage := Telegram{}
+	tctx := uploadAccountContext(true, false)
+	data := []byte("\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom")
+	itemSize := int64(MaxUploadFileSize/2 + 1)
+
+	for index := 0; index < 2; index++ {
+		item, err := telegramStorage.inspectBatchItem(tctx, storagetypes.BatchItem{
+			Reader:      bytes.NewReader(data),
+			StoragePath: "video.mp4",
+			Size:        itemSize,
+		})
+		if err != nil {
+			t.Fatalf("inspectBatchItem() failed for item %d: %v", index, err)
+		}
+		if item.useSingleSave {
+			t.Fatalf("item %d was treated as oversized even though only the batch total exceeds the limit", index)
+		}
 	}
 }

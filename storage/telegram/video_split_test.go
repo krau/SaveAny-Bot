@@ -132,3 +132,43 @@ func TestSplitLosslessVideoRetriesOversizedPart(t *testing.T) {
 		}
 	}
 }
+
+func TestSplitLosslessVideoRejectsMultipleAlbums(t *testing.T) {
+	tempDir := t.TempDir()
+	inputPath := filepath.Join(tempDir, "source.mov")
+	if err := os.WriteFile(inputPath, []byte("source"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	outputDir := filepath.Join(tempDir, "parts")
+	if err := os.Mkdir(outputDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	originalRunner := runMediaTool
+	t.Cleanup(func() { runMediaTool = originalRunner })
+	runMediaTool = func(ctx context.Context, name string, args ...string) ([]byte, error) {
+		switch name {
+		case "ffprobe":
+			return []byte("120.0\n"), nil
+		case "ffmpeg":
+			pattern := args[len(args)-1]
+			for index := 0; index < maxLosslessVideoParts+1; index++ {
+				partPath := strings.Replace(pattern, "%03d", fmt.Sprintf("%03d", index+1), 1)
+				if err := os.WriteFile(partPath, make([]byte, 100), 0o600); err != nil {
+					return nil, err
+				}
+			}
+			return nil, nil
+		default:
+			return nil, fmt.Errorf("unexpected media tool %q", name)
+		}
+	}
+
+	_, err := splitLosslessVideo(t.Context(), inputPath, outputDir, "example.mov", 2200, 2000)
+	if err == nil {
+		t.Fatal("splitLosslessVideo() succeeded with more than one album of parts")
+	}
+	if !strings.Contains(err.Error(), "single-album limit") {
+		t.Fatalf("splitLosslessVideo() error = %q, want single-album limit", err)
+	}
+}

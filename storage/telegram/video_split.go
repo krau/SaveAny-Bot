@@ -22,9 +22,10 @@ import (
 )
 
 const (
-	videoPartTargetRatio = 0.95
-	videoSplitAttempts   = 4
-	minSegmentDuration   = 1.0
+	videoPartTargetRatio  = 0.95
+	videoSplitAttempts    = 4
+	minSegmentDuration    = 1.0
+	maxLosslessVideoParts = 10
 )
 
 type losslessVideoPart struct {
@@ -124,6 +125,13 @@ func splitLosslessVideo(
 		}
 		if len(parts) < 2 {
 			return nil, fmt.Errorf("video split produced %d part(s), expected at least 2", len(parts))
+		}
+		if len(parts) > maxLosslessVideoParts {
+			return nil, fmt.Errorf(
+				"video split produced %d parts, exceeding the single-album limit of %d",
+				len(parts),
+				maxLosslessVideoParts,
+			)
 		}
 		if largest <= maxPartSize {
 			return parts, nil
@@ -289,6 +297,13 @@ func (t *Telegram) uploadLosslessVideoParts(
 	if len(parts) == 0 {
 		return fmt.Errorf("no lossless video parts to upload")
 	}
+	if len(parts) > maxLosslessVideoParts {
+		return fmt.Errorf(
+			"refusing to upload %d lossless video parts as multiple albums; maximum is %d",
+			len(parts),
+			maxLosslessVideoParts,
+		)
+	}
 
 	prepared := make([]preparedMedia, 0, len(parts))
 	for index, part := range parts {
@@ -314,23 +329,19 @@ func (t *Telegram) uploadLosslessVideoParts(
 		prepared = append(prepared, *media)
 	}
 
-	for start := 0; start < len(prepared); start += 10 {
-		end := min(start+10, len(prepared))
-		batch := prepared[start:end]
-		builder := tctx.Sender.WithUploader(batch[0].uploader).To(batch[0].peer)
-		if len(batch) == 1 {
-			if _, err := builder.Media(ctx, batch[0].media); err != nil {
-				return fmt.Errorf("failed to send video part: %w", err)
-			}
-			continue
+	builder := tctx.Sender.WithUploader(prepared[0].uploader).To(prepared[0].peer)
+	if len(prepared) == 1 {
+		if _, err := builder.Media(ctx, prepared[0].media); err != nil {
+			return fmt.Errorf("failed to send video part: %w", err)
 		}
-		media := make([]message.MultiMediaOption, len(batch))
-		for index := range batch {
-			media[index] = batch[index].media
-		}
-		if _, err := builder.Album(ctx, media[0], media[1:]...); err != nil {
-			return fmt.Errorf("failed to send video parts as album: %w", err)
-		}
+		return nil
+	}
+	media := make([]message.MultiMediaOption, len(prepared))
+	for index := range prepared {
+		media[index] = prepared[index].media
+	}
+	if _, err := builder.Album(ctx, media[0], media[1:]...); err != nil {
+		return fmt.Errorf("failed to send video parts as album: %w", err)
 	}
 	return nil
 }

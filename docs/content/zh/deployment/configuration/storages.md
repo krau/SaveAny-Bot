@@ -82,7 +82,7 @@ chat_id = "123456789"
 force_file = false
 # 是否跳过大文件, 默认为 false. 如果启用, 超过 Telegram 限制的文件将不会上传.
 skip_large = false
-# 超限视频是否使用 FFmpeg 无损分割成可独立播放的小视频；失败时回退到 ZIP 分卷.
+# 超限视频是否使用 FFmpeg 无损分割成一个媒体组（最多 10 个）内可独立播放的小视频；失败或需要超过 10 段时回退到 ZIP 分卷.
 split_large_video = false
 # 分卷大小, 单位 MB. 设为 0 时使用实际上传账号的限制：Bot/普通用户为 2000 MB，Premium 用户为 4000 MB.
 # 超过该大小的文件将被分割成多个部分上传；非视频使用 ZIP 格式.
