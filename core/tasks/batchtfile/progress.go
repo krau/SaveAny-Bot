@@ -35,6 +35,7 @@ type Progress struct {
 	uploadStartAt             atomic.Int64
 	uploadLastUpdatePercent   atomic.Int32
 	uploadLastUpdateAt        atomic.Int64
+	uploadVisible             atomic.Bool
 	updateMu                  sync.Mutex
 	skippedFiles              []string
 }
@@ -50,6 +51,7 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	p.uploadStartAt.Store(0)
 	p.uploadLastUpdatePercent.Store(0)
 	p.uploadLastUpdateAt.Store(0)
+	p.uploadVisible.Store(false)
 	log.FromContext(ctx).Debugf("Batch task progress tracking started for message %d in chat %d", p.MessageID, p.ChatID)
 	entityBuilder := entity.Builder{}
 	var entities []tg.MessageEntityClass
@@ -85,6 +87,9 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	p.updateMu.Lock()
 	defer p.updateMu.Unlock()
+	if p.uploadVisible.Load() {
+		return
+	}
 	downloaded := min(info.Downloaded(), info.TotalSize())
 	if !shouldUpdateProgress(info.TotalSize(), downloaded, int(p.downloadLastUpdatePercent.Load())) {
 		return
@@ -149,6 +154,10 @@ func (p *Progress) OnUploadStart(ctx context.Context, info TaskInfo, total int64
 	p.uploadLastUpdatePercent.Store(0)
 	p.uploadLastUpdateAt.Store(start.UnixNano())
 	log.FromContext(ctx).Debugf("Batch upload progress tracking started: %s", info.TaskID())
+	if !info.AllDownloadsCompleted() {
+		return
+	}
+	p.uploadVisible.Store(true)
 
 	entityBuilder := entity.Builder{}
 	if err := styling.Perform(&entityBuilder,
@@ -179,6 +188,10 @@ func (p *Progress) OnUploadProgress(ctx context.Context, info TaskInfo, uploaded
 	}
 	p.updateMu.Lock()
 	defer p.updateMu.Unlock()
+	if !info.AllDownloadsCompleted() {
+		return
+	}
+	p.uploadVisible.Store(true)
 	uploaded = min(uploaded, total)
 	now := time.Now()
 	lastUpdateAt := time.Unix(0, p.uploadLastUpdateAt.Load())

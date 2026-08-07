@@ -27,6 +27,7 @@ type TaskInfo interface {
 	TaskID() string
 	TotalSize() int64
 	Downloaded() int64
+	AllDownloadsCompleted() bool
 	Count() int
 	Processing() []TaskElementInfo
 }
@@ -41,6 +42,10 @@ func (t *Task) TotalSize() int64 {
 
 func (t *Task) Downloaded() int64 {
 	return t.downloaded.Load()
+}
+
+func (t *Task) AllDownloadsCompleted() bool {
+	return t.downloadedFiles.Load() >= int64(len(t.elems))
 }
 
 func (t *Task) Count() int {

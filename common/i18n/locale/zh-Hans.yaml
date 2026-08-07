@@ -376,8 +376,6 @@ bot:
       uploading_prefix: "⏫ 正在上传\n文件名: "
       file_failed_prefix: "保存失败\n文件名: "
       file_done_prefix: "✅ 保存完成\n文件名: "
-      download_failed_prefix: "下载失败\n文件名: "
-      download_done_prefix: "下载完成\n文件名: "
       file_size_prefix: "\n文件大小: "
       save_path_prefix: "\n保存路径: "
       total_size_prefix: "\n总大小: "

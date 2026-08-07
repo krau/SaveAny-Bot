@@ -375,8 +375,6 @@ bot:
       uploading_prefix: "⏫ Uploading\nFilename: "
       file_failed_prefix: "Save failed\nFilename: "
       file_done_prefix: "✅ Saved successfully\nFilename: "
-      download_failed_prefix: "Download failed\nFilename: "
-      download_done_prefix: "Download completed\nFilename: "
       file_size_prefix: "\nFile size: "
       save_path_prefix: "\nSave path: "
       total_size_prefix: "\nTotal size: "

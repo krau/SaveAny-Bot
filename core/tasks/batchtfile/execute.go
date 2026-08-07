@@ -161,6 +161,9 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 			PreserveCaption: elem.preserveCaption,
 		})
 	}
+	for _, item := range items {
+		t.recordDownloadComplete(item.Size)
+	}
 	return t.saveBatchItems(ctx, group, items)
 }
 
@@ -279,6 +282,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		if err := errg.Wait(); err != nil {
 			return fmt.Errorf("failed to download file in stream mode: %w", err)
 		}
+		t.recordDownloadComplete(0)
 		logger.Info("File downloaded successfully in stream mode")
 		return nil
 	}
@@ -318,6 +322,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	if err != nil {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
+	t.recordDownloadComplete(fileStat.Size())
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
 	t.startUpload(vctx)
 	onProgress := t.uploadCallback(vctx, elem.ID)

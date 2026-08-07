@@ -14,8 +14,10 @@ func (t *Task) startUpload(ctx context.Context) {
 	if !ok {
 		return
 	}
+	t.uploadMu.Lock()
+	defer t.uploadMu.Unlock()
 	t.uploadOnce.Do(func() {
-		tracker.OnUploadStart(ctx, t, t.totalSize)
+		tracker.OnUploadStart(ctx, t, t.uploadTotalSize.Load())
 	})
 }
 
@@ -35,14 +37,30 @@ func (t *Task) uploadCallback(ctx context.Context, id string) func(uploaded, tot
 		if t.uploaded == nil {
 			t.uploaded = make(map[string]int64)
 		}
-		t.uploaded[id] = uploaded
+		previous, tracked := t.uploaded[id]
+		if tracked && uploaded < previous {
+			return
+		}
+		if !tracked || uploaded > previous {
+			t.uploaded[id] = uploaded
+		}
 		var aggregate int64
 		for _, current := range t.uploaded {
 			aggregate += current
 		}
-		if aggregate > t.totalSize {
-			aggregate = t.totalSize
+		uploadTotal := t.uploadTotalSize.Load()
+		if aggregate > uploadTotal {
+			aggregate = uploadTotal
 		}
-		tracker.OnUploadProgress(ctx, t, aggregate, t.totalSize)
+		tracker.OnUploadProgress(ctx, t, aggregate, uploadTotal)
 	}
+}
+
+func (t *Task) recordDownloadComplete(uploadSize int64) {
+	t.uploadMu.Lock()
+	defer t.uploadMu.Unlock()
+	if uploadSize > 0 {
+		t.uploadTotalSize.Add(uploadSize)
+	}
+	t.downloadedFiles.Add(1)
 }

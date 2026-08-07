@@ -31,19 +31,21 @@ type TaskElement struct {
 }
 
 type Task struct {
-	ID           string
-	ctx          context.Context
-	elems        []TaskElement
-	Progress     ProgressTracker
-	IgnoreErrors bool // if true, errors during processing will be ignored
-	downloaded   atomic.Int64
-	totalSize    int64
-	processing   map[string]TaskElementInfo
-	processingMu sync.RWMutex
-	uploadOnce   sync.Once
-	uploadMu     sync.Mutex
-	uploaded     map[string]int64
-	failed       map[string]error // [TODO] errors for each element
+	ID              string
+	ctx             context.Context
+	elems           []TaskElement
+	Progress        ProgressTracker
+	IgnoreErrors    bool // if true, errors during processing will be ignored
+	downloaded      atomic.Int64
+	downloadedFiles atomic.Int64
+	totalSize       int64
+	uploadTotalSize atomic.Int64
+	processing      map[string]TaskElementInfo
+	processingMu    sync.RWMutex
+	uploadOnce      sync.Once
+	uploadMu        sync.Mutex
+	uploaded        map[string]int64
+	failed          map[string]error // [TODO] errors for each element
 }
 
 // Title implements core.Exectable.

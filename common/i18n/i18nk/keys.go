@@ -159,8 +159,6 @@ const (
 	BotMsgProgressCurrentSpeedPrefix                      Key = "bot.msg.progress.current_speed_prefix"
 	BotMsgProgressDirectDonePrefix                        Key = "bot.msg.progress.direct_done_prefix"
 	BotMsgProgressDirectStart                             Key = "bot.msg.progress.direct_start"
-	BotMsgProgressDownloadDonePrefix                      Key = "bot.msg.progress.download_done_prefix"
-	BotMsgProgressDownloadFailedPrefix                    Key = "bot.msg.progress.download_failed_prefix"
 	BotMsgProgressDownloadedPrefix                        Key = "bot.msg.progress.downloaded_prefix"
 	BotMsgProgressDownloadingPrefix                       Key = "bot.msg.progress.downloading_prefix"
 	BotMsgProgressErrorPrefix                             Key = "bot.msg.progress.error_prefix"
