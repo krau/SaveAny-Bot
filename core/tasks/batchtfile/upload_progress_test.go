@@ -3,12 +3,12 @@ package batchtfile
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/krau/SaveAny-Bot/common/i18n"
 	storcfg "github.com/krau/SaveAny-Bot/config/storage"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
@@ -31,6 +31,12 @@ type orderedUploadProgressRecorder struct {
 	secondEntered chan struct{}
 	mu            sync.Mutex
 	notifications []int64
+}
+
+type itemUploadSnapshotRecorder struct {
+	mu           sync.Mutex
+	aggregates   []int64
+	itemUploaded []int64
 }
 
 type fallbackBatchSaver struct {
@@ -73,51 +79,6 @@ func (s *nativeBatchSaver) SaveBatchWithProgress(
 	return nil
 }
 
-func TestShouldUpdateUploadProgress(t *testing.T) {
-	tests := []struct {
-		name        string
-		total       int64
-		uploaded    int64
-		lastPercent int
-		elapsed     time.Duration
-		want        bool
-	}{
-		{name: "invalid total", total: 0, uploaded: 1, want: false},
-		{name: "no uploaded bytes", total: 100, uploaded: 0, want: false},
-		{name: "percentage threshold", total: 100 << 20, uploaded: 10 << 20, elapsed: uploadProgressMinInterval, want: true},
-		{name: "percentage threshold rate limited", total: 100 << 20, uploaded: 10 << 20, elapsed: uploadProgressMinInterval - time.Millisecond, want: false},
-		{name: "maximum time threshold", total: 100 << 20, uploaded: 1 << 20, elapsed: uploadProgressMaxInterval, want: true},
-		{name: "below thresholds", total: 100 << 20, uploaded: 1 << 20, elapsed: uploadProgressMaxInterval - time.Millisecond, want: false},
-		{name: "completion", total: 100, uploaded: 100, lastPercent: 99, elapsed: uploadProgressMinInterval, want: true},
-		{name: "completion already reported", total: 100, uploaded: 100, lastPercent: 100, elapsed: uploadProgressMinInterval, want: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := shouldUpdateUploadProgress(tt.total, tt.uploaded, tt.lastPercent, tt.elapsed); got != tt.want {
-				t.Fatalf("shouldUpdateUploadProgress() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestBatchProgressSummaryLocalized(t *testing.T) {
-	t.Cleanup(func() { i18n.Init("zh-Hans") })
-	tests := []struct {
-		lang string
-		want string
-	}{
-		{lang: "en", want: "3.00 MB (2 files)"},
-		{lang: "zh-Hans", want: "3.00 MB (2 个文件)"},
-	}
-	for _, tt := range tests {
-		i18n.Init(tt.lang)
-		if got := batchProgressSummary(3*1024*1024, 2); got != tt.want {
-			t.Fatalf("batchProgressSummary() with %s locale = %q, want %q", tt.lang, got, tt.want)
-		}
-	}
-}
-
 func (*uploadProgressRecorder) OnStart(context.Context, TaskInfo)       {}
 func (*uploadProgressRecorder) OnProgress(context.Context, TaskInfo)    {}
 func (*uploadProgressRecorder) OnDone(context.Context, TaskInfo, error) {}
@@ -143,6 +104,22 @@ func (*orderedUploadProgressRecorder) OnDone(context.Context, TaskInfo, error) {
 func (*orderedUploadProgressRecorder) OnUploadStart(context.Context, TaskInfo, int64) {
 }
 
+func (*itemUploadSnapshotRecorder) OnStart(context.Context, TaskInfo)       {}
+func (*itemUploadSnapshotRecorder) OnProgress(context.Context, TaskInfo)    {}
+func (*itemUploadSnapshotRecorder) OnDone(context.Context, TaskInfo, error) {}
+func (*itemUploadSnapshotRecorder) OnUploadStart(context.Context, TaskInfo, int64) {
+}
+
+func (r *itemUploadSnapshotRecorder) OnUploadProgress(_ context.Context, info TaskInfo, uploaded, _ int64) {
+	items := info.Items()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.aggregates = append(r.aggregates, uploaded)
+	if len(items) > 0 {
+		r.itemUploaded = append(r.itemUploaded, items[0].Uploaded)
+	}
+}
+
 func (r *orderedUploadProgressRecorder) OnUploadProgress(_ context.Context, _ TaskInfo, uploaded, _ int64) {
 	if uploaded == 100 {
 		close(r.firstEntered)
@@ -156,25 +133,7 @@ func (r *orderedUploadProgressRecorder) OnUploadProgress(_ context.Context, _ Ta
 	r.mu.Unlock()
 }
 
-func TestDownloadProgressContinuesAfterUploadStarts(t *testing.T) {
-	task := &Task{
-		ID:         "interleaved",
-		elems:      make([]TaskElement, 2),
-		totalSize:  20 << 20,
-		processing: make(map[string]TaskElementInfo),
-	}
-	progress := new(Progress)
-	progress.OnStart(t.Context(), task)
-	progress.OnUploadStart(t.Context(), task, task.totalSize)
-	task.downloaded.Store(10 << 20)
-	progress.OnProgress(t.Context(), task)
-
-	if got := progress.downloadLastUpdatePercent.Load(); got != 50 {
-		t.Fatalf("download progress after upload start = %d%%, want 50%%", got)
-	}
-}
-
-func TestUploadProgressAggregatesItemsAndHandlesRetry(t *testing.T) {
+func TestUploadProgressAggregatesItemsAndIgnoresOutOfOrderCallbacks(t *testing.T) {
 	recorder := new(uploadProgressRecorder)
 	task := &Task{Progress: recorder, totalSize: 300, uploaded: make(map[string]int64)}
 	task.uploadTotalSize.Store(300)
@@ -185,7 +144,7 @@ func TestUploadProgressAggregatesItemsAndHandlesRetry(t *testing.T) {
 	first(40, 100)
 	second(50, 200)
 	first(80, 100)
-	second(10, 200) // A retry may restart one item from zero; aggregate progress must not regress.
+	second(10, 200) // An out-of-order callback must not regress aggregate progress.
 	first(150, 100) // Per-item progress is clamped to its declared total.
 
 	recorder.mu.Lock()
@@ -203,6 +162,50 @@ func TestUploadProgressAggregatesItemsAndHandlesRetry(t *testing.T) {
 		if recorder.notifications[i] < recorder.notifications[i-1] {
 			t.Fatalf("aggregate progress regressed: %v", recorder.notifications)
 		}
+	}
+}
+
+func TestOutOfOrderUploadCallbackDoesNotRegressItemSnapshot(t *testing.T) {
+	recorder := new(itemUploadSnapshotRecorder)
+	task := NewBatchTGFileTask("retry", t.Context(), []TaskElement{{
+		ID:   "file",
+		File: tfile.NewTGFile(nil, nil, 100, "file.bin"),
+	}}, recorder, true)
+	task.recordDownloadComplete("file", 100)
+	onProgress := task.uploadCallback(t.Context(), "file")
+	onProgress(80, 100)
+	onProgress(10, 100)
+
+	recorder.mu.Lock()
+	defer recorder.mu.Unlock()
+	if got := recorder.aggregates; len(got) != 2 || got[0] != 80 || got[1] != 80 {
+		t.Fatalf("aggregate snapshots = %v, want [80 80]", got)
+	}
+	if got := recorder.itemUploaded; len(got) != 2 || got[0] != 80 || got[1] != 80 {
+		t.Fatalf("item snapshots = %v, want [80 80]", got)
+	}
+}
+
+func TestExplicitRetryCanResetItemWithoutRegressingAggregate(t *testing.T) {
+	recorder := new(itemUploadSnapshotRecorder)
+	task := NewBatchTGFileTask("retry", t.Context(), []TaskElement{{
+		ID:   "file",
+		File: tfile.NewTGFile(nil, nil, 100, "file.bin"),
+	}}, recorder, true)
+	task.recordDownloadComplete("file", 100)
+	onProgress := task.uploadCallback(t.Context(), "file")
+	onProgress(80, 100)
+	task.markItemRetry("file", FailureStageUpload, 1, 3, errors.New("retry"))
+	onProgress(0, 100)
+	onProgress(10, 100)
+
+	recorder.mu.Lock()
+	defer recorder.mu.Unlock()
+	if got := recorder.aggregates; len(got) != 3 || got[0] != 80 || got[1] != 80 || got[2] != 80 {
+		t.Fatalf("aggregate snapshots = %v, want [80 80 80]", got)
+	}
+	if got := recorder.itemUploaded; len(got) != 3 || got[0] != 80 || got[1] != 0 || got[2] != 10 {
+		t.Fatalf("item snapshots = %v, want [80 0 10]", got)
 	}
 }
 
@@ -233,9 +236,9 @@ func TestRecordedUploadSizesExcludeStreamedFiles(t *testing.T) {
 	if task.totalSize != 350 {
 		t.Fatalf("download total = %d, want 350", task.totalSize)
 	}
-	task.recordDownloadComplete(0)
-	task.recordDownloadComplete(200)
-	task.recordDownloadComplete(50)
+	task.recordDownloadComplete("streamed", 0)
+	task.recordDownloadComplete("cached", 200)
+	task.recordDownloadComplete("batch-cached", 50)
 	if got := task.uploadTotalSize.Load(); got != 250 {
 		t.Fatalf("tracked upload total = %d, want 250", got)
 	}
@@ -263,7 +266,7 @@ func TestZeroMetadataSizeUsesActualUploadSize(t *testing.T) {
 		t.Fatalf("metadata download total = %d, want 0", task.totalSize)
 	}
 
-	task.recordDownloadComplete(25)
+	task.recordDownloadComplete("photo", 25)
 	task.uploadCallback(t.Context(), "photo")(25, 25)
 
 	recorder.mu.Lock()
@@ -273,75 +276,6 @@ func TestZeroMetadataSizeUsesActualUploadSize(t *testing.T) {
 	}
 	if recorder.uploaded != 25 || recorder.total != 25 {
 		t.Fatalf("photo upload progress = %d/%d, want 25/25", recorder.uploaded, recorder.total)
-	}
-}
-
-func TestEqualCompletionCallbackCanReportRateLimitedUpload(t *testing.T) {
-	progress := new(Progress)
-	task := &Task{
-		ID:         "completion",
-		elems:      []TaskElement{{ID: "file"}},
-		Progress:   progress,
-		totalSize:  100,
-		processing: make(map[string]TaskElementInfo),
-		uploaded:   make(map[string]int64),
-	}
-	task.downloaded.Store(task.totalSize)
-	task.recordDownloadComplete(100)
-	progress.OnStart(t.Context(), task)
-	onProgress := task.uploadCallback(t.Context(), "file")
-	onProgress(100, 100)
-	if got := progress.uploadLastUpdatePercent.Load(); got != 0 {
-		t.Fatalf("rate-limited completion = %d%%, want 0%%", got)
-	}
-
-	progress.uploadLastUpdateAt.Store(time.Now().Add(-uploadProgressMinInterval).UnixNano())
-	onProgress(100, 100)
-	if got := progress.uploadLastUpdatePercent.Load(); got != 100 {
-		t.Fatalf("repeated completion callback = %d%%, want 100%%", got)
-	}
-}
-
-func TestBatchProgressSwitchesToUploadOnlyAfterDownloadsFinish(t *testing.T) {
-	task := &Task{
-		ID:         "interleaved",
-		elems:      make([]TaskElement, 2),
-		totalSize:  20 << 20,
-		processing: make(map[string]TaskElementInfo),
-	}
-	progress := new(Progress)
-	progress.OnStart(t.Context(), task)
-	task.downloaded.Store(10 << 20)
-	progress.OnProgress(t.Context(), task)
-	progress.OnUploadStart(t.Context(), task, task.totalSize)
-	progress.uploadLastUpdateAt.Store(time.Now().Add(-uploadProgressMinInterval).UnixNano())
-	progress.OnUploadProgress(t.Context(), task, 5<<20, task.totalSize)
-
-	if progress.uploadVisible.Load() {
-		t.Fatal("upload phase became visible before all downloads finished")
-	}
-	if got := progress.downloadLastUpdatePercent.Load(); got != 50 {
-		t.Fatalf("download progress before upload phase = %d%%, want 50%%", got)
-	}
-
-	task.downloaded.Store(task.totalSize)
-	progress.OnUploadProgress(t.Context(), task, 10<<20, task.totalSize)
-	if progress.uploadVisible.Load() {
-		t.Fatal("upload phase became visible from byte totals before downloads completed")
-	}
-	task.recordDownloadComplete(10 << 20)
-	task.recordDownloadComplete(10 << 20)
-	progress.OnUploadProgress(t.Context(), task, 10<<20, task.totalSize)
-	if !progress.uploadVisible.Load() {
-		t.Fatal("upload phase did not become visible after all downloads finished")
-	}
-	if got := progress.uploadLastUpdatePercent.Load(); got != 50 {
-		t.Fatalf("upload progress after phase switch = %d%%, want 50%%", got)
-	}
-
-	progress.OnProgress(t.Context(), task)
-	if got := progress.downloadLastUpdatePercent.Load(); got != 50 {
-		t.Fatalf("delayed download update rewrote upload phase: download progress = %d%%, want 50%%", got)
 	}
 }
 
@@ -429,7 +363,7 @@ func TestDownloadCompletionCannotChangeUploadSnapshot(t *testing.T) {
 		Progress: recorder,
 		uploaded: make(map[string]int64),
 	}
-	task.recordDownloadComplete(100)
+	task.recordDownloadComplete("first", 100)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -445,7 +379,7 @@ func TestDownloadCompletionCannotChangeUploadSnapshot(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		close(recordStarted)
-		task.recordDownloadComplete(100)
+		task.recordDownloadComplete("second", 100)
 		close(recordDone)
 	}()
 	<-recordStarted

@@ -1,6 +1,9 @@
 package batchtfile
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // UploadProgressTracker optionally extends a batch progress tracker with a
 // distinct aggregate upload phase.
@@ -34,13 +37,11 @@ func (t *Task) uploadCallback(ctx context.Context, id string) func(uploaded, tot
 
 		t.uploadMu.Lock()
 		defer t.uploadMu.Unlock()
+		becameConfirming := t.recordItemUpload(id, uploaded, total, time.Now())
 		if t.uploaded == nil {
 			t.uploaded = make(map[string]int64)
 		}
 		previous, tracked := t.uploaded[id]
-		if tracked && uploaded < previous {
-			return
-		}
 		if !tracked || uploaded > previous {
 			t.uploaded[id] = uploaded
 		}
@@ -53,14 +54,17 @@ func (t *Task) uploadCallback(ctx context.Context, id string) func(uploaded, tot
 			aggregate = uploadTotal
 		}
 		tracker.OnUploadProgress(ctx, t, aggregate, uploadTotal)
+		if becameConfirming {
+			t.notifyStateChange(ctx)
+		}
 	}
 }
 
-func (t *Task) recordDownloadComplete(uploadSize int64) {
+func (t *Task) recordDownloadComplete(id string, uploadSize int64) {
 	t.uploadMu.Lock()
 	defer t.uploadMu.Unlock()
 	if uploadSize > 0 {
 		t.uploadTotalSize.Add(uploadSize)
 	}
-	t.downloadedFiles.Add(1)
+	t.recordItemDownloaded(id, uploadSize)
 }

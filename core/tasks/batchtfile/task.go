@@ -37,11 +37,13 @@ type Task struct {
 	Progress        ProgressTracker
 	IgnoreErrors    bool // if true, errors during processing will be ignored
 	downloaded      atomic.Int64
-	downloadedFiles atomic.Int64
 	totalSize       int64
 	uploadTotalSize atomic.Int64
 	processing      map[string]TaskElementInfo
 	processingMu    sync.RWMutex
+	itemStates      []itemProgressState
+	itemIndex       map[string]int
+	itemMu          sync.RWMutex
 	uploadOnce      sync.Once
 	uploadMu        sync.Mutex
 	uploaded        map[string]int64
@@ -114,6 +116,7 @@ func NewBatchTGFileTask(
 	progress ProgressTracker,
 	ignoreErrors bool,
 ) *Task {
+	itemStates, itemIndex := newItemProgressStates(files)
 	task := &Task{
 		ID:         id,
 		ctx:        ctx,
@@ -128,6 +131,8 @@ func NewBatchTGFileTask(
 			return total
 		}(),
 		processing:   make(map[string]TaskElementInfo),
+		itemStates:   itemStates,
+		itemIndex:    itemIndex,
 		uploaded:     make(map[string]int64),
 		IgnoreErrors: ignoreErrors,
 		processingMu: sync.RWMutex{},

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/retry"
@@ -60,6 +61,7 @@ func (t *Task) Execute(ctx context.Context) error {
 	} else {
 		logger.Info("Batch file task completed successfully")
 	}
+	t.finishItems(err)
 	t.Progress.OnDone(ctx, t, err)
 	return err
 }
@@ -98,7 +100,7 @@ func (t *Task) processElements(ctx context.Context, elems []*TaskElement) error 
 	eg.SetLimit(config.C().Workers)
 	for _, elem := range elems {
 		eg.Go(func() error {
-			if err := t.markProcessing(elem); err != nil {
+			if err := t.markProcessing(ctx, elem); err != nil {
 				return err
 			}
 			defer t.unmarkProcessing(elem.ID)
@@ -121,7 +123,7 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 	eg.SetLimit(config.C().Workers)
 	for _, elem := range group.elems {
 		eg.Go(func() error {
-			if err := t.markProcessing(elem); err != nil {
+			if err := t.markProcessing(ctx, elem); err != nil {
 				return err
 			}
 			defer t.unmarkProcessing(elem.ID)
@@ -144,11 +146,13 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 	for _, elem := range group.elems {
 		file, err := os.Open(elem.localPath)
 		if err != nil {
+			t.markItemFailed(elem.ID, FailureStageCache, err)
 			return fmt.Errorf("failed to open cache file: %w", err)
 		}
 		stat, err := file.Stat()
 		if err != nil {
 			file.Close()
+			t.markItemFailed(elem.ID, FailureStageCache, err)
 			return fmt.Errorf("failed to get cache file stat: %w", err)
 		}
 		openFiles = append(openFiles, file)
@@ -161,8 +165,8 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 			PreserveCaption: elem.preserveCaption,
 		})
 	}
-	for _, item := range items {
-		t.recordDownloadComplete(item.Size)
+	for index, item := range items {
+		t.recordDownloadComplete(group.elems[index].ID, item.Size)
 	}
 	return t.saveBatchItems(ctx, group, items)
 }
@@ -177,11 +181,17 @@ func (t *Task) saveBatchItems(ctx context.Context, group executionGroup, items [
 			t.uploadCallback(ctx, group.elems[index].ID)(uploaded, total)
 		})
 		if err != nil {
+			for _, elem := range group.elems {
+				t.markItemFailed(elem.ID, FailureStageBatchUpload, err)
+			}
+			t.notifyStateChange(ctx)
 			return fmt.Errorf("failed to save batch: %w", err)
 		}
 		for index, elem := range group.elems {
 			t.uploadCallback(ctx, elem.ID)(items[index].Size, items[index].Size)
+			t.markItemCompleted(elem.ID)
 		}
+		t.notifyStateChange(ctx)
 		return nil
 	}
 	for i := range items {
@@ -192,21 +202,30 @@ func (t *Task) saveBatchItems(ctx context.Context, group executionGroup, items [
 		)
 	}
 	if err := group.batchSaver.SaveBatch(ctx, items); err != nil {
+		for _, elem := range group.elems {
+			t.markItemFailed(elem.ID, FailureStageBatchUpload, err)
+		}
+		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to save batch: %w", err)
 	}
 	for index, elem := range group.elems {
 		t.uploadCallback(ctx, elem.ID)(items[index].Size, items[index].Size)
+		t.markItemCompleted(elem.ID)
 	}
+	t.notifyStateChange(ctx)
 	return nil
 }
 
-func (t *Task) markProcessing(elem *TaskElement) error {
+func (t *Task) markProcessing(ctx context.Context, elem *TaskElement) error {
 	t.processingMu.Lock()
-	defer t.processingMu.Unlock()
 	if t.processing[elem.ID] != nil {
+		t.processingMu.Unlock()
 		return fmt.Errorf("element with ID %s is already being processed", elem.ID)
 	}
 	t.processing[elem.ID] = elem
+	t.processingMu.Unlock()
+	t.markItemActive(elem.ID, elem.stream, time.Now())
+	t.Progress.OnProgress(ctx, t)
 	return nil
 }
 
@@ -221,9 +240,12 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 	logger.Info("Starting file download")
 	localFile, err := fsutil.CreateFile(elem.localPath)
 	if err != nil {
+		t.markItemFailed(elem.ID, FailureStageCache, err)
+		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to create local file: %w", err)
 	}
 	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
+		t.recordItemDownload(elem.ID, int64(n), time.Now())
 		downloaded := t.downloaded.Add(int64(n))
 		t.Progress.OnProgress(ctx, t)
 		taskevent.Emit(ctx, taskevent.Event{
@@ -236,9 +258,13 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 	_, downloadErr := tdler.NewDownloader(elem.File).Parallel(ctx, wrAt)
 	closeErr := localFile.Close()
 	if downloadErr != nil {
+		t.markItemFailed(elem.ID, FailureStageDownload, downloadErr)
+		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to download file: %w", downloadErr)
 	}
 	if closeErr != nil {
+		t.markItemFailed(elem.ID, FailureStageCache, closeErr)
+		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to close cache file: %w", closeErr)
 	}
 	logger.Info("File downloaded successfully")
@@ -247,6 +273,8 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 			elem.Path += ext
 		}
 	}
+	t.markItemDownloaded(elem.ID)
+	t.Progress.OnProgress(ctx, t)
 	return nil
 }
 
@@ -257,9 +285,15 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		defer pr.Close()
 		errg, uploadCtx := errgroup.WithContext(ctx)
 		errg.Go(func() error {
-			return elem.Storage.Save(uploadCtx, pr, elem.Path)
+			err := elem.Storage.Save(uploadCtx, pr, elem.Path)
+			if err != nil {
+				t.markItemFailed(elem.ID, FailureStageUpload, err)
+				t.notifyStateChange(ctx)
+			}
+			return err
 		})
 		wr := ioutil.NewProgressWriter(pw, func(n int) {
+			t.recordItemDownload(elem.ID, int64(n), time.Now())
 			downloaded := t.downloaded.Add(int64(n))
 			t.Progress.OnProgress(ctx, t)
 			taskevent.Emit(ctx, taskevent.Event{
@@ -275,6 +309,8 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			_, err := tdler.NewDownloader(elem.File).Stream(uploadCtx, wr)
 			if err != nil {
 				logger.Errorf("Failed to download file: %v", err)
+				t.markItemFailed(elem.ID, FailureStageDownload, err)
+				t.notifyStateChange(ctx)
 				pw.CloseWithError(err)
 			}
 			return err
@@ -282,13 +318,17 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		if err := errg.Wait(); err != nil {
 			return fmt.Errorf("failed to download file in stream mode: %w", err)
 		}
-		t.recordDownloadComplete(0)
+		t.recordDownloadComplete(elem.ID, 0)
+		t.markItemCompleted(elem.ID)
+		t.notifyStateChange(ctx)
 		logger.Info("File downloaded successfully in stream mode")
 		return nil
 	}
 	logger.Info("Starting file download")
 	localFile, err := fsutil.CreateFile(elem.localPath)
 	if err != nil {
+		t.markItemFailed(elem.ID, FailureStageCache, err)
+		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to create local file: %w", err)
 	}
 	defer func() {
@@ -297,6 +337,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		}
 	}()
 	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
+		t.recordItemDownload(elem.ID, int64(n), time.Now())
 		downloaded := t.downloaded.Add(int64(n))
 		t.Progress.OnProgress(ctx, t)
 		taskevent.Emit(ctx, taskevent.Event{
@@ -308,6 +349,8 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	})
 	_, err = tdler.NewDownloader(elem.File).Parallel(ctx, wrAt)
 	if err != nil {
+		t.markItemFailed(elem.ID, FailureStageDownload, err)
+		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to download file: %w", err)
 	}
 	logger.Info("File downloaded successfully")
@@ -320,16 +363,25 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	var fileStat os.FileInfo
 	fileStat, err = os.Stat(elem.localPath)
 	if err != nil {
+		t.markItemFailed(elem.ID, FailureStageCache, err)
+		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
-	t.recordDownloadComplete(fileStat.Size())
+	t.recordDownloadComplete(elem.ID, fileStat.Size())
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
 	t.startUpload(vctx)
 	onProgress := t.uploadCallback(vctx, elem.ID)
+	attempt := 0
+	retryLimit := int(config.C().Retry)
+	lastFailureStage := FailureStageUpload
 	err = retry.Retry(func() error {
+		attempt++
 		var file *os.File
 		file, err = os.Open(elem.localPath)
 		if err != nil {
+			lastFailureStage = FailureStageCache
+			t.markItemRetry(elem.ID, lastFailureStage, attempt, retryLimit, err)
+			t.notifyStateChange(vctx)
 			return fmt.Errorf("failed to open cache file: %w", err)
 		}
 		defer file.Close()
@@ -341,12 +393,20 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		}
 		if err != nil {
 			logger.Errorf("Failed to save file: %s, retrying...", err)
+			lastFailureStage = t.itemFailureStage(elem.ID)
+			t.markItemRetry(elem.ID, lastFailureStage, attempt, retryLimit, err)
+			t.notifyStateChange(vctx)
 			return err
 		}
 		return nil
 	}, retry.Context(vctx), retry.RetryTimes(uint(config.C().Retry)))
 	if err == nil {
 		onProgress(fileStat.Size(), fileStat.Size())
+		t.markItemCompleted(elem.ID)
+		t.notifyStateChange(vctx)
+	} else {
+		t.markItemFailed(elem.ID, lastFailureStage, err)
+		t.notifyStateChange(vctx)
 	}
 	return err
 }
