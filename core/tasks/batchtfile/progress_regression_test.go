@@ -111,6 +111,36 @@ func TestBatchProgressLimitsRowsWithoutHidingActiveUpload(t *testing.T) {
 	}
 }
 
+func TestDownloadProgressContinuesAfterUploadStarts(t *testing.T) {
+	useProgressRegressionLocale(t)
+	progress := new(Progress)
+	task := newProgressRegressionTask(progress,
+		progressRegressionFile{"uploading", 100},
+		progressRegressionFile{"downloading", 100},
+	)
+	progress.OnStart(t.Context(), task)
+	task.recordDownloadComplete("uploading", 100)
+	task.uploadCallback(t.Context(), "uploading")(50, 100)
+
+	started := time.Unix(100, 0)
+	task.markItemActive("downloading", false, started)
+	task.recordItemDownload("downloading", 50, started.Add(time.Second))
+	progress.updateMu.Lock()
+	progress.lastUpdateAt = time.Now().Add(-progressRenderInterval)
+	progress.updateMu.Unlock()
+	progress.OnProgress(t.Context(), task)
+
+	progress.updateMu.Lock()
+	text := progress.lastText
+	progress.updateMu.Unlock()
+	assertProgressRegressionContains(t, text,
+		"uploading.bin",
+		"🟩🟩🟩🟩🟩⬜️⬜️⬜️⬜️⬜️ 50%",
+		"总速度：⬇️ 50 B/s ｜ ⬆️ 0 B/s",
+		"🔄 另有 1 个文件正在处理",
+	)
+}
+
 func TestBatchUploadIgnoresOutOfOrderBytesAndAllowsRetryReset(t *testing.T) {
 	recorder := new(progressRegressionRecorder)
 	task := newProgressRegressionTask(recorder, progressRegressionFile{"file", 100})
@@ -138,7 +168,7 @@ func TestBatchUploadIgnoresOutOfOrderBytesAndAllowsRetryReset(t *testing.T) {
 	}
 }
 
-func TestBatchUploadNotificationsRemainOrdered(t *testing.T) {
+func TestUploadProgressNotificationsRemainOrdered(t *testing.T) {
 	recorder := &orderedProgressRegressionRecorder{
 		firstEntered:  make(chan struct{}),
 		releaseFirst:  make(chan struct{}),
