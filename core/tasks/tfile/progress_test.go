@@ -2,9 +2,12 @@ package tfile
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/krau/SaveAny-Bot/common/i18n"
 )
 
 type progressTestTaskInfo struct{}
@@ -33,6 +36,7 @@ func TestShouldUpdateUploadProgress(t *testing.T) {
 		{name: "completion", total: 100, uploaded: 100, lastPercent: 99, elapsed: uploadProgressMinInterval, want: true},
 		{name: "completion rate limited", total: 100, uploaded: 100, lastPercent: 99, elapsed: uploadProgressMinInterval - time.Millisecond, want: false},
 		{name: "completion already reported", total: 100, uploaded: 100, lastPercent: 100, elapsed: uploadProgressMinInterval, want: false},
+		{name: "out of order callback", total: 100, uploaded: 40, lastPercent: 60, elapsed: uploadProgressMaxInterval, want: false},
 	}
 
 	for _, tt := range tests {
@@ -68,5 +72,44 @@ func TestUploadProgressConcurrentCallbacks(t *testing.T) {
 	percent := progress.lastUpdatePercent.Load()
 	if percent <= 0 || percent > 100 {
 		t.Fatalf("last upload percentage = %d, want a value in (0, 100]", percent)
+	}
+	if progress.uploadedBytes != total {
+		t.Fatalf("maximum uploaded bytes = %d, want %d", progress.uploadedBytes, total)
+	}
+}
+
+func TestSingleUploadRetryKeepsRichProgressLayout(t *testing.T) {
+	i18n.Init("zh-Hans")
+	t.Cleanup(func() { i18n.Init("zh-Hans") })
+
+	message := buildSingleProgressMessage(
+		progressTestTaskInfo{},
+		singleUploadPhase(2),
+		25<<20,
+		100<<20,
+		5<<20,
+		2,
+	)
+	for _, want := range []string{
+		"🔁 上传重试",
+		"🟩🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 25%",
+		"尝试次数：2",
+		"速度：5.00 MB/s",
+		"大小：25.00 MB / 100.00 MB",
+	} {
+		if !strings.Contains(message.Text, want) {
+			t.Fatalf("retry progress does not contain %q:\n%s", want, message.Text)
+		}
+	}
+}
+
+func TestSingleDoneSizeUsesActualUploadSize(t *testing.T) {
+	progress := new(Progress)
+	info := progressTestTaskInfo{}
+	progress.OnStart(context.Background(), info)
+	progress.OnUploadStart(context.Background(), info, 2048)
+
+	if got := progress.doneSize(info); got != 2048 {
+		t.Fatalf("done size = %d, want actual upload size 2048", got)
 	}
 }
