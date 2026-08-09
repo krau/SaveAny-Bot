@@ -4,14 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
@@ -64,6 +62,7 @@ const (
 type renderedSingleMessage struct {
 	Text     string
 	Entities []tg.MessageEntityClass
+	Err      error
 }
 
 func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
@@ -214,6 +213,10 @@ func (p *Progress) doneSize(info TaskInfo) int64 {
 }
 
 func (p *Progress) editMessage(ctx context.Context, taskID string, message renderedSingleMessage, cancellable bool) {
+	if message.Err != nil {
+		log.FromContext(ctx).Errorf("Failed to render file progress message: %v", message.Err)
+		return
+	}
 	req := buildSingleEditMessageRequest(p.MessageID, taskID, message, cancellable)
 	if ext := tgutil.ExtFromContext(ctx); ext != nil {
 		if _, err := ext.EditMessage(p.ChatID, req); err != nil {
@@ -263,106 +266,20 @@ func buildSingleProgressMessage(
 		"Attempt":     max(attempt, 1),
 	}
 
-	var text string
+	var key i18nk.Key
 	switch phase {
 	case singlePhaseUploading:
-		text = i18n.T(i18nk.BotMsgProgressSingleUploading, data)
+		key = i18nk.BotMsgProgressSingleUploading
 	case singlePhaseRetrying:
-		text = i18n.T(i18nk.BotMsgProgressSingleUploadRetrying, data)
+		key = i18nk.BotMsgProgressSingleUploadRetrying
 	default:
-		key := i18nk.BotMsgProgressSingleDownloading
+		key = i18nk.BotMsgProgressSingleDownloading
 		if total <= 0 {
 			key = i18nk.BotMsgProgressSingleDownloadingUnknown
 		}
-		text = i18n.T(key, data)
 	}
-
-	var builder entity.Builder
-	builder.Bold(i18n.T(i18nk.BotMsgProgressSingleStatusHeader, nil))
-	builder.Plain("\n\n")
-	quote := builder.Token()
-	lines := strings.Split(text, "\n")
-	progressText := fmt.Sprintf("%d%%", percent)
-	speedText := singleProgressSpeed(speed)
-	currentText := dlutil.FormatSize(current)
-	sizeText := dlutil.FormatSize(total)
-	attemptText := strconv.Itoa(max(attempt, 1))
-	for index, line := range lines {
-		if index > 0 {
-			builder.Plain("\n")
-		}
-		switch index {
-		case 0:
-			builder.Bold(line)
-		case 1:
-			builder.Code(line)
-		default:
-			writeSingleCodeValues(&builder, line, singleProgressCodeValues(
-				phase,
-				total,
-				index,
-				progressText,
-				speedText,
-				currentText,
-				sizeText,
-				destination,
-				attemptText,
-			)...)
-		}
-	}
-	quote.Apply(&builder, entity.Blockquote(false))
-	return completeSingleMessage(&builder)
-}
-
-func singleProgressCodeValues(
-	phase singleProgressPhase,
-	total int64,
-	lineIndex int,
-	progress string,
-	speed string,
-	current string,
-	size string,
-	destination string,
-	attempt string,
-) []string {
-	if phase == singlePhaseRetrying {
-		switch lineIndex {
-		case 2:
-			return []string{progress}
-		case 3:
-			return []string{attempt}
-		case 4:
-			return []string{speed}
-		case 5:
-			return []string{current, size}
-		case 6:
-			return []string{destination}
-		}
-		return nil
-	}
-	if phase == singlePhaseDownloading && total <= 0 {
-		switch lineIndex {
-		case 2:
-			return []string{speed}
-		case 3:
-			return []string{current}
-		case 4:
-			return []string{destination}
-		}
-		return nil
-	}
-	switch lineIndex {
-	case 2:
-		return []string{progress}
-	case 3:
-		return []string{speed}
-	case 4:
-		return []string{current, size}
-	case 5:
-		return []string{destination}
-	default:
-		return nil
-	}
+	markup := i18n.T(i18nk.BotMsgProgressSingleStatusHeader, nil) + "\n\n" + localizedProgressMarkup(key, data)
+	return completeSingleMessage(markup)
 }
 
 func buildSingleDoneMessage(info TaskInfo, size int64, err error) renderedSingleMessage {
@@ -371,66 +288,26 @@ func buildSingleDoneMessage(info TaskInfo, size int64, err error) renderedSingle
 		"Size":        dlutil.FormatSize(max(size, 0)),
 		"Destination": fmt.Sprintf("[%s]:%s", info.StorageName(), info.StoragePath()),
 	}
-	var text string
+	var key i18nk.Key
 	switch {
 	case err == nil:
-		text = i18n.T(i18nk.BotMsgProgressSingleDone, data)
+		key = i18nk.BotMsgProgressSingleDone
 	case errors.Is(err, context.Canceled):
-		text = i18n.T(i18nk.BotMsgProgressSingleCanceled, data)
+		key = i18nk.BotMsgProgressSingleCanceled
 	default:
 		data["Reason"] = truncateSingleError(err.Error())
-		text = i18n.T(i18nk.BotMsgProgressSingleFailed, data)
+		key = i18nk.BotMsgProgressSingleFailed
 	}
-
-	var builder entity.Builder
-	for index, line := range strings.Split(text, "\n") {
-		if index > 0 {
-			builder.Plain("\n")
-		}
-		if index == 0 {
-			builder.Bold(line)
-			continue
-		}
-		writeSingleLabeledValue(&builder, line)
-	}
-	return completeSingleMessage(&builder)
+	return completeSingleMessage(localizedProgressMarkup(key, data))
 }
 
-func writeSingleCodeValues(builder *entity.Builder, text string, values ...string) {
-	remainder := text
-	for _, value := range values {
-		if value == "" {
-			continue
-		}
-		index := strings.Index(remainder, value)
-		if index < 0 {
-			continue
-		}
-		builder.Plain(remainder[:index])
-		builder.Code(value)
-		remainder = remainder[index+len(value):]
-	}
-	builder.Plain(remainder)
+func localizedProgressMarkup(key i18nk.Key, data map[string]any) string {
+	return i18n.T(key, tgutil.EscapeHTMLTemplateData(data))
 }
 
-func writeSingleLabeledValue(builder *entity.Builder, line string) {
-	valueOffset := -1
-	if index := strings.Index(line, "："); index >= 0 {
-		valueOffset = index + len("：")
-	} else if index := strings.Index(line, ": "); index >= 0 {
-		valueOffset = index + len(": ")
-	}
-	if valueOffset < 0 || valueOffset >= len(line) {
-		builder.Plain(line)
-		return
-	}
-	builder.Plain(line[:valueOffset])
-	builder.Code(line[valueOffset:])
-}
-
-func completeSingleMessage(builder *entity.Builder) renderedSingleMessage {
-	text, entities := builder.Complete()
-	return renderedSingleMessage{Text: text, Entities: entities}
+func completeSingleMessage(markup string) renderedSingleMessage {
+	text, entities, err := tgutil.RenderHTML(markup)
+	return renderedSingleMessage{Text: text, Entities: entities, Err: err}
 }
 
 func singleProgressPercent(current, total int64) int {

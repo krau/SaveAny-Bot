@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
 
 	"github.com/charmbracelet/log"
-	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
@@ -40,6 +38,7 @@ type Progress struct {
 type renderedBatchMessage struct {
 	Text     string
 	Entities []tg.MessageEntityClass
+	Err      error
 }
 
 const (
@@ -81,6 +80,10 @@ func (p *Progress) render(ctx context.Context, info TaskInfo, priority bool) {
 		return
 	}
 	message := buildBatchProgressMessage(info, p.skippedFiles, visibleActiveItems())
+	if message.Err != nil {
+		log.FromContext(ctx).Errorf("Failed to render batch progress message: %v", message.Err)
+		return
+	}
 	if message.Text == p.lastText {
 		return
 	}
@@ -97,11 +100,19 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	}
 	p.done = true
 	message := buildBatchDoneMessage(info, p.skippedFiles, err)
+	if message.Err != nil {
+		log.FromContext(ctx).Errorf("Failed to render final batch progress message: %v", message.Err)
+		return
+	}
 	p.lastText = message.Text
 	p.editMessage(ctx, info.TaskID(), message, false)
 }
 
 func (p *Progress) editMessage(ctx context.Context, taskID string, message renderedBatchMessage, cancellable bool) {
+	if message.Err != nil {
+		log.FromContext(ctx).Errorf("Failed to render batch progress message: %v", message.Err)
+		return
+	}
 	req := buildBatchEditMessageRequest(p.MessageID, taskID, message, cancellable)
 	if ext := tgutil.ExtFromContext(ctx); ext != nil {
 		if _, err := ext.EditMessage(p.ChatID, req); err != nil {
@@ -139,7 +150,7 @@ func buildBatchProgressMessage(info TaskInfo, skipped []string, activeLimit int)
 	total := len(items) + len(skipped)
 	downloadSpeedText := formatSpeed(downloadSpeed)
 	uploadSpeedText := formatSpeed(uploadSpeed)
-	header := i18n.T(i18nk.BotMsgProgressBatchStatusHeader, map[string]any{
+	header := localizedProgressMarkup(i18nk.BotMsgProgressBatchStatusHeader, map[string]any{
 		"Total":         total,
 		"Completed":     completed,
 		"Downloaded":    downloaded,
@@ -148,35 +159,35 @@ func buildBatchProgressMessage(info TaskInfo, skipped []string, activeLimit int)
 		"UploadSpeed":   uploadSpeedText,
 	})
 
-	var builder entity.Builder
-	writeBatchHeader(&builder, header, total, completed, downloaded, waiting, downloadSpeedText, uploadSpeedText)
+	var markup strings.Builder
+	markup.WriteString(header)
 
 	visibleItems, hiddenTransfers, summarizedConfirming := visibleBatchItems(items, activeLimit)
 	for _, item := range visibleItems {
-		builder.Plain("\n\n")
-		writeActiveItem(&builder, item, len(items))
+		markup.WriteString("\n\n")
+		markup.WriteString(formatActiveItemMarkup(item, len(items)))
 	}
 
 	if hiddenTransfers > 0 {
-		builder.Plain("\n\n")
-		writeTextWithCodeValues(&builder, i18n.T(i18nk.BotMsgProgressBatchSummaryHiddenActive, map[string]any{"Count": hiddenTransfers}), strconv.Itoa(hiddenTransfers))
+		markup.WriteString("\n\n")
+		markup.WriteString(localizedProgressMarkup(i18nk.BotMsgProgressBatchSummaryHiddenActive, map[string]any{"Count": hiddenTransfers}))
 	}
 	if summarizedConfirming > 0 {
-		builder.Plain("\n\n")
-		writeTextWithCodeValues(&builder, i18n.T(i18nk.BotMsgProgressBatchSummaryConfirming, map[string]any{"Count": summarizedConfirming}), strconv.Itoa(summarizedConfirming))
+		markup.WriteString("\n\n")
+		markup.WriteString(localizedProgressMarkup(i18nk.BotMsgProgressBatchSummaryConfirming, map[string]any{"Count": summarizedConfirming}))
 	}
 	if failed > 0 {
-		builder.Plain("\n")
-		writeTextWithCodeValues(&builder, i18n.T(i18nk.BotMsgProgressBatchSummaryFailed, map[string]any{"Count": failed}), strconv.Itoa(failed))
+		markup.WriteString("\n")
+		markup.WriteString(localizedProgressMarkup(i18nk.BotMsgProgressBatchSummaryFailed, map[string]any{"Count": failed}))
 	}
 	if len(skipped) > 0 {
-		builder.Plain("\n")
-		writeTextWithCodeValues(&builder, i18n.T(i18nk.BotMsgProgressBatchSummarySkipped, map[string]any{"Count": len(skipped)}), strconv.Itoa(len(skipped)))
+		markup.WriteString("\n")
+		markup.WriteString(localizedProgressMarkup(i18nk.BotMsgProgressBatchSummarySkipped, map[string]any{"Count": len(skipped)}))
 	}
-	return completeBatchMessage(&builder)
+	return completeBatchMessage(markup.String())
 }
 
-func buildBatchDoneText(info TaskInfo, skipped []string, err error) string {
+func buildBatchDoneMarkup(info TaskInfo, skipped []string, err error) string {
 	items := info.Items()
 	totalSize := info.ActualTotalSize()
 	if totalSize == 0 {
@@ -184,13 +195,13 @@ func buildBatchDoneText(info TaskInfo, skipped []string, err error) string {
 	}
 	if err == nil {
 		if len(skipped) > 0 {
-			return i18n.T(i18nk.BotMsgProgressBatchDoneWithSkipped, map[string]any{
+			return localizedProgressMarkup(i18nk.BotMsgProgressBatchDoneWithSkipped, map[string]any{
 				"Success": len(items),
 				"Skipped": len(skipped),
 				"Size":    dlutil.FormatSize(totalSize),
 			})
 		}
-		return i18n.T(i18nk.BotMsgProgressBatchDone, map[string]any{
+		return localizedProgressMarkup(i18nk.BotMsgProgressBatchDone, map[string]any{
 			"Count": len(items),
 			"Size":  dlutil.FormatSize(totalSize),
 		})
@@ -198,7 +209,7 @@ func buildBatchDoneText(info TaskInfo, skipped []string, err error) string {
 	completed, _, _, failed := itemCounts(items)
 	incomplete := max(len(items)-completed-failed, 0)
 	if errors.Is(err, context.Canceled) {
-		return i18n.T(i18nk.BotMsgProgressBatchCanceled, map[string]any{
+		return localizedProgressMarkup(i18nk.BotMsgProgressBatchCanceled, map[string]any{
 			"Total":      len(items) + len(skipped),
 			"Completed":  completed,
 			"Incomplete": incomplete,
@@ -213,7 +224,7 @@ func buildBatchDoneText(info TaskInfo, skipped []string, err error) string {
 		}
 	}
 	if len(failedItems) > 1 && failedItems[0].FailureStage == FailureStageBatchUpload {
-		return i18n.T(i18nk.BotMsgProgressBatchFailedGroup, map[string]any{
+		return localizedProgressMarkup(i18nk.BotMsgProgressBatchFailedGroup, map[string]any{
 			"Affected":   len(failedItems),
 			"Reason":     displayError(firstError(failedItems), err),
 			"Completed":  completed,
@@ -222,14 +233,14 @@ func buildBatchDoneText(info TaskInfo, skipped []string, err error) string {
 		})
 	}
 	if len(failedItems) == 0 {
-		return i18n.T(i18nk.BotMsgProgressBatchFailedTask, map[string]any{
+		return localizedProgressMarkup(i18nk.BotMsgProgressBatchFailedTask, map[string]any{
 			"Reason":     displayError("", err),
 			"Completed":  completed,
 			"Incomplete": incomplete,
 		})
 	}
 	item := failedItems[0]
-	return i18n.T(i18nk.BotMsgProgressBatchFailedItem, map[string]any{
+	return localizedProgressMarkup(i18nk.BotMsgProgressBatchFailedItem, map[string]any{
 		"Index":      item.Index,
 		"Name":       truncateFilename(item.Name, maxDisplayNameRunes),
 		"Stage":      failureStageLabel(item.FailureStage),
@@ -243,23 +254,10 @@ func buildBatchDoneText(info TaskInfo, skipped []string, err error) string {
 }
 
 func buildBatchDoneMessage(info TaskInfo, skipped []string, err error) renderedBatchMessage {
-	text := buildBatchDoneText(info, skipped, err)
-	lines := strings.Split(text, "\n")
-	var builder entity.Builder
-	for index, line := range lines {
-		if index > 0 {
-			builder.Plain("\n")
-		}
-		if index == 0 {
-			builder.Bold(line)
-			continue
-		}
-		writeLabeledValueLine(&builder, line)
-	}
-	return completeBatchMessage(&builder)
+	return completeBatchMessage(buildBatchDoneMarkup(info, skipped, err))
 }
 
-func formatActiveItem(item TaskItemProgress, total int) string {
+func formatActiveItemMarkup(item TaskItemProgress, total int) string {
 	data := map[string]any{
 		"Index":    item.Index,
 		"Total":    total,
@@ -276,120 +274,27 @@ func formatActiveItem(item TaskItemProgress, total int) string {
 	switch item.Phase {
 	case ItemPhaseDownloading:
 		if item.Size <= 0 {
-			return i18n.T(i18nk.BotMsgProgressBatchItemDownloadingUnknown, data)
+			return localizedProgressMarkup(i18nk.BotMsgProgressBatchItemDownloadingUnknown, data)
 		}
-		return i18n.T(i18nk.BotMsgProgressBatchItemDownloading, data)
+		return localizedProgressMarkup(i18nk.BotMsgProgressBatchItemDownloading, data)
 	case ItemPhaseTransferring:
 		if item.Size <= 0 {
-			return i18n.T(i18nk.BotMsgProgressBatchItemTransferringUnknown, data)
+			return localizedProgressMarkup(i18nk.BotMsgProgressBatchItemTransferringUnknown, data)
 		}
-		return i18n.T(i18nk.BotMsgProgressBatchItemTransferring, data)
+		return localizedProgressMarkup(i18nk.BotMsgProgressBatchItemTransferring, data)
 	case ItemPhaseUploading:
-		return i18n.T(i18nk.BotMsgProgressBatchItemUploading, data)
+		return localizedProgressMarkup(i18nk.BotMsgProgressBatchItemUploading, data)
 	case ItemPhaseRetrying:
-		return i18n.T(i18nk.BotMsgProgressBatchItemRetrying, data)
+		return localizedProgressMarkup(i18nk.BotMsgProgressBatchItemRetrying, data)
 	case ItemPhaseConfirming:
-		return i18n.T(i18nk.BotMsgProgressBatchItemConfirming, data)
+		return localizedProgressMarkup(i18nk.BotMsgProgressBatchItemConfirming, data)
 	default:
 		return ""
 	}
 }
 
-func writeBatchHeader(builder *entity.Builder, header string, total, completed, downloaded, waiting int, downloadSpeed, uploadSpeed string) {
-	lines := strings.Split(header, "\n")
-	for index, line := range lines {
-		if index > 0 {
-			builder.Plain("\n")
-		}
-		switch index {
-		case 0:
-			builder.Bold(line)
-		case 2:
-			writeTextWithCodeValues(builder, line, strconv.Itoa(total))
-		case 3:
-			writeTextWithCodeValues(builder, line, strconv.Itoa(completed), strconv.Itoa(downloaded), strconv.Itoa(waiting))
-		case 4:
-			writeTextWithCodeValues(builder, line, downloadSpeed, uploadSpeed)
-		default:
-			builder.Plain(line)
-		}
-	}
-}
-
-func writeActiveItem(builder *entity.Builder, item TaskItemProgress, total int) {
-	lines := strings.Split(formatActiveItem(item, total), "\n")
-	quote := builder.Token()
-	for index, line := range lines {
-		if index > 0 {
-			builder.Plain("\n")
-		}
-		switch {
-		case index == 0:
-			builder.Bold(line)
-		case index == 1:
-			if line == "" {
-				builder.Plain(line)
-			} else {
-				builder.Code(line)
-			}
-		case item.Phase == ItemPhaseConfirming && index == len(lines)-1:
-			builder.Italic(line)
-		default:
-			writeTextWithCodeValues(builder, line, activeItemCodeValues(item, index)...)
-		}
-	}
-	quote.Apply(builder, entity.Blockquote(false))
-}
-
-func activeItemCodeValues(item TaskItemProgress, lineIndex int) []string {
-	progress := fmt.Sprintf("%d%%", itemPercent(item))
-	speed := formatSpeed(itemSpeed(item))
-	current := dlutil.FormatSize(itemBytes(item))
-	size := dlutil.FormatSize(item.Size)
-	switch item.Phase {
-	case ItemPhaseDownloading, ItemPhaseTransferring:
-		if item.Size <= 0 {
-			if lineIndex == 2 {
-				return []string{speed}
-			}
-		} else if lineIndex == 2 {
-			return []string{progress}
-		}
-		if item.Size > 0 && lineIndex == 3 {
-			return []string{speed}
-		}
-		if lineIndex == 4 || item.Size <= 0 && lineIndex == 3 {
-			return []string{current, size}
-		}
-	case ItemPhaseUploading:
-		if lineIndex == 2 {
-			return []string{progress}
-		}
-		if lineIndex == 3 {
-			return []string{speed}
-		}
-		if lineIndex == 4 {
-			return []string{current, size}
-		}
-	case ItemPhaseRetrying:
-		switch lineIndex {
-		case 2:
-			return []string{progress}
-		case 3:
-			return []string{fmt.Sprintf("%d/%d", min(max(item.RetryAttempt, 1), max(item.RetryLimit, 1)), max(item.RetryLimit, 1))}
-		case 4:
-			return []string{speed}
-		case 5:
-			return []string{current, size}
-		case 6:
-			return []string{truncateRunes(item.Error, maxDisplayErrorRunes)}
-		}
-	case ItemPhaseConfirming:
-		if lineIndex == 2 {
-			return []string{progress}
-		}
-	}
-	return nil
+func localizedProgressMarkup(key i18nk.Key, data map[string]any) string {
+	return i18n.T(key, tgutil.EscapeHTMLTemplateData(data))
 }
 
 func visibleBatchItems(items []TaskItemProgress, limit int) (visible []TaskItemProgress, hiddenTransfers, summarizedConfirming int) {
@@ -419,41 +324,9 @@ func visibleBatchItems(items []TaskItemProgress, limit int) (visible []TaskItemP
 	return visible, hiddenTransfers, confirmingCount
 }
 
-func writeTextWithCodeValues(builder *entity.Builder, text string, values ...string) {
-	remainder := text
-	for _, value := range values {
-		if value == "" {
-			continue
-		}
-		index := strings.Index(remainder, value)
-		if index < 0 {
-			continue
-		}
-		builder.Plain(remainder[:index])
-		builder.Code(value)
-		remainder = remainder[index+len(value):]
-	}
-	builder.Plain(remainder)
-}
-
-func writeLabeledValueLine(builder *entity.Builder, line string) {
-	valueOffset := -1
-	if index := strings.Index(line, "："); index >= 0 {
-		valueOffset = index + len("：")
-	} else if index := strings.Index(line, ": "); index >= 0 {
-		valueOffset = index + len(": ")
-	}
-	if valueOffset < 0 || valueOffset >= len(line) {
-		builder.Plain(line)
-		return
-	}
-	builder.Plain(line[:valueOffset])
-	builder.Code(line[valueOffset:])
-}
-
-func completeBatchMessage(builder *entity.Builder) renderedBatchMessage {
-	text, entities := builder.Complete()
-	return renderedBatchMessage{Text: text, Entities: entities}
+func completeBatchMessage(markup string) renderedBatchMessage {
+	text, entities, err := tgutil.RenderHTML(markup)
+	return renderedBatchMessage{Text: text, Entities: entities, Err: err}
 }
 
 func itemCounts(items []TaskItemProgress) (completed, waiting, downloaded, failed int) {

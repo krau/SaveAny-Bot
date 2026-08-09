@@ -2,11 +2,13 @@ package batchtfile
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
@@ -75,6 +77,9 @@ func TestBatchProgressShowsTransferSpeedAndSize(t *testing.T) {
 	task.recordItemUpload("uploading", 250, 1000, started.Add(2*time.Second))
 
 	message := buildBatchProgressMessage(task, nil, 2)
+	if message.Err != nil {
+		t.Fatalf("buildBatchProgressMessage() failed: %v", message.Err)
+	}
 	assertProgressRegressionContains(t, message.Text,
 		"状态：✅ 0 ｜ 📥 0 ｜ ⏳ 1",
 		"⬇️ 1/3 下载中",
@@ -84,6 +89,10 @@ func TestBatchProgressShowsTransferSpeedAndSize(t *testing.T) {
 		"速度：250 B/s",
 		"大小：250 B / 1000 B",
 	)
+	bold, _, blockquote, _ := batchEntityCounts(message.Entities)
+	if bold != 3 || blockquote != 2 {
+		t.Fatalf("entity counts = bold:%d blockquote:%d, want bold:3 blockquote:2", bold, blockquote)
+	}
 }
 
 func TestBatchProgressLimitsRowsWithoutHidingActiveUpload(t *testing.T) {
@@ -109,6 +118,33 @@ func TestBatchProgressLimitsRowsWithoutHidingActiveUpload(t *testing.T) {
 	if strings.Contains(message, "confirm-01.bin") || strings.Contains(message, "confirm-02.bin") {
 		t.Fatalf("confirmation rows displaced active transfers:\n%s", message)
 	}
+}
+
+func TestBatchProgressTemplateOwnsStylesAndEscapesValues(t *testing.T) {
+	useProgressRegressionLocale(t)
+	fileID := `<b>A&B</b>`
+	task := newProgressRegressionTask(nil, progressRegressionFile{fileID, 100})
+	task.markItemRetry(fileID, FailureStageUpload, 1, 3, errors.New(`<i>remote & failed</i>`))
+
+	message := buildBatchProgressMessage(task, nil, 1)
+	if message.Err != nil {
+		t.Fatalf("buildBatchProgressMessage() failed: %v", message.Err)
+	}
+	assertProgressRegressionContains(t, message.Text,
+		`<b>A&B</b>.bin`,
+		`<i>remote & failed</i>`,
+	)
+	bold, _, blockquote, italic := batchEntityCounts(message.Entities)
+	if bold != 2 || blockquote != 1 || italic != 0 {
+		t.Fatalf("entity counts = bold:%d blockquote:%d italic:%d", bold, blockquote, italic)
+	}
+
+	i18n.Init("en")
+	english := buildBatchProgressMessage(task, nil, 1)
+	if english.Err != nil {
+		t.Fatalf("English batch template failed: %v", english.Err)
+	}
+	assertProgressRegressionContains(t, english.Text, "📦 Processing", "Retrying upload", `<b>A&B</b>.bin`)
 }
 
 func TestDownloadProgressContinuesAfterUploadStarts(t *testing.T) {
@@ -260,4 +296,20 @@ func assertProgressRegressionContains(t *testing.T, value string, wants ...strin
 			t.Fatalf("text does not contain %q:\n%s", want, value)
 		}
 	}
+}
+
+func batchEntityCounts(entities []tg.MessageEntityClass) (bold, code, blockquote, italic int) {
+	for _, messageEntity := range entities {
+		switch messageEntity.(type) {
+		case *tg.MessageEntityBold:
+			bold++
+		case *tg.MessageEntityCode:
+			code++
+		case *tg.MessageEntityBlockquote:
+			blockquote++
+		case *tg.MessageEntityItalic:
+			italic++
+		}
+	}
+	return
 }

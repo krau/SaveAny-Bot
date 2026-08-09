@@ -2,11 +2,13 @@ package tfile
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 )
 
@@ -90,6 +92,9 @@ func TestSingleUploadRetryKeepsRichProgressLayout(t *testing.T) {
 		5<<20,
 		2,
 	)
+	if message.Err != nil {
+		t.Fatalf("buildSingleProgressMessage() failed: %v", message.Err)
+	}
 	for _, want := range []string{
 		"🔁 上传重试",
 		"🟩🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️ 25%",
@@ -103,6 +108,42 @@ func TestSingleUploadRetryKeepsRichProgressLayout(t *testing.T) {
 	}
 }
 
+func TestSingleProgressTemplateOwnsStylesAndEscapesValues(t *testing.T) {
+	i18n.Init("en")
+	t.Cleanup(func() { i18n.Init("zh-Hans") })
+	info := htmlProgressTestTaskInfo{}
+
+	message := buildSingleProgressMessage(info, singlePhaseDownloading, 50, 100, 25, 0)
+	if message.Err != nil {
+		t.Fatalf("buildSingleProgressMessage() failed: %v", message.Err)
+	}
+	for _, want := range []string{
+		`<b>A&B</b>.bin`,
+		`[store<&>]:dir/<i>x</i>&`,
+		"Speed: 25 B/s",
+	} {
+		if !strings.Contains(message.Text, want) {
+			t.Fatalf("progress text does not contain %q:\n%s", want, message.Text)
+		}
+	}
+	bold, code, blockquote, italic := singleEntityCounts(message.Entities)
+	if bold != 2 || code != 6 || blockquote != 1 || italic != 0 {
+		t.Fatalf("progress entity counts = bold:%d code:%d blockquote:%d italic:%d", bold, code, blockquote, italic)
+	}
+
+	failure := buildSingleDoneMessage(info, 100, errors.New(`<i>remote & failed</i>`))
+	if failure.Err != nil {
+		t.Fatalf("buildSingleDoneMessage() failed: %v", failure.Err)
+	}
+	if !strings.Contains(failure.Text, `<i>remote & failed</i>`) {
+		t.Fatalf("failure reason was not preserved literally:\n%s", failure.Text)
+	}
+	bold, code, blockquote, italic = singleEntityCounts(failure.Entities)
+	if bold != 1 || code != 2 || blockquote != 0 || italic != 0 {
+		t.Fatalf("failure entity counts = bold:%d code:%d blockquote:%d italic:%d", bold, code, blockquote, italic)
+	}
+}
+
 func TestSingleDoneSizeUsesActualUploadSize(t *testing.T) {
 	progress := new(Progress)
 	info := progressTestTaskInfo{}
@@ -112,4 +153,28 @@ func TestSingleDoneSizeUsesActualUploadSize(t *testing.T) {
 	if got := progress.doneSize(info); got != 2048 {
 		t.Fatalf("done size = %d, want actual upload size 2048", got)
 	}
+}
+
+type htmlProgressTestTaskInfo struct{}
+
+func (htmlProgressTestTaskInfo) TaskID() string      { return "html-task" }
+func (htmlProgressTestTaskInfo) FileName() string    { return `<b>A&B</b>.bin` }
+func (htmlProgressTestTaskInfo) FileSize() int64     { return 100 }
+func (htmlProgressTestTaskInfo) StoragePath() string { return `dir/<i>x</i>&` }
+func (htmlProgressTestTaskInfo) StorageName() string { return `store<&>` }
+
+func singleEntityCounts(entities []tg.MessageEntityClass) (bold, code, blockquote, italic int) {
+	for _, messageEntity := range entities {
+		switch messageEntity.(type) {
+		case *tg.MessageEntityBold:
+			bold++
+		case *tg.MessageEntityCode:
+			code++
+		case *tg.MessageEntityBlockquote:
+			blockquote++
+		case *tg.MessageEntityItalic:
+			italic++
+		}
+	}
+	return
 }
