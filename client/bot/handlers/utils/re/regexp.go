@@ -5,6 +5,6 @@ import "regexp"
 var (
 	TgMessageLinkRegexString = `https?://(?:t|telegram)\.me/(?:c/\d+|[A-Za-z0-9_]+)/\d+(?:/\d+)?(?:\?[^\s#]*[A-Za-z0-9_])?\b`
 	TgMessageLinkRegexp      = regexp.MustCompile(TgMessageLinkRegexString)
-	TelegraphUrlRegexString  = `https://telegra.ph/.*`
+	TelegraphUrlRegexString  = `https://telegra\.ph/[^\s]+`
 	TelegraphUrlRegexp       = regexp.MustCompile(TelegraphUrlRegexString)
 )

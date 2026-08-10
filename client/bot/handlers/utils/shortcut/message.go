@@ -3,6 +3,7 @@ package shortcut
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -179,21 +180,19 @@ type TelegraphResult struct {
 // return replied message, image urls, telegraph path(unescaped), error
 func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*types.Message, *TelegraphResult, error) {
 	logger := log.FromContext(ctx)
-	tphurl := re.TelegraphUrlRegexp.FindString(tgutil.ExtractMessageEntityUrlsText(update.EffectiveMessage.Message))
+	tphurl := findTelegraphURL(update.EffectiveMessage.Message)
 	if tphurl == "" {
 		logger.Warnf("No telegraph url found but called handleTelegraph")
 		return nil, nil, dispatcher.ContinueGroups
 	}
-	pagepath := strings.Split(tphurl, "/")[len(strings.Split(tphurl, "/"))-1]
-	tphdir, err := url.PathUnescape(pagepath)
+	pagepath, err := parseTelegraphPagePath(tphurl)
 	if err != nil {
-		logger.Errorf("Failed to unescape telegraph path: %s", err)
+		logger.Errorf("Failed to parse telegraph path: %s", err)
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorParseTelegraphPathFailed, map[string]any{
 			"Error": err.Error(),
 		})), nil)
 		return nil, nil, dispatcher.EndGroups
 	}
-	tphdir = strings.TrimSpace(tphdir)
 	msg, err := ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoFetchingTelegraphPage, nil)), nil)
 	if err != nil {
 		logger.Errorf("Failed to reply to update: %s", err)
@@ -244,7 +243,57 @@ func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*type
 	}
 	return msg, &TelegraphResult{
 		Pics:   imgs,
-		TphDir: tphdir,
+		TphDir: pagepath,
 		Page:   page,
 	}, nil
+}
+
+func findTelegraphURL(msg *tg.Message) string {
+	if msg == nil {
+		return ""
+	}
+	var firstMatch string
+	findValid := func(text string) string {
+		for _, tphurl := range re.TelegraphUrlRegexp.FindAllString(text, -1) {
+			if firstMatch == "" {
+				firstMatch = tphurl
+			}
+			if _, err := parseTelegraphPagePath(tphurl); err == nil {
+				return tphurl
+			}
+		}
+		return ""
+	}
+	for _, entityURL := range tgutil.ExtractMessageEntityUrls(msg) {
+		if tphurl := findValid(entityURL); tphurl != "" {
+			return tphurl
+		}
+	}
+	if tphurl := findValid(msg.GetMessage()); tphurl != "" {
+		return tphurl
+	}
+	return firstMatch
+}
+
+func parseTelegraphPagePath(pageURL string) (string, error) {
+	u, err := url.Parse(pageURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid telegraph URL: %w", err)
+	}
+	if u.Scheme != "https" || !strings.EqualFold(u.Hostname(), "telegra.ph") {
+		return "", fmt.Errorf("invalid telegraph URL host: %s", u.Host)
+	}
+	pagepath := strings.Trim(u.EscapedPath(), "/")
+	if pagepath == "" || strings.Contains(pagepath, "/") {
+		return "", fmt.Errorf("invalid telegraph URL path: %s", u.Path)
+	}
+	pagepath, err = url.PathUnescape(pagepath)
+	if err != nil {
+		return "", fmt.Errorf("failed to unescape telegraph path: %w", err)
+	}
+	pagepath = strings.TrimSpace(pagepath)
+	if pagepath == "" || strings.Contains(pagepath, "/") {
+		return "", fmt.Errorf("invalid telegraph URL path: %s", u.Path)
+	}
+	return pagepath, nil
 }
