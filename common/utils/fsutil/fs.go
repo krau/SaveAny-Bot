@@ -1,6 +1,7 @@
 package fsutil
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,10 +42,11 @@ func (f *File) Remove() error {
 }
 
 func (f *File) CloseAndRemove() error {
-	if err := f.Close(); err != nil {
-		return err
+	closeErr := f.Close()
+	if errors.Is(closeErr, os.ErrClosed) {
+		closeErr = nil
 	}
-	return f.Remove()
+	return errors.Join(closeErr, f.Remove())
 }
 
 func CreateFile(fp string) (*File, error) {
