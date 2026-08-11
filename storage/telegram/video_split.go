@@ -111,7 +111,7 @@ func splitLosslessVideo(
 	outputPattern := filepath.Join(outputDir, "part-%03d"+extension)
 
 	var lastOversize int64
-	for attempt := 0; attempt < videoSplitAttempts; attempt++ {
+	for range videoSplitAttempts {
 		if err := clearVideoParts(outputDir); err != nil {
 			return nil, err
 		}

@@ -119,21 +119,21 @@ func (c *Client) MkDir(ctx context.Context, dirPath string) error {
 		return nil
 	}
 	parts := strings.Split(dirPath, "/")
-	currentPath := ""
+	var currentPath strings.Builder
 	for i, part := range parts {
 		if i > 0 {
-			currentPath += "/"
+			currentPath.WriteString("/")
 		}
-		currentPath += part
+		currentPath.WriteString(part)
 
-		exists, err := c.Exists(ctx, currentPath)
+		exists, err := c.Exists(ctx, currentPath.String())
 		if err != nil {
 			return err
 		}
 		if exists {
 			continue
 		}
-		url := c.BaseURL + currentPath
+		url := c.BaseURL + currentPath.String()
 		resp, err := c.doRequest(ctx, WebdavMethodMkcol, url, nil)
 		if err != nil {
 			return err
@@ -141,7 +141,7 @@ func (c *Client) MkDir(ctx context.Context, dirPath string) error {
 		resp.Body.Close()
 
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return fmt.Errorf("MKCOL %s: %s", currentPath, resp.Status)
+			return fmt.Errorf("MKCOL %s: %s", currentPath.String(), resp.Status)
 		}
 	}
 	return nil

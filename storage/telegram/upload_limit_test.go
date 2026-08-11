@@ -103,7 +103,7 @@ func TestBatchUploadLimitAppliesPerFile(t *testing.T) {
 	data := []byte("\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom")
 	itemSize := int64(MaxUploadFileSize/2 + 1)
 
-	for index := 0; index < 2; index++ {
+	for index := range 2 {
 		item, err := telegramStorage.inspectBatchItem(tctx, storagetypes.BatchItem{
 			Reader:      bytes.NewReader(data),
 			StoragePath: "video.mp4",

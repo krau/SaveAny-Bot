@@ -173,7 +173,7 @@ func TestSplitLosslessVideoRejectsMultipleAlbums(t *testing.T) {
 			return []byte("120.0\n"), nil
 		case "ffmpeg":
 			pattern := args[len(args)-1]
-			for index := 0; index < maxLosslessVideoParts+1; index++ {
+			for index := range maxLosslessVideoParts + 1 {
 				partPath := strings.Replace(pattern, "%03d", fmt.Sprintf("%03d", index+1), 1)
 				if err := os.WriteFile(partPath, make([]byte, 100), 0o600); err != nil {
 					return nil, err

@@ -1,6 +1,8 @@
 package tcbdata
 
 import (
+	"slices"
+
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
@@ -31,12 +33,7 @@ func ConflictStrategyValues() []string {
 }
 
 func IsConflictStrategy(strategy string) bool {
-	for _, value := range ConflictStrategyValues() {
-		if strategy == value {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ConflictStrategyValues(), strategy)
 }
 
 // type TaskDataTGFiles struct {

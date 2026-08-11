@@ -63,11 +63,9 @@ func TestUploadProgressConcurrentCallbacks(t *testing.T) {
 	var wg sync.WaitGroup
 	for uploaded := int64(1 << 20); uploaded <= total; uploaded += 1 << 20 {
 		uploaded := uploaded
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			progress.OnUploadProgress(ctx, info, uploaded, total)
-		}()
+		})
 	}
 	wg.Wait()
 

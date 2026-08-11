@@ -220,17 +220,13 @@ func TestUploadProgressNotificationsRemainOrdered(t *testing.T) {
 	second := task.uploadCallback(t.Context(), "second")
 
 	var wait sync.WaitGroup
-	wait.Add(1)
-	go func() {
-		defer wait.Done()
+	wait.Go(func() {
 		first(100, 100)
-	}()
+	})
 	<-recorder.firstEntered
-	wait.Add(1)
-	go func() {
-		defer wait.Done()
+	wait.Go(func() {
 		second(100, 100)
-	}()
+	})
 
 	overtook := false
 	select {

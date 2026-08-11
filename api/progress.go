@@ -11,23 +11,23 @@ import (
 // guarded by mu. It implements taskevent.Sink so the task layer can update it
 // without knowing about the API.
 type TaskProgressInfo struct {
-	mu               sync.Mutex
-	TaskID           string
-	Type             string
-	Status           TaskStatus
-	Title            string
-	TotalBytes       int64
-	DownloadedBytes  int64
-	TotalFiles       int
-	DownloadedFiles  int
-	Storage          string
-	Path             string
-	Error            string
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	StartedAt        time.Time
-	Webhook          string
-	webhookNotified  bool
+	mu              sync.Mutex
+	TaskID          string
+	Type            string
+	Status          TaskStatus
+	Title           string
+	TotalBytes      int64
+	DownloadedBytes int64
+	TotalFiles      int
+	DownloadedFiles int
+	Storage         string
+	Path            string
+	Error           string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	StartedAt       time.Time
+	Webhook         string
+	webhookNotified bool
 }
 
 // progressStore holds all API tasks. Entries are removed a fixed duration after
@@ -208,9 +208,9 @@ func NewProgressTracker(taskID, taskType, storage, path, title, webhook string) 
 	return &ProgressTracker{}
 }
 
-func (p *ProgressTracker) OnStart(totalBytes int64, totalFiles int)    {}
+func (p *ProgressTracker) OnStart(totalBytes int64, totalFiles int)              {}
 func (p *ProgressTracker) OnProgress(downloadedBytes int64, downloadedFiles int) {}
-func (p *ProgressTracker) OnDone(err error)                            {}
-func (p *ProgressTracker) GetInfo() *TaskProgressInfo                  { return nil }
-func (p *ProgressTracker) UpdateProgressBytes(bytes int64)             {}
-func (p *ProgressTracker) UpdateProgressFiles(files int)               {}
+func (p *ProgressTracker) OnDone(err error)                                      {}
+func (p *ProgressTracker) GetInfo() *TaskProgressInfo                            { return nil }
+func (p *ProgressTracker) UpdateProgressBytes(bytes int64)                       {}
+func (p *ProgressTracker) UpdateProgressFiles(files int)                         {}
