@@ -3,6 +3,7 @@ package tfile
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 
@@ -10,10 +11,12 @@ import (
 	"github.com/duke-git/lancet/v2/retry"
 	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
+	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	tfilepkg "github.com/krau/SaveAny-Bot/pkg/tfile"
+	"github.com/krau/SaveAny-Bot/storage"
 )
 
 func (t *Task) Execute(ctx context.Context) error {
@@ -68,7 +71,25 @@ func (t *Task) Execute(ctx context.Context) error {
 			return fmt.Errorf("failed to open cache file: %w", err)
 		}
 		defer file.Close()
-		if err = t.Storage.Save(vctx, file, t.Path); err != nil {
+		uploadProgress, tracksUpload := t.Progress.(UploadProgressTracker)
+		if !tracksUpload {
+			if err = t.Storage.Save(vctx, file, t.Path); err != nil {
+				return fmt.Errorf("failed to save file: %w", err)
+			}
+			return nil
+		}
+
+		uploadProgress.OnUploadStart(vctx, t, fileStat.Size())
+		onProgress := func(uploaded, total int64) {
+			uploadProgress.OnUploadProgress(vctx, t, uploaded, total)
+		}
+		if progressSaver, ok := t.Storage.(storage.StorageProgressSaver); ok {
+			err = progressSaver.SaveWithProgress(vctx, file, t.Path, onProgress)
+		} else {
+			var reader io.Reader = ioutil.NewProgressReader(file, fileStat.Size(), onProgress)
+			err = t.Storage.Save(vctx, reader, t.Path)
+		}
+		if err != nil {
 			return fmt.Errorf("failed to save file: %w", err)
 		}
 		return nil

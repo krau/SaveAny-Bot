@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/gotd/td/telegram/uploader"
 )
 
 func TestInitialSegmentDuration(t *testing.T) {
@@ -73,6 +75,25 @@ func TestVideoPartCaption(t *testing.T) {
 	second := videoPartCaption(&source, 1)
 	if second == nil || *second != "" {
 		t.Fatalf("second part caption = %v, want an explicit empty caption", second)
+	}
+}
+
+func TestResetLosslessVideoUploadProgressUsesCombinedPartSize(t *testing.T) {
+	var uploaded, total int64
+	progress := newUploadProgress(999, func(current, size int64) {
+		uploaded = current
+		total = size
+	})
+	resetLosslessVideoUploadProgress(progress, []losslessVideoPart{
+		{Size: 100},
+		{Size: 250},
+	})
+
+	if err := progress.Chunk(t.Context(), uploader.ProgressState{ID: 1, Uploaded: 50, Total: 100}); err != nil {
+		t.Fatalf("Chunk() failed: %v", err)
+	}
+	if uploaded != 50 || total != 350 {
+		t.Fatalf("lossless video progress = %d/%d, want 50/350", uploaded, total)
 	}
 }
 

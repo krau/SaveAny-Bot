@@ -31,16 +31,23 @@ type TaskElement struct {
 }
 
 type Task struct {
-	ID           string
-	ctx          context.Context
-	elems        []TaskElement
-	Progress     ProgressTracker
-	IgnoreErrors bool // if true, errors during processing will be ignored
-	downloaded   atomic.Int64
-	totalSize    int64
-	processing   map[string]TaskElementInfo
-	processingMu sync.RWMutex
-	failed       map[string]error // [TODO] errors for each element
+	ID              string
+	ctx             context.Context
+	elems           []TaskElement
+	Progress        ProgressTracker
+	IgnoreErrors    bool // if true, errors during processing will be ignored
+	downloaded      atomic.Int64
+	totalSize       int64
+	uploadTotalSize atomic.Int64
+	processing      map[string]TaskElementInfo
+	processingMu    sync.RWMutex
+	itemStates      []itemProgressState
+	itemIndex       map[string]int
+	itemMu          sync.RWMutex
+	uploadOnce      sync.Once
+	uploadMu        sync.Mutex
+	uploaded        map[string]int64
+	failed          map[string]error // [TODO] errors for each element
 }
 
 // Title implements core.Exectable.
@@ -109,6 +116,7 @@ func NewBatchTGFileTask(
 	progress ProgressTracker,
 	ignoreErrors bool,
 ) *Task {
+	itemStates, itemIndex := newItemProgressStates(files)
 	task := &Task{
 		ID:         id,
 		ctx:        ctx,
@@ -123,6 +131,9 @@ func NewBatchTGFileTask(
 			return total
 		}(),
 		processing:   make(map[string]TaskElementInfo),
+		itemStates:   itemStates,
+		itemIndex:    itemIndex,
+		uploaded:     make(map[string]int64),
 		IgnoreErrors: ignoreErrors,
 		processingMu: sync.RWMutex{},
 		failed:       make(map[string]error),

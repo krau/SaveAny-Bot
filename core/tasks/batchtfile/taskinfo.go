@@ -27,8 +27,10 @@ type TaskInfo interface {
 	TaskID() string
 	TotalSize() int64
 	Downloaded() int64
+	ActualTotalSize() int64
 	Count() int
 	Processing() []TaskElementInfo
+	Items() []TaskItemProgress
 }
 
 func (t *Task) TaskID() string {

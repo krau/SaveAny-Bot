@@ -293,6 +293,7 @@ func (t *Telegram) uploadLosslessVideoParts(
 	storagePath string,
 	parts []losslessVideoPart,
 	sourceCaption *string,
+	progress *uploadProgress,
 ) error {
 	if len(parts) == 0 {
 		return fmt.Errorf("no lossless video parts to upload")
@@ -304,6 +305,7 @@ func (t *Telegram) uploadLosslessVideoParts(
 			maxLosslessVideoParts,
 		)
 	}
+	resetLosslessVideoUploadProgress(progress, parts)
 
 	prepared := make([]preparedMedia, 0, len(parts))
 	for index, part := range parts {
@@ -318,6 +320,7 @@ func (t *Telegram) uploadLosslessVideoParts(
 			partStoragePath(storagePath, part.Name),
 			part.Size,
 			videoPartCaption(sourceCaption, index),
+			progress,
 		)
 		closeErr := partFile.Close()
 		if prepareErr != nil {
@@ -344,6 +347,17 @@ func (t *Telegram) uploadLosslessVideoParts(
 		return fmt.Errorf("failed to send video parts as album: %w", err)
 	}
 	return nil
+}
+
+func resetLosslessVideoUploadProgress(progress *uploadProgress, parts []losslessVideoPart) {
+	if progress == nil {
+		return
+	}
+	var total int64
+	for _, part := range parts {
+		total += part.Size
+	}
+	progress.reset(total)
 }
 
 func videoPartCaption(sourceCaption *string, index int) *string {

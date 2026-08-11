@@ -52,6 +52,7 @@ type preparedMedia struct {
 
 type batchMediaItem struct {
 	item          storagetypes.BatchItem
+	index         int
 	chatID        int64
 	albumEligible bool
 	useSingleSave bool
@@ -87,6 +88,22 @@ func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
 }
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
+	return t.save(ctx, r, storagePath, nil)
+}
+
+// SaveWithProgress saves a file while reporting Telegram-confirmed upload
+// progress after each uploaded part.
+func (t *Telegram) SaveWithProgress(
+	ctx context.Context,
+	r io.Reader,
+	storagePath string,
+	onProgress func(uploaded, total int64),
+) error {
+	size := contentLength(ctx)
+	return t.save(ctx, r, storagePath, newUploadProgress(size, onProgress))
+}
+
+func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, progress *uploadProgress) error {
 	storagePath = path.Clean(storagePath)
 	captionOverride := sourceCaptionOverride(ctx)
 	tctx := tgutil.ExtFromContext(ctx)
@@ -114,7 +131,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 				}
 			}
 		}
-		upler := t.newUploader(tctx, size)
+		upler := t.newUploader(tctx, size, progress)
 		peer := tryGetInputPeer(tctx, chatID)
 		if peer == nil || peer.Zero() {
 			return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
@@ -150,7 +167,7 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 						for _, part := range parts {
 							log.FromContext(ctx).Infof("Prepared lossless video part %s (%d bytes)", part.Name, part.Size)
 						}
-						return t.uploadLosslessVideoParts(ctx, tctx, storagePath, parts, captionOverride)
+						return t.uploadLosslessVideoParts(ctx, tctx, storagePath, parts, captionOverride, progress)
 					}
 					if _, seekErr := rs.Seek(0, io.SeekStart); seekErr != nil {
 						return fmt.Errorf("failed to seek large video before ZIP fallback: %w", seekErr)
@@ -158,13 +175,13 @@ func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) er
 				}
 			}
 		}
-		return t.splitUpload(tctx, r, filename, upler, peer, size, splitSize)
+		return t.splitUpload(tctx, r, filename, upler, peer, size, splitSize, progress)
 	}
 
 	if err := t.limiter.Wait(ctx); err != nil {
 		return fmt.Errorf("rate limit failed: %w", err)
 	}
-	prepared, err := t.prepareMedia(ctx, tctx, r, storagePath, size, nil)
+	prepared, err := t.prepareMedia(ctx, tctx, r, storagePath, size, nil, progress)
 	if err != nil {
 		return err
 	}
@@ -229,10 +246,14 @@ func (t *Telegram) target(tctx *ext.Context, storagePath string) (string, int64)
 	return filename, chatID
 }
 
-func (t *Telegram) newUploader(tctx *ext.Context, size int64) *uploader.Uploader {
-	return uploader.NewUploader(tctx.Raw).
+func (t *Telegram) newUploader(tctx *ext.Context, size int64, progress *uploadProgress) *uploader.Uploader {
+	upler := uploader.NewUploader(tctx.Raw).
 		WithPartSize(tglimit.MaxUploadPartSize).
 		WithThreads(dlutil.BestThreads(size, config.C().Threads))
+	if progress != nil {
+		upler = upler.WithProgress(progress)
+	}
+	return upler
 }
 
 func mediaCaption(filename string, override *string) []message.StyledTextOption {
@@ -245,10 +266,18 @@ func mediaCaption(filename string, override *string) []message.StyledTextOption 
 	return []message.StyledTextOption{styling.Plain(*override)}
 }
 
-func (t *Telegram) prepareMedia(ctx context.Context, tctx *ext.Context, r io.Reader, storagePath string, size int64, captionOverride *string) (*preparedMedia, error) {
+func (t *Telegram) prepareMedia(
+	ctx context.Context,
+	tctx *ext.Context,
+	r io.Reader,
+	storagePath string,
+	size int64,
+	captionOverride *string,
+	progress *uploadProgress,
+) (*preparedMedia, error) {
 	storagePath = path.Clean(storagePath)
 	filename, chatID := t.target(tctx, storagePath)
-	upler := t.newUploader(tctx, size)
+	upler := t.newUploader(tctx, size, progress)
 	peer := tryGetInputPeer(tctx, chatID)
 	if peer == nil || peer.Zero() {
 		return nil, fmt.Errorf("failed to get input peer for chat ID %d", chatID)
@@ -342,21 +371,40 @@ func (t *Telegram) prepareMedia(ctx context.Context, tctx *ext.Context, r io.Rea
 
 // SaveBatch preserves each source photo/video group as a Telegram album.
 func (t *Telegram) SaveBatch(ctx context.Context, items []storagetypes.BatchItem) error {
+	return t.saveBatch(ctx, items, nil)
+}
+
+// SaveBatchWithProgress preserves source media groups while reporting native
+// Telegram upload progress for each input item.
+func (t *Telegram) SaveBatchWithProgress(
+	ctx context.Context,
+	items []storagetypes.BatchItem,
+	onProgress func(index int, uploaded, total int64),
+) error {
+	return t.saveBatch(ctx, items, onProgress)
+}
+
+func (t *Telegram) saveBatch(
+	ctx context.Context,
+	items []storagetypes.BatchItem,
+	onProgress func(index int, uploaded, total int64),
+) error {
 	tctx := tgutil.ExtFromContext(ctx)
 	if tctx == nil {
 		return fmt.Errorf("failed to get telegram context")
 	}
 
 	inspected := make([]batchMediaItem, 0, len(items))
-	for _, item := range items {
+	for index, item := range items {
 		mediaItem, err := t.inspectBatchItem(tctx, item)
 		if err != nil {
 			return err
 		}
+		mediaItem.index = index
 		inspected = append(inspected, mediaItem)
 	}
 	for _, group := range planMediaGroups(inspected) {
-		if err := t.saveMediaGroup(ctx, tctx, group); err != nil {
+		if err := t.saveMediaGroup(ctx, tctx, group, onProgress); err != nil {
 			return err
 		}
 	}
@@ -412,10 +460,28 @@ func planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
 	return groups
 }
 
-func (t *Telegram) saveMediaGroup(ctx context.Context, tctx *ext.Context, group []batchMediaItem) error {
+func batchItemUploadProgress(
+	mediaItem batchMediaItem,
+	onProgress func(index int, uploaded, total int64),
+) *uploadProgress {
+	if onProgress == nil {
+		return nil
+	}
+	return newUploadProgress(mediaItem.item.Size, func(uploaded, total int64) {
+		onProgress(mediaItem.index, uploaded, total)
+	})
+}
+
+func (t *Telegram) saveMediaGroup(
+	ctx context.Context,
+	tctx *ext.Context,
+	group []batchMediaItem,
+	onProgress func(index int, uploaded, total int64),
+) error {
 	return retry.Retry(func() error {
 		if len(group) == 1 && group[0].useSingleSave {
-			item := group[0].item
+			mediaItem := group[0]
+			item := mediaItem.item
 			if _, err := item.Reader.Seek(0, io.SeekStart); err != nil {
 				return fmt.Errorf("failed to seek batch item: %w", err)
 			}
@@ -423,7 +489,12 @@ func (t *Telegram) saveMediaGroup(ctx context.Context, tctx *ext.Context, group 
 			if item.PreserveCaption {
 				itemCtx = storagetypes.WithSourceCaption(itemCtx, item.Caption)
 			}
-			return t.Save(itemCtx, item.Reader, item.StoragePath)
+			if onProgress == nil {
+				return t.Save(itemCtx, item.Reader, item.StoragePath)
+			}
+			return t.SaveWithProgress(itemCtx, item.Reader, item.StoragePath, func(uploaded, total int64) {
+				onProgress(mediaItem.index, uploaded, total)
+			})
 		}
 		if err := t.limiter.Wait(ctx); err != nil {
 			return fmt.Errorf("rate limit failed: %w", err)
@@ -439,7 +510,8 @@ func (t *Telegram) saveMediaGroup(ctx context.Context, tctx *ext.Context, group 
 			if item.PreserveCaption {
 				captionOverride = &item.Caption
 			}
-			media, err := t.prepareMedia(ctx, tctx, item.Reader, item.StoragePath, item.Size, captionOverride)
+			progress := batchItemUploadProgress(mediaItem, onProgress)
+			media, err := t.prepareMedia(ctx, tctx, item.Reader, item.StoragePath, item.Size, captionOverride, progress)
 			if err != nil {
 				return err
 			}
@@ -466,7 +538,15 @@ func (t *Telegram) CannotStream() string {
 	return "Telegram storage must use a ReaderSeeker"
 }
 
-func (t *Telegram) splitUpload(ctx *ext.Context, r io.Reader, filename string, upler *uploader.Uploader, peer tg.InputPeerClass, fileSize, splitSize int64) error {
+func (t *Telegram) splitUpload(
+	ctx *ext.Context,
+	r io.Reader,
+	filename string,
+	upler *uploader.Uploader,
+	peer tg.InputPeerClass,
+	fileSize, splitSize int64,
+	progress *uploadProgress,
+) error {
 	tempId := xid.New().String()
 	outputBase := filepath.Join(config.C().Temp.BasePath, tempId, strings.Split(filename, ".")[0])
 	defer func() {
@@ -483,6 +563,17 @@ func (t *Telegram) splitUpload(ctx *ext.Context, r io.Reader, filename string, u
 		return fmt.Errorf("failed to glob split files: %w", err)
 	}
 	inputFiles := make([]tg.InputFileClass, 0, len(matched))
+	if progress != nil {
+		var uploadSize int64
+		for _, partPath := range matched {
+			partInfo, err := os.Stat(partPath)
+			if err != nil {
+				return fmt.Errorf("failed to stat split part %s: %w", partPath, err)
+			}
+			uploadSize += partInfo.Size()
+		}
+		progress.reset(uploadSize)
+	}
 	for _, partPath := range matched {
 		// 串行上传, 不然容易被tg风控
 		err = func() error {
