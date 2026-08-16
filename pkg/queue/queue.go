@@ -72,8 +72,7 @@ func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 			task.element = nil
 
 			if task.Cancelled() {
-				// Cancelled queued tasks are never executed: drop them now so
-				// their TaskID becomes reusable and the map cannot grow.
+				// Skip cancelled tasks and release their IDs.
 				delete(tq.taskMap, task.ID)
 				continue
 			}

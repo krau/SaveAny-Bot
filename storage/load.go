@@ -61,9 +61,7 @@ func GetStorageByName(ctx context.Context, name string) (Storage, error) {
 		return nil, fmt.Errorf("storage %s not found", name)
 	}
 
-	// singleflight merges concurrent first-time initializations, so only one
-	// instance is ever built and its side effects (e.g. the alist token
-	// refresher goroutine) are not duplicated.
+	// Merge concurrent first-time initializations.
 	v, err, _ := initFlight.Do("storage:"+name, func() (any, error) {
 		storageMu.RLock()
 		if existing, ok := Storages[name]; ok {

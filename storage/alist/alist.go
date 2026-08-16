@@ -95,8 +95,7 @@ func (a *Alist) Init(ctx context.Context, cfg config.StorageConfig) error {
 	if err := a.getToken(ctx); err != nil {
 		return fmt.Errorf("failed to login to Alist: %w", err)
 	}
-	// The init login must not satisfy the refresh dedup window: a 401 right
-	// after startup has to trigger a real refresh, not reuse this token.
+	// The init login must not satisfy the refresh dedup window.
 	a.tokenMu.Lock()
 	a.lastLoginAt = time.Time{}
 	a.tokenMu.Unlock()
@@ -130,8 +129,7 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		status := resp.Status
 		resp.Body.Close()
-		// Token-only configurations cannot refresh credentials: surface the
-		// auth error instead of sending a login request with no credentials.
+		// Token-only storage cannot refresh: surface the auth error.
 		if a.loginInfo == nil {
 			return fmt.Errorf("failed to save file to Alist: %s", status)
 		}

@@ -1,10 +1,8 @@
-// Package progressutil provides shared progress-update throttling used by
-// task progress trackers. All task packages must use these helpers instead
-// of re-implementing throttle logic.
+// Package progressutil provides shared progress-update throttling for task
+// progress trackers.
 package progressutil
 
-// updatesLevels sizes files by their total size and picks how often the
-// progress percent may be reported: smaller files report less often.
+// updatesLevels picks the percent step by file size.
 var updatesLevels = []struct {
 	size        int64 // file size threshold
 	stepPercent int   // minimum percent step between updates
@@ -15,8 +13,7 @@ var updatesLevels = []struct {
 	{500 << 20, 5},
 }
 
-// ShouldUpdate reports whether a byte-based progress update should be shown,
-// throttled by a minimum percent step that shrinks as the total grows.
+// ShouldUpdate reports whether a byte-based progress update should be shown.
 func ShouldUpdate(total, downloaded int64, lastUpdatePercent int) bool {
 	if total <= 0 || downloaded <= 0 {
 		return false

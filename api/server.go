@@ -91,8 +91,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	logger.Infof("Starting API server on %s", s.httpServer.Addr)
 
-	// Bind synchronously so listen failures (e.g. port already in use) are
-	// returned to the caller instead of being silently logged in a goroutine.
+	// Bind synchronously so listen failures are returned to the caller.
 	ln, err := net.Listen("tcp", s.httpServer.Addr)
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", s.httpServer.Addr, err)

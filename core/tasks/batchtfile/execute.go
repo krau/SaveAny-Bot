@@ -123,8 +123,7 @@ func (t *Task) processElements(ctx context.Context, elems []*TaskElement) error 
 			defer t.unmarkProcessing(elem.ID)
 			err := t.processElement(gctx, *elem)
 			if err != nil && t.IgnoreErrors && !errors.Is(err, context.Canceled) {
-				// Element failure is already recorded per-item; keep siblings
-				// running by not propagating the error to the errgroup.
+				// Per-item failure: keep siblings running.
 				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
 				return nil
 			}
@@ -159,11 +158,12 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 			}
 			defer t.unmarkProcessing(elem.ID)
 			err := t.downloadElement(gctx, elem)
-			// Store by original index: albums must keep their source order.
+			// Store by original index.
 			resultsMu.Lock()
 			results[i] = downloadResult{elem: elem, err: err}
 			resultsMu.Unlock()
 			if err != nil && t.IgnoreErrors && !errors.Is(err, context.Canceled) {
+				// Per-item failure: keep siblings running.
 				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
 				return nil
 			}
@@ -174,8 +174,7 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 		return err
 	}
 
-	// Only successfully downloaded elements may be uploaded: failed ones may
-	// have partial cache files that must not reach the storage backend.
+	// Upload only successfully downloaded elements.
 	successElems := make([]*TaskElement, 0, len(group.elems))
 	for _, r := range results {
 		if r.err == nil {
@@ -370,8 +369,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		if err := errg.Wait(); err != nil {
 			return fmt.Errorf("failed to download file in stream mode: %w", err)
 		}
-		// In stream mode the bytes downloaded are the bytes uploaded: report
-		// them so the aggregate upload total is not stuck at zero.
+		// Streamed bytes are the uploaded bytes.
 		var streamedBytes int64
 		t.updateItem(elem.ID, func(item *itemProgressState) {
 			streamedBytes = item.downloaded

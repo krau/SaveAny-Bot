@@ -59,7 +59,7 @@ func (r *Resource) ID() string {
 	h.Write([]byte(r.Extension))
 	fmt.Fprintf(h, "%d", r.Size)
 
-	// Map iteration order is random: sort keys so the fingerprint is stable.
+	// Sort keys for a stable fingerprint.
 	for _, k := range slices.Sorted(maps.Keys(r.Hash)) {
 		h.Write([]byte(k))
 		h.Write([]byte(r.Hash[k]))

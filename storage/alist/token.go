@@ -12,9 +12,8 @@ import (
 	config "github.com/krau/SaveAny-Bot/config/storage"
 )
 
-// minTokenRefreshInterval deduplicates login storms: a successful refresh is
-// reused for this window instead of hitting the login endpoint again. It is
-// capped by the configured token expiry so refreshes never go stale.
+// minTokenRefreshInterval deduplicates login storms; it is capped by the
+// configured token expiry.
 const minTokenRefreshInterval = 30 * time.Second
 
 func (a *Alist) tokenRefreshWindow() time.Duration {
@@ -25,8 +24,7 @@ func (a *Alist) tokenRefreshWindow() time.Duration {
 	return window
 }
 
-// getToken refreshes the JWT, deduplicating concurrent calls so parallel
-// uploads and the background refresher share one login request.
+// getToken refreshes the JWT, merging concurrent calls.
 func (a *Alist) getToken(ctx context.Context) error {
 	a.tokenMu.RLock()
 	fresh := !a.lastLoginAt.IsZero() && time.Since(a.lastLoginAt) < a.tokenRefreshWindow()
@@ -35,7 +33,6 @@ func (a *Alist) getToken(ctx context.Context) error {
 		return nil
 	}
 	_, err, _ := a.tokenFlight.Do("token", func() (any, error) {
-		// Another waiter may have refreshed while this call was queued.
 		a.tokenMu.RLock()
 		fresh := !a.lastLoginAt.IsZero() && time.Since(a.lastLoginAt) < a.tokenRefreshWindow()
 		a.tokenMu.RUnlock()

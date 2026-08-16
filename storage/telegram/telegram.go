@@ -45,8 +45,7 @@ type Telegram struct {
 	config  storconfig.TelegramStorageConfig
 	limiter *rate.Limiter
 
-	// mu guards savedPaths, which records storage paths whose media was
-	// successfully uploaded to Telegram.
+	// mu guards savedPaths (paths whose media was uploaded).
 	mu         sync.Mutex
 	savedPaths map[string]struct{}
 }
@@ -107,8 +106,7 @@ func (t *Telegram) markSaved(storagePath string) {
 	t.savedPaths[path.Clean(storagePath)] = struct{}{}
 }
 
-// errSkipLarge reports an intentionally skipped oversized file: the caller
-// must treat it as success without recording the path as saved.
+// errSkipLarge marks an intentionally skipped oversized file.
 var errSkipLarge = errors.New("skip large file")
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {

@@ -195,8 +195,7 @@ func buildBatchDoneMarkup(info TaskInfo, skipped []string, err error) string {
 	}
 	if err == nil {
 		completed, _, _, failed := itemCounts(items)
-		// IgnoreErrors runs may finish with per-element failures: report them
-		// instead of claiming every file completed.
+		// Report per-element failures instead of full completion.
 		totalSkipped := len(skipped) + failed
 		if totalSkipped > 0 {
 			return localizedProgressMarkup(i18nk.BotMsgProgressBatchDoneWithSkipped, map[string]any{

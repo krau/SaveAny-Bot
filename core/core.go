@@ -17,8 +17,7 @@ var (
 	queueInstance *queue.TaskQueue[Executable]
 )
 
-// initQueue lazily creates the shared task queue so AddTask works even before
-// Run is called (e.g. standalone subcommands or tests).
+// initQueue lazily creates the shared task queue.
 func initQueue() *queue.TaskQueue[Executable] {
 	queueOnce.Do(func() {
 		queueInstance = queue.NewTaskQueue[Executable]()
@@ -85,7 +84,7 @@ func Run(ctx context.Context) {
 
 }
 
-// Close stops the queue: blocked workers return ErrQueueClosed and exit.
+// Close stops the queue and unblocks workers in Get.
 func Close() {
 	if q := initQueue(); q != nil {
 		q.Close()

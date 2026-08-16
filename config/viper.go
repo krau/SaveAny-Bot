@@ -71,7 +71,7 @@ func (c Config) GetStorageByName(name string) storage.StorageConfig {
 func Init(ctx context.Context, configFile ...string) error {
 	logger := log.FromContext(ctx)
 
-	// 清空全局侧表, 防止二次 Init 时重复追加
+	// Reset side tables for re-init.
 	storages = nil
 	userIDs = nil
 	userStorages = make(map[int64][]string)
@@ -152,7 +152,6 @@ func Init(ctx context.Context, configFile ...string) error {
 		viper.SetDefault(key, value)
 	}
 
-	// 远程配置已通过 viper.ReadConfig 加载, 无需再查找本地文件
 	if !loadedFromURL {
 		if err := viper.ReadInConfig(); err != nil {
 			logger.Errorf("Error reading config file: %v", err)

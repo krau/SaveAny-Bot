@@ -275,7 +275,7 @@ func (r *rcloneCatReader) Close() error {
 	if err := r.reader.Close(); err != nil {
 		r.logger.Warnf("Failed to close reader: %v", err)
 	}
-	// 主动杀掉子进程, 防止 rclone cat 在管道关闭后仍挂起导致 Wait 永久阻塞
+	// Kill the cat process so Wait cannot block on a hung pipe.
 	if r.cmd.Process != nil {
 		if err := r.cmd.Process.Kill(); err != nil {
 			r.logger.Warnf("Failed to kill rclone cat process: %v", err)
