@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	config "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
-	"github.com/rs/xid"
 )
 
 type Webdav struct {
@@ -54,28 +54,18 @@ func (w *Webdav) JoinStoragePath(p string) string {
 
 func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	w.logger.Infof("Saving file to %s", storagePath)
-	storagePath = w.JoinStoragePath(storagePath)
-	ext := path.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
-	candidate := storagePath
+	candidate := w.JoinStoragePath(storagePath)
 	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		for i := 1; w.existsPath(ctx, candidate); i++ {
-			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-			if i > 1000 {
-				w.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
-				candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
-				break
-			}
-		}
+		candidate = fsutil.UniquePath(w.config.BasePath, storagePath, func(c string) bool {
+			return w.existsPath(ctx, c)
+		}, 1000)
 	}
 
 	if err := w.client.MkDir(ctx, path.Dir(candidate)); err != nil {
-		w.logger.Errorf("Failed to create directory %s: %v", path.Dir(candidate), err)
-		return ErrFailedToCreateDirectory
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 	if err := w.client.WriteFile(ctx, candidate, r); err != nil {
-		w.logger.Errorf("Failed to write file %s: %v", candidate, err)
-		return ErrFailedToWriteFile
+		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil
 }
@@ -135,9 +125,6 @@ func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 		}
 
 		isDir := resp.Propstat.Prop.ResourceType.IsCollection()
-
-		filePath := strings.TrimPrefix(decodedHref, path.Join("/", strings.Trim(path.Dir(fullPath), "/")))
-		filePath = strings.TrimPrefix(filePath, "/")
 
 		fileInfo := storagetypes.FileInfo{
 			Name:    name,
