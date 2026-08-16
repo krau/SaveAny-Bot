@@ -22,6 +22,17 @@ func checkPermission(ctx *ext.Context, update *ext.Update) error {
 	return dispatcher.ContinueGroups
 }
 
+// withPermission wraps a callback handler with the same whitelist check used
+// for message handlers (checkPermission).
+func withPermission(handler func(*ext.Context, *ext.Update) error) func(*ext.Context, *ext.Update) error {
+	return func(ctx *ext.Context, update *ext.Update) error {
+		if err := checkPermission(ctx, update); err != nil {
+			return err
+		}
+		return handler(ctx, update)
+	}
+}
+
 func handleSilentMode(next func(*ext.Context, *ext.Update) error, handler func(*ext.Context, *ext.Update) error) func(*ext.Context, *ext.Update) error {
 	return func(ctx *ext.Context, update *ext.Update) error {
 		userID := update.GetUserChat().GetID()
