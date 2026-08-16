@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -13,9 +14,8 @@ import (
 	storconfig "github.com/krau/SaveAny-Bot/config/storage"
 )
 
-// Regression: concurrent uploads hitting 401 must share a single re-login
-// (singleflight) and never race on the token field.
-func TestConcurrent401RetrySingleLogin(t *testing.T) {
+func newAlistServer(t *testing.T) (*httptest.Server, *sync.Mutex, *int) {
+	t.Helper()
 	var mu sync.Mutex
 	loginCount := 0
 	tokenSeq := 0
@@ -34,13 +34,8 @@ func TestConcurrent401RetrySingleLogin(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{"code": 200, "message": "ok", "data": map[string]any{"username": "probe"}})
 	})
-	// The initial configured token is rejected; refreshed tokens succeed.
-	var putAuths []string
 	mux.HandleFunc("/api/fs/put", func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		putAuths = append(putAuths, r.Header.Get("Authorization"))
 		rejected := r.Header.Get("Authorization") == "token-0"
-		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		if rejected {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -50,12 +45,21 @@ func TestConcurrent401RetrySingleLogin(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]any{"code": 200, "message": "ok"})
 	})
 	srv := httptest.NewServer(mux)
-	defer srv.Close()
+	t.Cleanup(srv.Close)
+	return srv, &mu, &loginCount
+}
+
+// Regression: concurrent uploads hitting 401 must share a single re-login
+// (singleflight) and never race on the token field. Uses username/password
+// credentials because token-only storages must not refresh at all.
+func TestConcurrent401RetrySingleLogin(t *testing.T) {
+	srv, mu, loginCount := newAlistServer(t)
 
 	cfg := &storconfig.AlistStorageConfig{}
 	cfg.Name = "probe"
 	cfg.URL = srv.URL
-	cfg.Token = "token-0"
+	cfg.Username = "user"
+	cfg.Password = "pass"
 	cfg.BasePath = "/probe"
 
 	stor := &alist.Alist{}
@@ -75,20 +79,46 @@ func TestConcurrent401RetrySingleLogin(t *testing.T) {
 	}
 	wg.Wait()
 	close(errs)
-	var saveErrs []error
 	for err := range errs {
 		if err != nil {
-			saveErrs = append(saveErrs, err)
+			t.Fatalf("Save failed: %v", err)
 		}
 	}
 
 	mu.Lock()
 	defer mu.Unlock()
-	t.Logf("put auths: %v, logins: %d, save errors: %v", putAuths, loginCount, saveErrs)
-	if len(saveErrs) > 0 {
-		t.Fatalf("Save failed: %v", saveErrs[0])
+	if *loginCount != 1 {
+		t.Fatalf("expected exactly 1 login for %d concurrent 401 retries, got %d", workers, *loginCount)
 	}
-	if loginCount != 1 {
-		t.Fatalf("expected exactly 1 login for %d concurrent 401 retries, got %d", workers, loginCount)
+}
+
+// A token-only storage receives 401 and must return the auth error without
+// attempting a login (it has no credentials to refresh with).
+func TestTokenOnlyNoLoginOn401(t *testing.T) {
+	srv, mu, loginCount := newAlistServer(t)
+
+	cfg := &storconfig.AlistStorageConfig{}
+	cfg.Name = "probe"
+	cfg.URL = srv.URL
+	cfg.Token = "token-0"
+	cfg.BasePath = "/probe"
+
+	stor := &alist.Alist{}
+	if err := stor.Init(t.Context(), cfg); err != nil {
+		t.Fatalf("Init failed: %v", err)
+	}
+
+	err := stor.Save(t.Context(), bytes.NewReader([]byte("data")), "dir/file.txt")
+	if err == nil {
+		t.Fatal("expected auth error from token-only storage, got nil")
+	}
+	if !strings.Contains(err.Error(), "401") {
+		t.Fatalf("expected 401 auth error, got: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if *loginCount != 0 {
+		t.Fatalf("expected no login attempts for token-only storage, got %d", *loginCount)
 	}
 }
