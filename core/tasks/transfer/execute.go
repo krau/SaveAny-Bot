@@ -2,6 +2,7 @@ package transfer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -45,7 +46,7 @@ func (t *Task) Execute(ctx context.Context) error {
 			}()
 
 			err := t.processElement(gctx, elem)
-			if err != nil && !t.IgnoreErrors {
+			if err != nil && (!t.IgnoreErrors || errors.Is(err, context.Canceled)) {
 				return err
 			}
 			if err != nil {

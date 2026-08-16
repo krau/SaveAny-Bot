@@ -2,6 +2,7 @@ package batchtfile
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -56,7 +57,7 @@ func (t *Task) Execute(ctx context.Context) error {
 			i = end
 		}
 		if err != nil {
-			if !t.IgnoreErrors {
+			if !t.IgnoreErrors || errors.Is(err, context.Canceled) {
 				break
 			}
 			logger.Warnf("Group processing failed (ignored): %v", err)
@@ -121,7 +122,7 @@ func (t *Task) processElements(ctx context.Context, elems []*TaskElement) error 
 			}
 			defer t.unmarkProcessing(elem.ID)
 			err := t.processElement(gctx, *elem)
-			if err != nil && t.IgnoreErrors {
+			if err != nil && t.IgnoreErrors && !errors.Is(err, context.Canceled) {
 				// Element failure is already recorded per-item; keep siblings
 				// running by not propagating the error to the errgroup.
 				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
@@ -162,7 +163,7 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 			resultsMu.Lock()
 			results[i] = downloadResult{elem: elem, err: err}
 			resultsMu.Unlock()
-			if err != nil && t.IgnoreErrors {
+			if err != nil && t.IgnoreErrors && !errors.Is(err, context.Canceled) {
 				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
 				return nil
 			}
