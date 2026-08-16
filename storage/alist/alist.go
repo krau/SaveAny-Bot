@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	config "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
@@ -43,38 +43,32 @@ func (a *Alist) Init(ctx context.Context, cfg config.StorageConfig) error {
 
 	if alistConfig.Token != "" {
 		a.token = alistConfig.Token
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+		tokenCtx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 		defer cancel()
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.baseURL+"/api/me", nil)
+		req, err := http.NewRequestWithContext(tokenCtx, http.MethodGet, a.baseURL+"/api/me", nil)
 		if err != nil {
-			a.logger.Fatalf("Failed to create request: %v", err)
-			return err
+			return fmt.Errorf("failed to create request: %w", err)
 		}
 		req.Header.Set("Authorization", a.token)
 
 		resp, err := a.client.Do(req)
 		if err != nil {
-			a.logger.Fatalf("Failed to send request: %v", err)
-			return err
+			return fmt.Errorf("failed to send request: %w", err)
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			a.logger.Fatalf("Failed to get alist user info: %s", resp.Status)
-			return err
+			return fmt.Errorf("failed to get alist user info: %s", resp.Status)
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			a.logger.Fatalf("Failed to read response body: %v", err)
-			return err
+			return fmt.Errorf("failed to read response body: %w", err)
 		}
 		var meResp meResponse
 		if err := json.Unmarshal(body, &meResp); err != nil {
-			a.logger.Fatalf("Failed to unmarshal me response: %v", err)
-			return err
+			return fmt.Errorf("failed to unmarshal me response: %w", err)
 		}
 		if meResp.Code != http.StatusOK {
-			a.logger.Fatalf("Failed to get alist user info: %s", meResp.Message)
-			return err
+			return fmt.Errorf("failed to get alist user info: %s", meResp.Message)
 		}
 		a.logger.Debugf("Logged in Alist as %s", meResp.Data.Username)
 		return nil
@@ -85,12 +79,11 @@ func (a *Alist) Init(ctx context.Context, cfg config.StorageConfig) error {
 	}
 
 	if err := a.getToken(ctx); err != nil {
-		a.logger.Fatalf("Failed to login to Alist: %v", err)
-		return err
+		return fmt.Errorf("failed to login to Alist: %w", err)
 	}
 	a.logger.Debug("Logged in to Alist")
 
-	go a.refreshToken(*alistConfig)
+	go a.refreshToken(ctx, *alistConfig)
 	return nil
 }
 
@@ -104,33 +97,36 @@ func (a *Alist) Name() string {
 
 func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) error {
 	a.logger.Infof("Saving file to %s", storagePath)
-	storagePath = a.JoinStoragePath(storagePath)
-	ext := path.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
-	candidate := storagePath
+	candidate := a.JoinStoragePath(storagePath)
 	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		for i := 1; a.existsPath(ctx, candidate); i++ {
-			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-		}
+		candidate = fsutil.UniquePath(a.config.BasePath, storagePath, func(c string) bool {
+			return a.existsPath(ctx, c)
+		}, 1000)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, a.baseURL+"/api/fs/put", reader)
+	resp, err := a.putFile(ctx, reader, candidate)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return err
 	}
-	req.Header.Set("Authorization", a.token)
-	req.Header.Set("File-Path", url.PathEscape(candidate))
-	req.Header.Set("Content-Type", "application/octet-stream")
-	if length := ctx.Value(ctxkey.ContentLength); length != nil {
-		length, ok := length.(int64)
-		if ok {
-			req.ContentLength = length
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		status := resp.Status
+		resp.Body.Close()
+		if err := a.getToken(ctx); err != nil {
+			return fmt.Errorf("failed to refresh alist token: %w", err)
 		}
-	}
-
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		rs, seekable := reader.(io.ReadSeeker)
+		if !seekable {
+			a.logger.Warnf("Upload rejected with %s; reader is not seekable, cannot retry", status)
+			return fmt.Errorf("failed to save file to Alist: %s", status)
+		}
+		if _, err := rs.Seek(0, io.SeekStart); err != nil {
+			return fmt.Errorf("failed to rewind reader before retry: %w", err)
+		}
+		a.logger.Info("Retrying upload with refreshed token")
+		resp, err = a.putFile(ctx, reader, candidate)
+		if err != nil {
+			return err
+		}
 	}
 	defer resp.Body.Close()
 
@@ -153,6 +149,29 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 	}
 
 	return nil
+}
+
+// putFile performs a single PUT upload with the given token and returns the response.
+func (a *Alist) putFile(ctx context.Context, reader io.Reader, storagePath string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, a.baseURL+"/api/fs/put", reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", a.token)
+	req.Header.Set("File-Path", url.PathEscape(storagePath))
+	req.Header.Set("Content-Type", "application/octet-stream")
+	if length := ctx.Value(ctxkey.ContentLength); length != nil {
+		length, ok := length.(int64)
+		if ok {
+			req.ContentLength = length
+		}
+	}
+
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	return resp, nil
 }
 
 func (a *Alist) JoinStoragePath(p string) string {

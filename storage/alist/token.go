@@ -48,18 +48,24 @@ func (a *Alist) getToken(ctx context.Context) error {
 	return nil
 }
 
-func (a *Alist) refreshToken(cfg config.AlistStorageConfig) {
+func (a *Alist) refreshToken(ctx context.Context, cfg config.AlistStorageConfig) {
 	tokenExp := cfg.TokenExp
 	if tokenExp <= 0 {
 		a.logger.Warn("Invalid token expiration time, using default value")
 		tokenExp = 3600
 	}
+	ticker := time.NewTicker(time.Duration(tokenExp) * time.Second)
+	defer ticker.Stop()
 	for {
-		time.Sleep(time.Duration(tokenExp) * time.Second)
-		if err := a.getToken(context.Background()); err != nil {
-			a.logger.Errorf("Failed to refresh jwt token: %v", err)
-			continue
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := a.getToken(ctx); err != nil {
+				a.logger.Errorf("Failed to refresh jwt token: %v", err)
+				continue
+			}
+			a.logger.Info("Refreshed Alist jwt token")
 		}
-		a.logger.Info("Refreshed Alist jwt token")
 	}
 }
