@@ -34,7 +34,9 @@ func (g executionGroup) usesBatchSaver() bool {
 func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("batch_file[%s]", t.ID))
 	logger.Info("Starting batch file task")
-	t.Progress.OnStart(ctx, t)
+	if t.Progress != nil {
+		t.Progress.OnStart(ctx, t)
+	}
 	groups := t.executionGroups()
 	var err error
 	for i := 0; i < len(groups); {
@@ -67,8 +69,17 @@ func (t *Task) Execute(ctx context.Context) error {
 		logger.Info("Batch file task completed successfully")
 	}
 	t.finishItems(err)
-	t.Progress.OnDone(ctx, t, err)
+	if t.Progress != nil {
+		t.Progress.OnDone(ctx, t, err)
+	}
 	return err
+}
+
+// notifyProgress reports a progress update to the optional tracker.
+func (t *Task) notifyProgress(ctx context.Context) {
+	if t.Progress != nil {
+		t.notifyProgress(ctx)
+	}
 }
 
 func (t *Task) executionGroups() []executionGroup {
@@ -264,7 +275,7 @@ func (t *Task) markProcessing(ctx context.Context, elem *TaskElement) error {
 	t.processing[elem.ID] = elem
 	t.processingMu.Unlock()
 	t.markItemActive(elem.ID, elem.stream, time.Now())
-	t.Progress.OnProgress(ctx, t)
+	t.notifyProgress(ctx)
 	return nil
 }
 
@@ -286,7 +297,7 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
 		t.recordItemDownload(elem.ID, int64(n), time.Now())
 		downloaded := t.downloaded.Add(int64(n))
-		t.Progress.OnProgress(ctx, t)
+		t.notifyProgress(ctx)
 		taskevent.Emit(ctx, taskevent.Event{
 			TaskID:          t.ID,
 			Phase:           taskevent.PhaseProgress,
@@ -313,7 +324,7 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 		}
 	}
 	t.markItemDownloaded(elem.ID)
-	t.Progress.OnProgress(ctx, t)
+	t.notifyProgress(ctx)
 	return nil
 }
 
@@ -334,7 +345,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		wr := ioutil.NewProgressWriter(pw, func(n int) {
 			t.recordItemDownload(elem.ID, int64(n), time.Now())
 			downloaded := t.downloaded.Add(int64(n))
-			t.Progress.OnProgress(ctx, t)
+			t.notifyProgress(ctx)
 			taskevent.Emit(ctx, taskevent.Event{
 				TaskID:          t.ID,
 				Phase:           taskevent.PhaseProgress,
@@ -384,7 +395,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
 		t.recordItemDownload(elem.ID, int64(n), time.Now())
 		downloaded := t.downloaded.Add(int64(n))
-		t.Progress.OnProgress(ctx, t)
+		t.notifyProgress(ctx)
 		taskevent.Emit(ctx, taskevent.Event{
 			TaskID:          t.ID,
 			Phase:           taskevent.PhaseProgress,

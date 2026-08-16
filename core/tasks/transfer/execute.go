@@ -20,7 +20,9 @@ import (
 func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("transfer[%s]", t.ID))
 	logger.Info("Starting transfer task")
-	t.Progress.OnStart(ctx, t)
+	if t.Progress != nil {
+		t.Progress.OnStart(ctx, t)
+	}
 
 	workers := config.C().Workers
 	eg, gctx := errgroup.WithContext(ctx)
@@ -63,7 +65,9 @@ func (t *Task) Execute(ctx context.Context) error {
 		logger.Info("Transfer task completed successfully")
 	}
 
-	t.Progress.OnDone(ctx, t, err)
+	if t.Progress != nil {
+		t.Progress.OnDone(ctx, t, err)
+	}
 	return err
 }
 
@@ -113,7 +117,9 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	}
 
 	t.uploaded.Add(size)
-	t.Progress.OnProgress(ctx, t)
+	if t.Progress != nil {
+		t.Progress.OnProgress(ctx, t)
+	}
 	taskevent.Emit(ctx, taskevent.Event{
 		TaskID:          t.ID,
 		Phase:           taskevent.PhaseProgress,
