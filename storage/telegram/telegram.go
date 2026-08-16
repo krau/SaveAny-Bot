@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/celestix/gotgproto/ext"
@@ -42,6 +43,11 @@ const (
 type Telegram struct {
 	config  storconfig.TelegramStorageConfig
 	limiter *rate.Limiter
+
+	// mu guards savedPaths, which records storage paths whose media was
+	// successfully uploaded to Telegram.
+	mu         sync.Mutex
+	savedPaths map[string]struct{}
 }
 
 type preparedMedia struct {
@@ -72,6 +78,7 @@ func (t *Telegram) Init(ctx context.Context, cfg storconfig.StorageConfig) error
 		t.config.RateBurst = 1
 	}
 	t.limiter = rate.NewLimiter(rate.Every(time.Duration(t.config.RateLimit)*time.Second), t.config.RateBurst)
+	t.savedPaths = make(map[string]struct{})
 	return nil
 }
 
@@ -84,11 +91,27 @@ func (t *Telegram) Name() string {
 }
 
 func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
-	return false
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	_, ok := t.savedPaths[path.Clean(storagePath)]
+	return ok
+}
+
+func (t *Telegram) markSaved(storagePath string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.savedPaths == nil {
+		t.savedPaths = make(map[string]struct{})
+	}
+	t.savedPaths[path.Clean(storagePath)] = struct{}{}
 }
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
-	return t.save(ctx, r, storagePath, nil)
+	if err := t.save(ctx, r, storagePath, nil); err != nil {
+		return err
+	}
+	t.markSaved(storagePath)
+	return nil
 }
 
 // SaveWithProgress saves a file while reporting Telegram-confirmed upload
@@ -100,7 +123,11 @@ func (t *Telegram) SaveWithProgress(
 	onProgress func(uploaded, total int64),
 ) error {
 	size := contentLength(ctx)
-	return t.save(ctx, r, storagePath, newUploadProgress(size, onProgress))
+	if err := t.save(ctx, r, storagePath, newUploadProgress(size, onProgress)); err != nil {
+		return err
+	}
+	t.markSaved(storagePath)
+	return nil
 }
 
 func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, progress *uploadProgress) error {
@@ -371,7 +398,13 @@ func (t *Telegram) prepareMedia(
 
 // SaveBatch preserves each source photo/video group as a Telegram album.
 func (t *Telegram) SaveBatch(ctx context.Context, items []storagetypes.BatchItem) error {
-	return t.saveBatch(ctx, items, nil)
+	if err := t.saveBatch(ctx, items, nil); err != nil {
+		return err
+	}
+	for _, item := range items {
+		t.markSaved(item.StoragePath)
+	}
+	return nil
 }
 
 // SaveBatchWithProgress preserves source media groups while reporting native
@@ -381,7 +414,13 @@ func (t *Telegram) SaveBatchWithProgress(
 	items []storagetypes.BatchItem,
 	onProgress func(index int, uploaded, total int64),
 ) error {
-	return t.saveBatch(ctx, items, onProgress)
+	if err := t.saveBatch(ctx, items, onProgress); err != nil {
+		return err
+	}
+	for _, item := range items {
+		t.markSaved(item.StoragePath)
+	}
+	return nil
 }
 
 func (t *Telegram) saveBatch(
@@ -447,7 +486,7 @@ func planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
 			continue
 		}
 		end := i + 1
-		for end < len(items) && end-i < 10 {
+		for end < len(items) && end-i < tglimit.MaxAlbumItems {
 			next := items[end]
 			if next.useSingleSave || !next.albumEligible || next.chatID != item.chatID || next.item.SourceGroupKey != item.item.SourceGroupKey {
 				break
@@ -623,16 +662,16 @@ func (t *Telegram) splitUpload(
 
 	sender := ctx.Sender
 
-	if len(multiMedia) <= 10 {
+	if len(multiMedia) <= tglimit.MaxAlbumItems {
 		_, err = sender.WithUploader(upler).
 			To(peer).
 			Album(ctx, multiMedia[0], multiMedia[1:]...)
 		return err
 	}
 
-	// more than 10 parts, send in batches, each batch up to 10 parts
-	for i := 0; i < len(multiMedia); i += 10 {
-		end := min(i+10, len(multiMedia))
+	// more than MaxAlbumItems parts, send in batches, each batch up to MaxAlbumItems parts
+	for i := 0; i < len(multiMedia); i += tglimit.MaxAlbumItems {
+		end := min(i+tglimit.MaxAlbumItems, len(multiMedia))
 		batch := multiMedia[i:end]
 		_, err = sender.WithUploader(upler).
 			To(peer).

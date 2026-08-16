@@ -19,13 +19,14 @@ import (
 	"github.com/rs/xid"
 
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/pkg/consts/tglimit"
 )
 
 const (
 	videoPartTargetRatio  = 0.95
 	videoSplitAttempts    = 4
 	minSegmentDuration    = 1.0
-	maxLosslessVideoParts = 10
+	maxLosslessVideoParts = tglimit.MaxAlbumItems
 )
 
 type losslessVideoPart struct {
