@@ -95,6 +95,11 @@ func (a *Alist) Init(ctx context.Context, cfg config.StorageConfig) error {
 	if err := a.getToken(ctx); err != nil {
 		return fmt.Errorf("failed to login to Alist: %w", err)
 	}
+	// The init login must not satisfy the refresh dedup window: a 401 right
+	// after startup has to trigger a real refresh, not reuse this token.
+	a.tokenMu.Lock()
+	a.lastLoginAt = time.Time{}
+	a.tokenMu.Unlock()
 	a.logger.Debug("Logged in to Alist")
 
 	go a.refreshToken(ctx, *alistConfig)
@@ -136,7 +141,7 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 		rs, seekable := reader.(io.ReadSeeker)
 		if !seekable {
 			a.logger.Warnf("Upload rejected with %s; reader is not seekable, cannot retry", status)
-			return fmt.Errorf("failed to save file to Alist: %s", status)
+			return fmt.Errorf("failed to save file to Alist: %s (streaming reader cannot be replayed for retry)", status)
 		}
 		if _, err := rs.Seek(0, io.SeekStart); err != nil {
 			return fmt.Errorf("failed to rewind reader before retry: %w", err)
