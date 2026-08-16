@@ -10,6 +10,7 @@ import (
 	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/telegram/message/html"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config"
@@ -100,7 +101,10 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 	currentV, err := semver.Parse(config.Version)
 	if err != nil {
-		return err
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(u.CallbackQuery.GetQueryID(), i18n.T(i18nk.BotMsgUpdateErrorVersionVarInvalid, map[string]any{
+			"Error": err.Error(),
+		})))
+		return dispatcher.EndGroups
 	}
 	ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
 		ID: u.CallbackQuery.GetMsgID(),
