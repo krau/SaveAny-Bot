@@ -194,10 +194,14 @@ func buildBatchDoneMarkup(info TaskInfo, skipped []string, err error) string {
 		totalSize = info.TotalSize()
 	}
 	if err == nil {
-		if len(skipped) > 0 {
+		completed, _, _, failed := itemCounts(items)
+		// IgnoreErrors runs may finish with per-element failures: report them
+		// instead of claiming every file completed.
+		totalSkipped := len(skipped) + failed
+		if totalSkipped > 0 {
 			return localizedProgressMarkup(i18nk.BotMsgProgressBatchDoneWithSkipped, map[string]any{
-				"Success": len(items),
-				"Skipped": len(skipped),
+				"Success": completed,
+				"Skipped": totalSkipped,
 				"Size":    dlutil.FormatSize(totalSize),
 			})
 		}
