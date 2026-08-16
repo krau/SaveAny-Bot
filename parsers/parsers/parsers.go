@@ -2,6 +2,7 @@ package parsers
 
 import (
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/krau/SaveAny-Bot/config"
@@ -39,5 +40,5 @@ func Get() []parser.Parser {
 	configOnce.Do(configParsers)
 	mu.Lock()
 	defer mu.Unlock()
-	return parsers
+	return slices.Clone(parsers)
 }
