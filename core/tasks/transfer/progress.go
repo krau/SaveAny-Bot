@@ -14,6 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
+	"github.com/krau/SaveAny-Bot/common/utils/progressutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
 
@@ -83,7 +84,7 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
-	if !shouldUpdateProgress(info.TotalSize(), info.Uploaded(), int(p.lastUpdatePercent.Load())) {
+	if !progressutil.ShouldUpdate(info.TotalSize(), info.Uploaded(), int(p.lastUpdatePercent.Load())) {
 		return
 	}
 	percent := int((info.Uploaded() * 100) / info.TotalSize())
@@ -219,14 +220,6 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	if ext != nil {
 		ext.EditMessage(p.ChatID, req)
 	}
-}
-
-func shouldUpdateProgress(total, current int64, lastPercent int) bool {
-	if total == 0 {
-		return false
-	}
-	currentPercent := int((current * 100) / total)
-	return currentPercent > lastPercent && currentPercent%5 == 0
 }
 
 func formatDuration(d time.Duration) string {

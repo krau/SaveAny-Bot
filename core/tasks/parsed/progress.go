@@ -15,39 +15,9 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
+	"github.com/krau/SaveAny-Bot/common/utils/progressutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
-
-var progressUpdatesLevels = []struct {
-	size        int64 // 文件大小阈值
-	stepPercent int   // 每多少 % 更新一次
-}{
-	{10 << 20, 100},
-	{50 << 20, 50},
-	{200 << 20, 20},
-	{500 << 20, 10},
-}
-
-func shouldUpdateProgress(total, downloaded int64, lastUpdatePercent int) bool {
-	if total <= 0 || downloaded <= 0 {
-		return false
-	}
-
-	percent := int((downloaded * 100) / total)
-	if percent <= lastUpdatePercent {
-		return false
-	}
-
-	step := progressUpdatesLevels[len(progressUpdatesLevels)-1].stepPercent
-	for _, lvl := range progressUpdatesLevels {
-		if total < lvl.size {
-			step = lvl.stepPercent
-			break
-		}
-	}
-
-	return percent >= lastUpdatePercent+step
-}
 
 type ProgressTracker interface {
 	OnStart(ctx context.Context, info TaskInfo)
@@ -73,7 +43,10 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 		styling.Plain(i18n.T(i18nk.BotMsgProgressParsedStartPrefix, map[string]any{
 			"Site": info.Site(),
 		})),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个资源)", float64(info.TotalBytes())/(1024*1024), info.TotalResources())),
+		styling.Code(i18n.T(i18nk.BotMsgProgressSizeWithResources, map[string]any{
+			"Size":  fmt.Sprintf("%.2f MB", float64(info.TotalBytes())/(1024*1024)),
+			"Count": info.TotalResources(),
+		})),
 	); err != nil {
 		log.FromContext(ctx).Errorf("Failed to build entities: %s", err)
 		return
@@ -101,7 +74,7 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
-	if !shouldUpdateProgress(info.TotalBytes(), info.DownloadedBytes(), int(p.lastUpdatePercent.Load())) {
+	if !progressutil.ShouldUpdate(info.TotalBytes(), info.DownloadedBytes(), int(p.lastUpdatePercent.Load())) {
 		return
 	}
 	percent := int((info.DownloadedBytes() * 100) / info.TotalBytes())
@@ -114,7 +87,10 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain(i18n.T(i18nk.BotMsgProgressDownloadingPrefix, nil)),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalBytes())/(1024*1024), info.TotalResources())),
+		styling.Code(i18n.T(i18nk.BotMsgProgressSizeWithFiles, map[string]any{
+			"Size":  fmt.Sprintf("%.2f MB", float64(info.TotalBytes())/(1024*1024)),
+			"Count": info.TotalResources(),
+		})),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressProcessingListPrefix, nil)),
 		func() styling.StyledTextOption {
 			var lines []string

@@ -14,6 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
+	"github.com/krau/SaveAny-Bot/common/utils/progressutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
 
@@ -111,7 +112,7 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo, downloaded, to
 
 func shouldUpdateSingleDownloadProgress(total, downloaded int64, lastPercent int, elapsed time.Duration) bool {
 	if total > 0 {
-		return shouldUpdateProgress(total, downloaded, lastPercent)
+		return progressutil.ShouldUpdate(total, downloaded, lastPercent)
 	}
 	return downloaded > 0 && elapsed >= uploadProgressMaxInterval
 }
@@ -183,7 +184,7 @@ func shouldUpdateUploadProgress(total, uploaded int64, lastPercent int, elapsed 
 	if percent == lastPercent {
 		return elapsed >= uploadProgressMaxInterval
 	}
-	return shouldUpdateProgress(total, uploaded, lastPercent) || elapsed >= uploadProgressMaxInterval
+	return progressutil.ShouldUpdate(total, uploaded, lastPercent) || elapsed >= uploadProgressMaxInterval
 }
 
 func singleUploadPhase(attempt int) singleProgressPhase {

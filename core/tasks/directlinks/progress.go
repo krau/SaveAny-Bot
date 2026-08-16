@@ -15,6 +15,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
+	"github.com/krau/SaveAny-Bot/common/utils/progressutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
 
@@ -102,7 +103,7 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 
 // OnProgress implements ProgressTracker.
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
-	if !shouldUpdateProgress(info.TotalBytes(), info.DownloadedBytes(), int(p.lastUpdatePercent.Load())) {
+	if !progressutil.ShouldUpdate(info.TotalBytes(), info.DownloadedBytes(), int(p.lastUpdatePercent.Load())) {
 		return
 	}
 	percent := int((info.DownloadedBytes() * 100) / info.TotalBytes())
@@ -115,7 +116,10 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain(i18n.T(i18nk.BotMsgProgressDownloadingPrefix, nil)),
-		styling.Code(fmt.Sprintf("%.2f MB (%d个文件)", float64(info.TotalBytes())/(1024*1024), info.TotalFiles())),
+		styling.Code(i18n.T(i18nk.BotMsgProgressSizeWithFiles, map[string]any{
+			"Size":  fmt.Sprintf("%.2f MB", float64(info.TotalBytes())/(1024*1024)),
+			"Count": info.TotalFiles(),
+		})),
 		styling.Plain(i18n.T(i18nk.BotMsgProgressProcessingListPrefix, nil)),
 		func() styling.StyledTextOption {
 			var lines []string

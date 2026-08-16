@@ -11,6 +11,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/utils/progressutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 )
 
@@ -60,7 +61,7 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 }
 
 func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
-	if !shouldUpdateProgress(info.Downloaded(), int64(info.TotalPics())) {
+	if !progressutil.ShouldUpdateCount(info.Downloaded(), int64(info.TotalPics())) {
 		return
 	}
 	log.FromContext(ctx).Debugf("Progress update: %s, %d/%d", info.TaskID(), info.Downloaded(), info.TotalPics())
