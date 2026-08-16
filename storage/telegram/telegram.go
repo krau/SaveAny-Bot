@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -106,8 +107,16 @@ func (t *Telegram) markSaved(storagePath string) {
 	t.savedPaths[path.Clean(storagePath)] = struct{}{}
 }
 
+// errSkipLarge reports an intentionally skipped oversized file: the caller
+// must treat it as success without recording the path as saved.
+var errSkipLarge = errors.New("skip large file")
+
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
-	if err := t.save(ctx, r, storagePath, nil); err != nil {
+	err := t.save(ctx, r, storagePath, nil)
+	if err != nil {
+		if errors.Is(err, errSkipLarge) {
+			return nil
+		}
 		return err
 	}
 	t.markSaved(storagePath)
@@ -123,7 +132,11 @@ func (t *Telegram) SaveWithProgress(
 	onProgress func(uploaded, total int64),
 ) error {
 	size := contentLength(ctx)
-	if err := t.save(ctx, r, storagePath, newUploadProgress(size, onProgress)); err != nil {
+	err := t.save(ctx, r, storagePath, newUploadProgress(size, onProgress))
+	if err != nil {
+		if errors.Is(err, errSkipLarge) {
+			return nil
+		}
 		return err
 	}
 	t.markSaved(storagePath)
@@ -141,7 +154,7 @@ func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, pr
 	maxUploadSize := maxUploadFileSize(tctx)
 	if t.config.SkipLarge && size > maxUploadSize {
 		log.FromContext(ctx).Warnf("Skipping file larger than Telegram limit (%d bytes): %d bytes", maxUploadSize, size)
-		return nil
+		return errSkipLarge
 	}
 	splitSize := t.splitSize(maxUploadSize)
 	if size > splitSize {
@@ -398,13 +411,7 @@ func (t *Telegram) prepareMedia(
 
 // SaveBatch preserves each source photo/video group as a Telegram album.
 func (t *Telegram) SaveBatch(ctx context.Context, items []storagetypes.BatchItem) error {
-	if err := t.saveBatch(ctx, items, nil); err != nil {
-		return err
-	}
-	for _, item := range items {
-		t.markSaved(item.StoragePath)
-	}
-	return nil
+	return t.saveBatch(ctx, items, nil)
 }
 
 // SaveBatchWithProgress preserves source media groups while reporting native
@@ -414,13 +421,7 @@ func (t *Telegram) SaveBatchWithProgress(
 	items []storagetypes.BatchItem,
 	onProgress func(index int, uploaded, total int64),
 ) error {
-	if err := t.saveBatch(ctx, items, onProgress); err != nil {
-		return err
-	}
-	for _, item := range items {
-		t.markSaved(item.StoragePath)
-	}
-	return nil
+	return t.saveBatch(ctx, items, onProgress)
 }
 
 func (t *Telegram) saveBatch(
@@ -559,8 +560,11 @@ func (t *Telegram) saveMediaGroup(
 
 		builder := tctx.Sender.WithUploader(prepared[0].uploader).To(prepared[0].peer)
 		if len(prepared) == 1 {
-			_, err := builder.Media(ctx, prepared[0].media)
-			return err
+			if _, err := builder.Media(ctx, prepared[0].media); err != nil {
+				return err
+			}
+			t.markSaved(group[0].item.StoragePath)
+			return nil
 		}
 		media := make([]message.MultiMediaOption, len(prepared))
 		for i := range prepared {
@@ -568,6 +572,9 @@ func (t *Telegram) saveMediaGroup(
 		}
 		if _, err := builder.Album(ctx, media[0], media[1:]...); err != nil {
 			return fmt.Errorf("failed to send media album: %w", err)
+		}
+		for _, mediaItem := range group {
+			t.markSaved(mediaItem.item.StoragePath)
 		}
 		return nil
 	}, retry.Context(ctx), retry.RetryTimes(uint(config.C().Retry)))
