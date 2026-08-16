@@ -135,8 +135,9 @@ func (h *Handlers) ListStoragesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storages := make([]StorageInfo, 0, len(storage.Storages))
-	for name, stor := range storage.Storages {
+	all := storage.AllStorages()
+	storages := make([]StorageInfo, 0, len(all))
+	for name, stor := range all {
 		storages = append(storages, StorageInfo{
 			Name: name,
 			Type: string(stor.Type()),

@@ -3,13 +3,42 @@ package storage
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 )
 
-var UserStorages = make(map[int64][]Storage)
+var (
+	storageMu sync.RWMutex
+	// Storages maps storage names to initialized storage instances.
+	Storages = make(map[string]Storage)
+
+	userStoragesMu sync.RWMutex
+	// UserStorages maps user IDs to their available storage instances.
+	UserStorages = make(map[int64][]Storage)
+)
+
+// GetStorage returns the initialized storage instance for name, without
+// creating one on demand.
+func GetStorage(name string) (Storage, bool) {
+	storageMu.RLock()
+	defer storageMu.RUnlock()
+	s, ok := Storages[name]
+	return s, ok
+}
+
+// AllStorages returns a snapshot copy of all initialized storages.
+func AllStorages() map[string]Storage {
+	storageMu.RLock()
+	defer storageMu.RUnlock()
+	out := make(map[string]Storage, len(Storages))
+	for name, s := range Storages {
+		out[name] = s
+	}
+	return out
+}
 
 // GetStorageByName returns storage by name from cache or creates new one
 // It should NOT be used to get storage for user, use GetStorageByUserIDAndName instead
@@ -18,18 +47,27 @@ func GetStorageByName(ctx context.Context, name string) (Storage, error) {
 		return nil, ErrStorageNameEmpty
 	}
 
+	storageMu.RLock()
 	storage, ok := Storages[name]
+	storageMu.RUnlock()
 	if ok {
 		return storage, nil
 	}
 	cfg := config.C().GetStorageByName(name)
 	if cfg == nil {
-		return nil, fmt.Errorf("未找到存储 %s", name)
+		return nil, fmt.Errorf("storage %s not found", name)
 	}
 
+	// NewStorage 可能耗时 (网络初始化), 在锁外构造
 	storage, err := NewStorage(ctx, cfg)
 	if err != nil {
 		return nil, err
+	}
+	storageMu.Lock()
+	defer storageMu.Unlock()
+	// 双写竞态: 并发调用时另一 goroutine 可能已构造并写入
+	if existing, ok := Storages[name]; ok {
+		return existing, nil
 	}
 	Storages[name] = storage
 	return storage, nil
@@ -52,8 +90,11 @@ func GetUserStorages(ctx context.Context, chatID int64) []Storage {
 	if chatID <= 0 {
 		return nil
 	}
-	if storages, ok := UserStorages[chatID]; ok {
-		return storages
+	userStoragesMu.RLock()
+	cached, ok := UserStorages[chatID]
+	userStoragesMu.RUnlock()
+	if ok {
+		return cached
 	}
 	var storages []Storage
 	for _, name := range config.C().GetStorageNamesByUserID(chatID) {
@@ -75,9 +116,16 @@ func LoadStorages(ctx context.Context) {
 			logger.Errorf("failed to load storage %s: %v", storage.GetName(), err)
 		}
 	}
-	logger.Infof("successfully loaded %d storages", len(Storages))
+	storageMu.RLock()
+	loaded := len(Storages)
+	storageMu.RUnlock()
+	logger.Infof("successfully loaded %d storages", loaded)
 	for user := range config.C().GetUsersID() {
-		UserStorages[int64(user)] = GetUserStorages(ctx, int64(user))
+		uid := int64(user)
+		storages := GetUserStorages(ctx, uid)
+		userStoragesMu.Lock()
+		UserStorages[uid] = storages
+		userStoragesMu.Unlock()
 	}
 }
 

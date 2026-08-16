@@ -75,10 +75,17 @@ type StorageReadable interface {
 	OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error)
 }
 
-var Storages = make(map[string]Storage)
-
 var _ StorageProgressSaver = (*telegram.Telegram)(nil)
 var _ StorageBatchProgressSaver = (*telegram.Telegram)(nil)
+
+var _ StorageListable = (*alist.Alist)(nil)
+var _ StorageReadable = (*alist.Alist)(nil)
+var _ StorageListable = (*local.Local)(nil)
+var _ StorageReadable = (*local.Local)(nil)
+var _ StorageListable = (*rclone.Rclone)(nil)
+var _ StorageReadable = (*rclone.Rclone)(nil)
+var _ StorageListable = (*webdav.Webdav)(nil)
+var _ StorageReadable = (*webdav.Webdav)(nil)
 
 type StorageConstructor func() Storage
 
