@@ -146,20 +146,21 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 		elem *TaskElement
 		err  error
 	}
-	results := make([]downloadResult, 0, len(group.elems))
+	results := make([]downloadResult, len(group.elems))
 	var resultsMu sync.Mutex
 
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(config.C().Workers)
-	for _, elem := range group.elems {
+	for i, elem := range group.elems {
 		eg.Go(func() error {
 			if err := t.markProcessing(ctx, elem); err != nil {
 				return err
 			}
 			defer t.unmarkProcessing(elem.ID)
 			err := t.downloadElement(gctx, elem)
+			// Store by original index: albums must keep their source order.
 			resultsMu.Lock()
-			results = append(results, downloadResult{elem: elem, err: err})
+			results[i] = downloadResult{elem: elem, err: err}
 			resultsMu.Unlock()
 			if err != nil && t.IgnoreErrors {
 				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
