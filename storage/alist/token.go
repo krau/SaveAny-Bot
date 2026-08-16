@@ -12,7 +12,33 @@ import (
 	config "github.com/krau/SaveAny-Bot/config/storage"
 )
 
+// minTokenRefreshInterval deduplicates login storms: a successful refresh is
+// reused for this window instead of hitting the login endpoint again.
+const minTokenRefreshInterval = 30 * time.Second
+
+// getToken refreshes the JWT, deduplicating concurrent calls so parallel
+// uploads and the background refresher share one login request.
 func (a *Alist) getToken(ctx context.Context) error {
+	a.tokenMu.RLock()
+	fresh := !a.lastLoginAt.IsZero() && time.Since(a.lastLoginAt) < minTokenRefreshInterval
+	a.tokenMu.RUnlock()
+	if fresh {
+		return nil
+	}
+	_, err, _ := a.tokenFlight.Do("token", func() (any, error) {
+		// Another waiter may have refreshed while this call was queued.
+		a.tokenMu.RLock()
+		fresh := !a.lastLoginAt.IsZero() && time.Since(a.lastLoginAt) < minTokenRefreshInterval
+		a.tokenMu.RUnlock()
+		if fresh {
+			return nil, nil
+		}
+		return nil, a.fetchToken(ctx)
+	})
+	return err
+}
+
+func (a *Alist) fetchToken(ctx context.Context) error {
 	loginBody, err := json.Marshal(a.loginInfo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal login request: %w", err)
@@ -44,7 +70,10 @@ func (a *Alist) getToken(ctx context.Context) error {
 		return fmt.Errorf("%w: %s", ErrAlistLoginFailed, loginResp.Message)
 	}
 
+	a.tokenMu.Lock()
 	a.token = loginResp.Data.Token
+	a.lastLoginAt = time.Now()
+	a.tokenMu.Unlock()
 	return nil
 }
 

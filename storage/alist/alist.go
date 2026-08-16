@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -17,15 +18,26 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
+	"golang.org/x/sync/singleflight"
 )
 
 type Alist struct {
-	client    *http.Client
-	token     string
-	baseURL   string
-	loginInfo *loginRequest
-	config    config.AlistStorageConfig
-	logger    *log.Logger
+	client      *http.Client
+	tokenMu     sync.RWMutex
+	token       string
+	lastLoginAt time.Time
+	tokenFlight singleflight.Group
+	baseURL     string
+	loginInfo   *loginRequest
+	config      config.AlistStorageConfig
+	logger      *log.Logger
+}
+
+// authHeader returns the current token for use in API requests.
+func (a *Alist) authHeader() string {
+	a.tokenMu.RLock()
+	defer a.tokenMu.RUnlock()
+	return a.token
 }
 
 func (a *Alist) Init(ctx context.Context, cfg config.StorageConfig) error {
@@ -42,14 +54,16 @@ func (a *Alist) Init(ctx context.Context, cfg config.StorageConfig) error {
 	a.logger = log.FromContext(ctx).WithPrefix(fmt.Sprintf("alist[%s]", alistConfig.Name))
 
 	if alistConfig.Token != "" {
+		a.tokenMu.Lock()
 		a.token = alistConfig.Token
+		a.tokenMu.Unlock()
 		tokenCtx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 		defer cancel()
 		req, err := http.NewRequestWithContext(tokenCtx, http.MethodGet, a.baseURL+"/api/me", nil)
 		if err != nil {
 			return fmt.Errorf("failed to create request: %w", err)
 		}
-		req.Header.Set("Authorization", a.token)
+		req.Header.Set("Authorization", a.authHeader())
 
 		resp, err := a.client.Do(req)
 		if err != nil {
@@ -157,7 +171,7 @@ func (a *Alist) putFile(ctx context.Context, reader io.Reader, storagePath strin
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Authorization", a.token)
+	req.Header.Set("Authorization", a.authHeader())
 	req.Header.Set("File-Path", url.PathEscape(storagePath))
 	req.Header.Set("Content-Type", "application/octet-stream")
 	if length := ctx.Value(ctxkey.ContentLength); length != nil {
@@ -208,7 +222,7 @@ func (a *Alist) existsPath(ctx context.Context, storagePath string) bool {
 		a.logger.Errorf("Failed to create request: %v", err)
 		return false
 	}
-	req.Header.Set("Authorization", a.token)
+	req.Header.Set("Authorization", a.authHeader())
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := a.client.Do(req)
 	if err != nil {
@@ -263,7 +277,7 @@ func (a *Alist) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.F
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Authorization", a.token)
+	req.Header.Set("Authorization", a.authHeader())
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := a.client.Do(req)
@@ -338,7 +352,7 @@ func (a *Alist) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, i
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Authorization", a.token)
+	req.Header.Set("Authorization", a.authHeader())
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := a.client.Do(req)
