@@ -33,7 +33,6 @@ type Task struct {
 	downloadedBytes atomic.Int64 // downloaded bytes count
 	processing      map[string]ResourceInfo
 	processingMu    sync.RWMutex
-	failed          map[string]error // [TODO] errors for each resource
 }
 
 // Title implements core.Exectable.
@@ -84,6 +83,5 @@ func NewTask(
 		progress:        progressTracker,
 		processing:      make(map[string]ResourceInfo),
 		processingMu:    sync.RWMutex{},
-		failed:          make(map[string]error),
 	}
 }

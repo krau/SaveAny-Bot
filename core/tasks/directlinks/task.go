@@ -45,7 +45,6 @@ type Task struct {
 	downloaded      atomic.Int64     // downloaded files count
 	processing      map[string]*File // {"url": File}
 	processingMu    sync.RWMutex
-	failed          map[string]error // [TODO] errors for each file
 }
 
 // Title implements core.Exectable.
@@ -127,7 +126,6 @@ func NewTask(
 		client:       http.DefaultClient,
 		processing:   make(map[string]*File),
 		processingMu: sync.RWMutex{},
-		failed:       make(map[string]error),
 		totalFiles:   int64(len(files)),
 	}
 }

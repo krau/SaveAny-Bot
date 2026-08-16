@@ -28,14 +28,11 @@ func (t *Task) Execute(ctx context.Context) error {
 
 	for _, elem := range t.elems {
 		eg.Go(func() error {
-			t.processingMu.RLock()
+			t.processingMu.Lock()
 			if t.processing[elem.ID] != nil {
-				t.processingMu.RUnlock()
+				t.processingMu.Unlock()
 				return fmt.Errorf("element with ID %s is already being processed", elem.ID)
 			}
-			t.processingMu.RUnlock()
-
-			t.processingMu.Lock()
 			t.processing[elem.ID] = &elem
 			t.processingMu.Unlock()
 

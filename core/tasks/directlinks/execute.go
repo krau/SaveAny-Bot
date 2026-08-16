@@ -76,12 +76,11 @@ func (t *Task) Execute(ctx context.Context) error {
 	eg.SetLimit(config.C().Workers)
 	for _, file := range t.files {
 		eg.Go(func() error {
-			t.processingMu.RLock()
+			t.processingMu.Lock()
 			if _, ok := t.processing[file.URL]; ok {
+				t.processingMu.Unlock()
 				return fmt.Errorf("file %s is already being processed", file.URL)
 			}
-			t.processingMu.RUnlock()
-			t.processingMu.Lock()
 			t.processing[file.URL] = file
 			t.processingMu.Unlock()
 			defer func() {
@@ -90,7 +89,6 @@ func (t *Task) Execute(ctx context.Context) error {
 				t.processingMu.Unlock()
 			}()
 			err := t.processLink(gctx, file)
-			t.downloaded.Add(1)
 			if errors.Is(err, context.Canceled) {
 				logger.Debug("Link processing canceled")
 				return err
@@ -99,6 +97,7 @@ func (t *Task) Execute(ctx context.Context) error {
 				logger.Errorf("Error processing link %s: %v", file.URL, err)
 				return fmt.Errorf("failed to process link %s: %w", file.URL, err)
 			}
+			t.downloaded.Add(1)
 			return nil
 		})
 	}
