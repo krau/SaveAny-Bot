@@ -70,9 +70,6 @@ func Init(ctx context.Context) <-chan struct{} {
 			}{nil, err}
 			return
 		}
-		client.API().BotsSetBotCommands(ctx, &tg.BotsSetBotCommandsRequest{
-			Scope: &tg.BotCommandScopeDefault{},
-		})
 		commands := make([]tg.BotCommand, 0, len(handlers.CommandHandlers))
 		for _, info := range handlers.CommandHandlers {
 			commands = append(commands, tg.BotCommand{Command: info.Cmd, Description: i18n.T(info.Desc)})
