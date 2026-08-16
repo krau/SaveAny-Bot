@@ -125,6 +125,11 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		status := resp.Status
 		resp.Body.Close()
+		// Token-only configurations cannot refresh credentials: surface the
+		// auth error instead of sending a login request with no credentials.
+		if a.loginInfo == nil {
+			return fmt.Errorf("failed to save file to Alist: %s", status)
+		}
 		if err := a.getToken(ctx); err != nil {
 			return fmt.Errorf("failed to refresh alist token: %w", err)
 		}
