@@ -47,7 +47,6 @@ type Task struct {
 	uploadOnce      sync.Once
 	uploadMu        sync.Mutex
 	uploaded        map[string]int64
-	failed          map[string]error // [TODO] errors for each element
 }
 
 // Title implements core.Exectable.
@@ -136,7 +135,6 @@ func NewBatchTGFileTask(
 		uploaded:     make(map[string]int64),
 		IgnoreErrors: ignoreErrors,
 		processingMu: sync.RWMutex{},
-		failed:       make(map[string]error),
 	}
 	return task
 }

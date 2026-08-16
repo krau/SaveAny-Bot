@@ -53,7 +53,11 @@ func (t *Task) Execute(ctx context.Context) error {
 			i = end
 		}
 		if err != nil {
-			break
+			if !t.IgnoreErrors {
+				break
+			}
+			logger.Warnf("Group processing failed (ignored): %v", err)
+			err = nil
 		}
 	}
 	if err != nil {
@@ -104,7 +108,14 @@ func (t *Task) processElements(ctx context.Context, elems []*TaskElement) error 
 				return err
 			}
 			defer t.unmarkProcessing(elem.ID)
-			return t.processElement(gctx, *elem)
+			err := t.processElement(gctx, *elem)
+			if err != nil && t.IgnoreErrors {
+				// Element failure is already recorded per-item; keep siblings
+				// running by not propagating the error to the errgroup.
+				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
+				return nil
+			}
+			return err
 		})
 	}
 	return eg.Wait()
@@ -127,7 +138,12 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 				return err
 			}
 			defer t.unmarkProcessing(elem.ID)
-			return t.downloadElement(gctx, elem)
+			err := t.downloadElement(gctx, elem)
+			if err != nil && t.IgnoreErrors {
+				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
+				return nil
+			}
+			return err
 		})
 	}
 	if err := eg.Wait(); err != nil {
