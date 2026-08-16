@@ -43,7 +43,7 @@ jobs:
             goarch: arm64
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract version from Git Ref
         id: extract_version
@@ -64,7 +64,7 @@ jobs:
           ldflags: >-
             -s -w
             -X "github.com/krau/SaveAny-Bot/config.Version=${{ env.VERSION }}"
-            -X "github.com/krau/SaveAny-Bot/config.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
+            -X "github.com/krau/SaveAny-Bot/config.BuildTime=${{ github.event.repository.updated_at }}"
             -X "github.com/krau/SaveAny-Bot/config.GitCommit=${{ github.sha }}"
           binary_name: saveany-bot
         env:
