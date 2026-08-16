@@ -10,6 +10,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/storage"
 )
@@ -43,7 +44,8 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 		}
 		if _, err := storage.GetStorageByUserIDAndName(ctx, user.ChatID, args[2]); err != nil {
 			logger.Errorf("Failed to get storage %q: %s", args[2], err)
-			ctx.Reply(update, ext.ReplyTextString("Failed to get storage"), nil)
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed,
+				tgutil.EscapeHTMLTemplateData(map[string]any{"Error": err.Error()}))), nil)
 			return dispatcher.EndGroups
 		}
 
