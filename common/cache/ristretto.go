@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -9,24 +10,26 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 )
 
-var cache *ristretto.Cache[string, any]
+var (
+	cache    *ristretto.Cache[string, any]
+	initOnce sync.Once
+)
 
 func Init() {
-	if cache != nil {
-		panic("cache already initialized")
-	}
-	c, err := ristretto.NewCache(&ristretto.Config[string, any]{
-		NumCounters: config.C().Cache.NumCounters,
-		MaxCost:     config.C().Cache.MaxCost,
-		BufferItems: 64,
-		OnReject: func(item *ristretto.Item[any]) {
-			log.Warnf("Cache item rejected: key=%d, value=%v", item.Key, item.Value)
-		},
+	initOnce.Do(func() {
+		c, err := ristretto.NewCache(&ristretto.Config[string, any]{
+			NumCounters: config.C().Cache.NumCounters,
+			MaxCost:     config.C().Cache.MaxCost,
+			BufferItems: 64,
+			OnReject: func(item *ristretto.Item[any]) {
+				log.Warnf("Cache item rejected: key=%d, value=%v", item.Key, item.Value)
+			},
+		})
+		if err != nil {
+			log.Fatalf("failed to create ristretto cache: %v", err)
+		}
+		cache = c
 	})
-	if err != nil {
-		log.Fatalf("failed to create ristretto cache: %v", err)
-	}
-	cache = c
 }
 
 func Set(key string, value any) error {
