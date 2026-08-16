@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -90,9 +91,16 @@ func (s *Server) Start(ctx context.Context) error {
 
 	logger.Infof("Starting API server on %s", s.httpServer.Addr)
 
+	// Bind synchronously so listen failures (e.g. port already in use) are
+	// returned to the caller instead of being silently logged in a goroutine.
+	ln, err := net.Listen("tcp", s.httpServer.Addr)
+	if err != nil {
+		return fmt.Errorf("failed to listen on %s: %w", s.httpServer.Addr, err)
+	}
+
 	// 在 goroutine 中启动服务器
 	go func() {
-		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.httpServer.Serve(ln); err != nil && err != http.ErrServerClosed {
 			logger.Errorf("API server error: %v", err)
 		}
 	}()
