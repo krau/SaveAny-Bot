@@ -334,7 +334,13 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		if err := errg.Wait(); err != nil {
 			return fmt.Errorf("failed to download file in stream mode: %w", err)
 		}
-		t.recordDownloadComplete(elem.ID, 0)
+		// In stream mode the bytes downloaded are the bytes uploaded: report
+		// them so the aggregate upload total is not stuck at zero.
+		var streamedBytes int64
+		t.updateItem(elem.ID, func(item *itemProgressState) {
+			streamedBytes = item.downloaded
+		})
+		t.recordDownloadComplete(elem.ID, streamedBytes)
 		t.markItemCompleted(elem.ID)
 		t.notifyStateChange(ctx)
 		logger.Info("File downloaded successfully in stream mode")
