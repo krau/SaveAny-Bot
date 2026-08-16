@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+	"golang.org/x/sync/singleflight"
 )
 
 var (
@@ -18,6 +19,8 @@ var (
 	userStoragesMu sync.RWMutex
 	// UserStorages maps user IDs to their available storage instances.
 	UserStorages = make(map[int64][]Storage)
+
+	initFlight singleflight.Group
 )
 
 // GetStorage returns the initialized storage instance for name, without
@@ -58,19 +61,32 @@ func GetStorageByName(ctx context.Context, name string) (Storage, error) {
 		return nil, fmt.Errorf("storage %s not found", name)
 	}
 
-	// NewStorage 可能耗时 (网络初始化), 在锁外构造
-	storage, err := NewStorage(ctx, cfg)
+	// singleflight merges concurrent first-time initializations, so only one
+	// instance is ever built and its side effects (e.g. the alist token
+	// refresher goroutine) are not duplicated.
+	v, err, _ := initFlight.Do("storage:"+name, func() (any, error) {
+		storageMu.RLock()
+		if existing, ok := Storages[name]; ok {
+			storageMu.RUnlock()
+			return existing, nil
+		}
+		storageMu.RUnlock()
+		storage, err := NewStorage(ctx, cfg)
+		if err != nil {
+			return nil, err
+		}
+		storageMu.Lock()
+		defer storageMu.Unlock()
+		if existing, ok := Storages[name]; ok {
+			return existing, nil
+		}
+		Storages[name] = storage
+		return storage, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	storageMu.Lock()
-	defer storageMu.Unlock()
-	// 双写竞态: 并发调用时另一 goroutine 可能已构造并写入
-	if existing, ok := Storages[name]; ok {
-		return existing, nil
-	}
-	Storages[name] = storage
-	return storage, nil
+	return v.(Storage), nil
 }
 
 // 检查 user 是否可用指定的 storage, 若不可用则返回未找到错误
