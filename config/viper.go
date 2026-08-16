@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/spf13/viper"
@@ -68,6 +69,13 @@ func (c Config) GetStorageByName(name string) storage.StorageConfig {
 }
 
 func Init(ctx context.Context, configFile ...string) error {
+	logger := log.FromContext(ctx)
+
+	// 清空全局侧表, 防止二次 Init 时重复追加
+	storages = nil
+	userIDs = nil
+	userStorages = make(map[int64][]string)
+
 	viper.SetConfigType("toml")
 	viper.SetEnvPrefix("SAVEANY")
 	viper.AutomaticEnv()
@@ -76,11 +84,13 @@ func Init(ctx context.Context, configFile ...string) error {
 
 	// 如果指定了配置文件路径，则使用指定的配置文件
 	// 配置文件支持传入一个 http(s) URL 地址
+	loadedFromURL := false
 	if len(configFile) > 0 && configFile[0] != "" {
 		cfg := configFile[0]
 		if strings.HasPrefix(cfg, "http://") || strings.HasPrefix(cfg, "https://") {
 			// 	使用远程配置文件
-			resp, err := http.Get(cfg)
+			client := &http.Client{Timeout: 30 * time.Second}
+			resp, err := client.Get(cfg)
 			if err != nil {
 				return fmt.Errorf("failed to fetch remote config file: %w", err)
 			}
@@ -91,6 +101,7 @@ func Init(ctx context.Context, configFile ...string) error {
 			if err := viper.ReadConfig(resp.Body); err != nil {
 				return fmt.Errorf("failed to read remote config file: %w", err)
 			}
+			loadedFromURL = true
 		} else {
 			viper.SetConfigFile(cfg)
 		}
@@ -141,13 +152,16 @@ func Init(ctx context.Context, configFile ...string) error {
 		viper.SetDefault(key, value)
 	}
 
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println("Error reading config file, ", err)
-		return err
+	// 远程配置已通过 viper.ReadConfig 加载, 无需再查找本地文件
+	if !loadedFromURL {
+		if err := viper.ReadInConfig(); err != nil {
+			logger.Errorf("Error reading config file: %v", err)
+			return err
+		}
 	}
 
 	if err := viper.Unmarshal(cfg); err != nil {
-		fmt.Println("Error unmarshalling config file, ", err)
+		logger.Errorf("Error unmarshalling config file: %v", err)
 		return err
 	}
 
