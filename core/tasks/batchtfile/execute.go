@@ -78,7 +78,7 @@ func (t *Task) Execute(ctx context.Context) error {
 // notifyProgress reports a progress update to the optional tracker.
 func (t *Task) notifyProgress(ctx context.Context) {
 	if t.Progress != nil {
-		t.notifyProgress(ctx)
+		t.Progress.OnProgress(ctx, t)
 	}
 }
 
