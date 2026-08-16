@@ -10,8 +10,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/krau/SaveAny-Bot/storage/alist"
 	storconfig "github.com/krau/SaveAny-Bot/config/storage"
+	"github.com/krau/SaveAny-Bot/storage/alist"
 )
 
 // newAlistServer starts a fake alist whose login endpoint issues sequential

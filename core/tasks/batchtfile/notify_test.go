@@ -10,7 +10,7 @@ type recordingTracker struct {
 	calls atomic.Int64
 }
 
-func (r *recordingTracker) OnStart(context.Context, TaskInfo)  {}
+func (r *recordingTracker) OnStart(context.Context, TaskInfo) {}
 func (r *recordingTracker) OnDone(context.Context, TaskInfo, error) {
 }
 func (r *recordingTracker) OnProgress(context.Context, TaskInfo) {

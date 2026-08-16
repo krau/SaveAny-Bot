@@ -5,19 +5,19 @@ import (
 	"io"
 	"testing"
 
+	storconfig "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/core/tasks/telegraph"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/storage"
-	storconfig "github.com/krau/SaveAny-Bot/config/storage"
 )
 
 type mockStorage struct{}
 
 func (mockStorage) Init(context.Context, storconfig.StorageConfig) error { return nil }
-func (mockStorage) Type() storenum.StorageType                          { return storenum.Local }
-func (mockStorage) Name() string                                        { return "mock" }
-func (mockStorage) Save(context.Context, io.Reader, string) error       { return nil }
-func (mockStorage) Exists(context.Context, string) bool                 { return false }
+func (mockStorage) Type() storenum.StorageType                           { return storenum.Local }
+func (mockStorage) Name() string                                         { return "mock" }
+func (mockStorage) Save(context.Context, io.Reader, string) error        { return nil }
+func (mockStorage) Exists(context.Context, string) bool                  { return false }
 
 var _ storage.Storage = mockStorage{}
 

@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/krau/SaveAny-Bot/config"
+	storconfig "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/core/tasks/transfer"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/krau/SaveAny-Bot/storage"
-	storconfig "github.com/krau/SaveAny-Bot/config/storage"
 )
 
 // initConfig seeds the global config so task execution reads a sane Workers
@@ -32,10 +32,10 @@ func initConfig(t *testing.T) {
 type cancelSource struct{}
 
 func (cancelSource) Init(context.Context, storconfig.StorageConfig) error { return nil }
-func (cancelSource) Type() storenum.StorageType                          { return storenum.Local }
-func (cancelSource) Name() string                                        { return "cancel-source" }
-func (cancelSource) Save(context.Context, io.Reader, string) error       { return nil }
-func (cancelSource) Exists(context.Context, string) bool                 { return false }
+func (cancelSource) Type() storenum.StorageType                           { return storenum.Local }
+func (cancelSource) Name() string                                         { return "cancel-source" }
+func (cancelSource) Save(context.Context, io.Reader, string) error        { return nil }
+func (cancelSource) Exists(context.Context, string) bool                  { return false }
 func (cancelSource) ListFiles(context.Context, string) ([]storagetypes.FileInfo, error) {
 	return nil, nil
 }
@@ -48,10 +48,10 @@ func (cancelSource) OpenFile(ctx context.Context, path string) (io.ReadCloser, i
 type voidTarget struct{}
 
 func (voidTarget) Init(context.Context, storconfig.StorageConfig) error { return nil }
-func (voidTarget) Type() storenum.StorageType                          { return storenum.Local }
-func (voidTarget) Name() string                                        { return "void-target" }
-func (voidTarget) Save(context.Context, io.Reader, string) error       { return nil }
-func (voidTarget) Exists(context.Context, string) bool                 { return false }
+func (voidTarget) Type() storenum.StorageType                           { return storenum.Local }
+func (voidTarget) Name() string                                         { return "void-target" }
+func (voidTarget) Save(context.Context, io.Reader, string) error        { return nil }
+func (voidTarget) Exists(context.Context, string) bool                  { return false }
 
 var (
 	_ storage.StorageReadable = cancelSource{}
