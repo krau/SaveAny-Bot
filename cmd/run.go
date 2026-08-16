@@ -61,6 +61,7 @@ func Run(cmd *cobra.Command, _ []string) {
 	<-ctx.Done()
 	logger.Info("Exiting...")
 	defer logger.Info("Exit complete")
+	core.Close()
 	cleanCache()
 }
 

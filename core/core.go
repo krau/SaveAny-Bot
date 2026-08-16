@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
@@ -11,7 +12,19 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 )
 
-var queueInstance *queue.TaskQueue[Executable]
+var (
+	queueOnce     sync.Once
+	queueInstance *queue.TaskQueue[Executable]
+)
+
+// initQueue lazily creates the shared task queue so AddTask works even before
+// Run is called (e.g. standalone subcommands or tests).
+func initQueue() *queue.TaskQueue[Executable] {
+	queueOnce.Do(func() {
+		queueInstance = queue.NewTaskQueue[Executable]()
+	})
+	return queueInstance
+}
 
 type Executable interface {
 	Type() tasktype.TaskType
@@ -65,17 +78,22 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 func Run(ctx context.Context) {
 	log.FromContext(ctx).Info("Start processing tasks...")
 	semaphore := make(chan struct{}, config.C().Workers)
-	if queueInstance == nil {
-		queueInstance = queue.NewTaskQueue[Executable]()
-	}
+	q := initQueue()
 	for range config.C().Workers {
-		go worker(ctx, queueInstance, semaphore)
+		go worker(ctx, q, semaphore)
 	}
 
 }
 
+// Close stops the queue: blocked workers return ErrQueueClosed and exit.
+func Close() {
+	if q := initQueue(); q != nil {
+		q.Close()
+	}
+}
+
 func AddTask(ctx context.Context, task Executable) error {
-	return queueInstance.Add(queue.NewTask(ctx, task.TaskID(), task.Title(), task))
+	return initQueue().Add(queue.NewTask(ctx, task.TaskID(), task.Title(), task))
 }
 
 func CancelTask(ctx context.Context, id string) error {
