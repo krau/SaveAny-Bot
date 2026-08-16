@@ -11,12 +11,12 @@ import (
 	"sync"
 
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	config "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/rs/xid"
 )
 
 var (
@@ -77,19 +77,11 @@ func (m *Minio) JoinStoragePath(p string) string {
 
 func (m *Minio) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	m.logger.Infof("Saving file from reader to %s", storagePath)
-	storagePath = m.JoinStoragePath(storagePath)
-	ext := path.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
-	candidate := storagePath
+	candidate := m.JoinStoragePath(storagePath)
 	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		for i := 1; m.existsObject(ctx, candidate); i++ {
-			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-			if i > 10 {
-				m.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
-				candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
-				break
-			}
-		}
+		candidate = fsutil.UniquePath(strings.TrimPrefix(m.config.BasePath, "/"), storagePath, func(c string) bool {
+			return m.existsObject(ctx, c)
+		}, 10)
 	}
 	size := int64(-1)
 	if length := ctx.Value(ctxkey.ContentLength); length != nil {
