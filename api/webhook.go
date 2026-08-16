@@ -37,6 +37,9 @@ func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 		} else {
 			logger = log.Default().With("task_id", payload.TaskID)
 		}
+		if ctx == nil {
+			ctx = context.Background()
+		}
 
 		payloadBytes, err := json.Marshal(payload)
 		if err != nil {
@@ -44,10 +47,15 @@ func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 			return
 		}
 
-		// 重试 3 次
-		for i := range 3 {
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, webhookURL, bytes.NewBuffer(payloadBytes))
+		// 重试 3 次, 指数退避 (100ms/400ms/1.6s)
+		const maxAttempts = 3
+		const requestTimeout = 30 * time.Second
+		backoff := 100 * time.Millisecond
+		for i := range maxAttempts {
+			reqCtx, cancel := context.WithTimeout(ctx, requestTimeout)
+			req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, webhookURL, bytes.NewBuffer(payloadBytes))
 			if err != nil {
+				cancel()
 				logger.Errorf("Failed to create webhook request: %v", err)
 				return
 			}
@@ -56,9 +64,13 @@ func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 			req.Header.Set("User-Agent", "SaveAny-Bot/1.0")
 
 			resp, err := webhookClient.Do(req)
+			cancel()
 			if err != nil {
-				logger.Warnf("Webhook request failed (attempt %d/3): %v", i+1, err)
-				time.Sleep(time.Second * time.Duration(i+1))
+				logger.Warnf("Webhook request failed (attempt %d/%d): %v", i+1, maxAttempts, err)
+				if i < maxAttempts-1 {
+					time.Sleep(backoff)
+				}
+				backoff *= 4
 				continue
 			}
 			resp.Body.Close()
@@ -68,11 +80,14 @@ func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 				return
 			}
 
-			logger.Warnf("Webhook returned non-2xx status (attempt %d/3): %d", i+1, resp.StatusCode)
-			time.Sleep(time.Second * time.Duration(i+1))
+			logger.Warnf("Webhook returned non-2xx status (attempt %d/%d): %d", i+1, maxAttempts, resp.StatusCode)
+			if i < maxAttempts-1 {
+				time.Sleep(backoff)
+			}
+			backoff *= 4
 		}
 
-		logger.Errorf("Failed to send webhook after 3 attempts")
+		logger.Errorf("Failed to send webhook after %d attempts", maxAttempts)
 	}()
 }
 
