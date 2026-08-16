@@ -42,7 +42,8 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 		if _, err := storage.GetStorageByUserIDAndName(ctx, user.ChatID, args[2]); err != nil {
-			ctx.Reply(update, ext.ReplyTextString(err.Error()), nil)
+			logger.Errorf("Failed to get storage %q: %s", args[2], err)
+			ctx.Reply(update, ext.ReplyTextString("Failed to get storage"), nil)
 			return dispatcher.EndGroups
 		}
 
