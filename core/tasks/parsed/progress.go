@@ -87,7 +87,7 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	var entities []tg.MessageEntityClass
 	if err := styling.Perform(&entityBuilder,
 		styling.Plain(i18n.T(i18nk.BotMsgProgressDownloadingPrefix, nil)),
-		styling.Code(i18n.T(i18nk.BotMsgProgressSizeWithFiles, map[string]any{
+		styling.Code(i18n.T(i18nk.BotMsgProgressSizeWithResources, map[string]any{
 			"Size":  fmt.Sprintf("%.2f MB", float64(info.TotalBytes())/(1024*1024)),
 			"Count": info.TotalResources(),
 		})),
