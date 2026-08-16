@@ -2,14 +2,12 @@ package telegram
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/celestix/gotgproto/ext"
@@ -44,10 +42,6 @@ const (
 type Telegram struct {
 	config  storconfig.TelegramStorageConfig
 	limiter *rate.Limiter
-
-	// mu guards savedPaths (paths whose media was uploaded).
-	mu         sync.Mutex
-	savedPaths map[string]struct{}
 }
 
 type preparedMedia struct {
@@ -78,7 +72,6 @@ func (t *Telegram) Init(ctx context.Context, cfg storconfig.StorageConfig) error
 		t.config.RateBurst = 1
 	}
 	t.limiter = rate.NewLimiter(rate.Every(time.Duration(t.config.RateLimit)*time.Second), t.config.RateBurst)
-	t.savedPaths = make(map[string]struct{})
 	return nil
 }
 
@@ -90,35 +83,15 @@ func (t *Telegram) Name() string {
 	return t.config.Name
 }
 
+// Exists always reports false: Telegram offers no reliable way to query
+// whether a file already exists in a chat, so conflict policies do not apply
+// to this backend.
 func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	_, ok := t.savedPaths[path.Clean(storagePath)]
-	return ok
+	return false
 }
-
-func (t *Telegram) markSaved(storagePath string) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.savedPaths == nil {
-		t.savedPaths = make(map[string]struct{})
-	}
-	t.savedPaths[path.Clean(storagePath)] = struct{}{}
-}
-
-// errSkipLarge marks an intentionally skipped oversized file.
-var errSkipLarge = errors.New("skip large file")
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
-	err := t.save(ctx, r, storagePath, nil)
-	if err != nil {
-		if errors.Is(err, errSkipLarge) {
-			return nil
-		}
-		return err
-	}
-	t.markSaved(storagePath)
-	return nil
+	return t.save(ctx, r, storagePath, nil)
 }
 
 // SaveWithProgress saves a file while reporting Telegram-confirmed upload
@@ -130,15 +103,7 @@ func (t *Telegram) SaveWithProgress(
 	onProgress func(uploaded, total int64),
 ) error {
 	size := contentLength(ctx)
-	err := t.save(ctx, r, storagePath, newUploadProgress(size, onProgress))
-	if err != nil {
-		if errors.Is(err, errSkipLarge) {
-			return nil
-		}
-		return err
-	}
-	t.markSaved(storagePath)
-	return nil
+	return t.save(ctx, r, storagePath, newUploadProgress(size, onProgress))
 }
 
 func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, progress *uploadProgress) error {
@@ -152,7 +117,7 @@ func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, pr
 	maxUploadSize := maxUploadFileSize(tctx)
 	if t.config.SkipLarge && size > maxUploadSize {
 		log.FromContext(ctx).Warnf("Skipping file larger than Telegram limit (%d bytes): %d bytes", maxUploadSize, size)
-		return errSkipLarge
+		return nil
 	}
 	splitSize := t.splitSize(maxUploadSize)
 	if size > splitSize {
@@ -558,11 +523,8 @@ func (t *Telegram) saveMediaGroup(
 
 		builder := tctx.Sender.WithUploader(prepared[0].uploader).To(prepared[0].peer)
 		if len(prepared) == 1 {
-			if _, err := builder.Media(ctx, prepared[0].media); err != nil {
-				return err
-			}
-			t.markSaved(group[0].item.StoragePath)
-			return nil
+			_, err := builder.Media(ctx, prepared[0].media)
+			return err
 		}
 		media := make([]message.MultiMediaOption, len(prepared))
 		for i := range prepared {
@@ -570,9 +532,6 @@ func (t *Telegram) saveMediaGroup(
 		}
 		if _, err := builder.Album(ctx, media[0], media[1:]...); err != nil {
 			return fmt.Errorf("failed to send media album: %w", err)
-		}
-		for _, mediaItem := range group {
-			t.markSaved(mediaItem.item.StoragePath)
 		}
 		return nil
 	}, retry.Context(ctx), retry.RetryTimes(uint(config.C().Retry)))
