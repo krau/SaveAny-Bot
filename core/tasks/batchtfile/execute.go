@@ -2,10 +2,12 @@ package batchtfile
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -33,7 +35,9 @@ func (g executionGroup) usesBatchSaver() bool {
 func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("batch_file[%s]", t.ID))
 	logger.Info("Starting batch file task")
-	t.Progress.OnStart(ctx, t)
+	if t.Progress != nil {
+		t.Progress.OnStart(ctx, t)
+	}
 	groups := t.executionGroups()
 	var err error
 	for i := 0; i < len(groups); {
@@ -53,7 +57,11 @@ func (t *Task) Execute(ctx context.Context) error {
 			i = end
 		}
 		if err != nil {
-			break
+			if !t.IgnoreErrors || errors.Is(err, context.Canceled) {
+				break
+			}
+			logger.Warnf("Group processing failed (ignored): %v", err)
+			err = nil
 		}
 	}
 	if err != nil {
@@ -62,8 +70,17 @@ func (t *Task) Execute(ctx context.Context) error {
 		logger.Info("Batch file task completed successfully")
 	}
 	t.finishItems(err)
-	t.Progress.OnDone(ctx, t, err)
+	if t.Progress != nil {
+		t.Progress.OnDone(ctx, t, err)
+	}
 	return err
+}
+
+// notifyProgress reports a progress update to the optional tracker.
+func (t *Task) notifyProgress(ctx context.Context) {
+	if t.Progress != nil {
+		t.Progress.OnProgress(ctx, t)
+	}
 }
 
 func (t *Task) executionGroups() []executionGroup {
@@ -104,7 +121,13 @@ func (t *Task) processElements(ctx context.Context, elems []*TaskElement) error 
 				return err
 			}
 			defer t.unmarkProcessing(elem.ID)
-			return t.processElement(gctx, *elem)
+			err := t.processElement(gctx, *elem)
+			if err != nil && t.IgnoreErrors && !errors.Is(err, context.Canceled) {
+				// Per-item failure: keep siblings running.
+				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
+				return nil
+			}
+			return err
 		})
 	}
 	return eg.Wait()
@@ -119,23 +142,51 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 		}
 	}()
 
+	type downloadResult struct {
+		elem *TaskElement
+		err  error
+	}
+	results := make([]downloadResult, len(group.elems))
+	var resultsMu sync.Mutex
+
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(config.C().Workers)
-	for _, elem := range group.elems {
+	for i, elem := range group.elems {
 		eg.Go(func() error {
 			if err := t.markProcessing(ctx, elem); err != nil {
 				return err
 			}
 			defer t.unmarkProcessing(elem.ID)
-			return t.downloadElement(gctx, elem)
+			err := t.downloadElement(gctx, elem)
+			// Store by original index.
+			resultsMu.Lock()
+			results[i] = downloadResult{elem: elem, err: err}
+			resultsMu.Unlock()
+			if err != nil && t.IgnoreErrors && !errors.Is(err, context.Canceled) {
+				// Per-item failure: keep siblings running.
+				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
+				return nil
+			}
+			return err
 		})
 	}
 	if err := eg.Wait(); err != nil {
 		return err
 	}
 
-	items := make([]storagetypes.BatchItem, 0, len(group.elems))
-	openFiles := make([]*os.File, 0, len(group.elems))
+	// Upload only successfully downloaded elements.
+	successElems := make([]*TaskElement, 0, len(group.elems))
+	for _, r := range results {
+		if r.err == nil {
+			successElems = append(successElems, r.elem)
+		}
+	}
+	if len(successElems) == 0 {
+		return fmt.Errorf("all elements failed to download")
+	}
+
+	items := make([]storagetypes.BatchItem, 0, len(successElems))
+	openFiles := make([]*os.File, 0, len(successElems))
 	defer func() {
 		for _, file := range openFiles {
 			if err := file.Close(); err != nil {
@@ -143,7 +194,7 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 			}
 		}
 	}()
-	for _, elem := range group.elems {
+	for _, elem := range successElems {
 		file, err := os.Open(elem.localPath)
 		if err != nil {
 			t.markItemFailed(elem.ID, FailureStageCache, err)
@@ -166,28 +217,28 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 		})
 	}
 	for index, item := range items {
-		t.recordDownloadComplete(group.elems[index].ID, item.Size)
+		t.recordDownloadComplete(successElems[index].ID, item.Size)
 	}
-	return t.saveBatchItems(ctx, group, items)
+	return t.saveBatchItems(ctx, successElems, items)
 }
 
-func (t *Task) saveBatchItems(ctx context.Context, group executionGroup, items []storagetypes.BatchItem) error {
+func (t *Task) saveBatchItems(ctx context.Context, successElems []*TaskElement, items []storagetypes.BatchItem) error {
 	t.startUpload(ctx)
-	if progressSaver, ok := group.batchSaver.(storage.StorageBatchProgressSaver); ok {
+	if progressSaver, ok := successElems[0].Storage.(storage.StorageBatchProgressSaver); ok {
 		err := progressSaver.SaveBatchWithProgress(ctx, items, func(index int, uploaded, total int64) {
-			if index < 0 || index >= len(group.elems) {
+			if index < 0 || index >= len(successElems) {
 				return
 			}
-			t.uploadCallback(ctx, group.elems[index].ID)(uploaded, total)
+			t.uploadCallback(ctx, successElems[index].ID)(uploaded, total)
 		})
 		if err != nil {
-			for _, elem := range group.elems {
+			for _, elem := range successElems {
 				t.markItemFailed(elem.ID, FailureStageBatchUpload, err)
 			}
 			t.notifyStateChange(ctx)
 			return fmt.Errorf("failed to save batch: %w", err)
 		}
-		for index, elem := range group.elems {
+		for index, elem := range successElems {
 			t.uploadCallback(ctx, elem.ID)(items[index].Size, items[index].Size)
 			t.markItemCompleted(elem.ID)
 		}
@@ -198,17 +249,17 @@ func (t *Task) saveBatchItems(ctx context.Context, group executionGroup, items [
 		items[i].Reader = ioutil.NewProgressReader(
 			items[i].Reader,
 			items[i].Size,
-			t.uploadCallback(ctx, group.elems[i].ID),
+			t.uploadCallback(ctx, successElems[i].ID),
 		)
 	}
-	if err := group.batchSaver.SaveBatch(ctx, items); err != nil {
-		for _, elem := range group.elems {
+	if err := successElems[0].Storage.(storage.StorageBatchSaver).SaveBatch(ctx, items); err != nil {
+		for _, elem := range successElems {
 			t.markItemFailed(elem.ID, FailureStageBatchUpload, err)
 		}
 		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to save batch: %w", err)
 	}
-	for index, elem := range group.elems {
+	for index, elem := range successElems {
 		t.uploadCallback(ctx, elem.ID)(items[index].Size, items[index].Size)
 		t.markItemCompleted(elem.ID)
 	}
@@ -225,7 +276,7 @@ func (t *Task) markProcessing(ctx context.Context, elem *TaskElement) error {
 	t.processing[elem.ID] = elem
 	t.processingMu.Unlock()
 	t.markItemActive(elem.ID, elem.stream, time.Now())
-	t.Progress.OnProgress(ctx, t)
+	t.notifyProgress(ctx)
 	return nil
 }
 
@@ -247,7 +298,7 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
 		t.recordItemDownload(elem.ID, int64(n), time.Now())
 		downloaded := t.downloaded.Add(int64(n))
-		t.Progress.OnProgress(ctx, t)
+		t.notifyProgress(ctx)
 		taskevent.Emit(ctx, taskevent.Event{
 			TaskID:          t.ID,
 			Phase:           taskevent.PhaseProgress,
@@ -274,7 +325,7 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 		}
 	}
 	t.markItemDownloaded(elem.ID)
-	t.Progress.OnProgress(ctx, t)
+	t.notifyProgress(ctx)
 	return nil
 }
 
@@ -295,7 +346,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		wr := ioutil.NewProgressWriter(pw, func(n int) {
 			t.recordItemDownload(elem.ID, int64(n), time.Now())
 			downloaded := t.downloaded.Add(int64(n))
-			t.Progress.OnProgress(ctx, t)
+			t.notifyProgress(ctx)
 			taskevent.Emit(ctx, taskevent.Event{
 				TaskID:          t.ID,
 				Phase:           taskevent.PhaseProgress,
@@ -318,7 +369,12 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		if err := errg.Wait(); err != nil {
 			return fmt.Errorf("failed to download file in stream mode: %w", err)
 		}
-		t.recordDownloadComplete(elem.ID, 0)
+		// Streamed bytes are the uploaded bytes.
+		var streamedBytes int64
+		t.updateItem(elem.ID, func(item *itemProgressState) {
+			streamedBytes = item.downloaded
+		})
+		t.recordDownloadComplete(elem.ID, streamedBytes)
 		t.markItemCompleted(elem.ID)
 		t.notifyStateChange(ctx)
 		logger.Info("File downloaded successfully in stream mode")
@@ -339,7 +395,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
 		t.recordItemDownload(elem.ID, int64(n), time.Now())
 		downloaded := t.downloaded.Add(int64(n))
-		t.Progress.OnProgress(ctx, t)
+		t.notifyProgress(ctx)
 		taskevent.Emit(ctx, taskevent.Event{
 			TaskID:          t.ID,
 			Phase:           taskevent.PhaseProgress,

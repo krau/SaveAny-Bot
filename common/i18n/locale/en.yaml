@@ -384,6 +384,8 @@ bot:
       single_canceled: "<b>🚫 Task canceled</b>\n\nFilename: <code>{{.Name}}</code>"
       single_failed: "<b>❌ Processing failed</b>\n\nFilename: <code>{{.Name}}</code>\nReason: <code>{{.Reason}}</code>"
       downloading_prefix: "Downloading\nTotal size: "
+      size_with_files: "{{.Size}} ({{.Count}} files)"
+      size_with_resources: "{{.Size}} ({{.Count}} resources)"
       processing_list_prefix: "\nProcessing:\n"
       processing_none: "  - None"
       avg_speed_prefix: "\nAverage speed: "
@@ -424,7 +426,7 @@ bot:
       transfer_failed_files_prefix: "\nFailed files: "
     syncpeers:
       start: "Starting to sync peers..."
-      done: "Peer sync completed, total {{.Count}} chats synced"
+      success: "Peer sync completed, total {{.Count}} chats synced"
       failed: "Peer sync failed: {{.Error}}"
     aria2:
       error_aria2_not_enabled: "Aria2 feature is not enabled in the configuration"

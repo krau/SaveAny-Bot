@@ -61,6 +61,7 @@ func Run(cmd *cobra.Command, _ []string) {
 	<-ctx.Done()
 	logger.Info("Exiting...")
 	defer logger.Info("Exit complete")
+	core.Close()
 	cleanCache()
 }
 
@@ -87,7 +88,7 @@ func initAll(ctx context.Context) (<-chan struct{}, error) {
 		}
 	}
 	if err := api.Start(ctx); err != nil {
-		logger.Error("Failed to start API server", "error", err)
+		logger.Fatal("Failed to start API server", "error", err)
 	}
 	return bot.Init(ctx), nil
 }

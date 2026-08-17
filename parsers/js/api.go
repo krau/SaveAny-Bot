@@ -44,7 +44,10 @@ func jsRegisterParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value 
 			return vm.NewGoError(errors.New("metadata cannot be null or undefined"))
 		}
 
-		pluginV := semver.MustParse(metadata.Version)
+		pluginV, err := semver.Parse(metadata.Version)
+		if err != nil {
+			return vm.NewGoError(fmt.Errorf("invalid parser version %q: %w", metadata.Version, err))
+		}
 		if pluginV.LT(MinimumParserVersion) {
 			return vm.NewGoError(fmt.Errorf("parser version %s is not supported, must be at least %s", metadata.Version, MinimumParserVersion))
 		}
@@ -56,6 +59,9 @@ func jsRegisterParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value 
 		parseFn := obj.Get("parse")
 		if parseFn == nil || goja.IsUndefined(parseFn) {
 			return vm.NewGoError(errors.New("parser must provide a parse function"))
+		}
+		if handleFn == nil || goja.IsUndefined(handleFn) {
+			return vm.NewGoError(errors.New("parser must provide a canHandle function"))
 		}
 		parsers.Add(newJSParser(vm, handleFn, parseFn, metadata))
 		return goja.Undefined()

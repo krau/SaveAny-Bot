@@ -18,7 +18,9 @@ import (
 func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx)
 	logger.Infof("Starting Telegraph task %s", t.PhPath)
-	t.progress.OnStart(ctx, t)
+	if t.progress != nil {
+		t.progress.OnStart(ctx, t)
+	}
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(config.C().Workers)
 	for i, pic := range t.Pics {
@@ -29,7 +31,9 @@ func (t *Task) Execute(ctx context.Context) error {
 				return fmt.Errorf("failed to process picture %s: %w", pic, err)
 			}
 			downloaded := t.downloaded.Add(1)
-			t.progress.OnProgress(gctx, t)
+			if t.progress != nil {
+				t.progress.OnProgress(gctx, t)
+			}
 			taskevent.Emit(gctx, taskevent.Event{
 				TaskID:          t.ID,
 				Phase:           taskevent.PhaseProgress,
@@ -45,7 +49,9 @@ func (t *Task) Execute(ctx context.Context) error {
 	} else {
 		logger.Infof("Telegraph task %s completed successfully", t.PhPath)
 	}
-	t.progress.OnDone(ctx, t, err)
+	if t.progress != nil {
+		t.progress.OnDone(ctx, t, err)
+	}
 	return err
 }
 

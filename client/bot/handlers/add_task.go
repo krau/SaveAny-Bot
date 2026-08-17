@@ -23,7 +23,11 @@ import (
 )
 
 func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
-	dataid := strings.Split(string(update.CallbackQuery.Data), " ")[1]
+	dataParts := strings.Split(string(update.CallbackQuery.Data), " ")
+	if len(dataParts) < 2 {
+		return fmt.Errorf("invalid callback data: %q", update.CallbackQuery.Data)
+	}
+	dataid := dataParts[1]
 	data, err := shortcut.GetCallbackDataWithAnswer[tcbdata.Add](ctx, update, dataid)
 	if err != nil {
 		return err

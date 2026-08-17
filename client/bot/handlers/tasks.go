@@ -89,7 +89,11 @@ func showQueuedTasks(ctx *ext.Context, update *ext.Update) {
 		styling.Bold(i18n.T(i18nk.BotMsgTasksQueuedTitle)),
 		styling.Plain(i18n.T(i18nk.BotMsgTasksTotalPrefix, map[string]any{"Count": len(tasks)})),
 	)
-	for _, t := range tasks {
+	const maxShown = 10
+	for i, t := range tasks {
+		if i >= maxShown {
+			break
+		}
 		created := t.Created.In(time.Local).Format("2006-01-02 15:04:05")
 		status := i18n.T(i18nk.BotMsgTasksStatusQueued)
 		if t.Cancelled {
@@ -105,10 +109,9 @@ func showQueuedTasks(ctx *ext.Context, update *ext.Update) {
 			styling.Plain("\n"+i18n.T(i18nk.BotMsgTasksFieldStatus)),
 			styling.Code(status),
 		)
-		if len(tasks) > 10 {
-			opts = append(opts, styling.Plain("\n"+i18n.T(i18nk.BotMsgTasksTruncatedNote, map[string]any{"Count": len(tasks)})))
-			break
-		}
+	}
+	if len(tasks) > maxShown {
+		opts = append(opts, styling.Plain("\n"+i18n.T(i18nk.BotMsgTasksTruncatedNote, map[string]any{"Count": len(tasks)})))
 	}
 	ctx.Reply(update, ext.ReplyTextStyledTextArray(opts), nil)
 }

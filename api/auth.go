@@ -1,16 +1,12 @@
 package api
 
 import (
-	"context"
 	"crypto/subtle"
 	"net/http"
 	"strings"
 
 	"github.com/krau/SaveAny-Bot/config"
 )
-
-// tokenContextKey 用于在 context 中存储 token
-type tokenContextKey struct{}
 
 // AuthMiddleware 返回认证中间件
 func AuthMiddleware() func(http.Handler) http.Handler {
@@ -40,9 +36,7 @@ func AuthMiddleware() func(http.Handler) http.Handler {
 				return
 			}
 
-			// 将 token 添加到 context
-			ctx := context.WithValue(r.Context(), tokenContextKey{}, token)
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r)
 		})
 	}
 }

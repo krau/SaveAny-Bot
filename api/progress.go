@@ -198,19 +198,3 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 		SendWebhook(nil, payload)
 	}
 }
-
-// ProgressTracker is retained for compatibility but is no longer the primary
-// progress path; taskevent drives updates now. These methods are safe no-ops
-// when called on a nil receiver.
-type ProgressTracker struct{}
-
-func NewProgressTracker(taskID, taskType, storage, path, title, webhook string) *ProgressTracker {
-	return &ProgressTracker{}
-}
-
-func (p *ProgressTracker) OnStart(totalBytes int64, totalFiles int)              {}
-func (p *ProgressTracker) OnProgress(downloadedBytes int64, downloadedFiles int) {}
-func (p *ProgressTracker) OnDone(err error)                                      {}
-func (p *ProgressTracker) GetInfo() *TaskProgressInfo                            { return nil }
-func (p *ProgressTracker) UpdateProgressBytes(bytes int64)                       {}
-func (p *ProgressTracker) UpdateProgressFiles(files int)                         {}

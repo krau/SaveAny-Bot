@@ -13,11 +13,11 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	config "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
-	"github.com/rs/xid"
 )
 
 type Rclone struct {
@@ -51,9 +51,6 @@ func (r *Rclone) Init(ctx context.Context, cfg config.StorageConfig) error {
 	}
 
 	remoteName := strings.TrimSuffix(r.config.Remote, ":")
-	if !strings.HasSuffix(r.config.Remote, ":") {
-		remoteName = r.config.Remote
-	}
 
 	found := false
 	scanner := bufio.NewScanner(bytes.NewReader(output))
@@ -105,18 +102,11 @@ func (r *Rclone) getRemotePath(storagePath string) string {
 func (r *Rclone) Save(ctx context.Context, reader io.Reader, storagePath string) error {
 	r.logger.Infof("Saving file to %s", storagePath)
 
-	ext := path.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
 	candidate := storagePath
 	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		for i := 1; r.Exists(ctx, candidate); i++ {
-			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-			if i > 100 {
-				r.logger.Errorf("Too many attempts to find a unique filename for %s", storagePath)
-				candidate = fmt.Sprintf("%s_%s%s", base, xid.New().String(), ext)
-				break
-			}
-		}
+		candidate = fsutil.UniquePath("", storagePath, func(c string) bool {
+			return r.Exists(ctx, c)
+		}, 100)
 	}
 
 	remotePath := r.getRemotePath(candidate)
@@ -284,6 +274,12 @@ func (r *rcloneCatReader) Read(p []byte) (n int, err error) {
 func (r *rcloneCatReader) Close() error {
 	if err := r.reader.Close(); err != nil {
 		r.logger.Warnf("Failed to close reader: %v", err)
+	}
+	// Kill the cat process so Wait cannot block on a hung pipe.
+	if r.cmd.Process != nil {
+		if err := r.cmd.Process.Kill(); err != nil {
+			r.logger.Warnf("Failed to kill rclone cat process: %v", err)
+		}
 	}
 	if err := r.cmd.Wait(); err != nil {
 		r.logger.Warnf("rclone cat process exited with error: %v", err)

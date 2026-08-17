@@ -10,6 +10,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
@@ -135,9 +136,17 @@ func (k *KemonoParser) parseOne(ctx context.Context, info *DownloadInfo) (*parse
 		if preview.Type == nil || *preview.Type != "thumbnail" {
 			continue
 		}
+		if preview.Path == nil || preview.Server == nil {
+			log.FromContext(ctx).Warnf("Skipping kemono preview with missing path or server: post %s", info.PostID)
+			continue
+		}
 		picCdnMap[*preview.Path] = *preview.Server
 	}
 	for _, attachment := range postInfo.Post.Attachments {
+		if attachment.Path == nil || attachment.Name == nil {
+			log.FromContext(ctx).Warnf("Skipping kemono post attachment with missing path or name: post %s", info.PostID)
+			continue
+		}
 		if !isImageExt(*attachment.Path) {
 			continue
 		}

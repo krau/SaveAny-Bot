@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/fileutil"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	config "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
@@ -52,15 +53,17 @@ func (l *Local) JoinStoragePath(path string) string {
 
 func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	l.logger.Infof("Saving file to %s", storagePath)
-	storagePath = l.JoinStoragePath(storagePath)
+	storagePath = filepath.Clean(storagePath)
+	if filepath.IsAbs(storagePath) {
+		return fmt.Errorf("local: storage path must be relative: %s", storagePath)
+	}
+	if storagePath == ".." || strings.HasPrefix(storagePath, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("local: storage path escapes base directory: %s", storagePath)
+	}
 
-	ext := filepath.Ext(storagePath)
-	base := strings.TrimSuffix(storagePath, ext)
-	candidate := storagePath
+	candidate := l.JoinStoragePath(storagePath)
 	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		for i := 1; l.existsPath(candidate); i++ {
-			candidate = fmt.Sprintf("%s_%d%s", base, i, ext)
-		}
+		candidate = fsutil.UniquePath(l.config.BasePath, storagePath, l.existsPath, 1000)
 	}
 
 	absPath, err := filepath.Abs(candidate)
@@ -68,13 +71,17 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 		return err
 	}
 	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
-		return err
+		return fmt.Errorf("failed to create directory: %w", err)
 	}
 	file, err := os.Create(absPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			l.logger.Errorf("Failed to close file %s: %v", absPath, err)
+		}
+	}()
 	_, err = io.Copy(file, r)
 	return err
 }

@@ -50,38 +50,41 @@ func (tq *TaskQueue[T]) Add(task *Task[T]) error {
 	return nil
 }
 
+// ErrQueueClosed is returned by Get when the queue is closed and no tasks remain.
+var ErrQueueClosed = errors.New("queue is closed and empty")
+
 // Get retrieves and removes the next non-cancelled task from the queue, adding it to the running tasks.
 // Blocks until a task is available or the queue is closed.
 func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 	tq.mu.Lock()
 	defer tq.mu.Unlock()
 
-	for tq.tasks.Len() == 0 && !tq.closed {
-		tq.cond.Wait()
-	}
+	for {
+		for tq.tasks.Len() == 0 && !tq.closed {
+			tq.cond.Wait()
+		}
 
-	if tq.closed && tq.tasks.Len() == 0 {
-		return nil, fmt.Errorf("queue is closed and empty")
-	}
+		for tq.tasks.Len() > 0 {
+			element := tq.tasks.Front()
+			task := element.Value.(*Task[T])
 
-	for tq.tasks.Len() > 0 {
-		element := tq.tasks.Front()
-		task := element.Value.(*Task[T])
+			tq.tasks.Remove(element)
+			task.element = nil
 
-		tq.tasks.Remove(element)
-		task.element = nil
+			if task.Cancelled() {
+				// Skip cancelled tasks and release their IDs.
+				delete(tq.taskMap, task.ID)
+				continue
+			}
 
-		if !task.Cancelled() {
 			tq.runningTaskMap[task.ID] = task
 			return task, nil
 		}
-	}
 
-	if !tq.closed {
-		return tq.Get()
+		if tq.closed {
+			return nil, ErrQueueClosed
+		}
 	}
-
-	return nil, fmt.Errorf("queue is closed and empty")
 }
 
 // Done stops(cancels) and removes the task from the running tasks.

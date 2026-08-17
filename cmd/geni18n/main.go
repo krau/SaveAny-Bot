@@ -22,7 +22,13 @@ func main() {
 	pkg := flag.String("pkg", "i18nk", "Package name for generated file")
 	flag.Parse()
 
+	type localeFile struct {
+		path string
+		keys map[string]struct{}
+	}
+
 	keys := make(map[string]struct{})
+	var localeFiles []localeFile
 
 	err := filepath.WalkDir(*dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -42,11 +48,35 @@ func main() {
 			return fmt.Errorf("failed to parse yaml %s: %w", path, err)
 		}
 
-		collectKeys(content, "", keys)
+		fileKeys := make(map[string]struct{})
+		collectKeys(content, "", fileKeys)
+		localeFiles = append(localeFiles, localeFile{path: path, keys: fileKeys})
+		for k := range fileKeys {
+			keys[k] = struct{}{}
+		}
 		return nil
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error walking directory: %v\n", err)
+		os.Exit(1)
+	}
+
+	// 一致性校验: 每个语言文件必须包含全部 key
+	invalid := false
+	for _, f := range localeFiles {
+		var missing []string
+		for k := range keys {
+			if _, ok := f.keys[k]; !ok {
+				missing = append(missing, k)
+			}
+		}
+		if len(missing) > 0 {
+			invalid = true
+			sort.Strings(missing)
+			fmt.Fprintf(os.Stderr, "Error: locale file %s is missing %d key(s): %s\n", f.path, len(missing), strings.Join(missing, ", "))
+		}
+	}
+	if invalid {
 		os.Exit(1)
 	}
 

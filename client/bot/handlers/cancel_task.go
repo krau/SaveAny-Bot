@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
@@ -14,7 +15,11 @@ import (
 )
 
 func handleCancelCallback(ctx *ext.Context, update *ext.Update) error {
-	taskid := strings.Split(string(update.CallbackQuery.Data), " ")[1]
+	dataParts := strings.Split(string(update.CallbackQuery.Data), " ")
+	if len(dataParts) < 2 {
+		return fmt.Errorf("invalid callback data: %q", update.CallbackQuery.Data)
+	}
+	taskid := dataParts[1]
 	if err := core.CancelTask(ctx, taskid); err != nil {
 		log.FromContext(ctx).Errorf("Failed to cancel task %s: %v", taskid, err)
 		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(update.CallbackQuery.GetQueryID(), i18n.T(i18nk.BotMsgCancelErrorCancelFailed, map[string]any{

@@ -39,7 +39,7 @@ func NewTaskFactory(ctx context.Context) *TaskFactory {
 // CreateTask 创建任务
 func (f *TaskFactory) CreateTask(req *CreateTaskRequest) (*CreateTaskResponse, error) {
 	// 验证存储
-	stor, ok := storage.Storages[req.Storage]
+	stor, ok := storage.GetStorage(req.Storage)
 	if !ok {
 		return nil, fmt.Errorf("storage not found: %s", req.Storage)
 	}
@@ -327,12 +327,12 @@ func (f *TaskFactory) createTransferTask(taskID string, createdAt time.Time, req
 	}
 
 	// 验证源存储和目标存储
-	sourceStor, ok := storage.Storages[params.SourceStorage]
+	sourceStor, ok := storage.GetStorage(params.SourceStorage)
 	if !ok {
 		return nil, fmt.Errorf("source storage not found: %s", params.SourceStorage)
 	}
 
-	targetStor, ok := storage.Storages[params.TargetStorage]
+	targetStor, ok := storage.GetStorage(params.TargetStorage)
 	if !ok {
 		return nil, fmt.Errorf("target storage not found: %s", params.TargetStorage)
 	}

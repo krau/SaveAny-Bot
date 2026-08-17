@@ -83,6 +83,9 @@ func (t *Telegram) Name() string {
 	return t.config.Name
 }
 
+// Exists always reports false: Telegram offers no reliable way to query
+// whether a file already exists in a chat, so conflict policies do not apply
+// to this backend.
 func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
 	return false
 }
@@ -447,7 +450,7 @@ func planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
 			continue
 		}
 		end := i + 1
-		for end < len(items) && end-i < 10 {
+		for end < len(items) && end-i < tglimit.MaxAlbumItems {
 			next := items[end]
 			if next.useSingleSave || !next.albumEligible || next.chatID != item.chatID || next.item.SourceGroupKey != item.item.SourceGroupKey {
 				break
@@ -623,16 +626,16 @@ func (t *Telegram) splitUpload(
 
 	sender := ctx.Sender
 
-	if len(multiMedia) <= 10 {
+	if len(multiMedia) <= tglimit.MaxAlbumItems {
 		_, err = sender.WithUploader(upler).
 			To(peer).
 			Album(ctx, multiMedia[0], multiMedia[1:]...)
 		return err
 	}
 
-	// more than 10 parts, send in batches, each batch up to 10 parts
-	for i := 0; i < len(multiMedia); i += 10 {
-		end := min(i+10, len(multiMedia))
+	// more than MaxAlbumItems parts, send in batches, each batch up to MaxAlbumItems parts
+	for i := 0; i < len(multiMedia); i += tglimit.MaxAlbumItems {
+		end := min(i+tglimit.MaxAlbumItems, len(multiMedia))
 		batch := multiMedia[i:end]
 		_, err = sender.WithUploader(upler).
 			To(peer).

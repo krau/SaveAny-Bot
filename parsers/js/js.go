@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/dop251/goja"
@@ -34,11 +35,23 @@ type jsParserResp struct {
 	err  error
 }
 
+const canHandleTimeout = 10 * time.Second
+
 func (p *jsParser) CanHandle(url string) bool {
 	respCh := make(chan jsParserResp, 1)
-	p.reqCh <- jsParserReq{method: ParserMethodCanHandle, url: url, respCh: respCh}
-	resp := <-respCh
-	return resp.ok && resp.err == nil
+	timer := time.NewTimer(canHandleTimeout)
+	defer timer.Stop()
+	select {
+	case p.reqCh <- jsParserReq{method: ParserMethodCanHandle, url: url, respCh: respCh}:
+	case <-timer.C:
+		return false
+	}
+	select {
+	case resp := <-respCh:
+		return resp.ok && resp.err == nil
+	case <-timer.C:
+		return false
+	}
 }
 
 func (p *jsParser) Parse(ctx context.Context, url string) (*parser.Item, error) {
@@ -61,41 +74,57 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata
 
 	go func() {
 		for req := range p.reqCh {
-			switch req.method {
-			case ParserMethodCanHandle:
-				fn, _ := goja.AssertFunction(canHandleFunc)
-				res, err := fn(goja.Undefined(), p.vm.ToValue(req.url))
-				if err != nil {
-					req.respCh <- jsParserResp{ok: false, err: err}
-					continue
-				}
-				req.respCh <- jsParserResp{ok: res.ToBoolean()}
-			case ParserMethodParse:
-				fn, _ := goja.AssertFunction(parseFunc)
-				result, err := fn(goja.Undefined(), p.vm.ToValue(req.url))
-				if err != nil {
-					req.respCh <- jsParserResp{err: err}
-					continue
-				}
-
-				var item parser.Item
-				if exported := result.Export(); exported != nil {
-					data, err := json.Marshal(exported)
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Errorf("JS parser %q panicked while handling method %d: %v", p.meta.Name, req.method, r)
+						req.respCh <- jsParserResp{err: fmt.Errorf("JS parser %q panicked: %v", p.meta.Name, r)}
+					}
+				}()
+				switch req.method {
+				case ParserMethodCanHandle:
+					fn, ok := goja.AssertFunction(canHandleFunc)
+					if !ok {
+						req.respCh <- jsParserResp{err: fmt.Errorf("canHandle is not a function")}
+						return
+					}
+					res, err := fn(goja.Undefined(), p.vm.ToValue(req.url))
 					if err != nil {
-						req.respCh <- jsParserResp{err: fmt.Errorf("failed to marshal result to JSON: %w", err)}
-						continue
+						req.respCh <- jsParserResp{ok: false, err: err}
+						return
+					}
+					req.respCh <- jsParserResp{ok: res.ToBoolean()}
+				case ParserMethodParse:
+					fn, ok := goja.AssertFunction(parseFunc)
+					if !ok {
+						req.respCh <- jsParserResp{err: fmt.Errorf("parse is not a function")}
+						return
+					}
+					result, err := fn(goja.Undefined(), p.vm.ToValue(req.url))
+					if err != nil {
+						req.respCh <- jsParserResp{err: err}
+						return
 					}
 
-					if err := json.Unmarshal(data, &item); err != nil {
-						req.respCh <- jsParserResp{err: fmt.Errorf("failed to unmarshal JSON to Item: %w", err)}
-						continue
+					var item parser.Item
+					if exported := result.Export(); exported != nil {
+						data, err := json.Marshal(exported)
+						if err != nil {
+							req.respCh <- jsParserResp{err: fmt.Errorf("failed to marshal result to JSON: %w", err)}
+							return
+						}
+
+						if err := json.Unmarshal(data, &item); err != nil {
+							req.respCh <- jsParserResp{err: fmt.Errorf("failed to unmarshal JSON to Item: %w", err)}
+							return
+						}
+					} else {
+						req.respCh <- jsParserResp{err: fmt.Errorf("JS function returned null or undefined")}
+						return
 					}
-				} else {
-					req.respCh <- jsParserResp{err: fmt.Errorf("JS function returned null or undefined")}
-					continue
+					req.respCh <- jsParserResp{item: &item}
 				}
-				req.respCh <- jsParserResp{item: &item}
-			}
+			}()
 		}
 	}()
 
@@ -116,7 +145,8 @@ func LoadPlugins(ctx context.Context, dir string) error {
 		scriptPath := filepath.Join(dir, e.Name())
 		code, err := os.ReadFile(scriptPath)
 		if err != nil {
-			return err
+			log.Warnf("Failed to read plugin file %s: %v", e.Name(), err)
+			continue
 		}
 
 		vm := goja.New()
@@ -130,7 +160,8 @@ func LoadPlugins(ctx context.Context, dir string) error {
 		vm.Set("playwright", jsPlaywright(vm, logger))
 
 		if _, err := vm.RunString(string(code)); err != nil {
-			return fmt.Errorf("error loading plugin %s: %w", e.Name(), err)
+			logger.Warnf("Failed to load plugin %s: %v", e.Name(), err)
+			continue
 		}
 	}
 	return nil
@@ -164,8 +195,12 @@ func addPlugin(ctx context.Context, code string, name string) error {
 	if len(configuredDirs) > 0 {
 		dir = configuredDirs[0]
 	}
+	fileName := filepath.Base(name)
+	if fileName == "" || fileName == "." || fileName == ".." {
+		return fmt.Errorf("invalid plugin name %q", name)
+	}
 	if err := os.MkdirAll(dir, 0755); err == nil {
-		pluginPath := filepath.Join(dir, name)
+		pluginPath := filepath.Join(dir, fileName)
 		if err := os.WriteFile(pluginPath, []byte(code), 0644); err != nil {
 			logger.Warn("Failed to save plugin file: " + err.Error())
 		}

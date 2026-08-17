@@ -8,7 +8,4 @@ var (
 	ErrFailedToSaveFile  = errors.New("rclone: failed to save file")
 	ErrFailedToListFiles = errors.New("rclone: failed to list files")
 	ErrFailedToOpenFile  = errors.New("rclone: failed to open file")
-	ErrFailedToCheckFile = errors.New("rclone: failed to check file exists")
-	ErrFailedToCreateDir = errors.New("rclone: failed to create directory")
-	ErrCommandFailed     = errors.New("rclone: command execution failed")
 )

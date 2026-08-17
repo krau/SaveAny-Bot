@@ -12,7 +12,42 @@ import (
 	config "github.com/krau/SaveAny-Bot/config/storage"
 )
 
+// minTokenRefreshInterval deduplicates login storms; it is capped by the
+// configured token expiry.
+const minTokenRefreshInterval = 30 * time.Second
+
+func (a *Alist) tokenRefreshWindow() time.Duration {
+	window := minTokenRefreshInterval
+	if exp := time.Duration(a.config.TokenExp) * time.Second; exp > 0 && exp < window {
+		window = exp
+	}
+	return window
+}
+
+// getToken refreshes the JWT, merging concurrent calls.
 func (a *Alist) getToken(ctx context.Context) error {
+	a.tokenMu.RLock()
+	fresh := !a.lastLoginAt.IsZero() && time.Since(a.lastLoginAt) < a.tokenRefreshWindow()
+	a.tokenMu.RUnlock()
+	if fresh {
+		return nil
+	}
+	_, err, _ := a.tokenFlight.Do("token", func() (any, error) {
+		a.tokenMu.RLock()
+		fresh := !a.lastLoginAt.IsZero() && time.Since(a.lastLoginAt) < a.tokenRefreshWindow()
+		a.tokenMu.RUnlock()
+		if fresh {
+			return nil, nil
+		}
+		return nil, a.fetchToken(ctx)
+	})
+	return err
+}
+
+func (a *Alist) fetchToken(ctx context.Context) error {
+	if a.loginInfo == nil {
+		return fmt.Errorf("token-only alist storage cannot refresh credentials")
+	}
 	loginBody, err := json.Marshal(a.loginInfo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal login request: %w", err)
@@ -44,22 +79,31 @@ func (a *Alist) getToken(ctx context.Context) error {
 		return fmt.Errorf("%w: %s", ErrAlistLoginFailed, loginResp.Message)
 	}
 
+	a.tokenMu.Lock()
 	a.token = loginResp.Data.Token
+	a.lastLoginAt = time.Now()
+	a.tokenMu.Unlock()
 	return nil
 }
 
-func (a *Alist) refreshToken(cfg config.AlistStorageConfig) {
+func (a *Alist) refreshToken(ctx context.Context, cfg config.AlistStorageConfig) {
 	tokenExp := cfg.TokenExp
 	if tokenExp <= 0 {
 		a.logger.Warn("Invalid token expiration time, using default value")
 		tokenExp = 3600
 	}
+	ticker := time.NewTicker(time.Duration(tokenExp) * time.Second)
+	defer ticker.Stop()
 	for {
-		time.Sleep(time.Duration(tokenExp) * time.Second)
-		if err := a.getToken(context.Background()); err != nil {
-			a.logger.Errorf("Failed to refresh jwt token: %v", err)
-			continue
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := a.getToken(ctx); err != nil {
+				a.logger.Errorf("Failed to refresh jwt token: %v", err)
+				continue
+			}
+			a.logger.Info("Refreshed Alist jwt token")
 		}
-		a.logger.Info("Refreshed Alist jwt token")
 	}
 }

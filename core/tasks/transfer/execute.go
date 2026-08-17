@@ -2,6 +2,7 @@ package transfer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -20,7 +21,9 @@ import (
 func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("transfer[%s]", t.ID))
 	logger.Info("Starting transfer task")
-	t.Progress.OnStart(ctx, t)
+	if t.Progress != nil {
+		t.Progress.OnStart(ctx, t)
+	}
 
 	workers := config.C().Workers
 	eg, gctx := errgroup.WithContext(ctx)
@@ -28,14 +31,11 @@ func (t *Task) Execute(ctx context.Context) error {
 
 	for _, elem := range t.elems {
 		eg.Go(func() error {
-			t.processingMu.RLock()
+			t.processingMu.Lock()
 			if t.processing[elem.ID] != nil {
-				t.processingMu.RUnlock()
+				t.processingMu.Unlock()
 				return fmt.Errorf("element with ID %s is already being processed", elem.ID)
 			}
-			t.processingMu.RUnlock()
-
-			t.processingMu.Lock()
 			t.processing[elem.ID] = &elem
 			t.processingMu.Unlock()
 
@@ -46,7 +46,7 @@ func (t *Task) Execute(ctx context.Context) error {
 			}()
 
 			err := t.processElement(gctx, elem)
-			if err != nil && !t.IgnoreErrors {
+			if err != nil && (!t.IgnoreErrors || errors.Is(err, context.Canceled)) {
 				return err
 			}
 			if err != nil {
@@ -66,7 +66,9 @@ func (t *Task) Execute(ctx context.Context) error {
 		logger.Info("Transfer task completed successfully")
 	}
 
-	t.Progress.OnDone(ctx, t, err)
+	if t.Progress != nil {
+		t.Progress.OnDone(ctx, t, err)
+	}
 	return err
 }
 
@@ -116,7 +118,9 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	}
 
 	t.uploaded.Add(size)
-	t.Progress.OnProgress(ctx, t)
+	if t.Progress != nil {
+		t.Progress.OnProgress(ctx, t)
+	}
 	taskevent.Emit(ctx, taskevent.Event{
 		TaskID:          t.ID,
 		Phase:           taskevent.PhaseProgress,

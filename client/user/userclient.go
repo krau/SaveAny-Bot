@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/celestix/gotgproto"
@@ -20,17 +21,18 @@ import (
 )
 
 var uc *gotgproto.Client
-var ectx *ext.Context
+
+// getEctx lazily creates the user-client ext.Context exactly once. Guarded by
+// sync.OnceValue so concurrent GetCtx calls cannot race on ectx creation.
+var getEctx = sync.OnceValue(func() *ext.Context {
+	return uc.CreateContext()
+})
 
 func GetCtx() *ext.Context {
-	if ectx != nil {
-		return ectx
-	}
 	if uc == nil {
 		return nil
 	}
-	ectx = uc.CreateContext()
-	return ectx
+	return getEctx()
 }
 
 func Login(ctx context.Context) (*gotgproto.Client, error) {

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/celestix/gotgproto/dispatcher"
@@ -43,7 +44,11 @@ func handleSilentCmd(ctx *ext.Context, update *ext.Update) error {
 }
 
 func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
-	dataid := strings.Split(string(update.CallbackQuery.Data), " ")[1]
+	dataParts := strings.Split(string(update.CallbackQuery.Data), " ")
+	if len(dataParts) < 2 {
+		return fmt.Errorf("invalid callback data: %q", update.CallbackQuery.Data)
+	}
+	dataid := dataParts[1]
 	data, ok := cache.Get[tcbdata.SetDefaultStorage](dataid)
 
 	failedAnswer := func(message string) error {

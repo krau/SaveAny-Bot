@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"maps"
+	"slices"
 )
 
 type Parser interface {
@@ -57,14 +59,15 @@ func (r *Resource) ID() string {
 	h.Write([]byte(r.Extension))
 	fmt.Fprintf(h, "%d", r.Size)
 
-	for k, v := range r.Hash {
+	// Sort keys for a stable fingerprint.
+	for _, k := range slices.Sorted(maps.Keys(r.Hash)) {
 		h.Write([]byte(k))
-		h.Write([]byte(v))
+		h.Write([]byte(r.Hash[k]))
 	}
 
-	for k, v := range r.Headers {
+	for _, k := range slices.Sorted(maps.Keys(r.Headers)) {
 		h.Write([]byte(k))
-		h.Write([]byte(v))
+		h.Write([]byte(r.Headers[k]))
 	}
 
 	return fmt.Sprintf("%x", h.Sum(nil))

@@ -44,6 +44,25 @@ format = ""
 # 下载后转封装的视频容器格式, 留空则不转封装. 默认 mp4
 recode = "mp4"
 
+# 解析器配置
+[parser]
+# 启用 JS 解析器插件 (Go 内置解析器默认启用)
+plugin_enable = false
+# 插件目录, 可以是多个目录
+plugin_dirs = ["./plugins"]
+# 解析器默认代理
+proxy = ""
+
+# Twitter/X 解析器配置
+[parser.twitter]
+# 自定义 API 域名
+api_domain = "api.fxtwitter.com"
+# 单独为此解析器指定代理 (留空则使用 [parser] 中的 proxy)
+# proxy = "http://127.0.0.1:7890"
+
+# Kemono 解析器配置 (暂无可配置项, 留空即可)
+[parser.kemono]
+
 # HTTP API 配置
 [api]
 # 启用 HTTP API
