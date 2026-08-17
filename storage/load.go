@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sync"
 
 	"github.com/charmbracelet/log"
@@ -37,9 +38,7 @@ func AllStorages() map[string]Storage {
 	storageMu.RLock()
 	defer storageMu.RUnlock()
 	out := make(map[string]Storage, len(Storages))
-	for name, s := range Storages {
-		out[name] = s
-	}
+	maps.Copy(out, Storages)
 	return out
 }
 

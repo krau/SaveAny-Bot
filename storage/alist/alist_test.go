@@ -84,11 +84,9 @@ func TestConcurrent401RetrySingleLogin(t *testing.T) {
 	var wg sync.WaitGroup
 	errs := make(chan error, workers)
 	for range workers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			errs <- stor.Save(t.Context(), bytes.NewReader([]byte("data")), "dir/file.txt")
-		}()
+		})
 	}
 	wg.Wait()
 	close(errs)
