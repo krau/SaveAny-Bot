@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -195,6 +196,6 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 
 	if notify {
 		payload := CreateWebhookPayload(t.TaskID, t.Type, t.Status, t.Storage, t.Path, e.Err)
-		SendWebhook(nil, payload)
+		SendWebhook(context.Background(), payload)
 	}
 }
