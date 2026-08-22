@@ -351,7 +351,7 @@ bot:
       info_filename_prefix: "Filename: "
       info_prompt_select_storage: "\nPlease select storage"
     progress:
-      batch_status_header: "<b>📦 Processing</b>\n\nFiles: <code>{{.Total}}</code>\nStatus: ✅ <code>{{.Completed}}</code> | 📥 <code>{{.Downloaded}}</code> | ⏳ <code>{{.Waiting}}</code>\nTotal speed: ⬇️ <code>{{.DownloadSpeed}}</code> | ⬆️ <code>{{.UploadSpeed}}</code>"
+      batch_status_header: "<b>📦 Processing</b>\n\nFiles: <code>{{.Total}}</code> | Total size: <code>{{.TotalSize}}</code>\nStatus: ✅ <code>{{.Completed}}</code> | 📥 <code>{{.Downloaded}}</code> | ⏳ <code>{{.Waiting}}</code>\nTotal speed: ⬇️ <code>{{.DownloadSpeed}}</code> | ⬆️ <code>{{.UploadSpeed}}</code>"
       batch_item_downloading: "<blockquote><b>⬇️ {{.Index}}/{{.Total}} Downloading</b>\n<code>{{.Name}}</code>\n{{.Bar}} <code>{{.Progress}}%</code>\nSpeed: <code>{{.Speed}}</code>\nSize: <code>{{.Current}}</code> / <code>{{.Size}}</code></blockquote>"
       batch_item_downloading_unknown: "<blockquote><b>⬇️ {{.Index}}/{{.Total}} Downloading</b>\n<code>{{.Name}}</code>\nSpeed: <code>{{.Speed}}</code>\nSize: <code>{{.Current}}</code> / unknown</blockquote>"
       batch_item_transferring: "<blockquote><b>↕️ {{.Index}}/{{.Total}} Transferring</b>\n<code>{{.Name}}</code>\n{{.Bar}} <code>{{.Progress}}%</code>\nSpeed: <code>{{.Speed}}</code>\nSize: <code>{{.Current}}</code> / <code>{{.Size}}</code></blockquote>"

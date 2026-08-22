@@ -95,6 +95,30 @@ func TestBatchProgressShowsTransferSpeedAndSize(t *testing.T) {
 	}
 }
 
+func TestBatchProgressHeaderShowsTotalSize(t *testing.T) {
+	useProgressRegressionLocale(t)
+	task := newProgressRegressionTask(nil,
+		progressRegressionFile{"first", 1024},
+		progressRegressionFile{"second", 1024},
+	)
+	message := buildBatchProgressMessage(task, nil, 2)
+	if message.Err != nil {
+		t.Fatalf("buildBatchProgressMessage() failed: %v", message.Err)
+	}
+	assertProgressRegressionContains(t, message.Text,
+		"文件：2 ｜ 总大小：2.00 KB",
+	)
+
+	i18n.Init("en")
+	english := buildBatchProgressMessage(task, nil, 2)
+	if english.Err != nil {
+		t.Fatalf("English batch template failed: %v", english.Err)
+	}
+	assertProgressRegressionContains(t, english.Text,
+		"Files: 2 | Total size: 2.00 KB",
+	)
+}
+
 func TestBatchProgressLimitsRowsWithoutHidingActiveUpload(t *testing.T) {
 	useProgressRegressionLocale(t)
 	task := newProgressRegressionTask(nil,

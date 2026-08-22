@@ -152,6 +152,7 @@ func buildBatchProgressMessage(info TaskInfo, skipped []string, activeLimit int)
 	uploadSpeedText := formatSpeed(uploadSpeed)
 	header := localizedProgressMarkup(i18nk.BotMsgProgressBatchStatusHeader, map[string]any{
 		"Total":         total,
+		"TotalSize":     dlutil.FormatSize(info.ActualTotalSize()),
 		"Completed":     completed,
 		"Downloaded":    downloaded,
 		"Waiting":       waiting,

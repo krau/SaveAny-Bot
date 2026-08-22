@@ -352,7 +352,7 @@ bot:
       info_filename_prefix: "文件名: "
       info_prompt_select_storage: "\n请选择存储位置"
     progress:
-      batch_status_header: "<b>📦 正在处理</b>\n\n文件：<code>{{.Total}}</code>\n状态：✅ <code>{{.Completed}}</code> ｜ 📥 <code>{{.Downloaded}}</code> ｜ ⏳ <code>{{.Waiting}}</code>\n总速度：⬇️ <code>{{.DownloadSpeed}}</code> ｜ ⬆️ <code>{{.UploadSpeed}}</code>"
+      batch_status_header: "<b>📦 正在处理</b>\n\n文件：<code>{{.Total}}</code> ｜ 总大小：<code>{{.TotalSize}}</code>\n状态：✅ <code>{{.Completed}}</code> ｜ 📥 <code>{{.Downloaded}}</code> ｜ ⏳ <code>{{.Waiting}}</code>\n总速度：⬇️ <code>{{.DownloadSpeed}}</code> ｜ ⬆️ <code>{{.UploadSpeed}}</code>"
       batch_item_downloading: "<blockquote><b>⬇️ {{.Index}}/{{.Total}} 下载中</b>\n<code>{{.Name}}</code>\n{{.Bar}} <code>{{.Progress}}%</code>\n速度：<code>{{.Speed}}</code>\n大小：<code>{{.Current}}</code> / <code>{{.Size}}</code></blockquote>"
       batch_item_downloading_unknown: "<blockquote><b>⬇️ {{.Index}}/{{.Total}} 下载中</b>\n<code>{{.Name}}</code>\n速度：<code>{{.Speed}}</code>\n大小：<code>{{.Current}}</code> / 未知</blockquote>"
       batch_item_transferring: "<blockquote><b>↕️ {{.Index}}/{{.Total}} 传输中</b>\n<code>{{.Name}}</code>\n{{.Bar}} <code>{{.Progress}}%</code>\n速度：<code>{{.Speed}}</code>\n大小：<code>{{.Current}}</code> / <code>{{.Size}}</code></blockquote>"
