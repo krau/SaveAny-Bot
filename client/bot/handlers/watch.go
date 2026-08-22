@@ -64,7 +64,7 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 	filter := ""
 	if len(args) > 2 {
 		filterArg := strings.Join(args[2:], " ")
-		filterType := strings.Split(filterArg, ":")[0]
+		filterType, _, _ := strings.Cut(filterArg, ":")
 		filterData := strings.Split(filterArg, ":")[1]
 		if filterType == "" || filterData == "" {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorFilterFormatInvalid)), nil)
