@@ -8,25 +8,28 @@ import (
 
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
-	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	tfilepkg "github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
 type taskPayload struct {
+	Kind      string               `json:"kind"` // "file"
 	ID        string               `json:"id"`
 	Storage   string               `json:"storage"`
 	Path      string               `json:"path"`
 	File      tfilepkg.FilePayload `json:"file"`
 	ChatID    int64                `json:"chat_id"`
 	MessageID int                  `json:"message_id"`
+	Overwrite bool                 `json:"overwrite"`
+	Caption   string               `json:"caption"`
 }
 
 type taskCodec struct{}
 
-func init() {
-	core.RegisterTaskCodec(tasktype.TaskTypeTgfiles, taskCodec{})
-}
+// TaskCodec serializes single-file tasks. It is registered together with the
+// batch codec under TaskTypeTgfiles (see core/tasks/batchtfile/codec.go).
+var TaskCodec core.TaskCodec = taskCodec{}
 
 func (taskCodec) Marshal(task core.Executable) ([]byte, error) {
 	t, ok := task.(*Task)
@@ -38,10 +41,17 @@ func (taskCodec) Marshal(task core.Executable) ([]byte, error) {
 		return nil, fmt.Errorf("file %T is not serializable", t.File)
 	}
 	p := taskPayload{
+		Kind:    "file",
 		ID:      t.ID,
 		Storage: t.Storage.Name(),
 		Path:    t.Path,
 		File:    filePayload,
+	}
+	if overwrite, ok := t.Ctx.Value(ctxkey.OverwriteExisting).(bool); ok {
+		p.Overwrite = overwrite
+	}
+	if caption, ok := sourceCaption(t.File); ok {
+		p.Caption = caption
 	}
 	if progress, ok := t.Progress.(*Progress); ok {
 		p.ChatID = progress.ChatID
@@ -81,5 +91,7 @@ func (taskCodec) Unmarshal(data []byte) (core.Executable, error) {
 		Progress:  progress,
 		stream:    false, // recovered tasks always download to cache first
 		localPath: localPath,
+		overwrite: p.Overwrite,
+		caption:   p.Caption,
 	}, nil
 }

@@ -74,7 +74,9 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 		}
 		taskevent.Emit(taskCtx, taskevent.Event{TaskID: exe.TaskID(), Phase: taskevent.PhaseDone, Err: err})
 		qe.Done(qtask.ID)
-		if err := database.DeleteTask(ctx, exe.TaskID()); err != nil {
+		// 用独立 ctx 删除: 优雅关停时 run ctx 已被取消, 会留下已完成任务的行,
+		// 导致重启后重复执行 (重复上传)。
+		if err := database.DeleteTask(context.Background(), exe.TaskID()); err != nil {
 			logger.Errorf("Failed to delete persisted task %s: %v", exe.TaskID(), err)
 		}
 		<-semaphore

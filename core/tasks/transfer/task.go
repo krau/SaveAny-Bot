@@ -35,6 +35,7 @@ type Task struct {
 	processing   map[string]TaskElementInfo
 	processingMu sync.RWMutex
 	failed       map[string]error
+	overwrite    bool // recovered: overwrite storage targets instead of uniquifying
 }
 
 // Title implements core.Executable.

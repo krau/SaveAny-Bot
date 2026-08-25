@@ -116,6 +116,22 @@ func (tq *TaskQueue[T]) ActiveLength() int {
 	return count
 }
 
+// Contains reports whether a task with the given ID is queued or running.
+func (tq *TaskQueue[T]) Contains(taskID string) bool {
+	tq.mu.RLock()
+	defer tq.mu.RUnlock()
+	if _, ok := tq.runningTaskMap[taskID]; ok {
+		return true
+	}
+	for element := tq.tasks.Front(); element != nil; element = element.Next() {
+		task := element.Value.(*Task[T])
+		if task.ID == taskID && !task.Cancelled() {
+			return true
+		}
+	}
+	return false
+}
+
 // RunningTasks returns the currently running tasks' info.
 func (tq *TaskQueue[T]) RunningTasks() []TaskInfo {
 	tq.mu.RLock()

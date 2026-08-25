@@ -21,6 +21,9 @@ import (
 func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("transfer[%s]", t.ID))
 	logger.Info("Starting transfer task")
+	if t.overwrite {
+		ctx = storage.WithOverwrite(ctx)
+	}
 	if t.Progress != nil {
 		t.Progress.OnStart(ctx, t)
 	}

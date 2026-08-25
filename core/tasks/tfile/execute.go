@@ -25,6 +25,9 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 			t.Progress.OnDone(ctx, t, err)
 		}
 	}()
+	if t.overwrite {
+		ctx = storage.WithOverwrite(ctx)
+	}
 	if t.Progress != nil {
 		t.Progress.OnStart(ctx, t)
 	}
@@ -47,7 +50,9 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
-	if caption, ok := sourceCaption(t.File); ok {
+	if t.caption != "" {
+		vctx = storagetypes.WithSourceCaption(vctx, t.caption)
+	} else if caption, ok := sourceCaption(t.File); ok {
 		vctx = storagetypes.WithSourceCaption(vctx, caption)
 	}
 	err = retry.Retry(func() error {

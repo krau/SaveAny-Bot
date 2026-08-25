@@ -35,6 +35,9 @@ func (g executionGroup) usesBatchSaver() bool {
 func (t *Task) Execute(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("batch_file[%s]", t.ID))
 	logger.Info("Starting batch file task")
+	if t.overwrite {
+		ctx = storage.WithOverwrite(ctx)
+	}
 	if t.Progress != nil {
 		t.Progress.OnStart(ctx, t)
 	}
@@ -227,6 +230,9 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 	err := t.saveBatchItems(ctx, successElems, items)
 	if err == nil {
 		uploaded = true
+		for _, elem := range successElems {
+			t.persistElementDone(ctx, elem.ID)
+		}
 	}
 	return err
 }
@@ -430,6 +436,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		onProgress(fileStat.Size(), fileStat.Size())
 		t.markItemCompleted(elem.ID)
 		t.notifyStateChange(vctx)
+		t.persistElementDone(ctx, elem.ID)
 		success = true
 	} else {
 		t.markItemFailed(elem.ID, lastFailureStage, err)

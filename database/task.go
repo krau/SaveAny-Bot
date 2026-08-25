@@ -58,6 +58,51 @@ func UpdateTaskStatus(ctx context.Context, id string, status TaskStatus, errMsg 
 		}).Error
 }
 
+func GetTask(ctx context.Context, id string) (*Task, error) {
+	if db == nil {
+		return nil, errNotInitialized
+	}
+	var task Task
+	if err := db.WithContext(ctx).First(&task, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &task, nil
+}
+
+// UpdateTaskPayload replaces the payload of an existing task row.
+func UpdateTaskPayload(ctx context.Context, id string, payload []byte) error {
+	if db == nil {
+		return errNotInitialized
+	}
+	return db.WithContext(ctx).Model(&Task{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"payload":    payload,
+			"updated_at": time.Now(),
+		}).Error
+}
+
+// RestoreTaskCreatedAt restores the original creation time after a
+// re-enqueue overwrote it.
+func RestoreTaskCreatedAt(ctx context.Context, id string, createdAt time.Time) error {
+	if db == nil {
+		return errNotInitialized
+	}
+	return db.WithContext(ctx).Model(&Task{}).
+		Where("id = ?", id).
+		Update("created_at", createdAt).Error
+}
+
+// DeleteStaleFailedTasks removes failed rows older than the given age.
+func DeleteStaleFailedTasks(ctx context.Context, maxAge time.Duration) error {
+	if db == nil {
+		return errNotInitialized
+	}
+	return db.WithContext(ctx).
+		Where("status = ? AND updated_at < ?", string(TaskStatusFailed), time.Now().Add(-maxAge)).
+		Delete(&Task{}).Error
+}
+
 func DeleteTask(ctx context.Context, id string) error {
 	if db == nil {
 		return errNotInitialized

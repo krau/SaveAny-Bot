@@ -3,6 +3,9 @@ package core
 import (
 	"context"
 	"sync"
+	"time"
+
+	"fmt"
 
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/downloader"
@@ -75,11 +78,28 @@ func persistTask(ctx context.Context, task Executable) error {
 	})
 }
 
+// UpdateTaskPayload atomically mutates the persisted payload of a running
+// task (e.g. recording per-element upload progress for recovery).
+func UpdateTaskPayload(ctx context.Context, id string, mutate func(payload []byte) ([]byte, error)) error {
+	row, err := database.GetTask(ctx, id)
+	if err != nil {
+		return err
+	}
+	updated, err := mutate(row.Payload)
+	if err != nil {
+		return fmt.Errorf("mutate payload: %w", err)
+	}
+	return database.UpdateTaskPayload(ctx, id, updated)
+}
+
 // RecoverTasks re-enqueues tasks that were unfinished when the process last
-// exited. Must be called after storages are loaded and before Run. Tasks of
-// types without a registered codec are dropped with a warning.
+// exited. Must be called after storages are loaded and before Run. Tasks
+// that cannot be recovered are marked failed and kept for visibility.
 func RecoverTasks(ctx context.Context) {
 	logger := log.FromContext(ctx)
+	if err := database.DeleteStaleFailedTasks(ctx, 24*time.Hour); err != nil {
+		logger.Warnf("Failed to clean stale failed tasks: %v", err)
+	}
 	tasks, err := database.GetUnfinishedTasks(ctx)
 	if err != nil {
 		logger.Errorf("Failed to load unfinished tasks: %v", err)
@@ -88,27 +108,38 @@ func RecoverTasks(ctx context.Context) {
 	for _, t := range tasks {
 		codec, ok := TaskCodecFor(tasktype.TaskType(t.Type))
 		if !ok {
-			logger.Warnf("Dropping unrecoverable task %s (type %s): no codec registered", t.ID, t.Type)
-			if err := database.DeleteTask(ctx, t.ID); err != nil {
-				logger.Errorf("Failed to delete task %s: %v", t.ID, err)
-			}
+			logger.Warnf("Task %s (type %s) cannot be recovered: no codec registered", t.ID, t.Type)
+			markRecoverFailed(ctx, t, "no codec registered")
 			continue
 		}
 		task, err := codec.Unmarshal(t.Payload)
 		if err != nil {
-			logger.Errorf("Dropping task %s: failed to rebuild: %v", t.ID, err)
-			if err := database.DeleteTask(ctx, t.ID); err != nil {
-				logger.Errorf("Failed to delete task %s: %v", t.ID, err)
-			}
+			logger.Errorf("Task %s cannot be recovered: failed to rebuild: %v", t.ID, err)
+			markRecoverFailed(ctx, t, err.Error())
+			continue
+		}
+		if initQueue().Contains(task.TaskID()) {
+			// Already live in the queue (e.g. submitted via API during
+			// startup); keep the row as-is.
+			logger.Infof("Task %s already queued, keeping row", t.ID)
 			continue
 		}
 		if err := AddTask(ctx, task); err != nil {
-			logger.Errorf("Dropping task %s: failed to re-enqueue: %v", t.ID, err)
-			if err := database.DeleteTask(ctx, t.ID); err != nil {
-				logger.Errorf("Failed to delete task %s: %v", t.ID, err)
-			}
+			logger.Errorf("Task %s cannot be recovered: failed to re-enqueue: %v", t.ID, err)
+			markRecoverFailed(ctx, t, err.Error())
 			continue
 		}
+		// Upsert cleared the original creation time; restore it so
+		// GetUnfinishedTasks ordering stays stable across restarts.
+		if err := database.RestoreTaskCreatedAt(ctx, t.ID, t.CreatedAt); err != nil {
+			logger.Warnf("Failed to restore created_at for task %s: %v", t.ID, err)
+		}
 		logger.Infof("Recovered task %s (%s)", t.ID, t.Type)
+	}
+}
+
+func markRecoverFailed(ctx context.Context, t database.Task, reason string) {
+	if err := database.UpdateTaskStatus(ctx, t.ID, database.TaskStatusFailed, reason); err != nil {
+		log.FromContext(ctx).Errorf("Failed to mark task %s as failed: %v", t.ID, err)
 	}
 }

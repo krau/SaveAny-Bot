@@ -6,10 +6,16 @@ import (
 	"fmt"
 
 	"github.com/krau/SaveAny-Bot/core"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/krau/SaveAny-Bot/storage"
 )
+
+func ctxOverwrite(ctx context.Context) bool {
+	overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool)
+	return overwrite
+}
 
 type elementPayload struct {
 	ID            string                `json:"id"`
@@ -26,6 +32,7 @@ type taskPayload struct {
 	ChatID       int64            `json:"chat_id"`
 	MessageID    int              `json:"message_id"`
 	IgnoreErrors bool             `json:"ignore_errors"`
+	Overwrite    bool             `json:"overwrite"`
 }
 
 type taskCodec struct{}
@@ -42,6 +49,7 @@ func (taskCodec) Marshal(task core.Executable) ([]byte, error) {
 	p := taskPayload{
 		ID:           t.ID,
 		IgnoreErrors: t.IgnoreErrors,
+		Overwrite:    ctxOverwrite(t.ctx),
 	}
 	for _, elem := range t.elems {
 		p.Elements = append(p.Elements, elementPayload{
@@ -88,5 +96,7 @@ func (taskCodec) Unmarshal(data []byte) (core.Executable, error) {
 	if p.ChatID != 0 {
 		progress = NewProgressTracker(p.MessageID, p.ChatID)
 	}
-	return NewTransferTask(p.ID, context.Background(), elems, progress, p.IgnoreErrors), nil
+	task := NewTransferTask(p.ID, context.Background(), elems, progress, p.IgnoreErrors)
+	task.overwrite = p.Overwrite
+	return task, nil
 }

@@ -52,7 +52,7 @@ func initRecoveryEnv(t *testing.T) context.Context {
 	return context.Background()
 }
 
-func TestRecoverTasksReenqueuesAndDropsUnknown(t *testing.T) {
+func TestRecoverTasksReenqueuesAndMarksUnknownFailed(t *testing.T) {
 	ctx := initRecoveryEnv(t)
 
 	if err := database.CreateTask(ctx, &database.Task{
@@ -96,9 +96,20 @@ func TestRecoverTasksReenqueuesAndDropsUnknown(t *testing.T) {
 			t.Fatalf("recovered task status = %s, want queued", task.Status)
 		}
 	}
+	// The unrecoverable task must be kept and marked failed, not silently deleted.
+	drop, err := database.GetTask(ctx, "drop-1")
+	if err != nil {
+		t.Fatalf("dropped task row missing: %v", err)
+	}
+	if drop.Status != string(database.TaskStatusFailed) {
+		t.Fatalf("dropped task status = %s, want failed", drop.Status)
+	}
+	if drop.Error == "" {
+		t.Fatalf("dropped task has no failure reason")
+	}
 }
 
-func TestRecoverTasksDropsInvalidPayload(t *testing.T) {
+func TestRecoverTasksMarksInvalidPayloadFailed(t *testing.T) {
 	ctx := initRecoveryEnv(t)
 
 	if err := database.CreateTask(ctx, &database.Task{
@@ -108,7 +119,7 @@ func TestRecoverTasksDropsInvalidPayload(t *testing.T) {
 	}
 	RecoverTasks(ctx)
 
-	// bad-1 must not be enqueued nor remain in the database.
+	// bad-1 must not be enqueued; its row is kept as failed.
 	for _, info := range GetQueuedTasks(ctx) {
 		if info.ID == "bad-1" {
 			t.Fatalf("task with invalid payload was enqueued")
@@ -120,5 +131,32 @@ func TestRecoverTasksDropsInvalidPayload(t *testing.T) {
 	}
 	if count != 0 {
 		t.Fatalf("unfinished rows = %d, want 0", count)
+	}
+	bad, err := database.GetTask(ctx, "bad-1")
+	if err != nil {
+		t.Fatalf("failed task row missing: %v", err)
+	}
+	if bad.Status != string(database.TaskStatusFailed) {
+		t.Fatalf("bad task status = %s, want failed", bad.Status)
+	}
+}
+
+func TestRecoverTasksSkipsAlreadyQueued(t *testing.T) {
+	ctx := initRecoveryEnv(t)
+
+	// A task submitted during startup is both persisted and in the queue.
+	task := &stubTask{id: "live-1"}
+	if err := AddTask(ctx, task); err != nil {
+		t.Fatal(err)
+	}
+	RecoverTasks(ctx)
+
+	// The row must survive with its original status.
+	row, err := database.GetTask(ctx, "live-1")
+	if err != nil {
+		t.Fatalf("row missing for queued task: %v", err)
+	}
+	if row.Status != string(database.TaskStatusQueued) {
+		t.Fatalf("row status = %s, want queued", row.Status)
 	}
 }

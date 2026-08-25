@@ -2,11 +2,13 @@ package batchtfile
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
@@ -47,6 +49,7 @@ type Task struct {
 	uploadOnce      sync.Once
 	uploadMu        sync.Mutex
 	uploaded        map[string]int64
+	overwrite       bool // recovered: overwrite storage targets instead of uniquifying
 }
 
 // Title implements core.Exectable.
@@ -56,6 +59,41 @@ func (t *Task) Title() string {
 
 func (t *Task) Type() tasktype.TaskType {
 	return tasktype.TaskTypeTgfiles
+}
+
+// completedElementIDs returns the element IDs whose upload finished, for
+// persisting upload progress so recovery can skip them.
+func (t *Task) completedElementIDs() []string {
+	t.itemMu.RLock()
+	defer t.itemMu.RUnlock()
+	var ids []string
+	for _, item := range t.itemStates {
+		if item.phase == ItemPhaseCompleted {
+			ids = append(ids, item.id)
+		}
+	}
+	return ids
+}
+
+// persistElementDone records an element's completed upload in the persisted
+// payload so a restart does not re-upload it.
+func (t *Task) persistElementDone(ctx context.Context, elemID string) {
+	err := core.UpdateTaskPayload(ctx, t.ID, func(payload []byte) ([]byte, error) {
+		var p taskPayload
+		if err := json.Unmarshal(payload, &p); err != nil {
+			return nil, err
+		}
+		for _, id := range p.Done {
+			if id == elemID {
+				return payload, nil
+			}
+		}
+		p.Done = append(p.Done, elemID)
+		return json.Marshal(p)
+	})
+	if err != nil {
+		log.FromContext(ctx).Warnf("Failed to persist element completion %s: %v", elemID, err)
+	}
 }
 
 func NewTaskElement(

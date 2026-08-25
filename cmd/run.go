@@ -17,6 +17,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/database"
@@ -63,7 +64,12 @@ func Run(cmd *cobra.Command, _ []string) {
 		}
 		return nil
 	})
-	core.RecoverTasks(ctx)
+	// 恢复任务携带 ext 上下文, 让进度编辑/取消按钮在恢复后继续工作。
+	recoverCtx := context.Background()
+	if ectx := bot.ExtContext(); ectx != nil {
+		recoverCtx = tgutil.ExtWithContext(recoverCtx, ectx)
+	}
+	core.RecoverTasks(recoverCtx)
 
 	core.Run(ctx)
 

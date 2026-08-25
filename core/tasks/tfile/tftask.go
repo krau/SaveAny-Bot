@@ -23,6 +23,8 @@ type Task struct {
 	Progress  ProgressTracker
 	stream    bool // true if the file should be downloaded in stream mode
 	localPath string
+	overwrite bool   // recovered: overwrite the storage target instead of uniquifying
+	caption   string // recovered: source caption for the telegram backend
 }
 
 // Title implements core.Exectable.
