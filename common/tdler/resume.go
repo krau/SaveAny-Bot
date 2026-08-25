@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/gotd/td/tg"
@@ -84,7 +85,14 @@ func loadResumeBitmap(path string) (*resumeBitmap, error) {
 	}
 	var b resumeBitmap
 	if err := json.Unmarshal(data, &b); err != nil {
-		return nil, fmt.Errorf("parse resume bitmap: %w", err)
+		// 无法解析的位图 (外部损坏): 删除并视为不存在, 全量重下自愈。
+		_ = os.Remove(path)
+		return nil, nil
+	}
+	if b.Size <= 0 || b.PartSize <= 0 {
+		// 无效位图 (损坏或旧格式), 视为不存在, 全量重下。
+		_ = os.Remove(path)
+		return nil, nil
 	}
 	b.ensureBlocks()
 	return &b, nil
@@ -181,6 +189,17 @@ func DownloadResumable(
 	bm, err := loadResumeBitmap(bitmapPath)
 	if err != nil {
 		return err
+	}
+	// 位图描述的数据文件 (bitmapPath 去掉 .bitmap 后缀) 必须存在且非空:
+	// 若缺失或为空, 已标记完成的块字节已丢失, 必须重置位图全量重下。
+	if bm != nil {
+		partPath := strings.TrimSuffix(bitmapPath, ".bitmap")
+		if stat, err := os.Stat(partPath); err != nil || stat.Size() == 0 {
+			if err := os.Remove(bitmapPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("reset stale resume bitmap: %w", err)
+			}
+			bm = nil
+		}
 	}
 	if bm == nil || bm.PartSize != tglimit.MaxPartSize || bm.Size != file.Size() {
 		bm = newResumeBitmap(file.Size())

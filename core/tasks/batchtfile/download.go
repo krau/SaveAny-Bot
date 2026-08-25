@@ -21,9 +21,11 @@ import (
 // upload).
 func (t *Task) downloadToCache(ctx context.Context, elem *TaskElement) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", elem.File.Name()))
-	if stat, err := os.Stat(elem.localPath); err == nil && stat.Size() == elem.File.Size() {
-		logger.Info("Cache file already complete, skipping download")
-		return nil
+	if elem.File.Size() > 0 {
+		if stat, err := os.Stat(elem.localPath); err == nil && stat.Size() == elem.File.Size() {
+			logger.Info("Cache file already complete, skipping download")
+			return nil
+		}
 	}
 	onProgress := t.downloadCallback(ctx, elem)
 	if elem.File.Size() <= 0 {
@@ -40,7 +42,8 @@ func (t *Task) downloadToCache(ctx context.Context, elem *TaskElement) error {
 		return nil
 	}
 	partPath := elem.localPath + ".part"
-	localFile, err := fsutil.CreateFile(partPath)
+	// 不截断已存在的 .part: 位图标记的已完成块依赖既有字节。
+	localFile, err := os.OpenFile(partPath, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to create local file: %w", err)
 	}
@@ -67,8 +70,9 @@ func (t *Task) downloadToCache(ctx context.Context, elem *TaskElement) error {
 	if err := os.Rename(partPath, elem.localPath); err != nil {
 		return fmt.Errorf("failed to finalize download: %w", err)
 	}
+	// 清理位图是尽力而为: 下载已完成, 清理失败不应使任务失败。
 	if err := tdler.RemoveResumeState(tdler.ResumeStatePath(partPath)); err != nil {
-		return fmt.Errorf("failed to remove resume state: %w", err)
+		logger.Warnf("Failed to remove resume state: %v", err)
 	}
 	return nil
 }

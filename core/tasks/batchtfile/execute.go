@@ -366,17 +366,12 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		return nil
 	}
 	logger.Info("Starting file download")
-	localFile, err := fsutil.CreateFile(elem.localPath)
-	if err != nil {
-		t.markItemFailed(elem.ID, FailureStageCache, err)
-		t.notifyStateChange(ctx)
-		return fmt.Errorf("failed to create local file: %w", err)
-	}
+	// 不预创建缓存文件: 预创建会截断上次运行保留的完整缓存, 使复用失效。
 	success := false
 	defer func() {
 		if success {
-			if err := localFile.CloseAndRemove(); err != nil {
-				logger.Errorf("Failed to close local file: %v", err)
+			if err := os.Remove(elem.localPath); err != nil {
+				logger.Errorf("Failed to remove cache file: %v", err)
 			}
 		}
 	}()
@@ -392,8 +387,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			elem.Path = elem.Path + ext
 		}
 	}
-	var fileStat os.FileInfo
-	fileStat, err = os.Stat(elem.localPath)
+	fileStat, err := os.Stat(elem.localPath)
 	if err != nil {
 		t.markItemFailed(elem.ID, FailureStageCache, err)
 		t.notifyStateChange(ctx)

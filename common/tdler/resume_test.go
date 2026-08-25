@@ -129,6 +129,117 @@ func TestDownloadResumableBitmapResetOnSizeChange(t *testing.T) {
 	}
 }
 
+// TestDownloadResumablePartMissingOrTruncated resets the bitmap: skipped
+// blocks would otherwise be zero-filled (caller recreates the part file
+// without its bytes), or the download would wedge forever on a stale
+// complete bitmap.
+func TestDownloadResumablePartMissingOrTruncated(t *testing.T) {
+	data := make([]byte, 5*1024*1024)
+	for i := range data {
+		data[i] = byte(i % 251)
+	}
+	dir := t.TempDir()
+	partPath := filepath.Join(dir, "test.bin.part")
+	bitmapPath := ResumeStatePath(partPath)
+
+	tests := []struct {
+		name       string
+		doneBlocks []int
+		createPart bool
+		truncate   bool
+	}{
+		{"part missing, partial bitmap", []int{0, 1, 2}, false, false},
+		{"part empty, partial bitmap", []int{0, 1, 2}, true, true},
+		{"part missing, complete bitmap", []int{0, 1, 2, 3, 4}, false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			os.Remove(partPath)
+			os.Remove(bitmapPath)
+			bm := newResumeBitmap(int64(len(data)))
+			for _, block := range tt.doneBlocks {
+				bm.markDone(block)
+			}
+			if err := bm.save(bitmapPath); err != nil {
+				t.Fatal(err)
+			}
+			if tt.createPart {
+				// Simulate the caller re-creating the part file (truncating).
+				if err := os.WriteFile(partPath, nil, 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if tt.truncate {
+					if err := os.WriteFile(partPath, make([]byte, 0), 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+
+			partFile, err := os.OpenFile(partPath, os.O_CREATE|os.O_RDWR, 0o644)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer partFile.Close()
+			client := &serverLikeClient{data: data}
+			file := tfile.NewTGFile(&tg.InputDocumentFileLocation{ID: 1, AccessHash: 2}, client, int64(len(data)), "test.bin")
+			if err := DownloadResumable(context.Background(), file, partFile, 1, bitmapPath); err != nil {
+				t.Fatalf("download failed: %v", err)
+			}
+			got := make([]byte, len(data))
+			if _, err := partFile.ReadAt(got, 0); err != nil {
+				t.Fatal(err)
+			}
+			if !bytesEqual(got, data) {
+				t.Fatalf("downloaded data mismatch (blocks not reset)")
+			}
+		})
+	}
+}
+
+// TestDownloadResumableInvalidBitmap treats a corrupt bitmap as absent.
+func TestDownloadResumableInvalidBitmap(t *testing.T) {
+	data := make([]byte, 1024*1024+7)
+	for i := range data {
+		data[i] = byte(i % 251)
+	}
+	dir := t.TempDir()
+	partPath := filepath.Join(dir, "test.bin.part")
+	bitmapPath := ResumeStatePath(partPath)
+	for _, content := range []string{
+		`{"part_size":1048576,"size":-1,"blocks":[]}`,
+		`{"part_size":1048576,"size":9223372036854775807,"blocks":[]}`,
+		`not json`,
+	} {
+		os.Remove(partPath)
+		if err := os.WriteFile(bitmapPath, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		partFile, err := os.OpenFile(partPath, os.O_CREATE|os.O_RDWR, 0o644)
+		if err != nil {
+			t.Fatal(err)
+		}
+		client := &serverLikeClient{data: data}
+		file := tfile.NewTGFile(&tg.InputDocumentFileLocation{ID: 1, AccessHash: 2}, client, int64(len(data)), "test.bin")
+		err = DownloadResumable(context.Background(), file, partFile, 1, bitmapPath)
+		partFile.Close()
+		if err != nil {
+			t.Fatalf("download with corrupt bitmap %q failed: %v", content, err)
+		}
+		got := make([]byte, len(data))
+		f, err := os.Open(partPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.ReadAt(got, 0); err != nil {
+			t.Fatal(err)
+		}
+		f.Close()
+		if !bytesEqual(got, data) {
+			t.Fatalf("downloaded data mismatch with corrupt bitmap %q", content)
+		}
+	}
+}
+
 func TestRemoveResumeState(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "x.bitmap")

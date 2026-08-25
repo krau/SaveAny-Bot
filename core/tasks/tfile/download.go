@@ -3,9 +3,9 @@ package tfile
 import (
 	"context"
 	"fmt"
-	"github.com/charmbracelet/log"
 	"os"
 
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/common/tdler"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
@@ -17,9 +17,11 @@ import (
 // file (e.g. when the previous run was interrupted during upload).
 func (t *Task) download(ctx context.Context) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", t.File.Name()))
-	if stat, err := os.Stat(t.localPath); err == nil && stat.Size() == t.File.Size() {
-		logger.Info("Cache file already complete, skipping download")
-		return nil
+	if t.File.Size() > 0 {
+		if stat, err := os.Stat(t.localPath); err == nil && stat.Size() == t.File.Size() {
+			logger.Info("Cache file already complete, skipping download")
+			return nil
+		}
 	}
 	if t.File.Size() <= 0 {
 		// Unknown size (e.g. photos) cannot be resumed; use the plain downloader.
@@ -36,7 +38,8 @@ func (t *Task) download(ctx context.Context) error {
 		return nil
 	}
 	partPath := t.localPath + ".part"
-	localFile, err := fsutil.CreateFile(partPath)
+	// 不截断已存在的 .part: 位图标记的已完成块依赖既有字节。
+	localFile, err := os.OpenFile(partPath, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to create local file: %w", err)
 	}
@@ -63,8 +66,9 @@ func (t *Task) download(ctx context.Context) error {
 	if err := os.Rename(partPath, t.localPath); err != nil {
 		return fmt.Errorf("failed to finalize download: %w", err)
 	}
+	// 清理位图是尽力而为: 下载已完成, 清理失败不应使任务失败。
 	if err := tdler.RemoveResumeState(tdler.ResumeStatePath(partPath)); err != nil {
-		return fmt.Errorf("failed to remove resume state: %w", err)
+		logger.Warnf("Failed to remove resume state: %v", err)
 	}
 	logger.Info("File downloaded successfully")
 	return nil
