@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+
 	"github.com/celestix/gotgproto/dispatcher"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/slice"
@@ -37,10 +39,12 @@ func checkPermission(ctx *ext.Context, update *ext.Update) error {
 }
 
 // withPermission wraps a callback handler with the same whitelist check used
-// for message handlers (checkPermission).
+// for message handlers (checkPermission). ContinueGroups is the dispatcher's
+// success sentinel, not an error: only real failures and EndGroups stop the
+// chain before the wrapped handler runs.
 func withPermission(handler func(*ext.Context, *ext.Update) error) func(*ext.Context, *ext.Update) error {
 	return func(ctx *ext.Context, update *ext.Update) error {
-		if err := checkPermission(ctx, update); err != nil {
+		if err := checkPermission(ctx, update); err != nil && !errors.Is(err, dispatcher.ContinueGroups) {
 			return err
 		}
 		return handler(ctx, update)
