@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/charmbracelet/log"
+	"github.com/gotd/td/telegram/downloader"
 	"github.com/krau/SaveAny-Bot/api"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
@@ -56,6 +57,14 @@ func Run(cmd *cobra.Command, _ []string) {
 		cancel()
 	}()
 
+	core.SetDownloaderProvider(func() downloader.Client {
+		if ectx := bot.ExtContext(); ectx != nil {
+			return ectx.Raw
+		}
+		return nil
+	})
+	core.RecoverTasks(ctx)
+
 	core.Run(ctx)
 
 	<-ctx.Done()
@@ -100,6 +109,15 @@ func cleanCache() {
 	if config.C().Temp.BasePath != "" && !config.C().Stream {
 		if slices.Contains([]string{"/", ".", "\\", ".."}, filepath.Clean(config.C().Temp.BasePath)) {
 			log.Error("Invalid cache directory", "path", config.C().Temp.BasePath)
+			return
+		}
+		unfinished, err := database.CountUnfinishedTasks(context.Background())
+		if err != nil {
+			log.Error("Failed to count unfinished tasks, skipping cache cleanup", "error", err)
+			return
+		}
+		if unfinished > 0 {
+			log.Info("Skipping cache cleanup: unfinished tasks need their cache files for recovery", "tasks", unfinished)
 			return
 		}
 		currentDir, err := os.Getwd()
