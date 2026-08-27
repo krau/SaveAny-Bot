@@ -28,7 +28,7 @@ type eofAwareClient struct {
 }
 
 func (c eofAwareClient) UploadGetFile(ctx context.Context, req *tg.UploadGetFileRequest) (tg.UploadFileClass, error) {
-	if req.Offset >= c.size {
+	if c.size > 0 && req.Offset >= c.size {
 		return &tg.UploadFile{}, nil
 	}
 	return c.Client.UploadGetFile(ctx, req)
