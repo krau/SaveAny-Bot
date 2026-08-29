@@ -368,11 +368,12 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		t.recordDownloadComplete(elem.ID, streamedBytes)
 		t.markItemCompleted(elem.ID)
 		t.notifyStateChange(ctx)
+		t.persistElementDone(ctx, elem.ID)
 		logger.Info("File downloaded successfully in stream mode")
 		return nil
 	}
 	logger.Info("Starting file download")
-	// 不预创建缓存文件: 预创建会截断上次运行保留的完整缓存, 使复用失效。
+	// 不预创建缓存文件: 预创建会截断可复用的完整缓存。
 	success := false
 	defer func() {
 		if success {

@@ -25,6 +25,13 @@ type Task struct {
 	localPath string
 	overwrite bool   // recovered: overwrite the storage target instead of uniquifying
 	caption   string // recovered: source caption for the telegram backend
+	done      bool   // recovered: upload finished in an earlier run, skip execution
+}
+
+// IsDone reports whether the upload finished in an earlier run; such tasks
+// are dropped on recovery instead of being re-executed.
+func (t *Task) IsDone() bool {
+	return t.done
 }
 
 // Title implements core.Exectable.

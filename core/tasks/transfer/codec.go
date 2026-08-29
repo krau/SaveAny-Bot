@@ -33,6 +33,7 @@ type taskPayload struct {
 	MessageID    int              `json:"message_id"`
 	IgnoreErrors bool             `json:"ignore_errors"`
 	Overwrite    bool             `json:"overwrite"`
+	Done         []string         `json:"done"`
 }
 
 type taskCodec struct{}
@@ -50,6 +51,10 @@ func (taskCodec) Marshal(task core.Executable) ([]byte, error) {
 		ID:           t.ID,
 		IgnoreErrors: t.IgnoreErrors,
 		Overwrite:    ctxOverwrite(t.ctx),
+		Done:         t.completedElementIDs(),
+	}
+	if t.overwrite {
+		p.Overwrite = true
 	}
 	for _, elem := range t.elems {
 		p.Elements = append(p.Elements, elementPayload{
@@ -73,8 +78,15 @@ func (taskCodec) Unmarshal(data []byte) (core.Executable, error) {
 	if err := json.Unmarshal(data, &p); err != nil {
 		return nil, fmt.Errorf("invalid task payload: %w", err)
 	}
+	done := make(map[string]struct{}, len(p.Done))
+	for _, id := range p.Done {
+		done[id] = struct{}{}
+	}
 	elems := make([]TaskElement, 0, len(p.Elements))
 	for _, ep := range p.Elements {
+		if _, ok := done[ep.ID]; ok {
+			continue // transfer already completed; do not re-run
+		}
 		source, err := storage.GetStorageByName(context.Background(), ep.SourceStorage)
 		if err != nil {
 			return nil, fmt.Errorf("source storage %q: %w", ep.SourceStorage, err)
@@ -98,5 +110,6 @@ func (taskCodec) Unmarshal(data []byte) (core.Executable, error) {
 	}
 	task := NewTransferTask(p.ID, context.Background(), elems, progress, p.IgnoreErrors)
 	task.overwrite = p.Overwrite
+	task.doneList = p.Done
 	return task, nil
 }

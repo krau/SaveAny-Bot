@@ -12,6 +12,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	tfilepkg "github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -86,6 +87,10 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 	}, retry.RetryTimes(uint(config.C().Retry)), retry.Context(vctx))
 	if err != nil {
 		return fmt.Errorf("failed to save file after retries: %w", err)
+	}
+	// 上传成功: 持久化完成标记, 崩溃后重启不再重复上传。
+	if err := core.MarkTaskDone(ctx, t.ID); err != nil {
+		logger.Warnf("Failed to persist task completion: %v", err)
 	}
 	// Cache file is kept on failure so a later restart can resume upload.
 	if err := os.Remove(t.localPath); err != nil {

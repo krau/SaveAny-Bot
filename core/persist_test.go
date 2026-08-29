@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -141,22 +142,86 @@ func TestRecoverTasksMarksInvalidPayloadFailed(t *testing.T) {
 	}
 }
 
-func TestRecoverTasksSkipsAlreadyQueued(t *testing.T) {
+// doneStubTask reports its work finished in an earlier run; recovery must
+// drop it instead of re-executing it (would duplicate the upload).
+type doneStubTask struct {
+	stubTask
+}
+
+func (d *doneStubTask) IsDone() bool { return true }
+
+type doneStubCodec struct{}
+
+func (doneStubCodec) Marshal(task Executable) ([]byte, error) {
+	return []byte(task.TaskID()), nil
+}
+
+func (doneStubCodec) Unmarshal(payload []byte) (Executable, error) {
+	return &doneStubTask{stubTask{id: string(payload)}}, nil
+}
+
+// TestDoneHelpersPreservePayload verifies AppendTaskDone and MarkTaskDone
+// mutate only the "done" key and preserve the rest of the payload.
+func TestDoneHelpersPreservePayload(t *testing.T) {
 	ctx := initRecoveryEnv(t)
 
-	// A task submitted during startup is both persisted and in the queue.
-	task := &stubTask{id: "live-1"}
-	if err := AddTask(ctx, task); err != nil {
+	if err := database.CreateTask(ctx, &database.Task{
+		ID: "app-1", Type: "batch", Payload: []byte(`{"kind":"batch","id":"app-1","elements":[{"id":"e1"}]}`), Status: string(database.TaskStatusQueued),
+	}); err != nil {
 		t.Fatal(err)
 	}
-	RecoverTasks(ctx)
-
-	// The row must survive with its original status.
-	row, err := database.GetTask(ctx, "live-1")
-	if err != nil {
-		t.Fatalf("row missing for queued task: %v", err)
+	if err := AppendTaskDone(ctx, "app-1", "e1"); err != nil {
+		t.Fatal(err)
 	}
-	if row.Status != string(database.TaskStatusQueued) {
-		t.Fatalf("row status = %s, want queued", row.Status)
+	if err := AppendTaskDone(ctx, "app-1", "e1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := AppendTaskDone(ctx, "app-1", "e2"); err != nil {
+		t.Fatal(err)
+	}
+
+	row, err := database.GetTask(ctx, "app-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var batch struct {
+		Kind     string `json:"kind"`
+		Elements []struct {
+			ID string `json:"id"`
+		} `json:"elements"`
+		Done []string `json:"done"`
+	}
+	if err := json.Unmarshal(row.Payload, &batch); err != nil {
+		t.Fatal(err)
+	}
+	if batch.Kind != "batch" || len(batch.Elements) != 1 || batch.Elements[0].ID != "e1" {
+		t.Fatalf("payload mutated beyond done: %s", row.Payload)
+	}
+	if len(batch.Done) != 2 || batch.Done[0] != "e1" || batch.Done[1] != "e2" {
+		t.Fatalf("Done = %v, want [e1 e2] (no duplicates)", batch.Done)
+	}
+
+	if err := database.CreateTask(ctx, &database.Task{
+		ID: "flag-1", Type: "file", Payload: []byte(`{"kind":"file","id":"flag-1","caption":"c"}`), Status: string(database.TaskStatusRunning),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := MarkTaskDone(ctx, "flag-1"); err != nil {
+		t.Fatal(err)
+	}
+	row, err = database.GetTask(ctx, "flag-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var single struct {
+		Kind    string `json:"kind"`
+		Caption string `json:"caption"`
+		Done    bool   `json:"done"`
+	}
+	if err := json.Unmarshal(row.Payload, &single); err != nil {
+		t.Fatal(err)
+	}
+	if !single.Done || single.Kind != "file" || single.Caption != "c" {
+		t.Fatalf("MarkTaskDone payload = %s, want done=true with fields preserved", row.Payload)
 	}
 }

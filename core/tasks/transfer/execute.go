@@ -130,6 +130,7 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		TotalBytes:      t.totalSize,
 		DownloadedBytes: t.uploaded.Load(),
 	})
+	t.persistElementDone(ctx, elem.ID)
 
 	logger.Info("File uploaded successfully")
 	return nil

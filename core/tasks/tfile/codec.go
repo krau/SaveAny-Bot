@@ -23,6 +23,7 @@ type taskPayload struct {
 	MessageID int                  `json:"message_id"`
 	Overwrite bool                 `json:"overwrite"`
 	Caption   string               `json:"caption"`
+	Done      bool                 `json:"done"` // upload finished in an earlier run
 }
 
 type taskCodec struct{}
@@ -46,11 +47,18 @@ func (taskCodec) Marshal(task core.Executable) ([]byte, error) {
 		Storage: t.Storage.Name(),
 		Path:    t.Path,
 		File:    filePayload,
+		Done:    t.done,
 	}
 	if overwrite, ok := t.Ctx.Value(ctxkey.OverwriteExisting).(bool); ok {
 		p.Overwrite = overwrite
 	}
-	if caption, ok := sourceCaption(t.File); ok {
+	if t.overwrite {
+		p.Overwrite = true
+	}
+	// 无原始消息的任务, caption 取自字段。
+	if t.caption != "" {
+		p.Caption = t.caption
+	} else if caption, ok := sourceCaption(t.File); ok {
 		p.Caption = caption
 	}
 	if progress, ok := t.Progress.(*Progress); ok {
@@ -93,5 +101,6 @@ func (taskCodec) Unmarshal(data []byte) (core.Executable, error) {
 		localPath: localPath,
 		overwrite: p.Overwrite,
 		caption:   p.Caption,
+		done:      p.Done,
 	}, nil
 }

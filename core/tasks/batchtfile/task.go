@@ -2,7 +2,6 @@ package batchtfile
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"sync"
@@ -50,6 +49,10 @@ type Task struct {
 	uploadMu        sync.Mutex
 	uploaded        map[string]int64
 	overwrite       bool // recovered: overwrite storage targets instead of uniquifying
+	// doneList preserves element IDs persisted as done by an earlier run
+	// (skipped from elems on recovery), so a re-persist does not lose them.
+	doneList  []string
+	persistMu sync.Mutex
 }
 
 // Title implements core.Exectable.
@@ -76,22 +79,12 @@ func (t *Task) completedElementIDs() []string {
 }
 
 // persistElementDone records an element's completed upload in the persisted
-// payload so a restart does not re-upload it.
+// payload so a restart does not re-upload it. Serialized so concurrent
+// element completions do not clobber each other's payload updates.
 func (t *Task) persistElementDone(ctx context.Context, elemID string) {
-	err := core.UpdateTaskPayload(ctx, t.ID, func(payload []byte) ([]byte, error) {
-		var p taskPayload
-		if err := json.Unmarshal(payload, &p); err != nil {
-			return nil, err
-		}
-		for _, id := range p.Done {
-			if id == elemID {
-				return payload, nil
-			}
-		}
-		p.Done = append(p.Done, elemID)
-		return json.Marshal(p)
-	})
-	if err != nil {
+	t.persistMu.Lock()
+	defer t.persistMu.Unlock()
+	if err := core.AppendTaskDone(ctx, t.ID, elemID); err != nil {
 		log.FromContext(ctx).Warnf("Failed to persist element completion %s: %v", elemID, err)
 	}
 }

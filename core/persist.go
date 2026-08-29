@@ -2,10 +2,10 @@ package core
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
-
-	"fmt"
 
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/downloader"
@@ -20,6 +20,13 @@ import (
 type TaskCodec interface {
 	Marshal(task Executable) ([]byte, error)
 	Unmarshal(payload []byte) (Executable, error)
+}
+
+// DoneTask is implemented by tasks whose work finished in an earlier run
+// (recorded in the persisted payload). Recovery drops such tasks instead of
+// re-executing them, preventing duplicate uploads after a crash.
+type DoneTask interface {
+	IsDone() bool
 }
 
 var (
@@ -78,8 +85,9 @@ func persistTask(ctx context.Context, task Executable) error {
 	})
 }
 
-// UpdateTaskPayload atomically mutates the persisted payload of a running
-// task (e.g. recording per-element upload progress for recovery).
+// UpdateTaskPayload replaces the payload of a running task (e.g. recording
+// per-element upload progress for recovery). Read-modify-write callers must
+// serialize updates for the same task ID.
 func UpdateTaskPayload(ctx context.Context, id string, mutate func(payload []byte) ([]byte, error)) error {
 	row, err := database.GetTask(ctx, id)
 	if err != nil {
@@ -90,6 +98,49 @@ func UpdateTaskPayload(ctx context.Context, id string, mutate func(payload []byt
 		return fmt.Errorf("mutate payload: %w", err)
 	}
 	return database.UpdateTaskPayload(ctx, id, updated)
+}
+
+// AppendTaskDone records an element ID in the "done" list of a task's
+// persisted payload. Multi-element task codecs use it so recovery skips
+// elements whose upload finished. The rest of the payload is preserved.
+func AppendTaskDone(ctx context.Context, taskID, elemID string) error {
+	return UpdateTaskPayload(ctx, taskID, func(payload []byte) ([]byte, error) {
+		m := make(map[string]json.RawMessage)
+		if err := json.Unmarshal(payload, &m); err != nil {
+			return nil, err
+		}
+		var done []string
+		if raw := m["done"]; raw != nil {
+			if err := json.Unmarshal(raw, &done); err != nil {
+				return nil, err
+			}
+		}
+		for _, id := range done {
+			if id == elemID {
+				return payload, nil
+			}
+		}
+		raw, err := json.Marshal(append(done, elemID))
+		if err != nil {
+			return nil, err
+		}
+		m["done"] = raw
+		return json.Marshal(m)
+	})
+}
+
+// MarkTaskDone sets the "done" flag of a task's persisted payload.
+// Single-element task codecs use it so recovery drops the task instead of
+// re-executing it. The rest of the payload is preserved.
+func MarkTaskDone(ctx context.Context, taskID string) error {
+	return UpdateTaskPayload(ctx, taskID, func(payload []byte) ([]byte, error) {
+		m := make(map[string]json.RawMessage)
+		if err := json.Unmarshal(payload, &m); err != nil {
+			return nil, err
+		}
+		m["done"] = json.RawMessage("true")
+		return json.Marshal(m)
+	})
 }
 
 // RecoverTasks re-enqueues tasks that were unfinished when the process last
@@ -116,6 +167,14 @@ func RecoverTasks(ctx context.Context) {
 		if err != nil {
 			logger.Errorf("Task %s cannot be recovered: failed to rebuild: %v", t.ID, err)
 			markRecoverFailed(ctx, t, err.Error())
+			continue
+		}
+		if dt, ok := task.(DoneTask); ok && dt.IsDone() {
+			// 已完成的任务直接丢弃, 避免重复上传。
+			logger.Infof("Task %s already finished before restart, dropping persisted row", t.ID)
+			if err := database.DeleteTask(ctx, t.ID); err != nil {
+				logger.Errorf("Failed to delete finished task %s: %v", t.ID, err)
+			}
 			continue
 		}
 		if initQueue().Contains(task.TaskID()) {

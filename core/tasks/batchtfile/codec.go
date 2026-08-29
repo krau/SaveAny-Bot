@@ -107,6 +107,11 @@ func (batchCodec) Marshal(task core.Executable) ([]byte, error) {
 	if overwrite, ok := t.ctx.Value(ctxkey.OverwriteExisting).(bool); ok {
 		p.Overwrite = overwrite
 	}
+	// 持久化时合并已记录的完成列表, 防止丢失。
+	if t.overwrite {
+		p.Overwrite = true
+	}
+	p.Done = append(t.doneList, p.Done...)
 	for _, elem := range t.elems {
 		filePayload, ok := tfilepkg.FilePayloadOf(elem.File)
 		if !ok {
@@ -172,5 +177,6 @@ func (batchCodec) Unmarshal(data []byte) (core.Executable, error) {
 	}
 	task := NewBatchTGFileTask(p.ID, context.Background(), elems, progress, p.IgnoreErrors)
 	task.overwrite = p.Overwrite
+	task.doneList = p.Done
 	return task, nil
 }
