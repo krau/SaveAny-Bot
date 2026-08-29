@@ -89,3 +89,12 @@ type fsListResponse struct {
 		Provider string `json:"provider"`
 	} `json:"data"`
 }
+
+type fsMkdirRequest struct {
+	Path string `json:"path"`
+}
+
+type fsSimpleResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}

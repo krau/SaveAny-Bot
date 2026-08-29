@@ -14,3 +14,4 @@ testplugins/
 *.exe
 tmp-*
 saveany-bot
+.codegraph/

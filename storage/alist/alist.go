@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -122,6 +123,10 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 		}, 1000)
 	}
 
+	if err := a.mkdirAll(ctx, path.Dir(candidate)); err != nil {
+		return fmt.Errorf("failed to create parent directories: %w", err)
+	}
+
 	resp, err := a.putFile(ctx, reader, candidate)
 	if err != nil {
 		return err
@@ -198,6 +203,90 @@ func (a *Alist) putFile(ctx context.Context, reader io.Reader, storagePath strin
 
 func (a *Alist) JoinStoragePath(p string) string {
 	return path.Join(a.config.BasePath, p)
+}
+
+// mkdirAll creates the directory and any missing parents. Alist's upload API
+// returns FileNotFound when the parent directory does not exist, so callers
+// must ensure it before uploading. Existing directories are skipped.
+func (a *Alist) mkdirAll(ctx context.Context, dirPath string) error {
+	if dirPath == "" || dirPath == "/" || dirPath == "." {
+		return nil
+	}
+	segments := strings.Split(strings.Trim(dirPath, "/"), "/")
+	tokenRefreshed := false
+	for i := range segments {
+		current := "/" + strings.Join(segments[:i+1], "/")
+		if a.existsPath(ctx, current) {
+			continue
+		}
+		status, code, message, err := a.mkdirRequest(ctx, current)
+		if err != nil {
+			return err
+		}
+		if (status == http.StatusUnauthorized || status == http.StatusForbidden) && !tokenRefreshed {
+			// Stale token. Token-only storage cannot refresh; otherwise
+			// re-login once and retry this segment (the probe above runs
+			// again first, so an already-created directory is not an error).
+			if a.loginInfo == nil {
+				return fmt.Errorf("failed to create directory %s: %s", current, message)
+			}
+			if err := a.getToken(ctx); err != nil {
+				return fmt.Errorf("failed to refresh alist token: %w", err)
+			}
+			tokenRefreshed = true
+			if a.existsPath(ctx, current) {
+				continue
+			}
+			status, code, message, err = a.mkdirRequest(ctx, current)
+			if err != nil {
+				return err
+			}
+		}
+		if status != http.StatusOK {
+			return fmt.Errorf("failed to create directory %s: %s", current, message)
+		}
+		if code != http.StatusOK {
+			// The directory may have been created by a concurrent upload
+			// between the probe and the request.
+			if a.existsPath(ctx, current) {
+				continue
+			}
+			return fmt.Errorf("failed to create directory %s: %d, %s", current, code, message)
+		}
+	}
+	return nil
+}
+
+// mkdirRequest sends a single /api/fs/mkdir request and returns the HTTP
+// status, the response body code and message.
+func (a *Alist) mkdirRequest(ctx context.Context, p string) (int, int, string, error) {
+	bodyBytes, err := json.Marshal(fsMkdirRequest{Path: p})
+	if err != nil {
+		return 0, 0, "", fmt.Errorf("failed to marshal request body: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/api/fs/mkdir", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return 0, 0, "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", a.authHeader())
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return 0, 0, "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return resp.StatusCode, 0, resp.Status, nil
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, 0, "", fmt.Errorf("failed to read response body: %w", err)
+	}
+	var mkResp fsSimpleResponse
+	if err := json.Unmarshal(data, &mkResp); err != nil {
+		return 0, 0, "", fmt.Errorf("failed to unmarshal mkdir response: %w", err)
+	}
+	return resp.StatusCode, mkResp.Code, mkResp.Message, nil
 }
 
 func (a *Alist) Exists(ctx context.Context, storagePath string) bool {

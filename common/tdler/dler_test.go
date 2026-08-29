@@ -110,3 +110,31 @@ func TestDownloadServerLikeEOF(t *testing.T) {
 		})
 	}
 }
+
+// Photos have no size in InputPhotoFileLocation, so TGFile.Size() is 0
+// ("unknown"). The EOF guard must not fire on the very first request at
+// offset 0, or the download silently yields a 0-byte file.
+func TestDownloadPhotoUnknownSize(t *testing.T) {
+	data := make([]byte, 89708)
+	for i := range data {
+		data[i] = byte(i % 251)
+	}
+	client := &serverLikeClient{data: data}
+	file := tfile.NewTGFile(
+		&tg.InputPhotoFileLocation{ID: 1, AccessHash: 2},
+		client, 0, "photo.png",
+	)
+
+	dl := NewDownloader(file)
+	buf := make([]byte, len(data))
+	_, err := dl.WithThreads(1).Parallel(context.Background(), &memWriterAt{b: buf})
+	if err != nil {
+		t.Fatalf("download failed: %v", err)
+	}
+	if !bytes.Equal(buf, data) {
+		t.Fatalf("downloaded %d bytes, want %d matching bytes", len(buf), len(data))
+	}
+	if client.maxOffset >= int64(len(data)) {
+		t.Fatalf("requested offset %d at or past EOF (size %d)", client.maxOffset, len(data))
+	}
+}
