@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/gotd/td/tgerr"
 	"golang.org/x/sync/errgroup"
@@ -20,6 +21,15 @@ import (
 )
 
 const maxChunkRetries = 20
+
+// errCDNRedirect reports a chunk served from a CDN. Raw upload.getFile
+// requests cannot follow CDN redirects (they need gotd's re-hash dance), so
+// the download falls back to the plain downloader, which handles them.
+var errCDNRedirect = errors.New("CDN redirect")
+
+func partPathOf(bitmapPath string) string {
+	return strings.TrimSuffix(bitmapPath, ".bitmap")
+}
 
 // resumeBitmap records which partSize-aligned blocks of a download have been
 // durably written, so an interrupted download can continue after a restart.
@@ -148,9 +158,12 @@ func fetchChunk(ctx context.Context, file tfile.TGFile, offset int64, limit int)
 		if err == nil {
 			switch r := res.(type) {
 			case *tg.UploadFile:
+				if len(r.Bytes) > limit {
+					return nil, fmt.Errorf("get chunk at %d: server returned %d bytes, limit %d", offset, len(r.Bytes), limit)
+				}
 				return r.Bytes, nil
 			case *tg.UploadFileCDNRedirect:
-				return nil, fmt.Errorf("CDN redirect is not supported (dc %d)", r.DCID)
+				return nil, fmt.Errorf("%w (dc %d)", errCDNRedirect, r.DCID)
 			default:
 				return nil, fmt.Errorf("unexpected upload.getFile response %T", res)
 			}
@@ -186,6 +199,9 @@ func DownloadResumable(
 	if file.Size() <= 0 {
 		return fmt.Errorf("resumable download requires a known size")
 	}
+	if threads < 1 {
+		threads = 1
+	}
 	bm, err := loadResumeBitmap(bitmapPath)
 	if err != nil {
 		return err
@@ -193,8 +209,7 @@ func DownloadResumable(
 	// 位图描述的数据文件 (bitmapPath 去掉 .bitmap 后缀) 必须存在且非空:
 	// 若缺失或为空, 已标记完成的块字节已丢失, 必须重置位图全量重下。
 	if bm != nil {
-		partPath := strings.TrimSuffix(bitmapPath, ".bitmap")
-		if stat, err := os.Stat(partPath); err != nil || stat.Size() == 0 {
+		if stat, err := os.Stat(partPathOf(bitmapPath)); err != nil || stat.Size() == 0 {
 			if err := os.Remove(bitmapPath); err != nil && !errors.Is(err, os.ErrNotExist) {
 				return fmt.Errorf("reset stale resume bitmap: %w", err)
 			}
@@ -202,6 +217,10 @@ func DownloadResumable(
 		}
 	}
 	if bm == nil || bm.PartSize != tglimit.MaxPartSize || bm.Size != file.Size() {
+		// 位图缺失或不兼容: 截断旧的部分文件, 避免残留尾部字节导致最终大小校验失败。
+		if err := os.Truncate(partPathOf(bitmapPath), 0); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("truncate stale part file: %w", err)
+		}
 		bm = newResumeBitmap(file.Size())
 		if err := bm.save(bitmapPath); err != nil {
 			return err
@@ -215,7 +234,6 @@ func DownloadResumable(
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(threads)
 	for _, block := range missing {
-		block := block
 		eg.Go(func() error {
 			offset := int64(block) * int64(bm.PartSize)
 			data, err := fetchChunk(gctx, file, offset, bm.PartSize)
@@ -232,6 +250,15 @@ func DownloadResumable(
 		})
 	}
 	if err := eg.Wait(); err != nil {
+		if errors.Is(err, errCDNRedirect) {
+			// CDN 托管的文件无法用裸 upload.getFile 续传, 回退到 gotd 下载器
+			// (它内部处理 CDN 重定向), 全量重下本文件。
+			log.FromContext(ctx).Warn("File served from CDN, falling back to plain downloader")
+			if _, err := NewDownloader(file).Parallel(ctx, w); err != nil {
+				return fmt.Errorf("plain download after CDN redirect: %w", err)
+			}
+			return nil
+		}
 		return err
 	}
 	if !bm.complete() {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gotd/td/tg"
@@ -237,6 +238,127 @@ func TestDownloadResumableInvalidBitmap(t *testing.T) {
 		if !bytesEqual(got, data) {
 			t.Fatalf("downloaded data mismatch with corrupt bitmap %q", content)
 		}
+	}
+}
+
+// cdnRedirectClient answers the first redirects requests with a CDN
+// redirect, then serves chunks normally (as a CDN-free fallback would).
+type cdnRedirectClient struct {
+	*serverLikeClient
+	redirects int
+}
+
+func (c *cdnRedirectClient) UploadGetFile(ctx context.Context, req *tg.UploadGetFileRequest) (tg.UploadFileClass, error) {
+	if c.redirects > 0 {
+		c.redirects--
+		return &tg.UploadFileCDNRedirect{
+			DCID:          2,
+			FileToken:     []byte("token"),
+			EncryptionKey: make([]byte, 32),
+			EncryptionIv:  make([]byte, 16),
+		}, nil
+	}
+	return c.serverLikeClient.UploadGetFile(ctx, req)
+}
+
+// TestDownloadResumableCDNFallback verifies that a CDN redirect aborts the
+// raw chunked download and falls back to the plain gotd downloader, which
+// handles CDN re-hashing internally.
+func TestDownloadResumableCDNFallback(t *testing.T) {
+	data := make([]byte, 3*1024*1024+123)
+	for i := range data {
+		data[i] = byte(i % 251)
+	}
+	dir := t.TempDir()
+	bitmapPath := filepath.Join(dir, "test.bin.bitmap")
+	w := &memWriterAt{b: make([]byte, len(data))}
+
+	client := &cdnRedirectClient{serverLikeClient: &serverLikeClient{data: data}, redirects: 1}
+	file := tfile.NewTGFile(&tg.InputDocumentFileLocation{ID: 1, AccessHash: 2}, client, int64(len(data)), "test.bin")
+	if err := DownloadResumable(context.Background(), file, w, 1, bitmapPath); err != nil {
+		t.Fatalf("download with CDN redirect failed: %v", err)
+	}
+	if !bytesEqual(w.b, data) {
+		t.Fatalf("downloaded data mismatch after CDN fallback")
+	}
+}
+
+// TestDownloadResumableTruncatesStalePart verifies that starting a fresh
+// download truncates leftover part bytes: stale tail bytes beyond the
+// expected size would otherwise fail the final size check forever.
+func TestDownloadResumableTruncatesStalePart(t *testing.T) {
+	data := make([]byte, 2*1024*1024+7)
+	for i := range data {
+		data[i] = byte(i % 251)
+	}
+	dir := t.TempDir()
+	partPath := filepath.Join(dir, "test.bin.part")
+	bitmapPath := ResumeStatePath(partPath)
+
+	// Stale part file (e.g. from a previous, different download) with a
+	// longer tail; no bitmap.
+	if err := os.WriteFile(partPath, make([]byte, 5*1024*1024), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	partFile, err := os.OpenFile(partPath, os.O_RDWR, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer partFile.Close()
+
+	client := &serverLikeClient{data: data}
+	file := tfile.NewTGFile(&tg.InputDocumentFileLocation{ID: 1, AccessHash: 2}, client, int64(len(data)), "test.bin")
+	if err := DownloadResumable(context.Background(), file, partFile, 1, bitmapPath); err != nil {
+		t.Fatalf("download failed: %v", err)
+	}
+	stat, err := partFile.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stat.Size() != int64(len(data)) {
+		t.Fatalf("part size = %d, want %d (stale tail not truncated)", stat.Size(), len(data))
+	}
+	got := make([]byte, len(data))
+	if _, err := partFile.ReadAt(got, 0); err != nil {
+		t.Fatal(err)
+	}
+	if !bytesEqual(got, data) {
+		t.Fatalf("downloaded data mismatch")
+	}
+}
+
+// oversizedChunkClient returns more bytes than the requested limit.
+type oversizedChunkClient struct {
+	*serverLikeClient
+}
+
+func (c *oversizedChunkClient) UploadGetFile(ctx context.Context, req *tg.UploadGetFileRequest) (tg.UploadFileClass, error) {
+	res, err := c.serverLikeClient.UploadGetFile(ctx, req)
+	if f, ok := res.(*tg.UploadFile); ok && req.Offset == 0 {
+		f.Bytes = append(f.Bytes, make([]byte, 16)...) // exceeds limit
+	}
+	return res, err
+}
+
+// TestDownloadResumableOversizedChunk rejects server responses that exceed
+// the requested limit instead of letting them corrupt the file layout.
+func TestDownloadResumableOversizedChunk(t *testing.T) {
+	data := make([]byte, 1024*1024+7)
+	for i := range data {
+		data[i] = byte(i % 251)
+	}
+	dir := t.TempDir()
+	bitmapPath := filepath.Join(dir, "test.bin.bitmap")
+	w := &memWriterAt{b: make([]byte, len(data))}
+
+	client := &oversizedChunkClient{serverLikeClient: &serverLikeClient{data: data}}
+	file := tfile.NewTGFile(&tg.InputDocumentFileLocation{ID: 1, AccessHash: 2}, client, int64(len(data)), "test.bin")
+	err := DownloadResumable(context.Background(), file, w, 1, bitmapPath)
+	if err == nil {
+		t.Fatalf("expected oversized chunk to fail")
+	}
+	if !strings.Contains(err.Error(), "limit") {
+		t.Fatalf("error %q does not mention the limit", err)
 	}
 }
 
