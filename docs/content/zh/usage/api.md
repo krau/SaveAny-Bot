@@ -122,6 +122,33 @@ Authorization: Bearer <your-token>
 
 ---
 
+### GET /api/v1/media-metadata — 媒体元数据查询
+
+对 Telegram 消息链接、直链音视频地址或其他 yt-dlp 支持的媒体链接进行探测，在不完整下载文件的情况下返回标题、缩略图、上传者和音视频时长等可用元数据。
+
+请求：
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+响应：
+
+```json
+{
+  "url": "https://www.youtube.com/watch?v=xxx",
+  "title": "示例标题",
+  "thumbnail": "https://example.com/thumb.jpg",
+  "uploader": "示例上传者",
+  "duration_seconds": 213.0
+}
+```
+
+当缺少 `url` 参数时返回 `400 invalid_request`；当 Telegram、直链探测和 yt-dlp 都无法获取该链接时返回 `400 metadata_extraction_failed`。
+
+---
+
 ### POST /api/v1/tasks — 创建任务
 
 **请求头：**

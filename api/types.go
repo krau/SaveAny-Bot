@@ -161,3 +161,12 @@ type TGFilesParams struct {
 type TPHPicsParams struct {
 	TelegraphURL string `json:"telegraph_url"`
 }
+
+// MediaMetadataResponse 媒体元数据响应
+type MediaMetadataResponse struct {
+	URL             string  `json:"url"`
+	Title           string  `json:"title,omitempty"`
+	Thumbnail       string  `json:"thumbnail,omitempty"`
+	Uploader        string  `json:"uploader,omitempty"`
+	DurationSeconds float64 `json:"duration_seconds,omitempty"`
+}
