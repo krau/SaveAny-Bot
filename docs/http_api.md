@@ -549,6 +549,48 @@ curl -X GET "http://localhost:8080/api/v1/media-metadata?url=https%3A%2F%2Fwww.y
 
 ---
 
+## Webhook Callbacks
+
+When `webhook` is set on a create-task request, a `POST` is sent to that URL
+once the task reaches `completed` or `failed`. Cancelled tasks do not fire a
+callback, and each task fires at most one. Delivery is asynchronous, so a slow
+endpoint never blocks the task.
+
+Headers:
+
+```http
+Content-Type: application/json
+User-Agent: SaveAny-Bot/1.0
+```
+
+Body:
+
+```json
+{
+  "task_id": "d4f7u1crvimcs4n4j8d0",
+  "type": "directlinks",
+  "status": "completed",
+  "storage": "local-main",
+  "path": "downloads",
+  "completed_at": "2026-03-10T10:05:00Z",
+  "error": ""
+}
+```
+
+`completed_at` is present only for `completed` and `failed`. `error` is present
+only when non-empty.
+
+Up to 3 attempts are made. A non-2xx response or a transport error retries
+after 100ms, then 400ms. Each request times out after 30 seconds.
+
+---
+
+## Task Retention
+
+Task records live in memory only and are lost on restart. A task that has
+reached a terminal state is also evicted 24 hours after its last update; the
+sweep runs every 10 minutes.
+
 ## Notes
 
 - Unknown endpoint returns:

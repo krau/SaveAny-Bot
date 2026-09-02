@@ -366,7 +366,7 @@ Authorization: Bearer <token>
 
 ### GET /api/v1/tasks — 列出所有任务
 
-返回所有 API 创建的任务（仅在内存中保留，重启后清空）。
+返回所有 API 创建的任务（仅在内存中保留，重启后清空）。已进入终态的任务在最后一次更新 24 小时后也会被清理，清理任务每 10 分钟执行一次。
 
 **响应 `200 OK`：**
 
@@ -386,7 +386,10 @@ Authorization: Bearer <token>
       "progress": {
         "total_bytes":      10485760,
         "downloaded_bytes": 5242880,
-        "percent":          50.0
+        "total_files":      3,
+        "downloaded_files": 1,
+        "percent":          50.0,
+        "speed_mbps":       12.5
       }
     }
   ],
@@ -394,7 +397,7 @@ Authorization: Bearer <token>
 }
 ```
 
-`progress` 字段仅在 `total_bytes > 0` 时出现。`error` 字段仅在有错误时出现。
+`progress` 字段在 `total_bytes` 或 `total_files` 大于 0 时出现，其内部字段为 0 时会被省略。`percent` 在已知字节总量时按字节计算，否则回退为按文件数计算。`speed_mbps` 是任务开始运行以来的平均速度，而非瞬时速度。`error` 字段仅在有错误时出现。
 
 ---
 
@@ -441,7 +444,13 @@ Authorization: Bearer <token>
 
 ## Webhook 回调
 
-创建任务时可设置 `webhook` 字段。当任务进入终态（`completed`、`failed`、`cancelled`）时，Bot 会向该地址发送一个 `POST` 请求。
+创建任务时可设置 `webhook` 字段。当任务进入 `completed` 或 `failed` 状态时，Bot 会向该地址发送一个 `POST` 请求。
+
+{{< hint info >}}
+被取消的任务**不会**触发 Webhook——取消操作的发起方已经知晓结果。每个任务最多只会发送一次回调。
+{{< /hint >}}
+
+回调为异步发送，不会因为回调地址响应缓慢或不可达而阻塞任务。
 
 **回调请求头：**
 
@@ -466,4 +475,4 @@ User-Agent: SaveAny-Bot/1.0
 
 `completed_at` 仅在状态为 `completed` 或 `failed` 时出现。`error` 仅在有错误时出现。
 
-**重试机制：** 最多重试 3 次，重试间隔依次为 1 秒、2 秒、3 秒。每次请求超时为 30 秒。
+**重试机制：** 最多尝试 3 次。响应非 2xx 或请求出错时会重试，间隔依次为 100 毫秒、400 毫秒。每次请求超时为 30 秒。
