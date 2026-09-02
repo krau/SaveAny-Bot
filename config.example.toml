@@ -1,88 +1,102 @@
 # 创建文件时，若需要保留中文注释，请务必确保本文件编码为 UTF-8 ，否则会无法读取。
+# When creating this file, ensure the encoding is UTF-8 to preserve Chinese comments, otherwise it may fail to read.
 # 更详细的配置请在 https://sabot.unv.app/deployment/configuration 查看
-workers = 4    # 同时下载文件数
-retry = 3      # 下载失败重试次数
-threads = 4    # 单个任务下载使用的最大线程数
-stream = false # 使用流式传输模式, 建议仅在硬盘空间十分有限时使用.
+# For more detailed configuration, see https://sabot.unv.app/deployment/configuration
+workers = 4    # 同时下载文件数 / Number of concurrent downloads
+retry = 3      # 下载失败重试次数 / Number of retries on download failure
+threads = 4    # 单个任务下载使用的最大线程数 / Max threads per download task
+stream = false # 使用流式传输模式, 建议仅在硬盘空间十分有限时使用. / Stream mode, recommended only when disk space is very limited.
 
 [log]
-# 日志级别, 可选: debug, info, warn, error, fatal
+# 日志级别, 可选: debug, info, warn, error, fatal / Log level, options: debug, info, warn, error, fatal
 level = "debug"
 
 [telegram]
 # Bot Token
 # 更换 Bot Token 后请删除会话数据库文件 (默认路径为 data/session.db )
+# After changing Bot Token, delete the session database file (default path: data/session.db)
 token = ""
 # Telegram API 配置, 若不配置也可运行, 将使用默认的 API ID 和 API HASH
+# Telegram API config, optional - defaults will be used if not set
 # 推荐使用自己的 API ID 和 API HASH (https://my.telegram.org)
+# Recommended: use your own API ID and API HASH (https://my.telegram.org)
 # app_id = 1025907
 # app_hash = "452b0359b988148995f22ff0f4229750"
 [telegram.proxy]
-# 启用代理连接 telegram
+# 启用代理连接 telegram / Enable proxy for Telegram connection
 enable = false
 url = "socks5://127.0.0.1:7890"
 
-# Aria2 配置
+# Aria2 配置 / Aria2 configuration
 [aria2]
-# 启用 Aria2 下载支持
+# 启用 Aria2 下载支持 / Enable Aria2 download support
 enable = false
 # Aria2 RPC URL
 url = "http://localhost:6800/jsonrpc"
-# Aria2 RPC Secret (如果配置了 rpc-secret)
+# Aria2 RPC Secret (如果配置了 rpc-secret) / Aria2 RPC Secret (if rpc-secret is configured)
 secret = ""
-# 转存完成后删除 Aria2 下载的本地文件
+# 转存完成后删除 Aria2 下载的本地文件 / Delete local files downloaded by Aria2 after transfer
 remove_after_transfer = true
 
-# yt-dlp 视频下载配置
+# yt-dlp 视频下载配置 / yt-dlp video download configuration
 [ytdlp]
 # 默认下载的最高视频清晰度 (按高度限制), 如 1080, 720, 480; 0 表示不限制 (下载最佳画质)
+# Max video resolution by height, e.g. 1080, 720, 480; 0 means no limit (best available)
 # 仅在使用 /ytdlp 命令且未手动指定任何参数时生效
+# Only applies when using the /ytdlp command without manually specified flags
 max_height = 1080
 # 直接指定 yt-dlp format 选择表达式, 留空则使用 max_height
+# Raw yt-dlp format selector; leave empty to use max_height
 # 设置后优先级高于 max_height, 例如: "bv*[height<=720]+ba/b"
+# Takes precedence over max_height when set, e.g. "bv*[height<=720]+ba/b"
 format = ""
 # 下载后转封装的视频容器格式, 留空则不转封装. 默认 mp4
+# Target video container to recode into after download; empty disables recoding. Default mp4
 recode = "mp4"
 
-# 解析器配置
+# 解析器配置 / Parser configuration
 [parser]
 # 启用 JS 解析器插件 (Go 内置解析器默认启用)
+# Enable JS parser plugins (built-in Go parsers are enabled by default)
 plugin_enable = false
-# 插件目录, 可以是多个目录
+# 插件目录, 可以是多个目录 / Plugin directories, multiple allowed
 plugin_dirs = ["./plugins"]
-# 解析器默认代理
+# 解析器默认代理 / Default proxy for parsers
 proxy = ""
 
-# Twitter/X 解析器配置
+# Twitter/X 解析器配置 / Twitter/X parser configuration
 [parser.twitter]
-# 自定义 API 域名
+# 自定义 API 域名 / Custom API domain
 api_domain = "api.fxtwitter.com"
 # 单独为此解析器指定代理 (留空则使用 [parser] 中的 proxy)
+# Proxy for this parser only (leave empty to use the proxy from [parser])
 # proxy = "http://127.0.0.1:7890"
 
 # Kemono 解析器配置 (暂无可配置项, 留空即可)
+# Kemono parser configuration (no options yet, leave empty)
 [parser.kemono]
 
-# HTTP API 配置
+# HTTP API 配置 / HTTP API configuration
 [api]
-# 启用 HTTP API
+# 启用 HTTP API / Enable HTTP API
 enable = false
-# 监听地址
+# 监听地址 / Listen address
 host = "0.0.0.0"
-# 监听端口
+# 监听端口 / Listen port
 port = 8080
-# 认证 Token (必需)
+# 认证 Token (必需) / Auth token (required)
 token = ""
 
-# 存储列表
+# 存储列表 / Storage list
 [[storages]]
-# 标识名, 需要唯一
+# 标识名, 需要唯一 / Identifier name, must be unique
 name = "本机1"
 # 存储类型, 目前可用: local, alist, webdav, s3, telegram
+# Storage type, available: local, alist, webdav, s3, telegram
 type = "local"
-# 启用存储
+# 启用存储 / Enable storage
 enable = true
-# 文件保存根路径
+# 文件保存根路径 / Root path for saving files
 base_path = "./downloads"
 
 [[storages]]
@@ -94,17 +108,19 @@ url = 'https://example.com/dav'
 username = 'username'
 password = 'password'
 
-# 用户列表
+# 用户列表 / User list
 [[users]]
 # telegram user id
 id = 114514
-# 存储过滤列表, 元素为存储标识名.
+# 存储过滤列表, 元素为存储标识名. / Storage filter list, elements are storage identifier names.
 # 将该列表留空并开启黑名单过滤模式以允许使用所有存储，此处示例为黑名单模式，用户 114514 可使用所有存储
+# Leave empty with blacklist mode enabled to allow all storages; this example uses blacklist mode, user 114514 can use all storages
 storages = []
 # 使用列表过滤黑名单模式，反之则为白名单，白名单请在列表中指定可用的存储.
+# Blacklist filter mode; set false for whitelist mode and specify allowed storages in the list.
 blacklist = true
 
 [[users]]
 id = 123456
 storages = ["本机1"]
-blacklist = false  # 使用白名单模式，此时，用户 123456 仅可使用标识名为 '本地1' 的存储
+blacklist = false  # 使用白名单模式，此时，用户 123456 仅可使用标识名为 '本地1' 的存储 / Whitelist mode: user 123456 can only use the storage named '本机1'
