@@ -122,6 +122,33 @@ Returns all currently loaded storage backends.
 
 ---
 
+### GET /api/v1/media-metadata — Media Metadata Lookup
+
+Inspect a Telegram message link, direct media URL, or other yt-dlp-supported media URL and return available metadata without downloading the full file.
+
+Request:
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+Response:
+
+```json
+{
+  "url": "https://www.youtube.com/watch?v=xxx",
+  "title": "Example title",
+  "thumbnail": "https://example.com/thumb.jpg",
+  "uploader": "Example uploader",
+  "duration_seconds": 213.0
+}
+```
+
+Returns `400 invalid_request` when `url` is missing, or `400 metadata_extraction_failed` when Telegram, direct probing, and yt-dlp all fail to inspect the media URL.
+
+---
+
 ### POST /api/v1/tasks — Create Task
 
 **Request headers:**

@@ -53,6 +53,7 @@ func NewServer(ctx context.Context) *Server {
 		}
 	})
 	mux.HandleFunc("/api/v1/storages", handlers.ListStoragesHandler)
+	mux.HandleFunc("/api/v1/media-metadata", handlers.GetMediaMetadataHandler)
 	mux.HandleFunc("/api/v1/task-types", handlers.GetTaskTypesHandler)
 
 	// 404 处理
