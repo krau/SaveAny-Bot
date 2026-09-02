@@ -3,6 +3,8 @@ services:
     build: .
     container_name: saveany-bot
     restart: unless-stopped
+    ports:
+      - "8080:8080"
     volumes:
       - ./data:/app/data
       - ./config.toml:/app/config.toml
