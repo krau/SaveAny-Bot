@@ -173,6 +173,60 @@ func TestListTasksHandler(t *testing.T) {
 	}
 }
 
+// TestListTasksHandlerOrder verifies the list is returned newest first.
+func TestListTasksHandlerOrder(t *testing.T) {
+	handlers, _ := setupTestServer(t)
+
+	base := time.Now()
+	// Registered oldest-first so a handler that preserved insertion order,
+	// or one that did not sort at all, would not accidentally pass.
+	ids := []string{"order-oldest", "order-middle", "order-newest"}
+	for i, id := range ids {
+		info := RegisterTask(id, "directlinks", "local", "downloads", "Test", "")
+		info.CreatedAt = base.Add(time.Duration(i) * time.Minute)
+		t.Cleanup(func() { DeleteTask(id) })
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks", nil)
+	rr := httptest.NewRecorder()
+	handlers.ListTasksHandler(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, rr.Code)
+	}
+
+	var resp TasksListResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	// Other tests share the global store, so compare only our own tasks.
+	var got []string
+	for _, task := range resp.Tasks {
+		if strings.HasPrefix(task.TaskID, "order-") {
+			got = append(got, task.TaskID)
+		}
+	}
+
+	want := []string{"order-newest", "order-middle", "order-oldest"}
+	if len(got) != len(want) {
+		t.Fatalf("expected %d ordered tasks, got %d (%v)", len(want), len(got), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("expected order %v, got %v", want, got)
+		}
+	}
+
+	// The full list must be sorted too, not just our subset.
+	for i := 1; i < len(resp.Tasks); i++ {
+		if resp.Tasks[i-1].CreatedAt.Before(resp.Tasks[i].CreatedAt) {
+			t.Fatalf("task %d (%s) is newer than task %d (%s)",
+				i, resp.Tasks[i].CreatedAt, i-1, resp.Tasks[i-1].CreatedAt)
+		}
+	}
+}
+
 // TestGetTaskHandler tests the get task endpoint
 func TestGetTaskHandler(t *testing.T) {
 	handlers, _ := setupTestServer(t)

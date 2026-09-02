@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -76,6 +77,16 @@ func (h *Handlers) ListTasksHandler(w http.ResponseWriter, r *http.Request) {
 		info := convertTaskProgressToResponse(task)
 		response = append(response, info)
 	}
+
+	// GetAllTasks walks a map, so the order is otherwise nondeterministic.
+	// Newest first, breaking ties on task ID to keep the order stable across
+	// calls when two tasks share a creation timestamp.
+	sort.Slice(response, func(i, j int) bool {
+		if !response[i].CreatedAt.Equal(response[j].CreatedAt) {
+			return response[i].CreatedAt.After(response[j].CreatedAt)
+		}
+		return response[i].TaskID > response[j].TaskID
+	})
 
 	WriteJSON(w, http.StatusOK, TasksListResponse{
 		Tasks: response,
