@@ -246,7 +246,7 @@ curl -X POST "http://localhost:8080/api/v1/tasks" \
 
 - **Path**: `/api/v1/tasks`
 - **Method**: `GET`
-- **Description**: List all tracked API tasks.
+- **Description**: List all tracked API tasks, newest first (by creation time).
 
 ### Request
 

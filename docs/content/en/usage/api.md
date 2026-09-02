@@ -366,7 +366,7 @@ For `transfer` tasks, the top-level `storage` field is still required for valida
 
 ### GET /api/v1/tasks — List All Tasks
 
-Returns all tasks created via the API. Task records are stored in memory only and are cleared on restart. Tasks that have reached a terminal state are also evicted 24 hours after their last update; the sweep runs every 10 minutes.
+Returns all tasks created via the API, newest first (by creation time). Task records are stored in memory only and are cleared on restart. Tasks that have reached a terminal state are also evicted 24 hours after their last update; the sweep runs every 10 minutes.
 
 **Response `200 OK`:**
 
