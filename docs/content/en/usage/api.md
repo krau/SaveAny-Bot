@@ -366,7 +366,7 @@ For `transfer` tasks, the top-level `storage` field is still required for valida
 
 ### GET /api/v1/tasks — List All Tasks
 
-Returns all tasks created via the API. Task records are stored in memory only and are cleared on restart.
+Returns all tasks created via the API. Task records are stored in memory only and are cleared on restart. Tasks that have reached a terminal state are also evicted 24 hours after their last update; the sweep runs every 10 minutes.
 
 **Response `200 OK`:**
 
@@ -386,7 +386,10 @@ Returns all tasks created via the API. Task records are stored in memory only an
       "progress": {
         "total_bytes":      10485760,
         "downloaded_bytes": 5242880,
-        "percent":          50.0
+        "total_files":      3,
+        "downloaded_files": 1,
+        "percent":          50.0,
+        "speed_mbps":       12.5
       }
     }
   ],
@@ -394,7 +397,7 @@ Returns all tasks created via the API. Task records are stored in memory only an
 }
 ```
 
-The `progress` field is only included when `total_bytes > 0`. The `error` field is only included when non-empty.
+The `progress` field is included when either `total_bytes` or `total_files` is greater than 0; individual fields within it are omitted when zero. `percent` is computed from bytes when the byte total is known, and falls back to the file count otherwise. `speed_mbps` is the average since the task started running, not an instantaneous rate. The `error` field is only included when non-empty.
 
 ---
 
@@ -441,7 +444,13 @@ The `progress` field is only included when `total_bytes > 0`. The `error` field 
 
 ## Webhook Callbacks
 
-When a `webhook` URL is provided in the create request, SaveAny-Bot sends a `POST` request to that URL when the task reaches a terminal state (`completed`, `failed`, or `cancelled`).
+When a `webhook` URL is provided in the create request, SaveAny-Bot sends a `POST` request to that URL once the task reaches `completed` or `failed`.
+
+{{< hint info >}}
+Cancelled tasks do **not** trigger a webhook — cancellation is already known to whoever issued the DELETE. Each task fires at most one callback.
+{{< /hint >}}
+
+The callback is sent asynchronously, so the task is not delayed by a slow or unreachable endpoint.
 
 **Callback request headers:**
 
@@ -466,4 +475,4 @@ User-Agent: SaveAny-Bot/1.0
 
 `completed_at` is only present when status is `completed` or `failed`. `error` is only present when non-empty.
 
-**Retry policy:** Up to 3 attempts, with delays of 1s, 2s, and 3s between retries. Each request has a 30-second timeout.
+**Retry policy:** Up to 3 attempts. A non-2xx response or a transport error triggers a retry after 100ms, then 400ms. Each request has a 30-second timeout.
