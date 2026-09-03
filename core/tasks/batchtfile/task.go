@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
@@ -47,6 +48,11 @@ type Task struct {
 	uploadOnce      sync.Once
 	uploadMu        sync.Mutex
 	uploaded        map[string]int64
+	overwrite       bool // recovered: overwrite storage targets instead of uniquifying
+	// doneList preserves element IDs persisted as done by an earlier run
+	// (skipped from elems on recovery), so a re-persist does not lose them.
+	doneList  []string
+	persistMu sync.Mutex
 }
 
 // Title implements core.Exectable.
@@ -56,6 +62,31 @@ func (t *Task) Title() string {
 
 func (t *Task) Type() tasktype.TaskType {
 	return tasktype.TaskTypeTgfiles
+}
+
+// completedElementIDs returns the element IDs whose upload finished, for
+// persisting upload progress so recovery can skip them.
+func (t *Task) completedElementIDs() []string {
+	t.itemMu.RLock()
+	defer t.itemMu.RUnlock()
+	var ids []string
+	for _, item := range t.itemStates {
+		if item.phase == ItemPhaseCompleted {
+			ids = append(ids, item.id)
+		}
+	}
+	return ids
+}
+
+// persistElementDone records an element's completed upload in the persisted
+// payload so a restart does not re-upload it. Serialized so concurrent
+// element completions do not clobber each other's payload updates.
+func (t *Task) persistElementDone(ctx context.Context, elemID string) {
+	t.persistMu.Lock()
+	defer t.persistMu.Unlock()
+	if err := core.AppendTaskDone(ctx, t.ID, elemID); err != nil {
+		log.FromContext(ctx).Warnf("Failed to persist element completion %s: %v", elemID, err)
+	}
 }
 
 func NewTaskElement(

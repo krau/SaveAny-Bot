@@ -10,12 +10,14 @@ import (
 	"slices"
 
 	"github.com/charmbracelet/log"
+	"github.com/gotd/td/telegram/downloader"
 	"github.com/krau/SaveAny-Bot/api"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/database"
@@ -55,6 +57,19 @@ func Run(cmd *cobra.Command, _ []string) {
 		<-exitChan
 		cancel()
 	}()
+
+	core.SetDownloaderProvider(func() downloader.Client {
+		if ectx := bot.ExtContext(); ectx != nil {
+			return ectx.Raw
+		}
+		return nil
+	})
+	// 恢复任务携带 ext 上下文, 让进度编辑/取消按钮在恢复后继续工作。
+	recoverCtx := context.Background()
+	if ectx := bot.ExtContext(); ectx != nil {
+		recoverCtx = tgutil.ExtWithContext(recoverCtx, ectx)
+	}
+	core.RecoverTasks(recoverCtx)
 
 	core.Run(ctx)
 
@@ -100,6 +115,15 @@ func cleanCache() {
 	if config.C().Temp.BasePath != "" && !config.C().Stream {
 		if slices.Contains([]string{"/", ".", "\\", ".."}, filepath.Clean(config.C().Temp.BasePath)) {
 			log.Error("Invalid cache directory", "path", config.C().Temp.BasePath)
+			return
+		}
+		unfinished, err := database.CountUnfinishedTasks(context.Background())
+		if err != nil {
+			log.Error("Failed to count unfinished tasks, skipping cache cleanup", "error", err)
+			return
+		}
+		if unfinished > 0 {
+			log.Info("Skipping cache cleanup: unfinished tasks need their cache files for recovery", "tasks", unfinished)
 			return
 		}
 		currentDir, err := os.Getwd()
