@@ -140,7 +140,7 @@ func (c *Client) Put(ctx context.Context, key string, r io.Reader, size int64) e
 
 func (c *Client) buildURL(key string) (string, error) {
 	if c.pathStyle {
-		return fmt.Sprintf("%s/%s/%s", c.endpoint, c.bucket, key), nil
+		return fmt.Sprintf("%s/%s/%s", c.endpoint, c.bucket, escapePath(key)), nil
 	}
 	u, err := url.Parse(c.endpoint)
 	if err != nil {
@@ -148,6 +148,7 @@ func (c *Client) buildURL(key string) (string, error) {
 	}
 	u.Host = c.bucket + "." + u.Host
 	u.Path = "/" + key
+	u.RawPath = "/" + escapePath(key)
 	return u.String(), nil
 }
 
@@ -249,7 +250,10 @@ func canonicalURI(path string) string {
 	if path == "" {
 		return "/"
 	}
+	return escapePath(path)
+}
 
+func escapePath(path string) string {
 	var b strings.Builder
 	for i := 0; i < len(path); i++ {
 		c := path[i]
