@@ -159,8 +159,8 @@ bot:
       error_unwatch_chat_failed: "取消监听聊天失败: {{.Error}}"
       info_watch_chat_stopped: "已取消监听聊天: {{.Chat}}"
       error_notify_arg_invalid: "无效的参数, 用法: /watch notify on|off"
-      info_notify_enabled: "已开启监听任务通知: 监听到的消息及其保存结果会在此处反馈.\n\n用法: /watch notify on|off"
-      info_notify_disabled: "已关闭监听任务通知.\n\n用法: /watch notify on|off"
+      info_notify_enabled: "已为你监听的所有聊天开启任务通知: 监听到的消息及其保存结果会在此处反馈.\n\n用法: /watch notify on|off"
+      info_notify_disabled: "已为你监听的所有聊天关闭任务通知.\n\n用法: /watch notify on|off"
       notify_detected: "<b>🔔 监听到新消息</b>\n<code>{{.Name}}</code>\n进度将在此处更新"
     tasks:
       usage_cancel: "用法: /tasks cancel <task_id>"

@@ -91,7 +91,7 @@ bot:
 
       This will watch chat with ID -1002229835658 and save all media messages containing "plana".
 
-      Notifications for saved messages are off by default, toggle them with /watch notify on|off .
+      Notifications for saved messages are off by default, toggle them with /watch notify on|off.
     common:
       cancel_button_text: "Cancel"
       error_invalid_regex: "Invalid regex: {{.Error}}"
@@ -158,8 +158,8 @@ bot:
       error_unwatch_chat_failed: "Failed to unwatch chat: {{.Error}}"
       info_watch_chat_stopped: "Stopped watching chat: {{.Chat}}"
       error_notify_arg_invalid: "Invalid argument, usage: /watch notify on|off"
-      info_notify_enabled: "Task notifications for watched chats are enabled: every detected message and its result will be reported here.\n\nUsage: /watch notify on|off"
-      info_notify_disabled: "Task notifications for watched chats are disabled.\n\nUsage: /watch notify on|off"
+      info_notify_enabled: "Task notifications are enabled for every chat you watch: each saved message and its result is reported here.\n\nUsage: /watch notify on|off"
+      info_notify_disabled: "Task notifications are disabled for every chat you watch.\n\nUsage: /watch notify on|off"
       notify_detected: "<b>🔔 Watched message detected</b>\n<code>{{.Name}}</code>\nProgress will be reported here."
     tasks:
       usage_cancel: "Usage: /tasks cancel <task_id>"

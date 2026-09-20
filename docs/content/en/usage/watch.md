@@ -37,7 +37,7 @@ This will watch the chat with ID `12345678`, and only save messages whose text c
 
 ## Task notifications
 
-Notifications for saved messages are disabled by default. Enable them to get a message for every message the bot picks up from a watched chat, updated with the download progress and the final result:
+Task notifications are disabled by default for every user. Enable them to get a message for every message the bot picks up from a watched chat, updated with the download progress and the final result:
 
 ```
 /watch notify on
@@ -45,4 +45,4 @@ Notifications for saved messages are disabled by default. Enable them to get a m
 
 Turn them off again with `/watch notify off`, and query the current state with `/watch notify`.
 
-Notifications are sent by the bot to your private chat with it.
+Notifications are sent by the bot to your private chat with it. The toggle is per user, not per watched chat: `/watch notify off` stops notifications for every chat that user watches.
