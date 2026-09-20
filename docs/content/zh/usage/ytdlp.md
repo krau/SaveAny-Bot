@@ -46,6 +46,6 @@ weight: 7
 /ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ -o "%(uploader)s - %(title)s.%(ext)s"
 ```
 
-`-o/--output` 只有模板部分会被使用: 下载目录始终由 bot 管理, 模板中的相对路径会创建在该目录下. 如需修改所有下载的默认命名, 请在 [`[ytdlp]` 配置](../deployment/configuration)中设置 `filename_template` (以及 `restrict_filenames`, 开启后会丢弃非拉丁字符).
+`-o/--output` 只有模板部分会被使用: 下载目录始终由 bot 管理, 模板中的相对路径会创建在该目录下, 并保留到存储路径中. 如需修改所有下载的默认命名, 请在 [`[ytdlp]` 配置](../deployment/configuration)中设置 `filename_template`; 其中的 `restrict_filenames` 会将文件名限制为 ASCII, 去掉非拉丁字符、空格和 `&`.
 
 更多参数请参考 [yt-dlp 文档](https://github.com/yt-dlp/yt-dlp#usage-and-options).

@@ -46,6 +46,6 @@ Downloaded files are named after the video title (`%(title)s.%(ext)s`) and saved
 /ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ -o "%(uploader)s - %(title)s.%(ext)s"
 ```
 
-Only the template part of `-o/--output` is used: the download directory is always managed by the bot, and any relative path in the template is created below it. To change the default for every download, set `filename_template` (and `restrict_filenames`, which drops non-latin characters when enabled) in the [`[ytdlp]` config](../deployment/configuration).
+Only the template part of `-o/--output` is used: the download directory is always managed by the bot, and any relative path in the template is created below it and kept in the storage path. To change the default for every download, set `filename_template` in the [`[ytdlp]` config](../deployment/configuration); `restrict_filenames` there keeps file names ASCII-only, which drops non-latin characters, spaces and `&`.
 
 For more parameters, see [yt-dlp documentation](https://github.com/yt-dlp/yt-dlp#usage-and-options).

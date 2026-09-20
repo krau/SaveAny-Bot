@@ -59,8 +59,8 @@ recode = "mp4"
 # The download directory is always managed by the bot; paths inside the template are relative to its temp directory
 # 例如 / e.g. "%(uploader)s - %(title)s.%(ext)s"
 filename_template = "%(title)s.%(ext)s"
-# 将文件名限制为 ASCII 字符 (yt-dlp --restrict-filenames), 会丢弃标题中的非拉丁字符
-# Restrict file names to ASCII characters (yt-dlp --restrict-filenames), which drops non-latin characters from titles
+# 将文件名限制为 ASCII 字符 (yt-dlp --restrict-filenames), 会丢弃标题中的非拉丁字符、空格和 &
+# Restrict file names to ASCII characters (yt-dlp --restrict-filenames): drops non-latin characters, spaces and & from titles
 restrict_filenames = false
 
 # 解析器配置 / Parser configuration
