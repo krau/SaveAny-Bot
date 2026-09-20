@@ -91,6 +91,8 @@ bot:
       /watch -1002229835658 msgre:.*plana.*
 
       这将监听 ID 为 -1002229835658 的聊天, 并转存所有包含 "plana" 的媒体消息
+
+      监听任务的通知默认关闭, 可使用 /watch notify on|off 开启或关闭.
     common:
       cancel_button_text: "取消任务"
       error_invalid_regex: "无效的正则表达式: {{.Error}}"
@@ -156,6 +158,10 @@ bot:
       error_unwatch_no_chat_provided: "请提供要取消监听的聊天ID或用户名"
       error_unwatch_chat_failed: "取消监听聊天失败: {{.Error}}"
       info_watch_chat_stopped: "已取消监听聊天: {{.Chat}}"
+      error_notify_arg_invalid: "无效的参数, 用法: /watch notify on|off"
+      info_notify_enabled: "已开启监听任务通知: 监听到的消息及其保存结果会在此处反馈.\n\n用法: /watch notify on|off"
+      info_notify_disabled: "已关闭监听任务通知.\n\n用法: /watch notify on|off"
+      notify_detected: "<b>🔔 监听到新消息</b>\n<code>{{.Name}}</code>\n进度将在此处更新"
     tasks:
       usage_cancel: "用法: /tasks cancel <task_id>"
       usage: "用法: /tasks [running|queued|cancel <task_id>]"
