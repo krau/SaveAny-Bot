@@ -67,7 +67,10 @@ func TestBuildDownloadCommand(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd, flags := buildDownloadCommand(tt.cfg, tempDir, tt.flags)
+			cmd, flags, err := buildDownloadCommand(tt.cfg, tempDir, tt.flags)
+			if err != nil {
+				t.Fatalf("buildDownloadCommand() failed: %v", err)
+			}
 			args := commandArgs(cmd)
 
 			idx := slices.Index(args, "--output")

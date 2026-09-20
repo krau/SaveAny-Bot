@@ -57,3 +57,39 @@ func TestResolveFilenameTemplate(t *testing.T) {
 		})
 	}
 }
+
+func TestOutputTemplatePath(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+		wantErr  bool
+	}{
+		{name: "file name", template: "%(title)s.%(ext)s", want: "/dl/%(title)s.%(ext)s"},
+		{name: "subdirectory", template: "sub/%(title)s.%(ext)s", want: "/dl/sub/%(title)s.%(ext)s"},
+		{name: "absolute template stays inside", template: "/var/tmp/%(title)s.%(ext)s", want: "/dl/var/tmp/%(title)s.%(ext)s"},
+		{name: "type prefix stays outside", template: "subtitle:subs/%(title)s.%(ext)s", want: "subtitle:/dl/subs/%(title)s.%(ext)s"},
+		{name: "combined type prefix", template: "subtitle+thumbnail:subs/%(title)s.%(ext)s", want: "subtitle+thumbnail:/dl/subs/%(title)s.%(ext)s"},
+		{name: "unknown key is a directory name", template: "season:1/%(title)s.%(ext)s", want: "/dl/season:1/%(title)s.%(ext)s"},
+		{name: "escape", template: "../escaped/%(title)s.%(ext)s", wantErr: true},
+		{name: "escape below a subdirectory", template: "sub/../../escaped/%(title)s.%(ext)s", wantErr: true},
+		{name: "directory itself", template: "sub/..", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := outputTemplatePath("/dl", tt.template)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("outputTemplatePath(%q) = %q, want an error", tt.template, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("outputTemplatePath(%q) failed: %v", tt.template, err)
+			}
+			if got != tt.want {
+				t.Errorf("outputTemplatePath(%q) = %q, want %q", tt.template, got, tt.want)
+			}
+		})
+	}
+}
