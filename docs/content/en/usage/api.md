@@ -236,7 +236,7 @@ Download videos or audio via yt-dlp, supporting YouTube, Bilibili, and 1000+ oth
 | params field | Type | Required | Description |
 |---|---|---|---|
 | `urls` | []string | Yes | List of media URLs, at least 1 |
-| `flags` | []string | No | Extra yt-dlp command-line flags |
+| `flags` | []string | No | Extra yt-dlp command-line flags; `-o/--output` only contributes its file name template (the download directory is managed by the bot) |
 
 ##### aria2 — Aria2 Download
 

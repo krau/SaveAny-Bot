@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,15 @@ func (t *Task) Execute(ctx context.Context) error {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	defer os.RemoveAll(tempDir) // Clean up temp directory
+
+	// Absolute: yt-dlp ignores --paths for absolute output templates.
+	if tempDir, err = filepath.Abs(tempDir); err != nil {
+		logger.Errorf("Failed to resolve temp directory: %v", err)
+		if t.Progress != nil {
+			t.Progress.OnDone(ctx, t, err)
+		}
+		return fmt.Errorf("failed to resolve temp directory: %w", err)
+	}
 
 	logger.Debugf("Created temp directory: %s", tempDir)
 
@@ -76,37 +86,40 @@ func (t *Task) Execute(ctx context.Context) error {
 	return nil
 }
 
-// downloadFiles downloads files using yt-dlp and returns the list of downloaded file paths
-func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, error) {
-	logger := log.FromContext(ctx)
+// buildDownloadCommand prepares the yt-dlp command and the remaining custom flags
+// for a task. The bot owns the output directory: a custom -o/--output only
+// contributes its template, relative to tempDir.
+func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string) (*ytdlp.Command, []string) {
+	userTemplate, flags := splitOutputTemplate(flags)
 
-	cfg := config.C().Ytdlp
-
-	template := cfg.FilenameTemplate
-	if template == "" {
-		template = config.DefaultYtdlpFilenameTemplate
-	}
-	cmd := ytdlp.New().Output(filepath.Join(tempDir, template))
+	cmd := ytdlp.New().Output(filepath.Join(tempDir, resolveFilenameTemplate(cfg, userTemplate)))
 	if cfg.RestrictFilenames {
 		cmd = cmd.RestrictFilenames()
 	}
 
-	// Apply config-based format/quality defaults only when the user passes no
-	// custom flags. Any user flag means they take full control of yt-dlp.
-	if len(t.Flags) == 0 {
+	// Naming flags do not count as taking control of yt-dlp.
+	if len(flags) == 0 {
 		cmd = applyFormatConfig(cmd, cfg)
 	}
+	return cmd, flags
+}
+
+// downloadFiles downloads files using yt-dlp and returns the list of downloaded file paths
+func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, error) {
+	logger := log.FromContext(ctx)
+
+	cmd, flags := buildDownloadCommand(config.C().Ytdlp, tempDir, t.Flags)
 
 	if t.Progress != nil {
 		t.Progress.OnProgress(ctx, t, "Downloading...")
 	}
 
 	// Execute download with URLs and custom flags
-	logger.Infof("Executing yt-dlp for %d URL(s) with %d custom flag(s)", len(t.URLs), len(t.Flags))
+	logger.Infof("Executing yt-dlp for %d URL(s) with %d custom flag(s)", len(t.URLs), len(flags))
 
 	// Combine flags and URLs as arguments (flags first, then URLs)
 	// yt-dlp accepts: yt-dlp [OPTIONS] URL [URL...]
-	args := append(t.Flags, t.URLs...)
+	args := append(flags, t.URLs...)
 
 	// Run with context for cancellation support
 	result, err := cmd.Run(ctx, args...)
@@ -123,22 +136,33 @@ func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, err
 	}
 
 	// List downloaded files
-	files, err := os.ReadDir(tempDir)
+	files, err := collectDownloadedFiles(tempDir)
 	if err != nil {
+		return nil, err
+	}
+	for _, file := range files {
+		logger.Debugf("Downloaded file: %s", filepath.Base(file))
+	}
+
+	return files, nil
+}
+
+// collectDownloadedFiles walks dir recursively, since output templates may create
+// subdirectories.
+func collectDownloadedFiles(dir string) ([]string, error) {
+	var files []string
+	if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.IsDir() {
+			files = append(files, path)
+		}
+		return nil
+	}); err != nil {
 		return nil, fmt.Errorf("failed to read temp directory: %w", err)
 	}
-
-	var downloadedFiles []string
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		fullPath := filepath.Join(tempDir, file.Name())
-		downloadedFiles = append(downloadedFiles, fullPath)
-		logger.Debugf("Downloaded file: %s", file.Name())
-	}
-
-	return downloadedFiles, nil
+	return files, nil
 }
 
 // transferFile transfers a single file to storage

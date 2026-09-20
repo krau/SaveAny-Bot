@@ -32,9 +32,20 @@ Examples:
 Common parameters:
 
 - `-f <format>`: Specify download format (e.g., `best`, `worst`, `bestvideo+bestaudio`)
+- `-o <template>`: File name template (e.g., `%(uploader)s - %(title)s.%(ext)s`)
 - `--extract-audio`: Extract audio
 - `--audio-format <format>`: Audio format (e.g., `mp3`, `m4a`, `wav`)
 - `--write-sub`: Download subtitles
 - `--write-thumbnail`: Download thumbnail
+
+## File names
+
+Downloaded files are named after the video title (`%(title)s.%(ext)s`) and saved into the storage directory you selected. Pass a yt-dlp output template to customize the name:
+
+```bash
+/ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ -o "%(uploader)s - %(title)s.%(ext)s"
+```
+
+Only the template part of `-o/--output` is used: the download directory is always managed by the bot, and any relative path in the template is created below it. To change the default for every download, set `filename_template` (and `restrict_filenames`, which drops non-latin characters when enabled) in the [`[ytdlp]` config](../deployment/configuration).
 
 For more parameters, see [yt-dlp documentation](https://github.com/yt-dlp/yt-dlp#usage-and-options).
