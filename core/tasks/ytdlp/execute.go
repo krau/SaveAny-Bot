@@ -90,7 +90,10 @@ func (t *Task) Execute(ctx context.Context) error {
 // for a task. The bot owns the output directory: a custom -o/--output only
 // contributes its template, relative to tempDir.
 func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string) (*ytdlp.Command, []string, error) {
-	userTemplate, flags := splitOutputTemplate(flags)
+	userTemplate, flags, err := splitOutputTemplate(flags)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	output, err := outputTemplatePath(tempDir, resolveFilenameTemplate(cfg, userTemplate))
 	if err != nil {

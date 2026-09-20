@@ -9,16 +9,16 @@ import (
 )
 
 // splitOutputTemplate pulls a user-supplied yt-dlp output template out of the
-// custom flags: the last one wins, matching yt-dlp. A dangling -o/--output is
-// kept so yt-dlp reports the missing value itself.
-func splitOutputTemplate(flags []string) (template string, rest []string) {
+// custom flags: the last one wins, matching yt-dlp. A -o/--output without a
+// template is rejected, since yt-dlp would consume the following argument (a URL
+// or another flag) as the template.
+func splitOutputTemplate(flags []string) (template string, rest []string, err error) {
 	rest = make([]string, 0, len(flags))
 	for i := 0; i < len(flags); i++ {
 		flag := flags[i]
 		if flag == "-o" || flag == "--output" {
-			if i+1 == len(flags) {
-				rest = append(rest, flag)
-				continue
+			if i+1 == len(flags) || strings.HasPrefix(flags[i+1], "-") {
+				return "", nil, fmt.Errorf("%s requires an output template", flag)
 			}
 			i++
 			template = flags[i]
@@ -33,7 +33,7 @@ func splitOutputTemplate(flags []string) (template string, rest []string) {
 			rest = append(rest, flag)
 		}
 	}
-	return template, rest
+	return template, rest, nil
 }
 
 // resolveFilenameTemplate picks the output template: a user-provided

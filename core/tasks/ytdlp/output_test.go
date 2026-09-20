@@ -13,21 +13,32 @@ func TestSplitOutputTemplate(t *testing.T) {
 		flags    []string
 		want     string
 		wantRest []string
+		wantErr  bool
 	}{
-		{"no flags", nil, "", nil},
-		{"unrelated flags", []string{"-f", "best"}, "", []string{"-f", "best"}},
-		{"short flag with separate value", []string{"-o", "%(title)s.%(ext)s"}, "%(title)s.%(ext)s", []string{}},
-		{"long flag with separate value", []string{"--output", "%(title)s.%(ext)s"}, "%(title)s.%(ext)s", []string{}},
-		{"long flag with equals", []string{"--output=%(id)s.%(ext)s"}, "%(id)s.%(ext)s", []string{}},
-		{"short flag with attached value", []string{"-o%(id)s.%(ext)s"}, "%(id)s.%(ext)s", []string{}},
-		{"last template wins", []string{"-o", "%(id)s.%(ext)s", "--output=%(title)s.%(ext)s"}, "%(title)s.%(ext)s", []string{}},
-		{"remaining flags keep their order", []string{"-f", "best", "-o", "%(id)s.%(ext)s", "--extract-audio"}, "%(id)s.%(ext)s", []string{"-f", "best", "--extract-audio"}},
-		{"dangling flag is kept for yt-dlp", []string{"-f", "best", "-o"}, "", []string{"-f", "best", "-o"}},
-		{"capital O is not an output template", []string{"-O", "%(id)s"}, "", []string{"-O", "%(id)s"}},
+		{name: "no flags", flags: nil, want: "", wantRest: nil},
+		{name: "unrelated flags", flags: []string{"-f", "best"}, want: "", wantRest: []string{"-f", "best"}},
+		{name: "short flag with separate value", flags: []string{"-o", "%(title)s.%(ext)s"}, want: "%(title)s.%(ext)s", wantRest: []string{}},
+		{name: "long flag with separate value", flags: []string{"--output", "%(title)s.%(ext)s"}, want: "%(title)s.%(ext)s", wantRest: []string{}},
+		{name: "long flag with equals", flags: []string{"--output=%(id)s.%(ext)s"}, want: "%(id)s.%(ext)s", wantRest: []string{}},
+		{name: "short flag with attached value", flags: []string{"-o%(id)s.%(ext)s"}, want: "%(id)s.%(ext)s", wantRest: []string{}},
+		{name: "last template wins", flags: []string{"-o", "%(id)s.%(ext)s", "--output=%(title)s.%(ext)s"}, want: "%(title)s.%(ext)s", wantRest: []string{}},
+		{name: "remaining flags keep their order", flags: []string{"-f", "best", "-o", "%(id)s.%(ext)s", "--extract-audio"}, want: "%(id)s.%(ext)s", wantRest: []string{"-f", "best", "--extract-audio"}},
+		{name: "dangling flag", flags: []string{"-f", "best", "-o"}, wantErr: true},
+		{name: "flag as template", flags: []string{"-o", "--extract-audio"}, wantErr: true},
+		{name: "capital O is not an output template", flags: []string{"-O", "%(id)s"}, want: "", wantRest: []string{"-O", "%(id)s"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, rest := splitOutputTemplate(tt.flags)
+			got, rest, err := splitOutputTemplate(tt.flags)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("splitOutputTemplate(%q) = (%q, %q), want an error", tt.flags, got, rest)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("splitOutputTemplate(%q) failed: %v", tt.flags, err)
+			}
 			if got != tt.want {
 				t.Errorf("template = %q, want %q", got, tt.want)
 			}
