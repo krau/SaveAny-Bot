@@ -42,6 +42,14 @@ func TestParseWatchNotifyArg(t *testing.T) {
 
 type notifyCtxKey struct{}
 
+type notifyTestInfo struct{}
+
+func (notifyTestInfo) TaskID() string      { return "notify-task" }
+func (notifyTestInfo) FileName() string    { return "file.bin" }
+func (notifyTestInfo) FileSize() int64     { return 1 }
+func (notifyTestInfo) StoragePath() string { return "dir/file.bin" }
+func (notifyTestInfo) StorageName() string { return "store" }
+
 // recordingTracker records the contexts the wrapped tracker is called with.
 type recordingTracker struct {
 	events []string
@@ -73,28 +81,73 @@ func (r *recordingTracker) OnDone(ctx context.Context, _ tftask.TaskInfo, _ erro
 	r.ctxs = append(r.ctxs, ctx)
 }
 
-func TestWatchNotifyProgressReportsThroughBotContext(t *testing.T) {
+func TestWatchNotifyProgressOpensNotificationOnFirstUse(t *testing.T) {
 	userbotExt := &ext.Context{}
-	botExt := &ext.Context{}
+	sharedBotExt := &ext.Context{}
 	inner := &recordingTracker{}
-	tracker := watchNotifyProgress{ext: botExt, tracker: inner}
+
+	var opened int
+	var gotChatID int64
+	var gotName string
+	restore := openWatchNotification
+	openWatchNotification = func(_ context.Context, _ *ext.Context, chatID int64, fileName string) tftask.ProgressTracker {
+		opened++
+		gotChatID = chatID
+		gotName = fileName
+		return inner
+	}
+	t.Cleanup(func() { openWatchNotification = restore })
+
+	tracker := newWatchNotifyProgress(context.Background(), sharedBotExt, &database.User{WatchNotify: true, ChatID: 4242})
+	progress, ok := tracker.(*watchNotifyProgress)
+	if !ok {
+		t.Fatalf("newWatchNotifyProgress() = %T, want *watchNotifyProgress", tracker)
+	}
+	if progress.botCtx == sharedBotExt {
+		t.Fatal("notification reuses the shared bot context, which is not safe for concurrent sends")
+	}
+	other, ok := newWatchNotifyProgress(context.Background(), sharedBotExt, &database.User{WatchNotify: true, ChatID: 1}).(*watchNotifyProgress)
+	if !ok {
+		t.Fatal("second notification tracker has an unexpected type")
+	}
+	if other.botCtx == progress.botCtx {
+		t.Error("notifications share one bot context")
+	}
 
 	taskCtx := context.WithValue(context.Background(), notifyCtxKey{}, "kept")
 	taskCtx = tgutil.ExtWithContext(taskCtx, userbotExt)
 
-	tracker.OnStart(taskCtx, nil)
-	tracker.OnProgress(taskCtx, nil, 1, 2)
-	tracker.OnUploadStart(taskCtx, nil, 3)
-	tracker.OnUploadProgress(taskCtx, nil, 1, 3)
-	tracker.OnDone(taskCtx, nil, errors.New("failed"))
+	if opened != 0 {
+		t.Fatalf("notification opened %d times before the task reported anything", opened)
+	}
+
+	uploads, ok := tracker.(tftask.UploadProgressTracker)
+	if !ok {
+		t.Fatal("tracker no longer reports upload progress")
+	}
+	tracker.OnStart(taskCtx, notifyTestInfo{})
+	tracker.OnProgress(taskCtx, notifyTestInfo{}, 1, 2)
+	uploads.OnUploadStart(taskCtx, notifyTestInfo{}, 3)
+	uploads.OnUploadProgress(taskCtx, notifyTestInfo{}, 1, 3)
+	tracker.OnDone(taskCtx, notifyTestInfo{}, errors.New("failed"))
+
+	if opened != 1 {
+		t.Errorf("notification opened %d times, want 1", opened)
+	}
+	if gotChatID != 4242 {
+		t.Errorf("notification chat = %d, want 4242", gotChatID)
+	}
+	if want := (notifyTestInfo{}).FileName(); gotName != want {
+		t.Errorf("notification file name = %q, want %q", gotName, want)
+	}
 
 	wantEvents := []string{"start", "progress", "upload_start", "upload_progress", "done"}
 	if !slices.Equal(inner.events, wantEvents) {
 		t.Fatalf("forwarded events = %q, want %q", inner.events, wantEvents)
 	}
 	for i, ctx := range inner.ctxs {
-		if got := tgutil.ExtFromContext(ctx); got != botExt {
-			t.Errorf("event %s used ext %p, want the bot ext %p", inner.events[i], got, botExt)
+		if got := tgutil.ExtFromContext(ctx); got != progress.botCtx {
+			t.Errorf("event %s used ext %p, want the per-task bot context %p", inner.events[i], got, progress.botCtx)
 		}
 		if got := ctx.Value(notifyCtxKey{}); got != "kept" {
 			t.Errorf("event %s dropped task context values: %v", inner.events[i], got)
@@ -105,12 +158,37 @@ func TestWatchNotifyProgressReportsThroughBotContext(t *testing.T) {
 	}
 }
 
+func TestWatchNotifyProgressStaysSilentWhenNotificationFails(t *testing.T) {
+	restore := openWatchNotification
+	opened := 0
+	openWatchNotification = func(context.Context, *ext.Context, int64, string) tftask.ProgressTracker {
+		opened++
+		return nil
+	}
+	t.Cleanup(func() { openWatchNotification = restore })
+
+	tracker := newWatchNotifyProgress(context.Background(), &ext.Context{}, &database.User{WatchNotify: true, ChatID: 1})
+	tracker.OnStart(context.Background(), notifyTestInfo{})
+	tracker.OnProgress(context.Background(), notifyTestInfo{}, 1, 1)
+	tracker.OnDone(context.Background(), notifyTestInfo{}, nil)
+
+	if opened != 1 {
+		t.Errorf("notification opened %d times, want 1", opened)
+	}
+}
+
 func TestNewWatchNotifyProgressDisabled(t *testing.T) {
-	botExt := &ext.Context{}
-	if tracker := newWatchNotifyProgress(t.Context(), botExt, &database.User{}, nil); tracker != nil {
+	restore := openWatchNotification
+	openWatchNotification = func(context.Context, *ext.Context, int64, string) tftask.ProgressTracker {
+		t.Error("opened a notification while it is disabled")
+		return nil
+	}
+	t.Cleanup(func() { openWatchNotification = restore })
+
+	if tracker := newWatchNotifyProgress(t.Context(), &ext.Context{}, &database.User{}); tracker != nil {
 		t.Error("tracker created while notifications are disabled")
 	}
-	if tracker := newWatchNotifyProgress(t.Context(), nil, &database.User{WatchNotify: true}, nil); tracker != nil {
+	if tracker := newWatchNotifyProgress(t.Context(), nil, &database.User{WatchNotify: true}); tracker != nil {
 		t.Error("tracker created without a bot context")
 	}
 }

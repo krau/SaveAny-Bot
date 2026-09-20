@@ -325,7 +325,7 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent, botCtx *ext.C
 			storagePath := path.Join(dirPath, file.Name())
 			injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 			taskid := xid.New().String()
-			task, err := coretfile.NewTGFileTask(taskid, injectCtx, file, stor, storagePath, newWatchNotifyProgress(ctx, botCtx, user, file))
+			task, err := coretfile.NewTGFileTask(taskid, injectCtx, file, stor, storagePath, newWatchNotifyProgress(ctx, botCtx, user))
 			if err != nil {
 				logger.Errorf("create task failed: %s", err)
 				continue
@@ -422,7 +422,7 @@ func processWatchMediaGroup(ctx *ext.Context, botCtx *ext.Context, user *databas
 		for _, af := range afiles {
 			afstorPath := path.Join(af.dirPath, albumDir, af.file.Name())
 			taskid := xid.New().String()
-			task, err := coretfile.NewTGFileTask(taskid, injectCtx, af.file, albumStor, afstorPath, newWatchNotifyProgress(ctx, botCtx, user, af.file))
+			task, err := coretfile.NewTGFileTask(taskid, injectCtx, af.file, albumStor, afstorPath, newWatchNotifyProgress(ctx, botCtx, user))
 			if err != nil {
 				logger.Errorf("create task failed for album file: %s", err)
 				continue
