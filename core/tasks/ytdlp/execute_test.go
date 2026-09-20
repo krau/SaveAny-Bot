@@ -21,47 +21,72 @@ func commandArgs(cmd *ytdlp.Command) []string {
 	return args
 }
 
+// outputArgs lists the output templates of an argv, in order.
+func outputArgs(args []string) []string {
+	var outputs []string
+	for i := 0; i+1 < len(args); i++ {
+		if args[i] == "--output" || args[i] == "-o" {
+			outputs = append(outputs, args[i+1])
+		}
+	}
+	return outputs
+}
+
 func TestBuildDownloadCommand(t *testing.T) {
 	const tempDir = "/tmp/ytdlp-test"
 	tests := []struct {
 		name            string
 		cfg             config.YtdlpConfig
 		flags           []string
-		wantTemplate    string
+		wantOutputs     []string
 		wantFlags       []string
 		wantRestricted  bool
 		wantFormatFlags bool
 	}{
 		{
-			name:            "default template keeps titles",
-			wantTemplate:    "%(title)s.%(ext)s",
+			name:            "default template roots the output in the temp dir",
+			wantOutputs:     []string{filepath.Join(tempDir, "%(title)s.%(ext)s")},
 			wantFormatFlags: true,
 		},
 		{
-			name:            "config template",
+			name:            "config template roots the output in the temp dir",
 			cfg:             config.YtdlpConfig{FilenameTemplate: "%(uploader)s - %(title)s.%(ext)s"},
-			wantTemplate:    "%(uploader)s - %(title)s.%(ext)s",
+			wantOutputs:     []string{filepath.Join(tempDir, "%(uploader)s - %(title)s.%(ext)s")},
 			wantFormatFlags: true,
 		},
 		{
-			name:            "user template overrides config template",
-			cfg:             config.YtdlpConfig{FilenameTemplate: "%(id)s.%(ext)s", MaxHeight: 1080},
-			flags:           []string{"-o", "%(title)s [%(id)s].%(ext)s"},
-			wantTemplate:    "%(title)s [%(id)s].%(ext)s",
+			name:  "user template comes after the base template",
+			cfg:   config.YtdlpConfig{FilenameTemplate: "%(id)s.%(ext)s", MaxHeight: 1080},
+			flags: []string{"-o", "%(title)s [%(id)s].%(ext)s"},
+			wantOutputs: []string{
+				filepath.Join(tempDir, "%(id)s.%(ext)s"),
+				filepath.Join(tempDir, "%(title)s [%(id)s].%(ext)s"),
+			},
+			wantFlags:       []string{"-o", filepath.Join(tempDir, "%(title)s [%(id)s].%(ext)s")},
+			wantFormatFlags: false,
+		},
+		{
+			name:  "prefixed template keeps the base template for other outputs",
+			flags: []string{"-o", "subtitle:subs/%(title)s.%(ext)s"},
+			wantOutputs: []string{
+				filepath.Join(tempDir, "%(title)s.%(ext)s"),
+				"subtitle:" + filepath.Join(tempDir, "subs", "%(title)s.%(ext)s"),
+			},
+			wantFlags:       []string{"-o", "subtitle:" + filepath.Join(tempDir, "subs", "%(title)s.%(ext)s")},
 			wantFormatFlags: false,
 		},
 		{
 			name:            "restrict filenames only when configured",
 			cfg:             config.YtdlpConfig{RestrictFilenames: true, MaxHeight: 1080},
-			wantTemplate:    "%(title)s.%(ext)s",
+			wantOutputs:     []string{filepath.Join(tempDir, "%(title)s.%(ext)s")},
 			wantRestricted:  true,
 			wantFormatFlags: true,
 		},
 		{
-			name:            "custom flags skip format defaults",
+			name:            "unrelated flags skip format defaults",
 			cfg:             config.YtdlpConfig{MaxHeight: 1080},
 			flags:           []string{"-f", "best"},
-			wantTemplate:    "%(title)s.%(ext)s",
+			wantOutputs:     []string{filepath.Join(tempDir, "%(title)s.%(ext)s")},
 			wantFlags:       []string{"-f", "best"},
 			wantFormatFlags: false,
 		},
@@ -72,14 +97,10 @@ func TestBuildDownloadCommand(t *testing.T) {
 			if err != nil {
 				t.Fatalf("buildDownloadCommand() failed: %v", err)
 			}
-			args := commandArgs(cmd)
+			args := append(commandArgs(cmd), flags...)
 
-			idx := slices.Index(args, "--output")
-			if idx < 0 || idx+1 >= len(args) {
-				t.Fatalf("--output not found in %q", args)
-			}
-			if got, want := args[idx+1], filepath.Join(tempDir, tt.wantTemplate); got != want {
-				t.Errorf("output path = %q, want %q", got, want)
+			if got := outputArgs(args); !slices.Equal(got, tt.wantOutputs) {
+				t.Errorf("outputs = %q, want %q (args: %q)", got, tt.wantOutputs, args)
 			}
 			if got := slices.Contains(args, "--restrict-filenames"); got != tt.wantRestricted {
 				t.Errorf("--restrict-filenames = %v, want %v (args: %q)", got, tt.wantRestricted, args)
@@ -90,6 +111,23 @@ func TestBuildDownloadCommand(t *testing.T) {
 			}
 			if !slices.Equal(flags, tt.wantFlags) {
 				t.Errorf("flags = %q, want %q", flags, tt.wantFlags)
+			}
+		})
+	}
+}
+
+func TestBuildDownloadCommandRejectsBadTemplates(t *testing.T) {
+	tests := []struct {
+		name  string
+		flags []string
+	}{
+		{name: "escaping template", flags: []string{"-o", "../escaped/%(title)s.%(ext)s"}},
+		{name: "dangling flag", flags: []string{"-o"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if cmd, flags, err := buildDownloadCommand(config.YtdlpConfig{}, "/tmp/ytdlp-test", tt.flags); err == nil {
+				t.Fatalf("buildDownloadCommand(%q) = (%v, %q), want an error", tt.flags, cmd, flags)
 			}
 		})
 	}
@@ -155,7 +193,9 @@ type recordingProgress struct {
 }
 
 func (p *recordingProgress) OnStart(context.Context, *Task) {}
-func (p *recordingProgress) OnProgress(_ context.Context, _ *Task, s string) {
-	p.statuses = append(p.statuses, s)
+
+func (p *recordingProgress) OnProgress(_ context.Context, _ *Task, status string) {
+	p.statuses = append(p.statuses, status)
 }
+
 func (p *recordingProgress) OnDone(context.Context, *Task, error) {}

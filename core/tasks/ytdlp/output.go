@@ -1,6 +1,7 @@
 package ytdlp
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -8,45 +9,54 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 )
 
-// splitOutputTemplate pulls a user-supplied yt-dlp output template out of the
-// custom flags: the last one wins, matching yt-dlp. A -o/--output without a
-// template is rejected, since yt-dlp would consume the following argument (a URL
-// or another flag) as the template.
-func splitOutputTemplate(flags []string) (template string, rest []string, err error) {
-	rest = make([]string, 0, len(flags))
+// rewriteOutputTemplates re-roots every -o/--output template in the custom flags
+// below dir, the directory the bot owns. Templates keep their yt-dlp type prefix
+// and their position, so repeated templates still override each other the way
+// yt-dlp expects. A -o/--output without a template is rejected, since yt-dlp
+// would consume the following argument (a URL or another flag) as the template.
+func rewriteOutputTemplates(flags []string, dir string) ([]string, error) {
+	rewritten := make([]string, 0, len(flags))
 	for i := 0; i < len(flags); i++ {
 		flag := flags[i]
 		if flag == "-o" || flag == "--output" {
 			if i+1 == len(flags) || strings.HasPrefix(flags[i+1], "-") {
-				return "", nil, fmt.Errorf("%s requires an output template", flag)
+				return nil, fmt.Errorf("%s requires an output template", flag)
 			}
 			i++
-			template = flags[i]
+			template, err := outputTemplatePath(dir, flags[i])
+			if err != nil {
+				return nil, err
+			}
+			rewritten = append(rewritten, flag, template)
 			continue
 		}
 		switch {
 		case strings.HasPrefix(flag, "--output="):
-			template = strings.TrimPrefix(flag, "--output=")
-		case strings.HasPrefix(flag, "-o") && len(flag) > 2:
-			template = flag[2:]
+			template, err := outputTemplatePath(dir, strings.TrimPrefix(flag, "--output="))
+			if err != nil {
+				return nil, err
+			}
+			rewritten = append(rewritten, "--output="+template)
+		case strings.HasPrefix(flag, "-o") && len(flag) > len("-o"):
+			template, err := outputTemplatePath(dir, flag[len("-o"):])
+			if err != nil {
+				return nil, err
+			}
+			rewritten = append(rewritten, "-o"+template)
 		default:
-			rest = append(rest, flag)
+			rewritten = append(rewritten, flag)
 		}
 	}
-	return template, rest, nil
+	return rewritten, nil
 }
 
-// resolveFilenameTemplate picks the output template: a user-provided
-// -o/--output, then ytdlp.filename_template, then the built-in default.
-func resolveFilenameTemplate(cfg config.YtdlpConfig, userTemplate string) string {
-	switch {
-	case userTemplate != "":
-		return userTemplate
-	case cfg.FilenameTemplate != "":
+// resolveFilenameTemplate returns the template outputs fall back to: the
+// ytdlp.filename_template config, or the built-in default.
+func resolveFilenameTemplate(cfg config.YtdlpConfig) string {
+	if cfg.FilenameTemplate != "" {
 		return cfg.FilenameTemplate
-	default:
-		return config.DefaultYtdlpFilenameTemplate
 	}
+	return config.DefaultYtdlpFilenameTemplate
 }
 
 // ytdlpOutputTypes are the type prefixes yt-dlp accepts in output templates
@@ -58,9 +68,12 @@ var ytdlpOutputTypes = map[string]struct{}{
 	"pl_video": {}, "subtitle": {}, "thumbnail": {},
 }
 
-// outputTemplatePath resolves an output template below dir, the directory the bot
-// owns. Templates that would escape dir through ".." are rejected.
+// outputTemplatePath resolves an output template below dir. Templates that would
+// escape dir through ".." are rejected.
 func outputTemplatePath(dir, template string) (string, error) {
+	if template == "" {
+		return "", errors.New("empty output template")
+	}
 	prefix, tmpl := splitTypePrefix(template)
 	output := filepath.Join(dir, tmpl)
 	rel, err := filepath.Rel(dir, output)

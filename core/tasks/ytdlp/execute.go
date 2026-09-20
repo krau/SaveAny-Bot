@@ -86,20 +86,22 @@ func (t *Task) Execute(ctx context.Context) error {
 	return nil
 }
 
-// buildDownloadCommand prepares the yt-dlp command and the remaining custom flags
-// for a task. The bot owns the output directory: a custom -o/--output only
-// contributes its template, relative to tempDir.
+// buildDownloadCommand prepares the yt-dlp command and the custom flags for a
+// task. The bot owns the output directory: the configured template roots every
+// output in tempDir, and custom -o/--output templates are re-rooted there.
 func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string) (*ytdlp.Command, []string, error) {
-	userTemplate, rest, err := splitOutputTemplate(flags)
+	flags, err := rewriteOutputTemplates(flags, tempDir)
+	if err != nil {
+		return nil, nil, err
+	}
+	// The base template keeps outputs the user did not template themselves (e.g.
+	// the video when only a "subtitle:" template is given) inside tempDir.
+	base, err := outputTemplatePath(tempDir, resolveFilenameTemplate(cfg))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	output, err := outputTemplatePath(tempDir, resolveFilenameTemplate(cfg, userTemplate))
-	if err != nil {
-		return nil, nil, err
-	}
-	cmd := ytdlp.New().Output(output)
+	cmd := ytdlp.New().Output(base)
 	if cfg.RestrictFilenames {
 		cmd = cmd.RestrictFilenames()
 	}
@@ -108,7 +110,7 @@ func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string
 	if len(flags) == 0 {
 		cmd = applyFormatConfig(cmd, cfg)
 	}
-	return cmd, rest, nil
+	return cmd, flags, nil
 }
 
 // downloadFiles downloads files using yt-dlp and returns the list of downloaded file paths

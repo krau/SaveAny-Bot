@@ -7,43 +7,46 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 )
 
-func TestSplitOutputTemplate(t *testing.T) {
+func TestRewriteOutputTemplates(t *testing.T) {
+	const dir = "/dl"
 	tests := []struct {
-		name     string
-		flags    []string
-		want     string
-		wantRest []string
-		wantErr  bool
+		name    string
+		flags   []string
+		want    []string
+		wantErr bool
 	}{
-		{name: "no flags", flags: nil, want: "", wantRest: nil},
-		{name: "unrelated flags", flags: []string{"-f", "best"}, want: "", wantRest: []string{"-f", "best"}},
-		{name: "short flag with separate value", flags: []string{"-o", "%(title)s.%(ext)s"}, want: "%(title)s.%(ext)s", wantRest: []string{}},
-		{name: "long flag with separate value", flags: []string{"--output", "%(title)s.%(ext)s"}, want: "%(title)s.%(ext)s", wantRest: []string{}},
-		{name: "long flag with equals", flags: []string{"--output=%(id)s.%(ext)s"}, want: "%(id)s.%(ext)s", wantRest: []string{}},
-		{name: "short flag with attached value", flags: []string{"-o%(id)s.%(ext)s"}, want: "%(id)s.%(ext)s", wantRest: []string{}},
-		{name: "last template wins", flags: []string{"-o", "%(id)s.%(ext)s", "--output=%(title)s.%(ext)s"}, want: "%(title)s.%(ext)s", wantRest: []string{}},
-		{name: "remaining flags keep their order", flags: []string{"-f", "best", "-o", "%(id)s.%(ext)s", "--extract-audio"}, want: "%(id)s.%(ext)s", wantRest: []string{"-f", "best", "--extract-audio"}},
+		{name: "no flags", flags: nil, want: []string{}},
+		{name: "unrelated flags", flags: []string{"-f", "best"}, want: []string{"-f", "best"}},
+		{name: "short flag with separate value", flags: []string{"-o", "%(title)s.%(ext)s"}, want: []string{"-o", "/dl/%(title)s.%(ext)s"}},
+		{name: "long flag with separate value", flags: []string{"--output", "sub/%(title)s.%(ext)s"}, want: []string{"--output", "/dl/sub/%(title)s.%(ext)s"}},
+		{name: "long flag with equals", flags: []string{"--output=%(id)s.%(ext)s"}, want: []string{"--output=/dl/%(id)s.%(ext)s"}},
+		{name: "short flag with attached value", flags: []string{"-o%(id)s.%(ext)s"}, want: []string{"-o/dl/%(id)s.%(ext)s"}},
+		{
+			name:  "repeated templates keep their order",
+			flags: []string{"-o", "%(id)s.%(ext)s", "--extract-audio", "--output=%(title)s.%(ext)s"},
+			want:  []string{"-o", "/dl/%(id)s.%(ext)s", "--extract-audio", "--output=/dl/%(title)s.%(ext)s"},
+		},
+		{name: "type prefix stays outside", flags: []string{"-o", "subtitle:subs/%(title)s.%(ext)s"}, want: []string{"-o", "subtitle:/dl/subs/%(title)s.%(ext)s"}},
 		{name: "dangling flag", flags: []string{"-f", "best", "-o"}, wantErr: true},
 		{name: "flag as template", flags: []string{"-o", "--extract-audio"}, wantErr: true},
-		{name: "capital O is not an output template", flags: []string{"-O", "%(id)s"}, want: "", wantRest: []string{"-O", "%(id)s"}},
+		{name: "escape", flags: []string{"-o", "../out/%(title)s.%(ext)s"}, wantErr: true},
+		{name: "empty template", flags: []string{"--output="}, wantErr: true},
+		{name: "capital O is not an output template", flags: []string{"-O", "%(id)s"}, want: []string{"-O", "%(id)s"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, rest, err := splitOutputTemplate(tt.flags)
+			got, err := rewriteOutputTemplates(tt.flags, dir)
 			if tt.wantErr {
 				if err == nil {
-					t.Fatalf("splitOutputTemplate(%q) = (%q, %q), want an error", tt.flags, got, rest)
+					t.Fatalf("rewriteOutputTemplates(%q) = %q, want an error", tt.flags, got)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("splitOutputTemplate(%q) failed: %v", tt.flags, err)
+				t.Fatalf("rewriteOutputTemplates(%q) failed: %v", tt.flags, err)
 			}
-			if got != tt.want {
-				t.Errorf("template = %q, want %q", got, tt.want)
-			}
-			if !slices.Equal(rest, tt.wantRest) {
-				t.Errorf("remaining flags = %q, want %q", rest, tt.wantRest)
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("rewriteOutputTemplates(%q) = %q, want %q", tt.flags, got, tt.want)
 			}
 		})
 	}
@@ -51,18 +54,16 @@ func TestSplitOutputTemplate(t *testing.T) {
 
 func TestResolveFilenameTemplate(t *testing.T) {
 	tests := []struct {
-		name         string
-		cfg          config.YtdlpConfig
-		userTemplate string
-		want         string
+		name string
+		cfg  config.YtdlpConfig
+		want string
 	}{
-		{"default", config.YtdlpConfig{}, "", config.DefaultYtdlpFilenameTemplate},
-		{"config template", config.YtdlpConfig{FilenameTemplate: "%(uploader)s - %(title)s.%(ext)s"}, "", "%(uploader)s - %(title)s.%(ext)s"},
-		{"user template wins over config", config.YtdlpConfig{FilenameTemplate: "%(id)s.%(ext)s"}, "%(title)s.%(ext)s", "%(title)s.%(ext)s"},
+		{"default", config.YtdlpConfig{}, config.DefaultYtdlpFilenameTemplate},
+		{"config template", config.YtdlpConfig{FilenameTemplate: "%(uploader)s - %(title)s.%(ext)s"}, "%(uploader)s - %(title)s.%(ext)s"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := resolveFilenameTemplate(tt.cfg, tt.userTemplate); got != tt.want {
+			if got := resolveFilenameTemplate(tt.cfg); got != tt.want {
 				t.Errorf("resolveFilenameTemplate() = %q, want %q", got, tt.want)
 			}
 		})
@@ -85,6 +86,7 @@ func TestOutputTemplatePath(t *testing.T) {
 		{name: "escape", template: "../escaped/%(title)s.%(ext)s", wantErr: true},
 		{name: "escape below a subdirectory", template: "sub/../../escaped/%(title)s.%(ext)s", wantErr: true},
 		{name: "directory itself", template: "sub/..", wantErr: true},
+		{name: "empty", template: "", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
