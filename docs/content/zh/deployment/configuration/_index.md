@@ -120,9 +120,11 @@ remove_after_transfer = true
 - `max_height`: 默认下载的最高视频清晰度 (按高度限制), 如 `1080`, `720`, `480`; `0` 表示不限制 (下载最佳画质). 当设置了 `format` 时此项被忽略.
 - `format`: 直接指定 yt-dlp format 选择表达式, 设置后优先级高于 `max_height`, 例如 `bv*[height<=720]+ba/b`.
 - `recode`: 下载后转封装的视频容器格式 (如 `mp4`), 留空则不转封装.
+- `filename_template`: 下载文件名模板 (yt-dlp output template), 默认 `%(title)s.%(ext)s`. 下载目录始终由 bot 管理, 模板中的路径相对于该目录.
+- `restrict_filenames`: 将文件名限制为 ASCII 字符 (yt-dlp `--restrict-filenames`). 默认关闭, 因为该选项会丢弃标题中的非拉丁字符.
 
 {{< hint info >}}
-这些默认值仅在使用 `/ytdlp` 命令且未传任何自定义参数时生效. 在命令上传递自定义参数 (或在 API 中传 `flags`) 会覆盖这些默认值.
+`max_height`、`format` 和 `recode` 仅在使用 `/ytdlp` 命令 (或 API 的 `ytdlp` 任务类型) 且未传任何自定义参数时生效. `filename_template` 和 `restrict_filenames` 在传了其他参数时依然生效, 除非自己传了 `-o/--output` 或 `--restrict-filenames`.
 {{< /hint >}}
 
 ```toml
@@ -130,6 +132,8 @@ remove_after_transfer = true
 max_height = 1080
 format = ""        # 例如 "bv*[height<=720]+ba/b"
 recode = "mp4"     # 留空则不转封装
+filename_template = "%(title)s.%(ext)s"  # 例如 "%(uploader)s - %(title)s.%(ext)s"
+restrict_filenames = false
 ```
 
 ### HTTP API 配置

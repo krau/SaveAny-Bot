@@ -120,9 +120,11 @@ Configures the behavior of the `/ytdlp` command and the `ytdlp` HTTP-API task ty
 - `max_height`: Default maximum video resolution by height in pixels (e.g. `1080`, `720`). `0` means no limit (best available). Ignored when `format` is set.
 - `format`: A raw yt-dlp format selector (`-f`). When set, it takes precedence over `max_height` and gives you full control, e.g. `bv*[height<=720]+ba/b`.
 - `recode`: The target video container yt-dlp recodes into after download (e.g. `mp4`). Leave empty to disable recoding.
+- `filename_template`: yt-dlp output template for downloaded file names, default `%(title)s.%(ext)s`. The download directory is always managed by the bot; paths inside the template are relative to it.
+- `restrict_filenames`: Restrict file names to ASCII characters (yt-dlp `--restrict-filenames`). Disabled by default, because it drops non-latin characters from titles.
 
 {{< hint info >}}
-These defaults only apply when using the `/ytdlp` command without passing any custom flags. Passing custom flags on the command (or `flags` in the API) overrides them.
+`max_height`, `format` and `recode` only apply when using the `/ytdlp` command (or the `ytdlp` API task type) without passing any custom flags. `filename_template` and `restrict_filenames` also apply when other flags are passed, unless you pass `-o/--output` or `--restrict-filenames` yourself.
 {{< /hint >}}
 
 ```toml
@@ -130,6 +132,8 @@ These defaults only apply when using the `/ytdlp` command without passing any cu
 max_height = 1080
 format = ""        # e.g. "bv*[height<=720]+ba/b"
 recode = "mp4"     # empty disables recoding
+filename_template = "%(title)s.%(ext)s"  # e.g. "%(uploader)s - %(title)s.%(ext)s"
+restrict_filenames = false
 ```
 
 ### HTTP API Configuration

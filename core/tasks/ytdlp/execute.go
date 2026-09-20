@@ -80,18 +80,22 @@ func (t *Task) Execute(ctx context.Context) error {
 func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, error) {
 	logger := log.FromContext(ctx)
 
-	// Configure yt-dlp command with essential settings
-	// Always set output path to ensure files go to temp directory
-	cmd := ytdlp.New().
-		Output(filepath.Join(tempDir, "%(title)s.%(ext)s"))
+	cfg := config.C().Ytdlp
+
+	template := cfg.FilenameTemplate
+	if template == "" {
+		template = config.DefaultYtdlpFilenameTemplate
+	}
+	cmd := ytdlp.New().Output(filepath.Join(tempDir, template))
+	if cfg.RestrictFilenames {
+		cmd = cmd.RestrictFilenames()
+	}
 
 	// Apply config-based format/quality defaults only when the user passes no
 	// custom flags. Any user flag means they take full control of yt-dlp.
 	if len(t.Flags) == 0 {
-		cmd = applyFormatConfig(cmd, config.C().Ytdlp)
+		cmd = applyFormatConfig(cmd, cfg)
 	}
-	// Note: If custom flags are provided, users have full control over format/quality
-	// The output path is always set above to ensure downloads go to the correct directory
 
 	if t.Progress != nil {
 		t.Progress.OnProgress(ctx, t, "Downloading...")
@@ -184,8 +188,6 @@ func (t *Task) transferFile(ctx context.Context, filePath string) error {
 
 // sanitizeFilename removes or replaces problematic characters in filenames
 func sanitizeFilename(name string) string {
-	// yt-dlp with --restrict-filenames should already handle most cases
-	// but we can do additional sanitization if needed
 	name = strings.ReplaceAll(name, ":", "_")
 	name = strings.ReplaceAll(name, "\"", "'")
 	return name

@@ -145,7 +145,8 @@ func Init(ctx context.Context, configFile ...string) error {
 		"api.token":  "",
 
 		// yt-dlp
-		"ytdlp.recode": "mp4",
+		"ytdlp.recode":            "mp4",
+		"ytdlp.filename_template": DefaultYtdlpFilenameTemplate,
 	}
 
 	for key, value := range defaultConfigs {

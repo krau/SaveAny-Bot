@@ -53,6 +53,15 @@ format = ""
 # 下载后转封装的视频容器格式, 留空则不转封装. 默认 mp4
 # Target video container to recode into after download; empty disables recoding. Default mp4
 recode = "mp4"
+# 下载文件名模板 (yt-dlp output template), 默认使用视频标题
+# 目录始终由 bot 管理, 模板中的路径相对于 bot 的临时下载目录
+# Filename template for downloads (yt-dlp output template), defaults to the video title
+# The download directory is always managed by the bot; paths inside the template are relative to its temp directory
+# 例如 / e.g. "%(uploader)s - %(title)s.%(ext)s"
+filename_template = "%(title)s.%(ext)s"
+# 将文件名限制为 ASCII 字符 (yt-dlp --restrict-filenames), 会丢弃标题中的非拉丁字符
+# Restrict file names to ASCII characters (yt-dlp --restrict-filenames), which drops non-latin characters from titles
+restrict_filenames = false
 
 # 解析器配置 / Parser configuration
 [parser]

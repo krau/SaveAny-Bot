@@ -20,8 +20,8 @@ func buildFormatSelector(maxHeight int) string {
 }
 
 // applyFormatConfig configures format/quality on the yt-dlp command according to
-// the ytdlp config. It is only meant to be called when the user did not supply
-// any custom flags, so config-driven defaults never conflict with user input.
+// the ytdlp config. It is only meant to be called when no custom flags are left
+// for yt-dlp, so config-driven defaults never conflict with user input.
 func applyFormatConfig(cmd *ytdlp.Command, cfg config.YtdlpConfig) *ytdlp.Command {
 	switch {
 	case cfg.Format != "":
@@ -35,6 +35,5 @@ func applyFormatConfig(cmd *ytdlp.Command, cfg config.YtdlpConfig) *ytdlp.Comman
 	if cfg.Recode != "" {
 		cmd = cmd.RecodeVideo(cfg.Recode)
 	}
-	cmd = cmd.RestrictFilenames()
 	return cmd
 }
