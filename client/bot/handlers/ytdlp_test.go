@@ -76,6 +76,18 @@ func TestYtdlpArgumentParsing(t *testing.T) {
 			expectedFlags: []string{"-o", "%(title)s.%(ext)s"},
 		},
 		{
+			name:          "Apostrophe inside a URL",
+			input:         `/ytdlp https://en.wikipedia.org/wiki/O'Brien -f best`,
+			expectedURLs:  []string{"https://en.wikipedia.org/wiki/O'Brien"},
+			expectedFlags: []string{"-f", "best"},
+		},
+		{
+			name:          "Apostrophe inside a quoted template",
+			input:         `/ytdlp -o "%(title)s 'live'.%(ext)s" https://example.com/video`,
+			expectedURLs:  []string{"https://example.com/video"},
+			expectedFlags: []string{"-o", "%(title)s 'live'.%(ext)s"},
+		},
+		{
 			name:          "Invalid URL is dropped",
 			input:         "/ytdlp not-a-url -f best",
 			expectedURLs:  []string{},

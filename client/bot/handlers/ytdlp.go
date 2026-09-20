@@ -54,7 +54,8 @@ func handleYtdlpCmd(ctx *ext.Context, update *ext.Update) error {
 }
 
 // splitQuotedArgs splits a command line on whitespace, keeping quoted values
-// together and removing the quotes.
+// together and removing the quotes. Quotes only delimit a value when they start
+// one, so apostrophes inside arguments stay literal.
 func splitQuotedArgs(text string) []string {
 	var args []string
 	var current strings.Builder
@@ -67,7 +68,7 @@ func splitQuotedArgs(text string) []string {
 			} else {
 				current.WriteRune(r)
 			}
-		case r == '"' || r == '\'':
+		case (r == '"' || r == '\'') && current.Len() == 0:
 			quote = r
 		case unicode.IsSpace(r):
 			if current.Len() > 0 {
