@@ -44,10 +44,10 @@ func TestBuildDownloadCommand(t *testing.T) {
 		},
 		{
 			name:            "user template overrides config template",
-			cfg:             config.YtdlpConfig{FilenameTemplate: "%(id)s.%(ext)s"},
+			cfg:             config.YtdlpConfig{FilenameTemplate: "%(id)s.%(ext)s", MaxHeight: 1080},
 			flags:           []string{"-o", "%(title)s [%(id)s].%(ext)s"},
 			wantTemplate:    "%(title)s [%(id)s].%(ext)s",
-			wantFormatFlags: true,
+			wantFormatFlags: false,
 		},
 		{
 			name:            "restrict filenames only when configured",

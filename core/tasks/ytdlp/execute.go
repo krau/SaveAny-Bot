@@ -90,7 +90,7 @@ func (t *Task) Execute(ctx context.Context) error {
 // for a task. The bot owns the output directory: a custom -o/--output only
 // contributes its template, relative to tempDir.
 func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string) (*ytdlp.Command, []string, error) {
-	userTemplate, flags, err := splitOutputTemplate(flags)
+	userTemplate, rest, err := splitOutputTemplate(flags)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -104,11 +104,11 @@ func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string
 		cmd = cmd.RestrictFilenames()
 	}
 
-	// Naming flags do not count as taking control of yt-dlp.
+	// Format/quality defaults only apply when the user passes no custom flags.
 	if len(flags) == 0 {
 		cmd = applyFormatConfig(cmd, cfg)
 	}
-	return cmd, flags, nil
+	return cmd, rest, nil
 }
 
 // downloadFiles downloads files using yt-dlp and returns the list of downloaded file paths
