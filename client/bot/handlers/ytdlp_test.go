@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"net/url"
-	"strings"
+	"slices"
 	"testing"
+
+	"github.com/charmbracelet/log"
 )
 
 // TestYtdlpArgumentParsing tests the URL and flag separation logic
@@ -62,67 +63,36 @@ func TestYtdlpArgumentParsing(t *testing.T) {
 			expectedURLs:  []string{"https://example.com/video"},
 			expectedFlags: []string{"--extract-audio"},
 		},
+		{
+			name:          "Output template flag with spaces",
+			input:         `/ytdlp -o "%(uploader)s - %(title)s.%(ext)s" https://example.com/video`,
+			expectedURLs:  []string{"https://example.com/video"},
+			expectedFlags: []string{"-o", "%(uploader)s - %(title)s.%(ext)s"},
+		},
+		{
+			name:          "Single quoted template",
+			input:         `/ytdlp -o '%(title)s.%(ext)s' https://example.com/video`,
+			expectedURLs:  []string{"https://example.com/video"},
+			expectedFlags: []string{"-o", "%(title)s.%(ext)s"},
+		},
+		{
+			name:          "Invalid URL is dropped",
+			input:         "/ytdlp not-a-url -f best",
+			expectedURLs:  []string{},
+			expectedFlags: []string{"-f", "best"},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := strings.Split(tt.input, " ")
+			args := splitQuotedArgs(tt.input)[1:]
+			urls, flags := parseYtdlpArgs(log.FromContext(t.Context()), args)
 
-			// Simulate the parsing logic from handleYtdlpCmd
-			var urls []string
-			var flags []string
-
-			for i := 1; i < len(args); i++ {
-				arg := strings.TrimSpace(args[i])
-				if arg == "" {
-					continue
-				}
-
-				// Check if it's a flag (starts with - or --)
-				if strings.HasPrefix(arg, "-") {
-					flags = append(flags, arg)
-					// Check if the next argument might be a value for this flag
-					if i+1 < len(args) {
-						nextArg := strings.TrimSpace(args[i+1])
-						if nextArg != "" && !strings.HasPrefix(nextArg, "-") {
-							// Check if it's clearly a URL (has ://)
-							if strings.Contains(nextArg, "://") {
-								// It's a URL, don't consume it as a flag value
-								continue
-							}
-							// Otherwise, treat it as a flag value
-							flags = append(flags, nextArg)
-							i++ // Skip the next argument as it's been consumed
-						}
-					}
-				} else {
-					// Try to parse as URL
-					u, err := url.Parse(arg)
-					if err != nil || u.Scheme == "" || u.Host == "" {
-						continue
-					}
-					urls = append(urls, arg)
-				}
+			if !slices.Equal(urls, tt.expectedURLs) {
+				t.Errorf("urls = %q, want %q", urls, tt.expectedURLs)
 			}
-
-			// Verify URLs
-			if len(urls) != len(tt.expectedURLs) {
-				t.Errorf("Expected %d URLs, got %d", len(tt.expectedURLs), len(urls))
-			}
-			for i, expectedURL := range tt.expectedURLs {
-				if i >= len(urls) || urls[i] != expectedURL {
-					t.Errorf("Expected URL[%d] to be '%s', got '%s'", i, expectedURL, urls[i])
-				}
-			}
-
-			// Verify flags
-			if len(flags) != len(tt.expectedFlags) {
-				t.Errorf("Expected %d flags, got %d", len(tt.expectedFlags), len(flags))
-			}
-			for i, expectedFlag := range tt.expectedFlags {
-				if i >= len(flags) || flags[i] != expectedFlag {
-					t.Errorf("Expected flag[%d] to be '%s', got '%s'", i, expectedFlag, flags[i])
-				}
+			if !slices.Equal(flags, tt.expectedFlags) {
+				t.Errorf("flags = %q, want %q", flags, tt.expectedFlags)
 			}
 		})
 	}
