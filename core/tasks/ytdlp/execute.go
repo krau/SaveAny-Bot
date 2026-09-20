@@ -68,8 +68,8 @@ func (t *Task) Execute(ctx context.Context) error {
 
 	// Transfer downloaded files to storage
 	logger.Infof("Transferring %d file(s) to storage %s", len(downloadedFiles), t.Storage.Name())
-	for _, filePath := range downloadedFiles {
-		if err := t.transferFile(ctx, filePath); err != nil {
+	for _, relPath := range downloadedFiles {
+		if err := t.transferFile(ctx, tempDir, relPath); err != nil {
 			logger.Errorf("File transfer failed: %v", err)
 			if t.Progress != nil {
 				t.Progress.OnDone(ctx, t, err)
@@ -158,16 +158,21 @@ func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, err
 }
 
 // collectDownloadedFiles walks dir recursively, since output templates may create
-// subdirectories.
+// subdirectories, and returns the files relative to dir.
 func collectDownloadedFiles(dir string) ([]string, error) {
 	var files []string
 	if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !entry.IsDir() {
-			files = append(files, path)
+		if entry.IsDir() {
+			return nil
 		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		files = append(files, rel)
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("failed to read temp directory: %w", err)
@@ -175,9 +180,11 @@ func collectDownloadedFiles(dir string) ([]string, error) {
 	return files, nil
 }
 
-// transferFile transfers a single file to storage
-func (t *Task) transferFile(ctx context.Context, filePath string) error {
+// transferFile transfers the file at relPath below tempDir to storage, keeping
+// the directories an output template created.
+func (t *Task) transferFile(ctx context.Context, tempDir, relPath string) error {
 	logger := log.FromContext(ctx)
+	filePath := filepath.Join(tempDir, relPath)
 
 	// Check if file exists
 	fileInfo, err := os.Stat(filePath)
@@ -200,21 +207,18 @@ func (t *Task) transferFile(ctx context.Context, filePath string) error {
 	ctx = context.WithValue(ctx, ctxkey.ContentLength, fileInfo.Size())
 
 	// Save to storage
-	fileName := filepath.Base(filePath)
-	// Remove special characters from filename if needed
-	fileName = sanitizeFilename(fileName)
-	destPath := filepath.Join(t.StorPath, fileName)
+	destPath := filepath.Join(t.StorPath, sanitizeFilename(relPath))
 
-	logger.Infof("Transferring file %s to %s:%s", fileName, t.Storage.Name(), destPath)
+	logger.Infof("Transferring file %s to %s:%s", relPath, t.Storage.Name(), destPath)
 
 	if err := t.Storage.Save(ctx, f, destPath); err != nil {
-		return fmt.Errorf("failed to save file %s to storage: %w", fileName, err)
+		return fmt.Errorf("failed to save file %s to storage: %w", relPath, err)
 	}
 
-	logger.Infof("Successfully transferred file %s", fileName)
+	logger.Infof("Successfully transferred file %s", relPath)
 
 	if t.Progress != nil {
-		t.Progress.OnProgress(ctx, t, fmt.Sprintf("Transferred: %s", fileName))
+		t.Progress.OnProgress(ctx, t, fmt.Sprintf("Transferred: %s", relPath))
 	}
 
 	return nil

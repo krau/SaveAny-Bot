@@ -1,6 +1,7 @@
 package ytdlp
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"slices"
@@ -112,11 +113,49 @@ func TestCollectDownloadedFiles(t *testing.T) {
 	}
 
 	want := []string{
-		filepath.Join(tempDir, "playlist", "ep1.mp4"),
-		filepath.Join(tempDir, "playlist", "ep2.mp4"),
-		filepath.Join(tempDir, "video.mp4"),
+		filepath.Join("playlist", "ep1.mp4"),
+		filepath.Join("playlist", "ep2.mp4"),
+		"video.mp4",
 	}
 	if !slices.Equal(files, want) {
 		t.Errorf("collectDownloadedFiles() = %q, want %q", files, want)
 	}
 }
+
+func TestTransferFileKeepsTemplateDirectories(t *testing.T) {
+	tempDir := t.TempDir()
+	relPath := filepath.Join("sub", "video.mp4")
+	if err := os.MkdirAll(filepath.Dir(filepath.Join(tempDir, relPath)), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tempDir, relPath), []byte("data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	stor := &MockStorage{}
+	progress := &recordingProgress{}
+	task := NewTask("transfer", t.Context(), []string{"https://example.com/video"}, nil, stor, "videos", progress)
+
+	if err := task.transferFile(t.Context(), tempDir, relPath); err != nil {
+		t.Fatalf("transferFile() failed: %v", err)
+	}
+
+	want := filepath.Join("videos", "sub", "video.mp4")
+	if !slices.Equal(stor.saved, []string{want}) {
+		t.Errorf("saved files = %q, want %q", stor.saved, []string{want})
+	}
+	if wantStatus := "Transferred: " + relPath; !slices.Contains(progress.statuses, wantStatus) {
+		t.Errorf("progress statuses = %q, want %q", progress.statuses, wantStatus)
+	}
+}
+
+// recordingProgress records the statuses reported for a task.
+type recordingProgress struct {
+	statuses []string
+}
+
+func (p *recordingProgress) OnStart(context.Context, *Task) {}
+func (p *recordingProgress) OnProgress(_ context.Context, _ *Task, s string) {
+	p.statuses = append(p.statuses, s)
+}
+func (p *recordingProgress) OnDone(context.Context, *Task, error) {}
