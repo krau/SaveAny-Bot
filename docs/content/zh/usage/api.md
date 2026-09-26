@@ -236,7 +236,7 @@ Authorization: Bearer <token>
 | params 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | `urls` | []string | 是 | 媒体链接列表，至少 1 条 |
-| `flags` | []string | 否 | 额外的 yt-dlp 命令行参数 |
+| `flags` | []string | 否 | 额外的 yt-dlp 命令行参数; `-o/--output` 仅使用其文件名模板 (下载目录由 bot 管理) |
 
 ##### aria2 — Aria2 下载
 

@@ -32,9 +32,20 @@ weight: 7
 常用参数:
 
 - `-f <format>`: 指定下载格式 (如 `best`, `worst`, `bestvideo+bestaudio`)
+- `-o <template>`: 文件名模板 (如 `%(uploader)s - %(title)s.%(ext)s`)
 - `--extract-audio`: 提取音频
 - `--audio-format <format>`: 音频格式 (如 `mp3`, `m4a`, `wav`)
 - `--write-sub`: 下载字幕
 - `--write-thumbnail`: 下载缩略图
+
+## 文件名
+
+下载的文件以视频标题命名 (`%(title)s.%(ext)s`), 并保存到你所选择的存储目录中. 可以通过 yt-dlp 的 output template 自定义文件名:
+
+```bash
+/ytdlp https://www.youtube.com/watch?v=dQw4w9WgXcQ -o "%(uploader)s - %(title)s.%(ext)s"
+```
+
+`-o/--output` 只有模板部分会被使用: 下载目录始终由 bot 管理, 模板中的相对路径会创建在该目录下, 并保留到存储路径中. 如需修改所有下载的默认命名, 请在 [`[ytdlp]` 配置](../deployment/configuration)中设置 `filename_template`; 其中的 `restrict_filenames` 会将文件名限制为 ASCII, 去掉非拉丁字符、空格和 `&`.
 
 更多参数请参考 [yt-dlp 文档](https://github.com/yt-dlp/yt-dlp#usage-and-options).
