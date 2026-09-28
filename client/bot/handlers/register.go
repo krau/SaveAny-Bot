@@ -45,7 +45,7 @@ var CommandHandlers = []DescCommandHandler{
 	{"update", i18nk.BotMsgCmdUpdate, handleUpdateCmd},
 }
 
-func Register(disp dispatcher.Dispatcher) {
+func Register(disp dispatcher.Dispatcher, botCtx *ext.Context) {
 	disp.AddHandler(handlers.NewMessage(filters.Message.ChatType(filters.ChatTypeChannel), func(ctx *ext.Context, u *ext.Update) error {
 		return dispatcher.EndGroups
 	}))
@@ -67,6 +67,6 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewMessage(filters.Message.Text, handleSilentMode(handleTextMessage, handleSilentSaveText)))
 
 	if config.C().Telegram.Userbot.Enable {
-		go listenMediaMessageEvent(userclient.GetMediaMessageCh())
+		go listenMediaMessageEvent(userclient.GetMediaMessageCh(), botCtx)
 	}
 }

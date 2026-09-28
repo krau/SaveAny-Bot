@@ -91,8 +91,8 @@ func Init(ctx context.Context) <-chan struct{} {
 		if result.err != nil {
 			log.FromContext(ctx).Fatalf("Failed to initialize Bot: %s", result.err)
 		}
-		handlers.Register(result.client.Dispatcher)
 		ectx = result.client.CreateContext()
+		handlers.Register(result.client.Dispatcher, ectx)
 		log.FromContext(ctx).Info("Bot initialization completed.")
 	}
 	return shouldRestart

@@ -14,6 +14,7 @@ type User struct {
 	ApplyRule        bool
 	Rules            []Rule
 	WatchChats       []WatchChat
+	WatchNotify      bool
 	FilenameStrategy string
 	FilenameTemplate string
 	ConflictStrategy string
