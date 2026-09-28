@@ -34,7 +34,7 @@ Telegram update → client/bot/handlers → core.AddTask(Executable) → pkg/que
 | `config/` | Viper setup, defaults, `storage/` per-type config structs |
 | `database/` | GORM models (User/Dir/Rule/WatchChat), AutoMigrate, `syncUsers` |
 | `pkg/` | `queue`, `taskevent`, `tcbdata` (callback data), `rule`, `enums/{tasktype,storage,ctxkey,fnamest}`, `storagetypes`, `tfile`, `parser` |
-| `common/` | `tdler` (unified downloader), `utils/{tgutil,dlutil,ioutil,fsutil,strutil,tphutil,netutil}`, `i18n` (embedded locales), `cache` (ristretto) |
+| `common/` | `tdler` (unified downloader), `utils/{tgutil,dlutil,ioutil,fsutil,strutil,tphutil,netutil}`, `i18n` (embedded locales), `cache` (ristretto), `selfupdate` (binary self-update + in-place restart via `exec`) |
 | `api/` | HTTP API + webhook (task factory with sink injection) |
 | `docs/` | Hugo site (hugo-book theme, zh+en mirrored), separate go.mod |
 | `plugins/` | JS parser examples + `README.md` (plugin author contract) |

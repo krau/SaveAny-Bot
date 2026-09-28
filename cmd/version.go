@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/unvgo/ghselfupdate"
 
@@ -25,7 +26,15 @@ var upgradeCmd = &cobra.Command{
 	Aliases: []string{"up"},
 	Short:   "Upgrade saveany-bot to the latest version",
 	Run: func(cmd *cobra.Command, args []string) {
-		v := semver.MustParse(config.Version)
+		v, err := semver.Parse(config.Version)
+		if err != nil {
+			fmt.Println("Currently in development version or version info injection failed:", err)
+			return
+		}
+		if err := selfupdate.Updatable(); err != nil {
+			fmt.Println("This build cannot update itself:", err)
+			return
+		}
 		latest, found, err := ghselfupdate.DetectLatest(config.GitRepo)
 		if err != nil {
 			fmt.Println("Error occurred while detecting latest version:", err)
@@ -44,14 +53,14 @@ var upgradeCmd = &cobra.Command{
 			return
 		}
 		fmt.Printf("Updating to version %s...\n", latest.Version)
-		latest, err = ghselfupdate.UpdateSelf(v, config.GitRepo)
+		latest, err = selfupdate.Update(v)
 		if err != nil {
 			fmt.Println("Update failed:", err)
 			return
 		}
 		fmt.Println("Successfully updated to version", latest.Version)
 		fmt.Println("Release note:\n", latest.ReleaseNotes)
-
+		fmt.Println("Restart saveany-bot to use it.")
 	},
 }
 

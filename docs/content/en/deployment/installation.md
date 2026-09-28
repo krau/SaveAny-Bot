@@ -152,6 +152,8 @@ If you deployed from pre-compiled binaries, use the following CLI command to upd
 
 (`upgrade` is also available as an alias.)
 
+The command replaces the binary in place; a running bot keeps the old version until it is restarted. You can also send `/update` to the bot: it downloads the new version, replaces its own binary and restarts itself in place (on Windows it exits instead, and the service manager starts the new version).
+
 If you deployed with Docker, use the following commands to update:
 
 docker:

@@ -15,6 +15,7 @@ import (
 	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
@@ -34,6 +35,8 @@ func Run(cmd *cobra.Command, _ []string) {
 	})
 	log.SetDefault(logger)
 	ctx = log.WithContext(ctx, logger)
+
+	selfupdate.CleanLeftovers()
 
 	configFile := config.GetConfigFile(cmd)
 	if err := config.Init(ctx, configFile); err != nil {
@@ -63,6 +66,12 @@ func Run(cmd *cobra.Command, _ []string) {
 	defer logger.Info("Exit complete")
 	core.Close()
 	cleanCache()
+	if selfupdate.ShouldRestart() {
+		logger.Info("Restarting to run the updated version...")
+		if err := selfupdate.Restart(); err != nil {
+			logger.Errorf("Failed to restart: %s. Please start saveany-bot again", err)
+		}
+	}
 }
 
 func initAll(ctx context.Context) (<-chan struct{}, error) {

@@ -150,6 +150,8 @@ docker run -d --name saveany-bot \
 ./saveany-bot up
 ```
 
+该命令会就地替换二进制文件; 已运行的 Bot 会在重启后才使用新版本. 也可以在 Telegram 中发送 `/update`, Bot 会自行下载新版本、替换自身二进制并就地重启进程 (Windows 上无法就地重启, 进程会退出, 由服务管理器启动新版本).
+
 如果是 Docker 部署, 使用以下命令更新:
 
 docker:

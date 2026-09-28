@@ -13,6 +13,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/unvgo/ghselfupdate"
 )
@@ -112,7 +113,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 			"Current": config.Version,
 		}),
 	})
-	latest, err := ghselfupdate.UpdateSelf(currentV, config.GitRepo)
+	latest, err := selfupdate.Update(currentV)
 	if err != nil {
 		ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID: u.CallbackQuery.GetMsgID(),
@@ -128,5 +129,6 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 			"Version": latest.Version.String(),
 		}),
 	})
+	selfupdate.RequestRestart()
 	return errors.New("SAVEANTBOT-RESTART")
 }
