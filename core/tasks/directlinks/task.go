@@ -37,13 +37,13 @@ type Task struct {
 	StorPath string
 	Progress ProgressTracker
 
-	client          *http.Client // [TODO] parallel download
+	client          *http.Client
 	stream          bool
-	totalBytes      int64            // total bytes to download
-	downloadedBytes atomic.Int64     // downloaded bytes
-	totalFiles      int64            // total files to download
-	downloaded      atomic.Int64     // downloaded files count
-	processing      map[string]*File // {"url": File}
+	totalBytes      int64
+	downloadedBytes atomic.Int64
+	totalFiles      int64
+	downloaded      atomic.Int64
+	processing      map[string]*File
 	processingMu    sync.RWMutex
 }
 

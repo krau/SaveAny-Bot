@@ -11,16 +11,13 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 )
 
-// ExtractTelegraphImages 从 Telegraph URL 提取图片
 func ExtractTelegraphImages(ctx context.Context, pageURL string) ([]string, string, error) {
 	logger := log.FromContext(ctx)
 
-	// 验证 URL 格式
 	if !isValidTelegraphURL(pageURL) {
 		return nil, "", fmt.Errorf("invalid telegraph URL format: %s", pageURL)
 	}
 
-	// 解析 URL 获取页面路径
 	pagepath, err := parseTelegraphPath(pageURL)
 	if err != nil {
 		return nil, "", err
@@ -46,7 +43,6 @@ func ExtractTelegraphImages(ctx context.Context, pageURL string) ([]string, stri
 	return imgs, pagepath, nil
 }
 
-// parseTelegraphPath 解析 Telegraph URL 获取页面路径
 func parseTelegraphPath(pageURL string) (string, error) {
 	u, err := url.Parse(pageURL)
 	if err != nil {
@@ -71,7 +67,6 @@ func parseTelegraphPath(pageURL string) (string, error) {
 	return strings.TrimSpace(pagepath), nil
 }
 
-// isValidTelegraphURL 检查是否是有效的 Telegraph URL
 func isValidTelegraphURL(url string) bool {
 	return strings.HasPrefix(url, "https://telegra.ph/") ||
 		strings.HasPrefix(url, "http://telegra.ph/") ||

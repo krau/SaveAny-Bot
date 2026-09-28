@@ -15,13 +15,11 @@ import (
 
 type mediaMetadataExtractor func(ctx context.Context, url string) (*MediaMetadataResponse, error)
 
-// Handlers 处理器结构体
 type Handlers struct {
 	factory                *TaskFactory
 	mediaMetadataExtractor mediaMetadataExtractor
 }
 
-// NewHandlers 创建处理器
 func NewHandlers(factory *TaskFactory) *Handlers {
 	return &Handlers{
 		factory:                factory,
@@ -29,7 +27,6 @@ func NewHandlers(factory *TaskFactory) *Handlers {
 	}
 }
 
-// CreateTaskHandler 创建任务处理器
 func (h *Handlers) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed", "only POST method is allowed")
@@ -42,7 +39,6 @@ func (h *Handlers) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 验证请求
 	if req.Type == "" {
 		WriteError(w, http.StatusBadRequest, "invalid_request", "task type is required")
 		return
@@ -53,7 +49,6 @@ func (h *Handlers) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 创建任务
 	resp, err := h.factory.CreateTask(&req)
 	if err != nil {
 		WriteError(w, http.StatusBadRequest, "task_creation_failed", err.Error())
@@ -63,7 +58,6 @@ func (h *Handlers) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusCreated, resp)
 }
 
-// ListTasksHandler 列出任务处理器
 func (h *Handlers) ListTasksHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed", "only GET method is allowed")
@@ -94,7 +88,6 @@ func (h *Handlers) ListTasksHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetTaskHandler 获取单个任务处理器
 func (h *Handlers) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed", "only GET method is allowed")
@@ -117,7 +110,6 @@ func (h *Handlers) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, resp)
 }
 
-// CancelTaskHandler 取消任务处理器
 func (h *Handlers) CancelTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed", "only DELETE method is allowed")
@@ -146,7 +138,6 @@ func (h *Handlers) CancelTaskHandler(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]string{"message": "task cancelled successfully"})
 }
 
-// ListStoragesHandler 列出存储处理器
 func (h *Handlers) ListStoragesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed", "only GET method is allowed")
@@ -165,7 +156,6 @@ func (h *Handlers) ListStoragesHandler(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, StoragesResponse{Storages: storages})
 }
 
-// GetMediaMetadataHandler 获取媒体元数据
 func (h *Handlers) GetMediaMetadataHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed", "only GET method is allowed")
@@ -190,7 +180,6 @@ func (h *Handlers) GetMediaMetadataHandler(w http.ResponseWriter, r *http.Reques
 	WriteJSON(w, http.StatusOK, resp)
 }
 
-// GetTaskTypesHandler 获取支持的任务类型
 func (h *Handlers) GetTaskTypesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed", "only GET method is allowed")
@@ -212,14 +201,12 @@ func (h *Handlers) GetTaskTypesHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// HealthCheckHandler 健康检查处理器
 func (h *Handlers) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]string{
 		"status": "ok",
 	})
 }
 
-// extractTaskIDFromPath 从路径中提取任务 ID
 // 路径格式: /api/v1/tasks/:id
 func extractTaskIDFromPath(path string) string {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
@@ -274,12 +261,10 @@ func convertTaskProgressToResponse(task *TaskProgressInfo) TaskInfoResponse {
 	return resp
 }
 
-// NotFoundHandler 404 处理器
 func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
 	WriteError(w, http.StatusNotFound, "not_found", "endpoint not found: "+r.URL.Path)
 }
 
-// MethodNotAllowedHandler 405 处理器
 func MethodNotAllowedHandler(w http.ResponseWriter, r *http.Request) {
 	WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed: "+r.Method)
 }

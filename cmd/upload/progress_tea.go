@@ -17,16 +17,12 @@ var (
 	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 )
 
-// progressMsg is sent to update the progress bar
 type progressMsg float64
 
-// progressErrMsg is sent when an error occurs
 type progressErrMsg struct{ err error }
 
-// progressDoneMsg is sent when the upload is complete
 type progressDoneMsg struct{}
 
-// uploadModel is the bubbletea model for the upload progress UI
 type uploadModel struct {
 	progress  progress.Model
 	fileName  string
@@ -79,7 +75,6 @@ func (m uploadModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case progress.FrameMsg:
-		// Don't process frame messages if we're done or quitting
 		if m.done || m.quitting {
 			return m, nil
 		}
@@ -99,14 +94,12 @@ func (m uploadModel) View() string {
 	var sb strings.Builder
 	sb.WriteString("\n")
 
-	// File info
 	sb.WriteString(fmt.Sprintf("  📁 %s\n", m.fileName))
 	sb.WriteString(fmt.Sprintf("  📊 %s / %s\n\n",
 		humanize.Bytes(uint64(m.bytesRead)),
 		humanize.Bytes(uint64(m.fileSize)),
 	))
 
-	// Progress bar
 	sb.WriteString("  ")
 	sb.WriteString(m.progress.View())
 	sb.WriteString("\n\n")
@@ -121,14 +114,12 @@ func (m uploadModel) View() string {
 	return sb.String()
 }
 
-// UploadProgress manages the progress UI for uploads
 type UploadProgress struct {
 	program *tea.Program
 	ctx     context.Context
 	cancel  context.CancelFunc
 }
 
-// NewUploadProgress creates a new upload progress tracker
 func NewUploadProgress(ctx context.Context, fileName string, fileSize int64) *UploadProgress {
 	model := newUploadModel(fileName, fileSize)
 	ctx, cancel := context.WithCancel(ctx)
@@ -145,34 +136,28 @@ func NewUploadProgress(ctx context.Context, fileName string, fileSize int64) *Up
 	}
 }
 
-// Start starts the progress UI in a goroutine and returns immediately
 func (up *UploadProgress) Start() {
 	go func() {
 		up.program.Run()
 	}()
 }
 
-// UpdateProgress updates the progress bar with a new percentage (0.0 - 1.0)
 func (up *UploadProgress) UpdateProgress(percent float64) {
 	up.program.Send(progressMsg(percent))
 }
 
-// SetError sets an error and quits the progress UI
 func (up *UploadProgress) SetError(err error) {
 	up.program.Send(progressErrMsg{err: err})
 }
 
-// Done signals that the upload is complete
 func (up *UploadProgress) Done() {
 	up.program.Send(progressDoneMsg{})
 }
 
-// Wait waits for the progress UI to finish
 func (up *UploadProgress) Wait() {
 	up.program.Wait()
 }
 
-// Quit quits the progress UI
 func (up *UploadProgress) Quit() {
 	up.program.Quit()
 }

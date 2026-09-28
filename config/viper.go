@@ -82,13 +82,11 @@ func Init(ctx context.Context, configFile ...string) error {
 	replacer := strings.NewReplacer(".", "_")
 	viper.SetEnvKeyReplacer(replacer)
 
-	// 如果指定了配置文件路径，则使用指定的配置文件
 	// 配置文件支持传入一个 http(s) URL 地址
 	loadedFromURL := false
 	if len(configFile) > 0 && configFile[0] != "" {
 		cfg := configFile[0]
 		if strings.HasPrefix(cfg, "http://") || strings.HasPrefix(cfg, "https://") {
-			// 	使用远程配置文件
 			client := &http.Client{Timeout: 30 * time.Second}
 			resp, err := client.Get(cfg)
 			if err != nil {
@@ -112,39 +110,32 @@ func Init(ctx context.Context, configFile ...string) error {
 	}
 
 	defaultConfigs := map[string]any{
-		// 基础配置
 		"lang":      "zh-Hans",
 		"workers":   3,
 		"retry":     3,
 		"threads":   4,
 		"log.level": "debug",
 
-		// 缓存配置
 		"cache.ttl":          86400,
 		"cache.num_counters": 1e5,
 		"cache.max_cost":     1e6,
 
-		// Telegram
 		"telegram.app_id":          1025907,
 		"telegram.app_hash":        "452b0359b988148995f22ff0f4229750",
 		"telegram.rpc_retry":       5,
 		"telegram.userbot.enable":  false,
 		"telegram.userbot.session": "data/usersession.db",
 
-		// 临时目录
 		"temp.base_path": "cache/",
 
-		// 数据库
 		"db.path":    "data/saveany.db",
 		"db.session": "data/session.db",
 
-		// API
 		"api.enable": false,
 		"api.host":   "0.0.0.0",
 		"api.port":   8080,
 		"api.token":  "",
 
-		// yt-dlp
 		"ytdlp.recode":             "mp4",
 		"ytdlp.filename_template":  DefaultYtdlpFilenameTemplate,
 		"ytdlp.max_height":         0,

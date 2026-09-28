@@ -47,7 +47,6 @@ func TestCancelAndActiveLength(t *testing.T) {
 	t2 := newTask("2")
 	q.Add(t1)
 	q.Add(t2)
-	// Cancel t1
 	if err := q.CancelTask("1"); err != nil {
 		t.Fatalf("unexpected error on CancelTask: %v", err)
 	}
@@ -64,7 +63,6 @@ func TestCancelAndActiveLength(t *testing.T) {
 func TestCloseBehavior(t *testing.T) {
 	q := queue.NewTaskQueue[int]()
 	done := make(chan struct{})
-	// consumer
 	go func() {
 		_, err := q.Get()
 		if !errors.Is(err, queue.ErrQueueClosed) {
@@ -74,7 +72,6 @@ func TestCloseBehavior(t *testing.T) {
 	}()
 	// allow goroutine to block
 
-	// close queue
 	q.Close()
 	<-done
 }
@@ -163,13 +160,11 @@ func TestConcurrencySafety(t *testing.T) {
 	q := queue.NewTaskQueue[int]()
 	var wg sync.WaitGroup
 	n := 1000
-	// producers
 	wg.Go(func() {
 		for i := range n {
 			q.Add(newTask(fmt.Sprintf("p%d", i)))
 		}
 	})
-	// consumers
 	wg.Go(func() {
 		count := 0
 		for count < n {

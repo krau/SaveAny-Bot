@@ -25,7 +25,6 @@ import (
 	"github.com/rs/xid"
 )
 
-// 创建一个 tfile.TGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
 func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage.Storage, dirPath string, file tfile.TGFileMessage, trackMsgID int, conflictStrategy ...string) error {
 	logger := log.FromContext(ctx)
 	strategy := selectedConflictStrategy(conflictStrategy)
@@ -120,7 +119,6 @@ startCreateTask:
 	return dispatcher.EndGroups
 }
 
-// 创建一个 batchtfile.BatchTGFileTask 并添加到任务队列中, 以编辑消息的方式反馈结果
 func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor storage.Storage, dirPath string, files []tfile.TGFileMessage, trackMsgID int, conflictStrategy ...string) error {
 	logger := log.FromContext(ctx)
 	strategy := selectedConflictStrategy(conflictStrategy)

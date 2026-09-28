@@ -72,7 +72,6 @@ jobs:
           context: .
           file: ${{ matrix.type == 'default' && './Dockerfile' || format('./Dockerfile.{0}', matrix.type) }}
           platforms: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
-          # 关键修改：不再使用 tags，而是通过 image output 按摘要推送
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           build-args: |
             VERSION=${{ needs.prepare.outputs.version }}

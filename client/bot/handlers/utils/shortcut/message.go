@@ -28,7 +28,6 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
 
-// 获取消息中的文件并回复等待消息, 返回等待消息, 获取到的文件
 func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *tg.Message, tfileopts ...tfile.TGFileOption) (replied *types.Message,
 	file tfile.TGFileMessage, err error,
 ) {
@@ -44,14 +43,6 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *
 		logger.Errorf("Failed to reply: %s", err)
 		return nil, nil, dispatcher.EndGroups
 	}
-	// options := []tfile.TGFileOption{
-	// 	tfile.WithMessage(message),
-	// }
-	// if len(tfileopts) > 0 {
-	// 	options = append(options, tfileopts...)
-	// } else {
-	// 	options = append(options, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message)))
-	// }
 	file, err = tfile.FromMediaMessage(media, ctx.Raw, message, tfileopts...)
 	if err != nil {
 		logger.Errorf("Failed to get file from media: %s", err)
@@ -65,7 +56,6 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *
 
 type EditMessageFunc func(text string, markup tg.ReplyMarkupClass)
 
-// 获取链接中的文件并回复等待消息
 func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Update) (replied *types.Message, files []tfile.TGFileMessage, editReplied EditMessageFunc, err error) {
 	logger := log.FromContext(ctx)
 	msgLinks := re.TgMessageLinkRegexp.FindAllString(tgutil.ExtractMessageEntityUrlsText(update.EffectiveMessage.Message), -1)
@@ -172,12 +162,11 @@ func GetCallbackDataWithAnswer[DataType any](ctx *ext.Context, update *ext.Updat
 }
 
 type TelegraphResult struct {
-	Pics   []string        `json:"pics"`    // image urls
+	Pics   []string        `json:"pics"`
 	TphDir string          `json:"tph_dir"` // telegraph path, unescaped
-	Page   *telegraph.Page `json:"page"`    // telegraph page node
+	Page   *telegraph.Page `json:"page"`
 }
 
-// return replied message, image urls, telegraph path(unescaped), error
 func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*types.Message, *TelegraphResult, error) {
 	logger := log.FromContext(ctx)
 	tphurl := findTelegraphURL(update.EffectiveMessage.Message)

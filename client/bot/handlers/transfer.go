@@ -43,7 +43,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 
 	userID := update.GetUserChat().GetID()
 
-	// Get source storage
 	sourceStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, sourceStorageName)
 	if err != nil {
 		logger.Errorf("Failed to get source storage by user ID and name: %s", err)
@@ -54,7 +53,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// Check if source storage supports listing
 	listable, ok := sourceStorage.(storage.StorageListable)
 	if !ok {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgTransferErrorStorageNotListable, map[string]any{
@@ -63,7 +61,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// Check if source storage supports reading
 	_, ok = sourceStorage.(storage.StorageReadable)
 	if !ok {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgTransferErrorStorageNotReadable, map[string]any{
@@ -72,7 +69,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// Fetch file list
 	replied, err := ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgTransferInfoFetchingFiles, nil)), nil)
 	if err != nil {
 		logger.Errorf("Failed to reply: %s", err)
@@ -88,7 +84,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// Optional filter
 	var filter *regexp.Regexp
 	if len(args) >= 3 {
 		filter, err = regexp.Compile(args[2])
@@ -101,7 +96,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		}
 	}
 
-	// Filter files
 	filteredFiles := make([]storagetypes.FileInfo, 0)
 	for _, file := range files {
 		if file.IsDir {
@@ -121,7 +115,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// Prepare file paths for callback data
 	filePaths := make([]string, 0, len(filteredFiles))
 	var totalSize int64
 	for _, file := range filteredFiles {
@@ -129,7 +122,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		totalSize += file.Size
 	}
 
-	// Build storage selection keyboard
 	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, userID), tcbdata.Add{
 		TaskType:               tasktype.TaskTypeTransfer,
 		TransferSourceStorName: sourceStorageName,
@@ -160,7 +152,6 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storage.Storage, dirPath string, data tcbdata.Add, msgID int) error {
 	logger := log.FromContext(ctx)
 
-	// Get source storage
 	sourceStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, data.TransferSourceStorName)
 	if err != nil {
 		logger.Errorf("Failed to get source storage: %s", err)
@@ -171,7 +162,6 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 		return dispatcher.EndGroups
 	}
 
-	// Check if source storage supports listing
 	listable, ok := sourceStorage.(storage.StorageListable)
 	if !ok {
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
@@ -197,13 +187,11 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 		return dispatcher.EndGroups
 	}
 
-	// Create a map for quick lookup
 	fileMap := make(map[string]storagetypes.FileInfo)
 	for _, file := range allFiles {
 		fileMap[file.Path] = file
 	}
 
-	// Build task elements for the selected files
 	elems := make([]transfer.TaskElement, 0, len(data.TransferFiles))
 	var totalSize int64
 	for _, filePath := range data.TransferFiles {
@@ -225,7 +213,6 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 		return dispatcher.EndGroups
 	}
 
-	// Create and add task
 	taskID := xid.New().String()
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	task := transfer.NewTransferTask(

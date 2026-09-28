@@ -34,7 +34,6 @@ func handleYtdlpCmd(ctx *ext.Context, update *ext.Update) error {
 
 	logger.Debugf("Preparing yt-dlp download for %d URL(s) with %d flag(s)", len(urls), len(flags))
 
-	// Build storage selection keyboard
 	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, update.GetUserChat().GetID()), tcbdata.Add{
 		TaskType:   tasktype.TaskTypeYtdlp,
 		YtdlpURLs:  urls,
@@ -95,28 +94,21 @@ func parseYtdlpArgs(logger *log.Logger, args []string) (urls []string, flags []s
 			continue
 		}
 
-		// Check if it's a flag (starts with - or --)
 		if strings.HasPrefix(arg, "-") {
 			flags = append(flags, arg)
-			// Check if the next argument might be a value for this flag
-			// Don't consume it if it starts with - or looks like a URL with scheme
 			if i+1 < len(args) {
 				nextArg := args[i+1]
 				if nextArg != "" && !strings.HasPrefix(nextArg, "-") {
-					// Check if it's clearly a URL (has ://)
 					// This handles common video URLs (http://, https://)
 					// For other yt-dlp inputs, users should ensure proper formatting
 					if strings.Contains(nextArg, "://") {
-						// It's a URL, don't consume it as a flag value
 						continue
 					}
-					// Otherwise, treat it as a flag value
 					flags = append(flags, nextArg)
 					i++ // Skip the next argument as it's been consumed
 				}
 			}
 		} else {
-			// Try to parse as URL
 			u, err := url.Parse(arg)
 			if err != nil || u.Scheme == "" || u.Host == "" {
 				logger.Warnf("Invalid URL: %s", arg)

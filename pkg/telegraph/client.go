@@ -12,15 +12,10 @@ import (
 	"strings"
 )
 
-// Page object represents a page on Telegraph.
 type Page struct {
-	// Path to the page.
-	Path string `json:"path"`
-	// URL of the page.
-	Url string `json:"url"`
-	// Title of the page.
-	Title string `json:"title"`
-	// Description of the page.
+	Path        string `json:"path"`
+	Url         string `json:"url"`
+	Title       string `json:"title"`
 	Description string `json:"description"`
 	// Optional. Name of the author, displayed below the title.
 	AuthorName string `json:"author_name,omitempty"`
@@ -30,8 +25,7 @@ type Page struct {
 	ImageUrl string `json:"image_url,omitempty"`
 	// Optional. Content of the page.
 	Content []Node `json:"content,omitempty"`
-	// Number of page views for the page.
-	Views int64 `json:"views"`
+	Views   int64  `json:"views"`
 	// Optional. Only returned if access_token passed. True, if the target Telegraph account can edit the page.
 	CanEdit bool `json:"can_edit,omitempty"`
 }
@@ -40,7 +34,6 @@ type Page struct {
 // NodeElement object.
 type Node any
 
-// NodeElement represents a DOM element node.
 type NodeElement struct {
 	// Name of the DOM element. Available tags: a, aside, b, blockquote, br, code, em, figcaption, figure,
 	// h3, h4, hr, i, iframe, img, li, ol, p, pre, s, strong, u, ul, video.Client

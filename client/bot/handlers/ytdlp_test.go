@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// TestYtdlpArgumentParsing tests the URL and flag separation logic
 func TestYtdlpArgumentParsing(t *testing.T) {
 	tests := []struct {
 		name          string

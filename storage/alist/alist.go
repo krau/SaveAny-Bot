@@ -178,7 +178,6 @@ func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) 
 	return nil
 }
 
-// putFile performs a single PUT upload with the given token and returns the response.
 func (a *Alist) putFile(ctx context.Context, reader io.Reader, storagePath string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, a.baseURL+"/api/fs/put", reader)
 	if err != nil {
@@ -434,7 +433,6 @@ func (a *Alist) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.F
 func (a *Alist) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
 	a.logger.Debugf("Opening file: %s", filePath)
 
-	// First, get file info to get the raw_url
 	reqBody := map[string]any{
 		"path":     filePath,
 		"password": "",
@@ -480,10 +478,8 @@ func (a *Alist) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, i
 		return nil, 0, fmt.Errorf("path is a directory, not a file")
 	}
 
-	// Download the file from raw_url
 	downloadURL := getResp.Data.RawURL
 	if downloadURL == "" {
-		// If no raw_url, construct download URL
 		downloadURL = a.baseURL + "/d" + filePath
 	}
 

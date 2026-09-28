@@ -19,7 +19,6 @@ func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 	logger := log.FromContext(ctx)
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 
-	// Validate URLs
 	if len(urls) == 0 {
 		logger.Error("URLs list is empty")
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
@@ -31,7 +30,6 @@ func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 
 	logger.Infof("Creating yt-dlp task for %d URL(s) with %d flag(s)", len(urls), len(flags))
 
-	// Create yt-dlp task
 	task := ytdlp.NewTask(
 		xid.New().String(),
 		injectCtx,
@@ -42,7 +40,6 @@ func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 		ytdlp.NewProgress(msgID, userID),
 	)
 
-	// Add task to queue
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("Failed to add yt-dlp task: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{

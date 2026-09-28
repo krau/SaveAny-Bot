@@ -26,19 +26,15 @@ import (
 	"github.com/rs/xid"
 )
 
-// TaskFactory 任务工厂
 type TaskFactory struct {
 	ctx context.Context
 }
 
-// NewTaskFactory 创建任务工厂
 func NewTaskFactory(ctx context.Context) *TaskFactory {
 	return &TaskFactory{ctx: ctx}
 }
 
-// CreateTask 创建任务
 func (f *TaskFactory) CreateTask(req *CreateTaskRequest) (*CreateTaskResponse, error) {
-	// 验证存储
 	stor, ok := storage.GetStorage(req.Storage)
 	if !ok {
 		return nil, fmt.Errorf("storage not found: %s", req.Storage)
@@ -85,7 +81,6 @@ func (f *TaskFactory) registerAndEnqueueTask(task core.Executable, taskType task
 	return nil
 }
 
-// createDirectLinksTask 创建直链下载任务
 func (f *TaskFactory) createDirectLinksTask(taskID string, createdAt time.Time, req *CreateTaskRequest, stor storage.Storage) (*CreateTaskResponse, error) {
 	var params DirectLinksParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
@@ -111,7 +106,6 @@ func (f *TaskFactory) createDirectLinksTask(taskID string, createdAt time.Time, 
 	}, nil
 }
 
-// createYTDLPTask 创建 yt-dlp 任务
 func (f *TaskFactory) createYTDLPTask(taskID string, createdAt time.Time, req *CreateTaskRequest, stor storage.Storage) (*CreateTaskResponse, error) {
 	var params YTDLPParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
@@ -137,7 +131,6 @@ func (f *TaskFactory) createYTDLPTask(taskID string, createdAt time.Time, req *C
 	}, nil
 }
 
-// createAria2Task 创建 Aria2 任务
 func (f *TaskFactory) createAria2Task(taskID string, createdAt time.Time, req *CreateTaskRequest, stor storage.Storage) (*CreateTaskResponse, error) {
 	var params Aria2Params
 	if err := json.Unmarshal(req.Params, &params); err != nil {
@@ -148,7 +141,6 @@ func (f *TaskFactory) createAria2Task(taskID string, createdAt time.Time, req *C
 		return nil, fmt.Errorf("no URLs provided")
 	}
 
-	// 检查 Aria2 是否启用
 	cfg := config.C().Aria2
 	if !cfg.Enable {
 		return nil, fmt.Errorf("aria2 is not enabled")
@@ -159,7 +151,6 @@ func (f *TaskFactory) createAria2Task(taskID string, createdAt time.Time, req *C
 		return nil, fmt.Errorf("failed to create aria2 client: %w", err)
 	}
 
-	// 添加下载任务到 Aria2
 	gid, err := aria2Client.AddURI(f.ctx, params.URLs, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add aria2 task: %w", err)
@@ -180,7 +171,6 @@ func (f *TaskFactory) createAria2Task(taskID string, createdAt time.Time, req *C
 	}, nil
 }
 
-// createParsedTask 创建解析任务
 func (f *TaskFactory) createParsedTask(taskID string, createdAt time.Time, req *CreateTaskRequest, stor storage.Storage) (*CreateTaskResponse, error) {
 	var params ParsedParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
@@ -191,7 +181,6 @@ func (f *TaskFactory) createParsedTask(taskID string, createdAt time.Time, req *
 		return nil, fmt.Errorf("no URL provided")
 	}
 
-	// 查找合适的解析器
 	var p parser.Parser
 	for _, parserItem := range parsers.Get() {
 		if parserItem.CanHandle(params.URL) {
@@ -204,7 +193,6 @@ func (f *TaskFactory) createParsedTask(taskID string, createdAt time.Time, req *
 		return nil, fmt.Errorf("no parser found for URL: %s", params.URL)
 	}
 
-	// 解析 URL
 	item, err := p.Parse(f.ctx, params.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL: %w", err)
@@ -225,7 +213,6 @@ func (f *TaskFactory) createParsedTask(taskID string, createdAt time.Time, req *
 	}, nil
 }
 
-// createTGFilesTask 创建 Telegram 文件下载任务
 func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req *CreateTaskRequest, stor storage.Storage) (*CreateTaskResponse, error) {
 	var params TGFilesParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
@@ -236,7 +223,6 @@ func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req 
 		return nil, fmt.Errorf("no message links provided")
 	}
 
-	// 提取文件
 	files, err := ExtractFilesFromLinks(f.ctx, params.MessageLinks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract files: %w", err)
@@ -249,14 +235,12 @@ func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req 
 	var task core.Executable
 
 	if len(files) == 1 {
-		// 单个文件任务
 		tfileTask, err := tfile.NewTGFileTask(taskID, f.ctx, files[0], stor, req.Path, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create tfile task: %w", err)
 		}
 		task = tfileTask
 	} else {
-		// 批量文件任务
 		elems := make([]batchtfile.TaskElement, 0, len(files))
 		for _, file := range files {
 			elem, err := batchtfile.NewTaskElement(stor, req.Path, file)
@@ -282,7 +266,6 @@ func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req 
 	}, nil
 }
 
-// createTPHPicsTask 创建 Telegraph 图片下载任务
 func (f *TaskFactory) createTPHPicsTask(taskID string, createdAt time.Time, req *CreateTaskRequest, stor storage.Storage) (*CreateTaskResponse, error) {
 	var params TPHPicsParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
@@ -293,7 +276,6 @@ func (f *TaskFactory) createTPHPicsTask(taskID string, createdAt time.Time, req 
 		return nil, fmt.Errorf("no telegraph URL provided")
 	}
 
-	// 提取图片
 	pics, phPath, err := ExtractTelegraphImages(f.ctx, params.TelegraphURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract telegraph images: %w", err)
@@ -319,14 +301,12 @@ func (f *TaskFactory) createTPHPicsTask(taskID string, createdAt time.Time, req 
 	}, nil
 }
 
-// createTransferTask 创建存储间传输任务
 func (f *TaskFactory) createTransferTask(taskID string, createdAt time.Time, req *CreateTaskRequest) (*CreateTaskResponse, error) {
 	var params TransferParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
 		return nil, fmt.Errorf("invalid params: %w", err)
 	}
 
-	// 验证源存储和目标存储
 	sourceStor, ok := storage.GetStorage(params.SourceStorage)
 	if !ok {
 		return nil, fmt.Errorf("source storage not found: %s", params.SourceStorage)
@@ -337,19 +317,16 @@ func (f *TaskFactory) createTransferTask(taskID string, createdAt time.Time, req
 		return nil, fmt.Errorf("target storage not found: %s", params.TargetStorage)
 	}
 
-	// 检查源存储是否可读
 	sourceReadable, ok := sourceStor.(storage.StorageReadable)
 	if !ok {
 		return nil, fmt.Errorf("source storage does not support reading: %s", params.SourceStorage)
 	}
 
-	// 检查源存储是否可列
 	sourceListable, ok := sourceStor.(storage.StorageListable)
 	if !ok {
 		return nil, fmt.Errorf("source storage does not support listing: %s", params.SourceStorage)
 	}
 
-	// 列出源文件
 	files, err := sourceListable.ListFiles(f.ctx, params.SourcePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list source files: %w", err)
@@ -359,7 +336,6 @@ func (f *TaskFactory) createTransferTask(taskID string, createdAt time.Time, req
 		return nil, fmt.Errorf("no files found at source path: %s", params.SourcePath)
 	}
 
-	// 创建传输元素
 	elems := make([]transfer.TaskElement, 0, len(files))
 	for _, file := range files {
 		elem := transfer.NewTaskElement(sourceReadable, file, targetStor, params.TargetPath)

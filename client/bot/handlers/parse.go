@@ -31,7 +31,6 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 	if len(entityUrls) > 0 {
 		text += "\n" + strings.Join(entityUrls, "\n")
 	}
-	// read lines and remove empty lines & duplicates
 	lines := strings.Split(text, "\n")
 	seen := make(map[string]struct{})
 	var processedLines []string

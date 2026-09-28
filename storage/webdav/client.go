@@ -166,7 +166,6 @@ func (c *Client) WriteFile(ctx context.Context, remotePath string, content io.Re
 	return fmt.Errorf("PUT: %s", resp.Status)
 }
 
-// ListDir lists files and directories in the given path
 func (c *Client) ListDir(ctx context.Context, dirPath string) ([]Response, error) {
 	dirPath = strings.Trim(dirPath, "/")
 	u, err := url.Parse(c.BaseURL)
@@ -193,7 +192,6 @@ func (c *Client) ListDir(ctx context.Context, dirPath string) ([]Response, error
 		return nil, fmt.Errorf("failed to decode PROPFIND response: %w", err)
 	}
 
-	// Filter out the directory itself from results
 	var results []Response
 	basePath := u.Path
 	for _, r := range multistatus.Responses {
@@ -201,7 +199,6 @@ func (c *Client) ListDir(ctx context.Context, dirPath string) ([]Response, error
 		if err != nil {
 			decodedHref = r.Href
 		}
-		// Skip the directory itself
 		if strings.TrimSuffix(decodedHref, "/") == strings.TrimSuffix(basePath, "/") {
 			continue
 		}
@@ -211,7 +208,6 @@ func (c *Client) ListDir(ctx context.Context, dirPath string) ([]Response, error
 	return results, nil
 }
 
-// ReadFile downloads a file and returns a ReadCloser
 func (c *Client) ReadFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
 	filePath = strings.Trim(filePath, "/")
 	u, err := url.Parse(c.BaseURL)

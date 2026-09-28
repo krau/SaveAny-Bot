@@ -88,7 +88,6 @@ func (w *Webdav) existsPath(ctx context.Context, storagePath string) bool {
 func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error) {
 	w.logger.Infof("Listing files in %s", dirPath)
 
-	// Join with base path
 	fullPath := path.Join(w.config.BasePath, dirPath)
 
 	responses, err := w.client.ListDir(ctx, fullPath)
@@ -99,20 +98,17 @@ func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 
 	files := make([]storagetypes.FileInfo, 0, len(responses))
 	for _, resp := range responses {
-		// Parse the href to get the file name
 		decodedHref, err := url.PathUnescape(resp.Href)
 		if err != nil {
 			w.logger.Warnf("Failed to unescape href %q: %v; using original value", resp.Href, err)
 			decodedHref = resp.Href
 		}
 
-		// Extract filename from href
 		name := path.Base(strings.TrimSuffix(decodedHref, "/"))
 		if name == "" || name == "." {
 			continue
 		}
 
-		// Parse modification time
 		var modTime time.Time
 		if resp.Propstat.Prop.GetLastModified != "" {
 			// Try RFC1123 format (standard for WebDAV)
@@ -145,7 +141,6 @@ func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 func (w *Webdav) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
 	w.logger.Infof("Opening file %s", filePath)
 
-	// Join with base path
 	fullPath := path.Join(w.config.BasePath, filePath)
 
 	reader, size, err := w.client.ReadFile(ctx, fullPath)

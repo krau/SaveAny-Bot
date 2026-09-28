@@ -16,14 +16,12 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 )
 
-// setupTestServer creates a test server with handlers
 func setupTestServer(t *testing.T) (*Handlers, *TaskFactory) {
 	factory := NewTaskFactory(t.Context())
 	handlers := NewHandlers(factory)
 	return handlers, factory
 }
 
-// TestCreateTaskHandler tests the create task endpoint
 func TestCreateTaskHandler(t *testing.T) {
 	handlers, _ := setupTestServer(t)
 
@@ -129,7 +127,6 @@ func TestCreateTaskHandler(t *testing.T) {
 	}
 }
 
-// TestListTasksHandler tests the list tasks endpoint
 func TestListTasksHandler(t *testing.T) {
 	handlers, _ := setupTestServer(t)
 
@@ -173,7 +170,6 @@ func TestListTasksHandler(t *testing.T) {
 	}
 }
 
-// TestListTasksHandlerOrder verifies the list is returned newest first.
 func TestListTasksHandlerOrder(t *testing.T) {
 	handlers, _ := setupTestServer(t)
 
@@ -227,11 +223,9 @@ func TestListTasksHandlerOrder(t *testing.T) {
 	}
 }
 
-// TestGetTaskHandler tests the get task endpoint
 func TestGetTaskHandler(t *testing.T) {
 	handlers, _ := setupTestServer(t)
 
-	// Register a test task
 	testTaskID := "test-get-task"
 	RegisterTask(testTaskID, "directlinks", "local", "downloads", "Test", "")
 	defer DeleteTask(testTaskID)
@@ -293,11 +287,9 @@ func TestGetTaskHandler(t *testing.T) {
 	}
 }
 
-// TestCancelTaskHandler tests the cancel task endpoint
 func TestCancelTaskHandler(t *testing.T) {
 	handlers, _ := setupTestServer(t)
 
-	// Register a test task
 	testTaskID := "test-cancel-task"
 	RegisterTask(testTaskID, "directlinks", "local", "downloads", "Test", "")
 	defer DeleteTask(testTaskID)
@@ -307,7 +299,7 @@ func TestCancelTaskHandler(t *testing.T) {
 		method     string
 		path       string
 		wantStatus int
-		skipCore   bool // Skip if core is not initialized
+		skipCore   bool
 	}{
 		{
 			name:       "Method not allowed",
@@ -353,7 +345,6 @@ func TestCancelTaskHandler(t *testing.T) {
 	}
 }
 
-// TestListStoragesHandler tests the list storages endpoint
 func TestListStoragesHandler(t *testing.T) {
 	handlers, _ := setupTestServer(t)
 
@@ -399,7 +390,6 @@ func TestListStoragesHandler(t *testing.T) {
 
 // TestConcurrentProgressStore tests concurrent access to progress store
 func TestConcurrentProgressStore(t *testing.T) {
-	// Clear store before test
 	t.Cleanup(func() {
 		tasks := GetAllTasks()
 		for _, task := range tasks {
@@ -412,7 +402,6 @@ func TestConcurrentProgressStore(t *testing.T) {
 	var wg sync.WaitGroup
 	numGoroutines := 100
 
-	// Concurrent registrations
 	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
@@ -422,7 +411,6 @@ func TestConcurrentProgressStore(t *testing.T) {
 		}(i)
 	}
 
-	// Concurrent reads
 	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
@@ -432,7 +420,6 @@ func TestConcurrentProgressStore(t *testing.T) {
 		}(i)
 	}
 
-	// Concurrent updates
 	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
@@ -447,7 +434,6 @@ func TestConcurrentProgressStore(t *testing.T) {
 
 	wg.Wait()
 
-	// Verify all tasks exist
 	for i := range numGoroutines {
 		taskID := fmt.Sprintf("concurrent-test-%d", i)
 		if _, ok := GetTask(taskID); !ok {
@@ -456,7 +442,6 @@ func TestConcurrentProgressStore(t *testing.T) {
 	}
 }
 
-// TestProgressTrackerConcurrentUpdates tests concurrent progress updates
 func TestProgressTrackerConcurrentUpdates(t *testing.T) {
 	info := RegisterTask("concurrent-progress", "directlinks", "local", "downloads", "Test", "")
 	info.Emit(taskevent.Event{TaskID: "concurrent-progress", Phase: taskevent.PhaseStart, TotalBytes: 10000})
@@ -465,7 +450,6 @@ func TestProgressTrackerConcurrentUpdates(t *testing.T) {
 	numGoroutines := 50
 	updatesPerGoroutine := 100
 
-	// Concurrent progress updates via the Sink interface
 	for i := range numGoroutines {
 		wg.Add(1)
 		go func(id int) {
@@ -492,7 +476,6 @@ func TestProgressTrackerConcurrentUpdates(t *testing.T) {
 	}
 }
 
-// TestTaskFactoryValidation tests TaskFactory parameter validation
 func TestTaskFactoryValidation(t *testing.T) {
 	factory := NewTaskFactory(context.Background())
 
@@ -531,7 +514,6 @@ func TestTaskFactoryValidation(t *testing.T) {
 	}
 }
 
-// TestEdgeCases tests various edge cases
 func TestEdgeCases(t *testing.T) {
 	tests := []struct {
 		name string
@@ -600,7 +582,6 @@ func TestEdgeCases(t *testing.T) {
 	}
 }
 
-// TestHealthCheckHandler tests the health check endpoint
 func TestHealthCheckHandler(t *testing.T) {
 	handlers, _ := setupTestServer(t)
 
@@ -622,7 +603,6 @@ func TestHealthCheckHandler(t *testing.T) {
 	}
 }
 
-// TestGetTaskTypesHandler tests the task types endpoint
 func TestGetTaskTypesHandler(t *testing.T) {
 	handlers, _ := setupTestServer(t)
 
@@ -666,7 +646,6 @@ func TestGetTaskTypesHandler(t *testing.T) {
 	}
 }
 
-// TestNotFoundHandler tests the 404 handler
 func TestNotFoundHandler(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/non-existent-path", nil)
 	rr := httptest.NewRecorder()
@@ -686,7 +665,6 @@ func TestNotFoundHandler(t *testing.T) {
 	}
 }
 
-// TestMethodNotAllowedHandler tests the 405 handler
 func TestMethodNotAllowedHandler(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/tasks", nil)
 	rr := httptest.NewRecorder()
@@ -706,7 +684,6 @@ func TestMethodNotAllowedHandler(t *testing.T) {
 	}
 }
 
-// TestTaskProgressInfoTimeUpdate tests that timestamps are updated correctly
 func TestTaskProgressInfoTimeUpdate(t *testing.T) {
 	info := RegisterTask("time-test", "directlinks", "local", "downloads", "Test", "")
 	defer DeleteTask("time-test")
@@ -720,7 +697,6 @@ func TestTaskProgressInfoTimeUpdate(t *testing.T) {
 	}
 }
 
-// TestWebhookPayloadWithNilCompletedAt tests webhook payload with nil completed_at
 func TestWebhookPayloadWithNilCompletedAt(t *testing.T) {
 	payload := WebhookPayload{
 		TaskID:      "test-id",

@@ -88,7 +88,6 @@ func (w *splitWriter) partName(partNum int) string {
 func (w *splitWriter) finalize() error {
 	w.totalParts = w.currentPart
 
-	// 如果只有一个分卷,直接重命名为 .zip
 	if w.totalParts == 1 {
 		oldName := fmt.Sprintf("%s.zip.001", w.baseName)
 		newName := fmt.Sprintf("%s.zip", w.baseName)

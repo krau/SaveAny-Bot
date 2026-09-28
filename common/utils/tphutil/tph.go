@@ -52,7 +52,6 @@ func GetNodeImages(node telegraph.Node) []string {
 	if nodeElement.Tag == "img" {
 		if src, exists := nodeElement.Attrs["src"]; exists {
 			if strings.HasPrefix(src, "/file/") {
-				// handle images on telegra.ph server
 				src = "https://telegra.ph" + src
 			}
 			srcs = append(srcs, src)

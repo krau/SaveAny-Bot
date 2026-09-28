@@ -553,7 +553,6 @@ func (t *Telegram) splitUpload(
 	tempId := xid.New().String()
 	outputBase := filepath.Join(config.C().Temp.BasePath, tempId, strings.Split(filename, ".")[0])
 	defer func() {
-		// cleanup temp files
 		if err := os.RemoveAll(filepath.Join(config.C().Temp.BasePath, tempId)); err != nil {
 			log.FromContext(ctx).Warnf("Failed to cleanup temp split files: %s", err)
 		}
@@ -603,7 +602,6 @@ func (t *Telegram) splitUpload(
 		}
 	}
 	if len(inputFiles) == 1 {
-		// only one part, send as normal file
 		// shoud not happen as we already check fileSize > splitSize
 		doc := message.UploadedDocument(inputFiles[0]).
 			Filename(filepath.Base(matched[0])).
@@ -633,7 +631,6 @@ func (t *Telegram) splitUpload(
 		return err
 	}
 
-	// more than MaxAlbumItems parts, send in batches, each batch up to MaxAlbumItems parts
 	for i := 0; i < len(multiMedia); i += tglimit.MaxAlbumItems {
 		end := min(i+tglimit.MaxAlbumItems, len(multiMedia))
 		batch := multiMedia[i:end]

@@ -35,7 +35,7 @@ type Task struct {
 	ctx             context.Context
 	elems           []TaskElement
 	Progress        ProgressTracker
-	IgnoreErrors    bool // if true, errors during processing will be ignored
+	IgnoreErrors    bool
 	downloaded      atomic.Int64
 	totalSize       int64
 	uploadTotalSize atomic.Int64

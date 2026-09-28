@@ -24,9 +24,7 @@ import (
 	"github.com/rs/xid"
 )
 
-// generate a file name from the message content and media type
-//
-// it will never return an empty string
+// Never returns an empty string.
 func GenFileNameFromMessage(message tg.Message) string {
 	ext := func(media tg.MessageMediaClass) string {
 		switch media := media.(type) {
@@ -217,7 +215,6 @@ func getMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, err
 	return tgm, nil
 }
 
-// f**k gotgproto's breaking changes
 func GetMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, error) {
 	// we don't know what the input chatID is bot api style(e.g. channel with -100 prefix) or plain tdlib style(no any prefix and every id is positive)
 	if msg, err := getMessageByID(ctx, chatID, msgID); err == nil {

@@ -86,7 +86,6 @@ func GetStorageByName(ctx context.Context, name string) (Storage, error) {
 	return v.(Storage), nil
 }
 
-// 检查 user 是否可用指定的 storage, 若不可用则返回未找到错误
 func GetStorageByUserIDAndName(ctx context.Context, chatID int64, name string) (Storage, error) {
 	if name == "" {
 		return nil, ErrStorageNameEmpty

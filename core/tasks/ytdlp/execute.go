@@ -25,7 +25,6 @@ func (t *Task) Execute(ctx context.Context) error {
 		t.Progress.OnStart(ctx, t)
 	}
 
-	// Create temporary directory for downloads
 	tempDir, err := os.MkdirTemp(config.C().Temp.BasePath, "ytdlp-*")
 	if err != nil {
 		logger.Errorf("Failed to create temp directory: %v", err)
@@ -34,7 +33,7 @@ func (t *Task) Execute(ctx context.Context) error {
 		}
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tempDir) // Clean up temp directory
+	defer os.RemoveAll(tempDir)
 
 	// Absolute: yt-dlp ignores --paths for absolute output templates.
 	if tempDir, err = filepath.Abs(tempDir); err != nil {
@@ -47,7 +46,6 @@ func (t *Task) Execute(ctx context.Context) error {
 
 	logger.Debugf("Created temp directory: %s", tempDir)
 
-	// Download files using yt-dlp
 	downloadedFiles, err := t.downloadFiles(ctx, tempDir)
 	if err != nil {
 		logger.Errorf("yt-dlp download failed: %v", err)
@@ -66,7 +64,6 @@ func (t *Task) Execute(ctx context.Context) error {
 		return err
 	}
 
-	// Transfer downloaded files to storage
 	logger.Infof("Transferring %d file(s) to storage %s", len(downloadedFiles), t.Storage.Name())
 	for _, relPath := range downloadedFiles {
 		if err := t.transferFile(ctx, tempDir, relPath); err != nil {
@@ -113,7 +110,6 @@ func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string
 	return cmd, flags, nil
 }
 
-// downloadFiles downloads files using yt-dlp and returns the list of downloaded file paths
 func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, error) {
 	logger := log.FromContext(ctx)
 
@@ -126,17 +122,14 @@ func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, err
 		t.Progress.OnProgress(ctx, t, "Downloading...")
 	}
 
-	// Execute download with URLs and custom flags
 	logger.Infof("Executing yt-dlp for %d URL(s) with %d custom flag(s)", len(t.URLs), len(flags))
 
-	// Combine flags and URLs as arguments (flags first, then URLs)
 	// yt-dlp accepts: yt-dlp [OPTIONS] URL [URL...]
 	args := append(flags, t.URLs...)
 
 	// Run with context for cancellation support
 	result, err := cmd.Run(ctx, args...)
 	if err != nil {
-		// Check if context was canceled
 		if errors.Is(err, context.Canceled) {
 			return nil, err
 		}
@@ -147,7 +140,6 @@ func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, err
 		return nil, fmt.Errorf("yt-dlp exited with code %d: %s", result.ExitCode, result.Stderr)
 	}
 
-	// List downloaded files
 	files, err := collectDownloadedFiles(tempDir)
 	if err != nil {
 		return nil, err
@@ -188,7 +180,6 @@ func (t *Task) transferFile(ctx context.Context, tempDir, relPath string) error 
 	logger := log.FromContext(ctx)
 	filePath := filepath.Join(tempDir, relPath)
 
-	// Check if file exists
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -198,7 +189,6 @@ func (t *Task) transferFile(ctx context.Context, tempDir, relPath string) error 
 		return fmt.Errorf("failed to stat file %s: %w", filePath, err)
 	}
 
-	// Open file
 	f, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", filePath, err)
@@ -208,7 +198,6 @@ func (t *Task) transferFile(ctx context.Context, tempDir, relPath string) error 
 	// Set content length in context for storage
 	ctx = context.WithValue(ctx, ctxkey.ContentLength, fileInfo.Size())
 
-	// Save to storage
 	destPath := filepath.Join(t.StorPath, sanitizeFilename(relPath))
 
 	logger.Infof("Transferring file %s to %s:%s", relPath, t.Storage.Name(), destPath)
@@ -226,7 +215,6 @@ func (t *Task) transferFile(ctx context.Context, tempDir, relPath string) error 
 	return nil
 }
 
-// sanitizeFilename removes or replaces problematic characters in filenames
 func sanitizeFilename(name string) string {
 	name = strings.ReplaceAll(name, ":", "_")
 	name = strings.ReplaceAll(name, "\"", "'")

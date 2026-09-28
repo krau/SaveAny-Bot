@@ -10,18 +10,15 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// webhookClient Webhook 客户端
 var webhookClient = &http.Client{
 	Timeout: 30 * time.Second,
 }
 
-// SendWebhook 发送 Webhook 回调
 func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 	if payload == nil || payload.TaskID == "" {
 		return
 	}
 
-	// 获取任务信息以获取 webhook URL
 	info, ok := GetTask(payload.TaskID)
 	if !ok || info.Webhook == "" {
 		return
@@ -29,7 +26,6 @@ func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 
 	webhookURL := info.Webhook
 
-	// Async send with retries.
 	go func() {
 		var logger *log.Logger
 		if ctx != nil {
@@ -91,7 +87,6 @@ func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 	}()
 }
 
-// CreateWebhookPayload creates a Webhook payload.
 func CreateWebhookPayload(taskID string, taskType string, status TaskStatus, storage, path string, err error) *WebhookPayload {
 	payload := &WebhookPayload{
 		TaskID:  taskID,

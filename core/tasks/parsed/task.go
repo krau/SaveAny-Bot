@@ -23,14 +23,14 @@ type Task struct {
 	Stor       storage.Storage
 	StorPath   string
 	item       *parser.Item
-	httpClient *http.Client // [TODO] btorrent support?
+	httpClient *http.Client
 	progress   ProgressTracker
 	stream     bool
 
 	totalResources  int64
-	downloaded      atomic.Int64 // downloaded resources count
-	totalBytes      int64        // total bytes to download
-	downloadedBytes atomic.Int64 // downloaded bytes count
+	downloaded      atomic.Int64
+	totalBytes      int64
+	downloadedBytes atomic.Int64
 	processing      map[string]ResourceInfo
 	processingMu    sync.RWMutex
 }

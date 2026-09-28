@@ -52,7 +52,6 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestClient_AddURI(t *testing.T) {
-	// Create a mock server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			t.Errorf("Expected POST request, got %s", r.Method)
@@ -63,12 +62,10 @@ func TestClient_AddURI(t *testing.T) {
 			t.Errorf("Failed to decode request: %v", err)
 		}
 
-		// Verify method
 		if req.Method != "aria2.addUri" {
 			t.Errorf("Expected method aria2.addUri, got %s", req.Method)
 		}
 
-		// Send response
 		resp := rpcResponse{
 			Jsonrpc: "2.0",
 			ID:      req.ID,
@@ -97,19 +94,16 @@ func TestClient_AddURI(t *testing.T) {
 }
 
 func TestClient_TellStatus(t *testing.T) {
-	// Create a mock server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Errorf("Failed to decode request: %v", err)
 		}
 
-		// Verify method
 		if req.Method != "aria2.tellStatus" {
 			t.Errorf("Expected method aria2.tellStatus, got %s", req.Method)
 		}
 
-		// Send response
 		status := Status{
 			GID:             "2089b05ecca3d829",
 			Status:          "active",
@@ -158,14 +152,12 @@ func TestClient_TellStatus(t *testing.T) {
 func TestClient_WithSecret(t *testing.T) {
 	expectedSecret := "my-secret-token"
 
-	// Create a mock server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			t.Errorf("Failed to decode request: %v", err)
 		}
 
-		// Verify secret token is included in params
 		if len(req.Params) == 0 {
 			t.Error("Expected params to contain secret token")
 		} else {
@@ -175,7 +167,6 @@ func TestClient_WithSecret(t *testing.T) {
 			}
 		}
 
-		// Send response
 		version := Version{
 			Version:         "1.36.0",
 			EnabledFeatures: []string{"Async DNS", "BitTorrent", "HTTP", "HTTPS"},

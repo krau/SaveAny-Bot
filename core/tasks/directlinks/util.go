@@ -20,12 +20,10 @@ import (
 // some servers send Content-Disposition headers with invalid characters that cause
 // mime.ParseMediaType to fail, but the filename*= parameter is still valid.
 func parseFilename(contentDisposition string) string {
-	// First, try to find filename*= (RFC 5987 format, most reliable for non-ASCII)
 	if filename := parseFilenameExtended(contentDisposition); filename != "" {
 		return filename
 	}
 
-	// Try standard MIME parsing for regular filename= parameter
 	_, params, err := mime.ParseMediaType(contentDisposition)
 	if err == nil {
 		if filename := params["filename"]; filename != "" {
@@ -33,31 +31,25 @@ func parseFilename(contentDisposition string) string {
 		}
 	}
 
-	// Fallback: manual parsing if mime.ParseMediaType fails
 	return parseFilenameFallback(contentDisposition)
 }
 
 // parseFilenameExtended parses RFC 5987/RFC 2231 extended parameter format
 // Format: filename*=charset'language'value (e.g., UTF-8”%E6%B5%8B%E8%AF%95.zip)
 func parseFilenameExtended(cd string) string {
-	// Look for filename*= (case-insensitive)
 	lower := strings.ToLower(cd)
 	idx := strings.Index(lower, "filename*=")
 	if idx == -1 {
 		return ""
 	}
 
-	// Extract the value after filename*=
 	value := cd[idx+len("filename*="):]
 
-	// Find the end of the value (next ; or end of string)
 	if endIdx := strings.Index(value, ";"); endIdx != -1 {
 		value = value[:endIdx]
 	}
 	value = strings.TrimSpace(value)
 
-	// Parse charset'language'encoded-value format
-	// Common format: UTF-8''%E6%B5%8B%E8%AF%95.zip
 	parts := strings.SplitN(value, "''", 2)
 	if len(parts) == 2 {
 		// parts[0] is charset (e.g., "UTF-8")
@@ -103,7 +95,6 @@ func decodeFilenameParam(filename string) string {
 		}
 	}
 
-	// Try URL decoding
 	decoded := tryUrlQueryUnescape(filename)
 
 	// Check if the result is valid UTF-8. If not, try GBK decoding.
@@ -152,26 +143,22 @@ func parseFilenameFromURL(rawURL string) string {
 		return ""
 	}
 
-	// Get the path part and extract the last segment
 	path := parsed.Path
 	if path == "" {
 		return ""
 	}
 
-	// URL decode the path first
 	decodedPath, err := url.PathUnescape(path)
 	if err != nil {
 		decodedPath = path
 	}
 
-	// Get the last segment of the path
 	lastSlash := strings.LastIndex(decodedPath, "/")
 	if lastSlash == -1 {
 		return decodedPath
 	}
 	filename := decodedPath[lastSlash+1:]
 
-	// Remove query string if somehow still present
 	if idx := strings.Index(filename, "?"); idx != -1 {
 		filename = filename[:idx]
 	}
@@ -181,23 +168,19 @@ func parseFilenameFromURL(rawURL string) string {
 
 // parseFilenameFallback manually parses filename= when mime.ParseMediaType fails
 func parseFilenameFallback(cd string) string {
-	// Look for filename= (case-insensitive)
 	lower := strings.ToLower(cd)
 	idx := strings.Index(lower, "filename=")
 	if idx == -1 {
 		return ""
 	}
 
-	// Skip "filename=" prefix
 	value := cd[idx+len("filename="):]
 
-	// Find the end of the value
 	if endIdx := strings.Index(value, ";"); endIdx != -1 {
 		value = value[:endIdx]
 	}
 	value = strings.TrimSpace(value)
 
-	// Remove quotes if present
 	if len(value) >= 2 {
 		if (value[0] == '"' && value[len(value)-1] == '"') ||
 			(value[0] == '\'' && value[len(value)-1] == '\'') {

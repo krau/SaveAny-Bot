@@ -58,7 +58,6 @@ var aria2ClientInitOnce sync.Once
 var aria2ClientInitErr error
 var aria2Client *aria2.Client
 
-// GetAria2Client returns the shared aria2 client instance
 func GetAria2Client() *aria2.Client {
 	return aria2Client
 }
@@ -97,7 +96,7 @@ func handleAria2DlCmd(ctx *ext.Context, update *ext.Update) error {
 		return nil
 	}
 
-	// Build storage selection keyboard (don't add to aria2 yet)
+	// don't add to aria2 yet
 	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, update.GetUserChat().GetID()), tcbdata.Add{
 		TaskType:  tasktype.TaskTypeAria2,
 		Aria2URIs: links,

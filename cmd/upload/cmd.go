@@ -95,7 +95,6 @@ func Upload(cmd *cobra.Command, args []string) error {
 	ctx = context.WithValue(ctx, ctxkey.ContentLength, fileSize)
 	ctx = tgutil.ExtWithContext(ctx, bot.ExtContext())
 
-	// Create progress reader and UI
 	var reader io.Reader
 	var progressUI *UploadProgress
 	log.Info("Uploading file...", "file", fp, "to", storname, "as", uploadPath)

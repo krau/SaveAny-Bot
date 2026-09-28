@@ -21,12 +21,8 @@ func handleParserCmd(ctx *ext.Context, u *ext.Update) error {
 		return nil
 	}
 	switch args[1] {
-	// case "list":
-	// 	return handleParserListCmd(ctx, u)
 	case "install":
 		return handleParserInstallCmd(ctx, u)
-	// case "uninstall":
-	// return handleParserUninstallCmd(ctx, u)
 	default:
 	}
 	return dispatcher.EndGroups

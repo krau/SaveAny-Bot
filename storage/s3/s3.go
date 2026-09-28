@@ -44,7 +44,6 @@ func (m *S3) Init(ctx context.Context, cfg storconfig.StorageConfig) error {
 	}
 	m.client = client
 
-	// Check if bucket exists
 	if err := m.client.HeadBucket(ctx); err != nil {
 		return fmt.Errorf("bucket %s not accessible: %w", m.config.BucketName, err)
 	}
@@ -68,13 +67,11 @@ func (m *S3) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	candidate := m.JoinStoragePath(storagePath)
 
 	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		// Unique filename
 		candidate = fsutil.UniquePath(strings.TrimPrefix(m.config.BasePath, "/"), storagePath, func(c string) bool {
 			return m.existsKey(ctx, c)
 		}, 10)
 	}
 
-	// Determine content length
 	size := int64(-1)
 	if length := ctx.Value(ctxkey.ContentLength); length != nil {
 		if l, ok := length.(int64); ok && l > 0 {

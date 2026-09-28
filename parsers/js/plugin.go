@@ -11,7 +11,7 @@ var (
 
 type PluginMeta struct {
 	Name        string `json:"name"`
-	Version     string `json:"version"` // [TODO] 分版本解析, 但是我们现在只有 v1 所以先不写
+	Version     string `json:"version"`
 	Description string `json:"description"`
 	Author      string `json:"author"`
 }

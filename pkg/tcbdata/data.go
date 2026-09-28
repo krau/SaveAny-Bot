@@ -36,22 +36,7 @@ func IsConflictStrategy(strategy string) bool {
 	return slices.Contains(ConflictStrategyValues(), strategy)
 }
 
-// type TaskDataTGFiles struct {
-// 	Files   []tfile.TGFileMessage
-// 	AsBatch bool
-// }
-
-// type TaskDataTelegraph struct {
-// 	Pics     []string
-// 	PageNode *telegraph.Page
-// }
-
-// type TaskDataType interface {
-// 	TaskDataTGFiles | TaskDataTelegraph
-// }
-
 type Add struct {
-	// [TODO] maybe we should to spilit this into different types...
 	TaskType         tasktype.TaskType
 	SelectedStorName string
 	DirID            uint

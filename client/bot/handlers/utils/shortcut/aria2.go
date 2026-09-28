@@ -19,10 +19,9 @@ func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 	logger := log.FromContext(ctx)
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 
-	// Now add to aria2 after user selected storage
+	// add to aria2 after user selected storage
 	logger.Infof("Adding download to aria2, uris type: %T, value: %+v", uris, uris)
 
-	// Ensure uris is valid
 	if len(uris) == 0 {
 		logger.Error("URIs list is empty")
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
@@ -45,7 +44,6 @@ func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 	}
 	logger.Infof("Aria2 download added with GID: %s", gid)
 
-	// Create task with the GID
 	task := aria2dl.NewTask(xid.New().String(), injectCtx, gid, uris, aria2Client, stor, dirPath, aria2dl.NewProgress(msgID, userID))
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("Failed to add task: %s", err)

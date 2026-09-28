@@ -131,7 +131,6 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata
 	return p
 }
 
-// 加载指定文件夹下的所有 JS 解析器插件
 func LoadPlugins(ctx context.Context, dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -151,12 +150,9 @@ func LoadPlugins(ctx context.Context, dir string) error {
 
 		vm := goja.New()
 		vm.Set("registerParser", jsRegisterParser(vm))
-		// Inject some utils to vm
 		logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("[plugin|parser]/%s", e.Name()))
 		vm.Set("console", jsConsole(logger))
-		// http fetch funcs
 		vm.Set("ghttp", jsGhttp(vm))
-		// playwright fetch func
 		vm.Set("playwright", jsPlaywright(vm, logger))
 
 		if _, err := vm.RunString(string(code)); err != nil {

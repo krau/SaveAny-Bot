@@ -35,7 +35,6 @@ func GetSpeed(downloaded int64, startTime time.Time) float64 {
 	return float64(downloaded) / elapsed
 }
 
-// FormatSize formats a byte size as a human-readable string
 func FormatSize(bytes int64) string {
 	const (
 		KB = 1024

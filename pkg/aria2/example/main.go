@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-	// Create aria2 client
 	client, err := aria2.NewClient("http://localhost:6800/jsonrpc", "")
 	if err != nil {
 		log.Fatal(err)
@@ -18,7 +17,6 @@ func main() {
 
 	ctx := context.Background()
 
-	// Get aria2 version
 	version, err := client.GetVersion(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -26,7 +24,6 @@ func main() {
 	fmt.Printf("aria2 version: %s\n", version.Version)
 	fmt.Printf("Enabled features: %v\n", version.EnabledFeatures)
 
-	// Add a download
 	uris := []string{"https://example.com/file.zip"}
 	options := aria2.Options{
 		"dir": "/downloads",
@@ -38,7 +35,6 @@ func main() {
 	}
 	fmt.Printf("Download started with GID: %s\n", gid)
 
-	// Monitor download progress
 	for {
 		status, err := client.TellStatus(ctx, gid)
 		if err != nil {
@@ -65,7 +61,6 @@ func main() {
 		time.Sleep(1 * time.Second)
 	}
 
-	// Get global statistics
 	stat, err := client.GetGlobalStat(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -76,7 +71,6 @@ func main() {
 		stat.NumWaiting,
 	)
 
-	// List active downloads
 	activeDownloads, err := client.TellActive(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -86,7 +80,6 @@ func main() {
 		fmt.Printf("  GID: %s, Status: %s\n", download.GID, download.Status)
 	}
 
-	// Example with context timeout
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

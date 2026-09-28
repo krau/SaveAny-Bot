@@ -64,13 +64,11 @@ func extractTelegramDuration(msg *tg.Message) float64 {
 
 	documentMedia, ok := media.(*tg.MessageMediaDocument)
 	if !ok || documentMedia == nil || documentMedia.Document == nil {
-		// telegram media does not contain a document
 		return 0
 	}
 
 	document, ok := documentMedia.Document.AsNotEmpty()
 	if !ok {
-		// telegram document is empty
 		return 0
 	}
 

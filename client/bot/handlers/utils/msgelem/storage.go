@@ -143,7 +143,6 @@ func BuildConflictStrategyMarkup(adddata tcbdata.Add) (*tg.ReplyInlineMarkup, er
 	return &tg.ReplyInlineMarkup{Rows: rows}, nil
 }
 
-// Builds the inline keyboard for setting default storage
 func BuildSetDefaultStorageMarkup(
 	ctx context.Context,
 	stors []storage.Storage) (*tg.ReplyInlineMarkup, error) {

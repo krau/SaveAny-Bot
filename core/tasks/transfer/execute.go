@@ -75,7 +75,6 @@ func (t *Task) Execute(ctx context.Context) error {
 func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", elem.FileInfo.Name))
 
-	// Check whether the source storage supports reading
 	readableStorage, ok := elem.SourceStorage.(storage.StorageReadable)
 	if !ok {
 		return fmt.Errorf("source storage %s does not support reading", elem.SourceStorage.Name())
@@ -88,10 +87,8 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 	}
 	defer reader.Close()
 
-	// Build target storage path: /target_path/filename
 	storagePath := path.Join(elem.TargetPath, elem.FileInfo.Name)
 
-	// Inject file size into context
 	ctx = context.WithValue(ctx, ctxkey.ContentLength, size)
 
 	if config.C().Stream {

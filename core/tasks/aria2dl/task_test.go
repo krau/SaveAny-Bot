@@ -115,13 +115,11 @@ func TestProgressTracker(t *testing.T) {
 		mockProg,
 	)
 
-	// Test OnStart
 	mockProg.OnStart(ctx, task)
 	if !mockProg.started {
 		t.Error("Expected OnStart to set started to true")
 	}
 
-	// Test OnProgress
 	status := &aria2.Status{
 		GID:             "test-gid",
 		Status:          "active",
@@ -134,7 +132,6 @@ func TestProgressTracker(t *testing.T) {
 		t.Errorf("Expected progress to be 1, got %d", mockProg.progress)
 	}
 
-	// Test OnDone
 	mockProg.OnDone(ctx, task, nil)
 	if !mockProg.done {
 		t.Error("Expected OnDone to set done to true")
@@ -165,7 +162,6 @@ func TestTaskTitle(t *testing.T) {
 		t.Error("Expected title to not be empty")
 	}
 
-	// Check if title contains the GID
 	found := false
 	for i := 0; i < len(title)-len(expectedSubstr)+1; i++ {
 		if title[i:i+len(expectedSubstr)] == expectedSubstr {
@@ -196,12 +192,10 @@ func TestContextCancellation(t *testing.T) {
 		mockProg,
 	)
 
-	// Just verify the task structure is valid
 	if task.ctx.Err() != nil {
 		t.Error("Context should not be cancelled yet")
 	}
 
-	// Wait for context to timeout
 	<-ctx.Done()
 	if ctx.Err() == nil {
 		t.Error("Context should be cancelled after timeout")

@@ -63,13 +63,11 @@ type StorageProgressSaver interface {
 	) error
 }
 
-// StorageListable 表示支持列举目录内容的存储
 type StorageListable interface {
 	Storage
 	ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error)
 }
 
-// StorageReadable 表示支持读取文件内容的存储
 type StorageReadable interface {
 	Storage
 	OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error)
@@ -99,7 +97,6 @@ var storageConstructors = map[storenum.StorageType]StorageConstructor{
 	storenum.Rclone:   func() Storage { return new(rclone.Rclone) },
 }
 
-// NewStorage creates a new storage instance based on the provided config and initializes it
 func NewStorage(ctx context.Context, cfg storcfg.StorageConfig) (Storage, error) {
 	constructor, ok := storageConstructors[cfg.GetType()]
 	if !ok {

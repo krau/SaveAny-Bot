@@ -19,7 +19,6 @@ type ConfigurableParser interface {
 	Name() string
 }
 
-// Resource is a single downloadable resource with metadata.
 type Resource struct {
 	URL       string            `json:"url"`
 	Filename  string            `json:"filename"` // with ext
@@ -31,7 +30,6 @@ type Resource struct {
 	Extra     map[string]any    `json:"extra"`
 }
 
-// Item represents a parsed item with metadata and resources.
 type Item struct {
 	Site        string         `json:"site"`
 	URL         string         `json:"url"` // original URL of the item

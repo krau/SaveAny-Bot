@@ -11,26 +11,21 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 )
 
-// Server API 服务器
 type Server struct {
 	httpServer *http.Server
 	factory    *TaskFactory
 }
 
-// NewServer 创建新的 API 服务器
 func NewServer(ctx context.Context) *Server {
 	cfg := config.C().API
 
 	factory := NewTaskFactory(ctx)
 	handlers := NewHandlers(factory)
 
-	// 设置路由
 	mux := http.NewServeMux()
 
-	// 健康检查
 	mux.HandleFunc("/health", handlers.HealthCheckHandler)
 
-	// API v1 路由
 	mux.HandleFunc("/api/v1/tasks", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -42,7 +37,6 @@ func NewServer(ctx context.Context) *Server {
 		}
 	})
 	mux.HandleFunc("/api/v1/tasks/", func(w http.ResponseWriter, r *http.Request) {
-		// 根据方法和路径分发
 		switch r.Method {
 		case http.MethodGet:
 			handlers.GetTaskHandler(w, r)
@@ -56,22 +50,17 @@ func NewServer(ctx context.Context) *Server {
 	mux.HandleFunc("/api/v1/media-metadata", handlers.GetMediaMetadataHandler)
 	mux.HandleFunc("/api/v1/task-types", handlers.GetTaskTypesHandler)
 
-	// 404 处理
 	mux.HandleFunc("/", NotFoundHandler)
 
-	// Apply middleware chain.
 	var handler http.Handler = mux
 
-	// Apply auth middleware when a token is configured.
 	token := cfg.Token
 	if token != "" {
 		handler = AuthMiddleware()(handler)
 	}
 
-	// Add logging middleware.
 	handler = loggingMiddleware(handler)
 
-	// Add recovery middleware.
 	handler = recoveryMiddleware(handler)
 
 	return &Server{
@@ -86,7 +75,6 @@ func NewServer(ctx context.Context) *Server {
 	}
 }
 
-// Start 启动服务器
 func (s *Server) Start(ctx context.Context) error {
 	logger := log.FromContext(ctx).With("module", "api")
 
@@ -98,14 +86,12 @@ func (s *Server) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to listen on %s: %w", s.httpServer.Addr, err)
 	}
 
-	// 在 goroutine 中启动服务器
 	go func() {
 		if err := s.httpServer.Serve(ln); err != nil && err != http.ErrServerClosed {
 			logger.Errorf("API server error: %v", err)
 		}
 	}()
 
-	// 监听 context 取消
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -118,12 +104,10 @@ func (s *Server) Start(ctx context.Context) error {
 	return nil
 }
 
-// loggingMiddleware 日志中间件
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		// 包装 ResponseWriter 以获取状态码
 		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
 		next.ServeHTTP(wrapped, r)
@@ -132,7 +116,6 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// recoveryMiddleware 恢复中间件
 func recoveryMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -145,7 +128,6 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// responseWriter 包装 http.ResponseWriter 以捕获状态码
 type responseWriter struct {
 	http.ResponseWriter
 	statusCode int

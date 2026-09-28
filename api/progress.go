@@ -44,7 +44,6 @@ var store = &progressStore{
 	retention: 24 * time.Hour,
 }
 
-// RegisterTask registers a new API task and returns its progress info.
 func RegisterTask(taskID, taskType, storage, path, title, webhook string) *TaskProgressInfo {
 	info := &TaskProgressInfo{
 		TaskID:    taskID,
@@ -65,7 +64,6 @@ func RegisterTask(taskID, taskType, storage, path, title, webhook string) *TaskP
 	return info
 }
 
-// GetTask returns the progress info for a task.
 func GetTask(taskID string) (*TaskProgressInfo, bool) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
@@ -73,7 +71,6 @@ func GetTask(taskID string) (*TaskProgressInfo, bool) {
 	return info, ok
 }
 
-// GetAllTasks returns all tracked tasks.
 func GetAllTasks() []*TaskProgressInfo {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
@@ -85,7 +82,6 @@ func GetAllTasks() []*TaskProgressInfo {
 	return tasks
 }
 
-// DeleteTask removes a task record.
 func DeleteTask(taskID string) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
@@ -126,7 +122,6 @@ func StartCleanupLoop(ctx interface{ Done() <-chan struct{} }) {
 	}()
 }
 
-// UpdateStatus sets the task status.
 func (t *TaskProgressInfo) UpdateStatus(status TaskStatus) {
 	t.mu.Lock()
 	t.Status = status

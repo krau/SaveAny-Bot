@@ -36,7 +36,6 @@ func (r retry) Handle(next tg.Invoker) telegram.InvokeFunc {
 					retries++
 					continue
 				}
-				// retry middleware skip
 				return err
 			}
 

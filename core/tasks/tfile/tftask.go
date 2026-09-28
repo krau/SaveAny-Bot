@@ -21,7 +21,7 @@ type Task struct {
 	Storage   storage.Storage
 	Path      string
 	Progress  ProgressTracker
-	stream    bool // true if the file should be downloaded in stream mode
+	stream    bool
 	localPath string
 }
 

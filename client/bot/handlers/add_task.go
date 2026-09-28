@@ -50,7 +50,6 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	if !data.SettedDir && len(dirs) != 0 {
-		// ask for directory selection
 		markup, err := msgelem.BuildSetDirMarkupForAdd(dirs, dataid)
 		if err != nil {
 			log.FromContext(ctx).Errorf("Failed to build directory keyboard: %s", err)

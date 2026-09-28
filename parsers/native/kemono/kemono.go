@@ -101,7 +101,7 @@ func (k *KemonoParser) parseOne(ctx context.Context, info *DownloadInfo) (*parse
 		Site:        "kemono",
 		Title:       postInfo.Post.Title,
 		URL:         fmt.Sprintf("https://kemono.cr/%s/user/%s/post/%s", info.ServiceName, info.UserID, info.PostID),
-		Author:      postInfo.Post.User, // [TODO] request user profile
+		Author:      postInfo.Post.User,
 		Description: postInfo.Post.Content,
 		Tags: func() []string {
 			if postInfo.Post.Tags != nil {

@@ -42,7 +42,6 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 	opts := mediautil.TfileOptions(ctx, userDB, replyTo.Message)
 	if len(args) > 1 {
-		// custom filename via command arg
 		opts = append(opts, tfile.WithName(strings.Join(args[1:], " ")))
 	}
 	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, replyTo.Message, opts...)
@@ -78,7 +77,6 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	}
 	opts := mediautil.TfileOptions(ctx, userDB, replyTo.Message)
 	if len(args) > 1 {
-		// custom filename via command arg
 		opts = append(opts, tfile.WithName(strings.Join(args[1:], " ")))
 	}
 	msg, file, err := shortcut.GetFileFromMessageWithReply(ctx, update, replyTo.Message, opts...)
@@ -124,7 +122,6 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		return dispatcher.EndGroups
 	}
 
-	// [TODO]: generator istead of get all messages
 	msgs, err := tgutil.GetMessagesRange(tctx, chatID, int(startID), int(endID))
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetMessagesFailed, map[string]any{"Error": err.Error()})), nil)

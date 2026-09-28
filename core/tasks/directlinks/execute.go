@@ -25,7 +25,6 @@ func (t *Task) Execute(ctx context.Context) error {
 	if t.Progress != nil {
 		t.Progress.OnStart(ctx, t)
 	}
-	// head all links to get file info
 	eg, gctx := errgroup.WithContext(ctx)
 	eg.SetLimit(config.C().Workers)
 	fetchedTotalBytes := atomic.Int64{}
@@ -51,7 +50,6 @@ func (t *Task) Execute(ctx context.Context) error {
 					file.Name = filename
 				}
 			}
-			// extract filename from URL if Content-Disposition is empty or invalid
 			if file.Name == "" {
 				file.Name = parseFilenameFromURL(file.URL)
 			}
@@ -71,7 +69,6 @@ func (t *Task) Execute(ctx context.Context) error {
 		return err
 	}
 	t.totalBytes = fetchedTotalBytes.Load()
-	// start downloading
 	eg, gctx = errgroup.WithContext(ctx)
 	eg.SetLimit(config.C().Workers)
 	for _, file := range t.files {

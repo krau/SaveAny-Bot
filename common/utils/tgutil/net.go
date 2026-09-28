@@ -45,7 +45,6 @@ func (d *httpProxyDialer) DialContext(ctx context.Context, network, addr string)
 		return nil, fmt.Errorf("failed to connect to proxy: %w", err)
 	}
 
-	// Send CONNECT request
 	connectReq := &http.Request{
 		Method: "CONNECT",
 		URL:    &url.URL{Opaque: addr},
@@ -53,7 +52,6 @@ func (d *httpProxyDialer) DialContext(ctx context.Context, network, addr string)
 		Header: make(http.Header),
 	}
 
-	// Add proxy authentication if provided
 	if d.proxyURL.User != nil {
 		username := d.proxyURL.User.Username()
 		password, _ := d.proxyURL.User.Password()
@@ -66,7 +64,6 @@ func (d *httpProxyDialer) DialContext(ctx context.Context, network, addr string)
 		return nil, fmt.Errorf("failed to write CONNECT request: %w", err)
 	}
 
-	// Read response
 	br := bufio.NewReader(conn)
 	resp, err := http.ReadResponse(br, connectReq)
 	if err != nil {

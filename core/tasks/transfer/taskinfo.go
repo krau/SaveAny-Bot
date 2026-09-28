@@ -61,7 +61,6 @@ func (t *Task) FailedFiles() []string {
 
 	result := make([]string, 0, len(t.failed))
 	for id := range t.failed {
-		// Find the element by ID
 		for _, elem := range t.elems {
 			if elem.ID == id {
 				result = append(result, elem.FileInfo.Name)

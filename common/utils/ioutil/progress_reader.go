@@ -7,7 +7,6 @@ import (
 
 var _ io.ReadSeeker = (*ProgressReadSeeker)(nil)
 
-// ProgressReadSeeker wraps an io.ReadSeeker and tracks read progress
 type ProgressReadSeeker struct {
 	reader     io.ReadSeeker
 	total      atomic.Int64
@@ -15,7 +14,6 @@ type ProgressReadSeeker struct {
 	onProgress func(read int64, total int64)
 }
 
-// Seek implements io.ReadSeeker.
 func (pr *ProgressReadSeeker) Seek(offset int64, whence int) (int64, error) {
 	position, err := pr.reader.Seek(offset, whence)
 	if err == nil {
@@ -24,7 +22,6 @@ func (pr *ProgressReadSeeker) Seek(offset int64, whence int) (int64, error) {
 	return position, err
 }
 
-// NewProgressReader creates a new ProgressReader
 func NewProgressReader(rs io.ReadSeeker, total int64, onProgress func(read int64, total int64)) *ProgressReadSeeker {
 	prs := &ProgressReadSeeker{
 		reader:     rs,
@@ -36,7 +33,6 @@ func NewProgressReader(rs io.ReadSeeker, total int64, onProgress func(read int64
 	return prs
 }
 
-// Read implements io.Reader
 func (pr *ProgressReadSeeker) Read(p []byte) (int, error) {
 	n, err := pr.reader.Read(p)
 	if n > 0 {
@@ -58,12 +54,10 @@ func (pr *ProgressReadSeeker) Progress() float64 {
 	return float64(pr.read.Load()) / float64(pr.total.Load())
 }
 
-// BytesRead returns the current tracked reader position.
 func (pr *ProgressReadSeeker) BytesRead() int64 {
 	return pr.read.Load()
 }
 
-// Total returns the total number of bytes
 func (pr *ProgressReadSeeker) Total() int64 {
 	return pr.total.Load()
 }
