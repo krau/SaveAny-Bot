@@ -33,6 +33,7 @@ type Progress struct {
 	lastText     string
 	done         bool
 	skippedFiles []string
+	edits        *tgutil.ProgressEditQueue
 }
 
 type renderedBatchMessage struct {
@@ -89,7 +90,7 @@ func (p *Progress) render(ctx context.Context, info TaskInfo, priority bool) {
 	}
 	p.lastText = message.Text
 	p.lastUpdateAt = now
-	p.editMessage(ctx, info.TaskID(), message, true)
+	p.submit(ctx, buildBatchEditMessageRequest(p.MessageID, info.TaskID(), message, true), false)
 }
 
 func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
@@ -105,20 +106,14 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 		return
 	}
 	p.lastText = message.Text
-	p.editMessage(ctx, info.TaskID(), message, false)
+	p.submit(ctx, buildBatchEditMessageRequest(p.MessageID, info.TaskID(), message, false), true)
 }
 
-func (p *Progress) editMessage(ctx context.Context, taskID string, message renderedBatchMessage, cancellable bool) {
-	if message.Err != nil {
-		log.FromContext(ctx).Errorf("Failed to render batch progress message: %v", message.Err)
-		return
+func (p *Progress) submit(ctx context.Context, req *tg.MessagesEditMessageRequest, final bool) {
+	if p.edits == nil {
+		p.edits = tgutil.NewProgressEditQueue(tgutil.SendProgressEdit)
 	}
-	req := buildBatchEditMessageRequest(p.MessageID, taskID, message, cancellable)
-	if ext := tgutil.ExtFromContext(ctx); ext != nil {
-		if _, err := ext.EditMessage(p.ChatID, req); err != nil {
-			log.FromContext(ctx).Errorf("Failed to edit batch progress message: %v", err)
-		}
-	}
+	p.edits.Submit(ctx, p.ChatID, req, final)
 }
 
 func buildBatchEditMessageRequest(messageID int, taskID string, message renderedBatchMessage, cancellable bool) *tg.MessagesEditMessageRequest {
