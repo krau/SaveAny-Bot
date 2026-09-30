@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/queue"
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
@@ -45,6 +46,9 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 		exe := qtask.Data
 		taskCtx := qtask.Context()
 		logger.Infof("Processing task: %s", exe.TaskID())
+		if err := database.UpdateTaskStatus(taskCtx, exe.TaskID(), database.TaskStatusRunning, ""); err != nil {
+			logger.Errorf("Failed to mark task %s as running: %v", exe.TaskID(), err)
+		}
 		taskevent.Emit(taskCtx, taskevent.Event{TaskID: exe.TaskID(), Phase: taskevent.PhaseStart})
 		if err := ExecCommandString(taskCtx, execHooks.TaskBeforeStart); err != nil {
 			logger.Errorf("Failed to execute before start hook for task %s: %v", exe.TaskID(), err)
@@ -70,6 +74,11 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 		}
 		taskevent.Emit(taskCtx, taskevent.Event{TaskID: exe.TaskID(), Phase: taskevent.PhaseDone, Err: err})
 		qe.Done(qtask.ID)
+		// 用独立 ctx 删除: 优雅关停时 run ctx 已被取消, 会留下已完成任务的行,
+		// 导致重启后重复执行 (重复上传)。
+		if err := database.DeleteTask(context.Background(), exe.TaskID()); err != nil {
+			logger.Errorf("Failed to delete persisted task %s: %v", exe.TaskID(), err)
+		}
 		<-semaphore
 	}
 }
@@ -92,12 +101,21 @@ func Close() {
 }
 
 func AddTask(ctx context.Context, task Executable) error {
+	if err := persistTask(ctx, task); err != nil {
+		log.FromContext(ctx).Errorf("Failed to persist task %s: %v", task.TaskID(), err)
+	}
 	return initQueue().Add(queue.NewTask(ctx, task.TaskID(), task.Title(), task))
 }
 
 func CancelTask(ctx context.Context, id string) error {
 	err := queueInstance.CancelTask(id)
-	return err
+	if err != nil {
+		return err
+	}
+	if err := database.DeleteTask(ctx, id); err != nil {
+		log.FromContext(ctx).Errorf("Failed to delete persisted task %s: %v", id, err)
+	}
+	return nil
 }
 
 func GetLength(ctx context.Context) int {
