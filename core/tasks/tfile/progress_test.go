@@ -3,6 +3,7 @@ package tfile
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -129,7 +130,7 @@ func TestSingleProgressTemplateOwnsStylesAndEscapesValues(t *testing.T) {
 		t.Fatalf("progress entity counts = bold:%d code:%d blockquote:%d italic:%d", bold, code, blockquote, italic)
 	}
 
-	failure := buildSingleDoneMessage(info, 100, errors.New(`<i>remote & failed</i>`))
+	failure := buildSingleDoneMessage(context.Background(), info, 100, errors.New(`<i>remote & failed</i>`))
 	if failure.Err != nil {
 		t.Fatalf("buildSingleDoneMessage() failed: %v", failure.Err)
 	}
@@ -139,6 +140,48 @@ func TestSingleProgressTemplateOwnsStylesAndEscapesValues(t *testing.T) {
 	bold, code, blockquote, italic = singleEntityCounts(failure.Entities)
 	if bold != 1 || code != 2 || blockquote != 0 || italic != 0 {
 		t.Fatalf("failure entity counts = bold:%d code:%d blockquote:%d italic:%d", bold, code, blockquote, italic)
+	}
+}
+
+func TestSingleDoneMessageUsesTaskContext(t *testing.T) {
+	i18n.Init("zh-Hans")
+	t.Cleanup(func() { i18n.Init("zh-Hans") })
+	canceledCtx, cancel := context.WithCancel(t.Context())
+	cancel()
+	timedOutCtx, timeoutCancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
+	defer timeoutCancel()
+	engineErr := fmt.Errorf("engine forcibly closed: %w", context.Canceled)
+	for _, tt := range []struct {
+		name         string
+		ctx          context.Context
+		err          error
+		want         string
+		codeEntities int
+	}{
+		{"engine closed with active task", t.Context(), engineErr, "处理失败", 2},
+		{"task canceled", canceledCtx, engineErr, "任务已取消", 1},
+		{"task canceled with other error", canceledCtx, errors.New("connection EOF"), "任务已取消", 1},
+		{"task timed out", timedOutCtx, context.DeadlineExceeded, "处理失败", 2},
+		{"ordinary failure", t.Context(), errors.New("connection EOF"), "处理失败", 2},
+		{"success", t.Context(), nil, "处理完成", 3},
+		{"success before cancellation", canceledCtx, nil, "处理完成", 3},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			message := buildSingleDoneMessage(tt.ctx, progressTestTaskInfo{}, 100, tt.err)
+			if message.Err != nil {
+				t.Fatal(message.Err)
+			}
+			if !strings.Contains(message.Text, tt.want) {
+				t.Fatalf("message = %q, want %q", message.Text, tt.want)
+			}
+			if tt.want == "处理失败" && !strings.Contains(message.Text, tt.err.Error()) {
+				t.Fatalf("failure reason missing from %q", message.Text)
+			}
+			bold, code, blockquote, italic := singleEntityCounts(message.Entities)
+			if bold != 1 || code != tt.codeEntities || blockquote != 0 || italic != 0 {
+				t.Fatalf("entity counts = %d/%d/%d/%d, want 1/%d/0/0", bold, code, blockquote, italic, tt.codeEntities)
+			}
+		})
 	}
 }
 

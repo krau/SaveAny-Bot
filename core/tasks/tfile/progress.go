@@ -203,7 +203,7 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 		log.FromContext(ctx).Debugf("Progress done for file [%s]", info.FileName())
 	}
 
-	p.editMessage(ctx, info.TaskID(), buildSingleDoneMessage(info, p.doneSize(info), err), false)
+	p.editMessage(ctx, info.TaskID(), buildSingleDoneMessage(ctx, info, p.doneSize(info), err), false)
 }
 
 func (p *Progress) doneSize(info TaskInfo) int64 {
@@ -283,7 +283,7 @@ func buildSingleProgressMessage(
 	return completeSingleMessage(markup)
 }
 
-func buildSingleDoneMessage(info TaskInfo, size int64, err error) renderedSingleMessage {
+func buildSingleDoneMessage(ctx context.Context, info TaskInfo, size int64, err error) renderedSingleMessage {
 	data := map[string]any{
 		"Name":        info.FileName(),
 		"Size":        dlutil.FormatSize(max(size, 0)),
@@ -293,7 +293,7 @@ func buildSingleDoneMessage(info TaskInfo, size int64, err error) renderedSingle
 	switch {
 	case err == nil:
 		key = i18nk.BotMsgProgressSingleDone
-	case errors.Is(err, context.Canceled):
+	case errors.Is(ctx.Err(), context.Canceled):
 		key = i18nk.BotMsgProgressSingleCanceled
 	default:
 		data["Reason"] = truncateSingleError(err.Error())
