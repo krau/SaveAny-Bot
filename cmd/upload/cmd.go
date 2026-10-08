@@ -100,7 +100,7 @@ func Upload(cmd *cobra.Command, args []string) error {
 	log.Info("Uploading file...", "file", fp, "to", storname, "as", uploadPath)
 
 	if !noProgress && fileSize > 0 {
-		progressUI = NewUploadProgress(ctx, fileName, fileSize)
+		progressUI = NewUploadProgress(fileName, fileSize)
 		progressUI.Start()
 
 		reader = ioutil.NewProgressReader(file, fileSize, func(read int64, total int64) {
@@ -115,14 +115,12 @@ func Upload(cmd *cobra.Command, args []string) error {
 	if err := stor.Save(ctx, reader, uploadPath); err != nil {
 		if progressUI != nil {
 			progressUI.SetError(err)
-			progressUI.Wait()
 		}
 		log.Fatal("Failed to upload file", "error", err)
 	}
 
 	if progressUI != nil {
 		progressUI.Done()
-		progressUI.Wait()
 	}
 	log.Info("File uploaded successfully")
 	return nil
