@@ -128,7 +128,7 @@ func (p *Progress) OnProgress(ctx context.Context, task *Task, status *aria2.Sta
 func (p *Progress) OnDone(ctx context.Context, task *Task, err error) {
 	logger := log.FromContext(ctx)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(ctx.Err(), context.Canceled) {
 			logger.Infof("Aria2 task %s was canceled", task.TaskID())
 			ext := tgutil.ExtFromContext(ctx)
 			if ext != nil {

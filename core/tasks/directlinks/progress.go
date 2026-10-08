@@ -51,7 +51,7 @@ type Progress struct {
 func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 	logger := log.FromContext(ctx)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(ctx.Err(), context.Canceled) {
 			logger.Infof("Parsed task %s was canceled", info.TaskID())
 			ext := tgutil.ExtFromContext(ctx)
 			if ext != nil {

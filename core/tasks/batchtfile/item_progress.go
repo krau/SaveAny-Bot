@@ -248,12 +248,12 @@ func (t *Task) markItemRetry(id string, stage FailureStage, attempt, limit int, 
 	})
 }
 
-func (t *Task) markItemFailed(id string, stage FailureStage, err error) {
+func (t *Task) markItemFailed(ctx context.Context, id string, stage FailureStage, err error) {
 	t.updateItem(id, func(item *itemProgressState) {
 		if item.phase == ItemPhaseFailed || item.phase == ItemPhaseCompleted {
 			return
 		}
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(ctx.Err(), context.Canceled) {
 			item.phase = ItemPhaseStopped
 			return
 		}

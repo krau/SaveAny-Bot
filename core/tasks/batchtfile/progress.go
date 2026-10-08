@@ -100,7 +100,7 @@ func (p *Progress) OnDone(ctx context.Context, info TaskInfo, err error) {
 		return
 	}
 	p.done = true
-	message := buildBatchDoneMessage(info, p.skippedFiles, err)
+	message := buildBatchDoneMessage(ctx, info, p.skippedFiles, err)
 	if message.Err != nil {
 		log.FromContext(ctx).Errorf("Failed to render final batch progress message: %v", message.Err)
 		return
@@ -183,7 +183,7 @@ func buildBatchProgressMessage(info TaskInfo, skipped []string, activeLimit int)
 	return completeBatchMessage(markup.String())
 }
 
-func buildBatchDoneMarkup(info TaskInfo, skipped []string, err error) string {
+func buildBatchDoneMarkup(ctx context.Context, info TaskInfo, skipped []string, err error) string {
 	items := info.Items()
 	totalSize := info.ActualTotalSize()
 	if totalSize == 0 {
@@ -207,7 +207,7 @@ func buildBatchDoneMarkup(info TaskInfo, skipped []string, err error) string {
 	}
 	completed, _, _, failed := itemCounts(items)
 	incomplete := max(len(items)-completed-failed, 0)
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(ctx.Err(), context.Canceled) {
 		return localizedProgressMarkup(i18nk.BotMsgProgressBatchCanceled, map[string]any{
 			"Total":      len(items) + len(skipped),
 			"Completed":  completed,
@@ -252,8 +252,8 @@ func buildBatchDoneMarkup(info TaskInfo, skipped []string, err error) string {
 	})
 }
 
-func buildBatchDoneMessage(info TaskInfo, skipped []string, err error) renderedBatchMessage {
-	return completeBatchMessage(buildBatchDoneMarkup(info, skipped, err))
+func buildBatchDoneMessage(ctx context.Context, info TaskInfo, skipped []string, err error) renderedBatchMessage {
+	return completeBatchMessage(buildBatchDoneMarkup(ctx, info, skipped, err))
 }
 
 func formatActiveItemMarkup(item TaskItemProgress, total int) string {
