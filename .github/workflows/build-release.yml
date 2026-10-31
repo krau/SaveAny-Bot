@@ -22,12 +22,17 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v3
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+
       - name: Setup node
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
 
-      - run: npx changelogithub
+      - run: pnpm dlx changelogithub
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
@@ -50,12 +55,17 @@ jobs:
         with:
           go-version: "1.26.x"
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/ui/package-lock.json
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: web/ui/pnpm-lock.yaml
 
       - name: Extract version from Git Ref
         id: extract_version
@@ -64,7 +74,10 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Build Web UI
-        run: npm --prefix web/ui ci && npm --prefix web/ui run build
+        run: |
+          cd web/ui
+          pnpm install --frozen-lockfile
+          pnpm run build
 
       - name: Release Go Binary
         uses: wangyoucao577/go-release-action@v1

@@ -1,9 +1,10 @@
-FROM node:24-alpine AS web
+FROM node:26-alpine AS web
 WORKDIR /ui
-COPY web/ui/package*.json ./
-RUN npm ci
+RUN npm install -g pnpm
+COPY web/ui/package.json web/ui/pnpm-lock.yaml web/ui/pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY web/ui ./
-RUN npm run build
+RUN pnpm run build
 
 FROM golang:alpine AS builder
 
