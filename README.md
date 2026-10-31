@@ -1,6 +1,6 @@
 <div align="center">
 
-# <img src="docs/static/logo.png" width="45" align="center"> Save Any Bot
+# <img src="docs/static/logo.svg" width="45" align="center"> Save Any Bot
 
 **English** | [简体中文](./README_zh.md)
 

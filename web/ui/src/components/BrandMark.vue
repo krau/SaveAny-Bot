@@ -6,19 +6,23 @@ withDefaults(defineProps<{ size?: number }>(), { size: 24 })
   <svg
     :width="size"
     :height="size"
-    viewBox="0 0 28 28"
+    viewBox="0 0 32 32"
     fill="none"
     aria-hidden="true"
     focusable="false"
   >
-    <path
-      d="M5.5 7.5h6.2a4 4 0 0 1 4 4v5a4 4 0 0 0 4 4h3.3"
+    <g
+      transform="rotate(-5 16 16)"
       stroke="currentColor"
-      stroke-width="1.7"
+      stroke-width="2.2"
       stroke-linecap="round"
-    />
-    <circle cx="5.5" cy="7.5" r="2.2" fill="currentColor" />
-    <circle cx="23" cy="20.5" r="2.2" fill="currentColor" />
-    <circle cx="15.7" cy="14" r="2.2" fill="var(--accent)" />
+      stroke-linejoin="round"
+    >
+      <path
+        d="M5.4 9.3c0-1.3 1-2.3 2.3-2.3h5.1l2.7 2.7h7.7c1.3 0 2.3 1 2.3 2.3v9.6c0 1.3-1 2.3-2.3 2.3H7.7c-1.3 0-2.3-1-2.3-2.3V9.3Z"
+      />
+      <path d="M16 13.2v7.6" />
+      <path d="m12.4 17.4 3.6 3.6 3.6-3.6" />
+    </g>
   </svg>
 </template>

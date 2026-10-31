@@ -1,6 +1,6 @@
 <div align="center">
 
-# <img src="docs/static/logo.png" width="45" align="center"> Save Any Bot
+# <img src="docs/static/logo.svg" width="45" align="center"> Save Any Bot
 
 > **把 Telegram 上的文件转存到多种存储端**
 

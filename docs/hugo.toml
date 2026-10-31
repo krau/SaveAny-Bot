@@ -12,7 +12,7 @@ path = 'github.com/alex-shpak/hugo-book'
 [params]
 BookTheme = 'auto'
 BookToC = true
-BookLogo = 'logo.png'
+BookLogo = 'logo.svg'
 BookSection = '*'
 BookRepo = 'https://github.com/krau/saveany-bot'
 BookCommitPath = 'commit'
