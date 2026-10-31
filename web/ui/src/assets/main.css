@@ -37,7 +37,26 @@
   --radius: 10px;
   --radius-lg: 16px;
   --shadow: 0 18px 48px rgba(17, 19, 23, 0.14);
+
+  /* Motion scale */
+  --duration-stagger: 40ms;
+  --duration-micro: 80ms;
+  --duration-quick: 150ms;
+  --duration-fast: 250ms;
+  --duration-medium: 350ms;
+  --duration-slow: 400ms;
+  --duration-very-slow: 500ms;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: ease-in-out;
+  --ease-out: ease-out;
+  --ease-linear: linear;
+  --distance-base: 8px;
+  --distance-medium: 12px;
+  --scale-large: 0.96;
+  --scale-medium: 0.97;
+  --blur-small: 2px;
+  --blur-medium: 3px;
 }
 
 * {
@@ -262,7 +281,7 @@ code {
   font-weight: 500;
 }
 
-.nav a.is-active::before {
+.nav a::before {
   content: '';
   position: absolute;
   left: -12px;
@@ -271,6 +290,16 @@ code {
   height: 18px;
   background: var(--accent);
   border-radius: 0 3px 3px 0;
+  opacity: 0;
+  transform: scaleY(0.35);
+  transition:
+    opacity var(--duration-quick) var(--ease-smooth-out),
+    transform var(--duration-fast) var(--ease-smooth-out);
+}
+
+.nav a.is-active::before {
+  opacity: 1;
+  transform: scaleY(1);
 }
 
 .nav a.is-active svg {
@@ -813,6 +842,29 @@ code {
 .field.is-invalid textarea,
 .field.is-invalid .select-trigger {
   border-color: var(--danger);
+  animation: field-shake 280ms linear;
+}
+
+@keyframes field-shake {
+  0% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  28% {
+    transform: translateX(5px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  57% {
+    transform: translateX(-5px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  78% {
+    transform: translateX(3px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 .field.is-invalid input:focus,
@@ -1002,17 +1054,38 @@ code {
   opacity: 0.6;
 }
 
-.select-menu-enter-active,
+.select-menu {
+  transform-origin: top center;
+}
+
+.select-menu[data-placement='top'] {
+  transform-origin: bottom center;
+}
+
+.select-menu-enter-active {
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth-out),
+    transform var(--duration-fast) var(--ease-smooth-out),
+    filter var(--duration-fast) var(--ease-smooth-out);
+}
+
 .select-menu-leave-active {
   transition:
-    opacity 140ms var(--ease),
-    transform 140ms var(--ease);
+    opacity var(--duration-quick) var(--ease-smooth-out),
+    transform var(--duration-quick) var(--ease-smooth-out),
+    filter var(--duration-quick) var(--ease-smooth-out);
 }
 
 .select-menu-enter-from,
 .select-menu-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-4px) scale(0.97);
+  filter: blur(var(--blur-small));
+}
+
+.select-menu[data-placement='top'].select-menu-enter-from,
+.select-menu[data-placement='top'].select-menu-leave-to {
+  transform: translateY(4px) scale(0.97);
 }
 
 .filter-field .select-trigger {
@@ -1297,8 +1370,32 @@ tbody tr:hover {
 
 .loading {
   padding: 24px;
-  color: var(--text-3);
+  color: transparent;
+  background-image: linear-gradient(90deg, var(--text-3) 20%, var(--text-2) 50%, var(--text-3) 80%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-size: 14px;
+  animation: loading-shimmer 1.8s var(--ease-linear) infinite;
+}
+
+@keyframes loading-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@supports not (background-clip: text) {
+  .loading {
+    color: var(--text-3);
+    -webkit-text-fill-color: currentColor;
+    background: none;
+    animation: none;
+  }
 }
 
 .progress {
@@ -1357,6 +1454,7 @@ tbody tr:hover {
   border: 1px solid var(--line);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(17, 19, 23, 0.12);
+  transform-origin: bottom right;
   pointer-events: auto;
 }
 
@@ -1410,26 +1508,36 @@ tbody tr:hover {
   background: var(--surface-muted);
 }
 
-.toast-enter-active,
-.toast-leave-active {
+.toast-enter-active {
   transition:
-    opacity 180ms var(--ease),
-    transform 180ms var(--ease);
+    opacity var(--duration-medium) var(--ease-smooth-out),
+    transform var(--duration-medium) var(--ease-smooth-out),
+    filter var(--duration-medium) var(--ease-smooth-out);
+}
+
+.toast-leave-active {
+  position: absolute;
+  width: 100%;
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth-out),
+    transform var(--duration-fast) var(--ease-smooth-out),
+    filter var(--duration-fast) var(--ease-smooth-out);
 }
 
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(16px) scale(0.97);
+  filter: blur(var(--blur-small));
 }
 
 .toast-move {
-  transition: transform 180ms var(--ease);
+  transition: transform var(--duration-fast) var(--ease-smooth-out);
 }
 
 /* Dialogs */
 
-.confirm-overlay {
+.modal-overlay.confirm-overlay {
   z-index: 80;
 }
 
@@ -1496,6 +1604,54 @@ tbody tr:hover {
 
 .modal.wide {
   max-width: 860px;
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity var(--duration-fast) var(--ease-smooth-out);
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-active .modal {
+  animation: modal-in var(--duration-fast) var(--ease-smooth-out) backwards;
+}
+
+.modal-leave-active {
+  transition-duration: var(--duration-quick);
+}
+
+.modal-leave-active .modal {
+  animation: modal-out var(--duration-quick) var(--ease-smooth-out) forwards;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--distance-base)) scale(var(--scale-large));
+    filter: blur(var(--blur-small));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+    filter: blur(1px);
+  }
 }
 
 .modal-head {
@@ -1692,7 +1848,19 @@ tbody tr:hover {
   min-height: 2px;
   background: var(--line-strong);
   border-radius: 4px 4px 0 0;
+  transform-origin: bottom;
+  animation: chart-rise var(--duration-very-slow) var(--ease-smooth-out) backwards;
+  animation-delay: calc(var(--bar-index, 0) * var(--duration-stagger));
   transition: background-color 160ms var(--ease);
+}
+
+@keyframes chart-rise {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
 }
 
 .chart-col.current .chart-bar {
@@ -2199,6 +2367,25 @@ tbody tr:hover {
   pointer-events: none;
 }
 
+.login-trace path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: login-trace-draw 900ms var(--ease-smooth-out) 80ms forwards;
+}
+
+.login-trace circle {
+  opacity: 0;
+  animation: login-dot-in 300ms var(--ease-out) 620ms forwards;
+}
+
+.login-trace circle:nth-of-type(2) {
+  animation-delay: 760ms;
+}
+
+.login-trace circle:nth-of-type(3) {
+  animation-delay: 900ms;
+}
+
 .login-card {
   position: relative;
   z-index: 1;
@@ -2209,6 +2396,77 @@ tbody tr:hover {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.34);
+  animation: login-card-in var(--duration-slow) var(--ease-smooth-out) backwards;
+}
+
+.login-brand,
+.login-heading,
+.login-form,
+.login-help {
+  animation: login-item-in 360ms var(--ease-smooth-out) backwards;
+}
+
+.login-brand {
+  animation-delay: 60ms;
+}
+
+.login-heading {
+  animation-delay: 100ms;
+}
+
+.login-form {
+  animation-delay: 150ms;
+}
+
+.login-help {
+  animation-delay: 220ms;
+}
+
+@keyframes login-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--distance-medium)) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes login-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--distance-base));
+    filter: blur(var(--blur-small));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes login-footer-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes login-trace-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes login-dot-in {
+  to {
+    opacity: 1;
+  }
 }
 
 .login-brand {
@@ -2259,6 +2517,7 @@ tbody tr:hover {
 
 .login-form .field input[aria-invalid='true'] {
   border-color: var(--danger);
+  animation: field-shake 280ms linear;
 }
 
 .login-form .field input[aria-invalid='true']:focus {
@@ -2287,24 +2546,57 @@ tbody tr:hover {
   color: #8d96a3;
   font-size: 12px;
   text-align: center;
+  animation: login-footer-in var(--duration-slow) var(--ease-smooth-out) 280ms backwards;
+}
+
+/* Route transitions */
+
+.route-enter-active {
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth-out),
+    transform var(--duration-fast) var(--ease-smooth-out),
+    filter var(--duration-fast) var(--ease-smooth-out);
+  will-change: opacity, transform, filter;
+}
+
+.route-leave-active {
+  transition:
+    opacity 120ms var(--ease-smooth-out),
+    transform 120ms var(--ease-smooth-out),
+    filter 120ms var(--ease-smooth-out);
+  will-change: opacity, transform, filter;
+}
+
+.route-enter-from {
+  opacity: 0;
+  transform: translateY(var(--distance-base));
+  filter: blur(var(--blur-small));
+}
+
+.route-leave-to {
+  opacity: 0;
+  transform: translateY(-3px);
+  filter: blur(1px);
+}
+
+.shell-enter-active {
+  transition: opacity var(--duration-fast) var(--ease-smooth-out);
+}
+
+.shell-leave-active {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  transition: opacity 120ms var(--ease-smooth-out);
+}
+
+.shell-enter-from,
+.shell-leave-to {
+  opacity: 0;
 }
 
 /* Utilities */
-
-.fade-in {
-  animation: fade-in 360ms var(--ease) both;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
 @supports (corner-shape: squircle) {
   .panel,
@@ -2386,6 +2678,16 @@ tbody tr:hover {
     inset: 0;
     z-index: 35;
     background: rgba(9, 11, 14, 0.45);
+  }
+
+  .backdrop-enter-active,
+  .backdrop-leave-active {
+    transition: opacity var(--duration-fast) var(--ease-smooth-out);
+  }
+
+  .backdrop-enter-from,
+  .backdrop-leave-to {
+    opacity: 0;
   }
 
   .settings-layout {
@@ -2572,6 +2874,7 @@ tbody tr:hover {
   *::before,
   *::after {
     scroll-behavior: auto !important;
+    animation-delay: 0ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

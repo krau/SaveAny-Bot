@@ -102,7 +102,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="stack fade-in">
+  <div class="stack">
     <PageHeader title="运行概览" description="机器人、任务队列与存储的当前状态。">
       <template #actions>
         <button class="btn small" type="button" @click="load">
@@ -194,10 +194,11 @@ onUnmounted(() => {
           :aria-label="`最近 7 天共创建 ${weekTotal} 个任务`"
         >
           <div
-            v-for="day in activity"
+            v-for="(day, index) in activity"
             :key="day.key"
             class="chart-col"
             :class="{ current: day.current }"
+            :style="{ '--bar-index': String(index) }"
           >
             <span class="chart-count">{{ day.count }}</span>
             <div

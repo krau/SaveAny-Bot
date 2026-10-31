@@ -196,7 +196,7 @@ async function save(group: string) {
 </script>
 
 <template>
-  <div class="stack fade-in">
+  <div class="stack">
     <PageHeader title="设置" description="配置保存在数据库中，保存后立即生效，或提示需要重启。">
       <template #actions>
         <button class="btn small" type="button" @click="load">

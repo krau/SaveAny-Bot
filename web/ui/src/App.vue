@@ -4,7 +4,11 @@ import ConfirmHost from './components/ConfirmHost.vue'
 </script>
 
 <template>
-  <RouterView />
+  <RouterView v-slot="{ Component, route }">
+    <Transition name="shell">
+      <component :is="Component" :key="route.path === '/login' ? 'login' : 'shell'" />
+    </Transition>
+  </RouterView>
   <AppToaster />
   <ConfirmHost />
 </template>

@@ -43,44 +43,42 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="modal-overlay confirm-overlay" @click.self="emit('cancel')">
-      <div
-        class="modal confirm-modal"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-      >
-        <div class="confirm-heading">
-          <span class="confirm-icon" :class="{ danger }">
-            <AppIcon :name="danger ? 'alert' : 'check'" :size="18" />
-          </span>
-          <div>
-            <h3 id="confirm-dialog-title" class="modal-title">{{ title }}</h3>
-            <p class="confirm-message">{{ message }}</p>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button
-            ref="cancelButton"
-            class="btn ghost"
-            type="button"
-            :disabled="busy"
-            @click="emit('cancel')"
-          >
-            {{ cancelText }}
-          </button>
-          <button
-            class="btn"
-            :class="danger ? 'danger-solid' : 'primary'"
-            type="button"
-            :disabled="busy"
-            @click="emit('confirm')"
-          >
-            {{ confirmText }}
-          </button>
+  <div class="modal-overlay confirm-overlay" @click.self="emit('cancel')">
+    <div
+      class="modal confirm-modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+    >
+      <div class="confirm-heading">
+        <span class="confirm-icon" :class="{ danger }">
+          <AppIcon :name="danger ? 'alert' : 'check'" :size="18" />
+        </span>
+        <div>
+          <h3 id="confirm-dialog-title" class="modal-title">{{ title }}</h3>
+          <p class="confirm-message">{{ message }}</p>
         </div>
       </div>
+      <div class="modal-actions">
+        <button
+          ref="cancelButton"
+          class="btn ghost"
+          type="button"
+          :disabled="busy"
+          @click="emit('cancel')"
+        >
+          {{ cancelText }}
+        </button>
+        <button
+          class="btn"
+          :class="danger ? 'danger-solid' : 'primary'"
+          type="button"
+          :disabled="busy"
+          @click="emit('confirm')"
+        >
+          {{ confirmText }}
+        </button>
+      </div>
     </div>
-  </Teleport>
+  </div>
 </template>

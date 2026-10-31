@@ -77,7 +77,7 @@ async function restart(force = false) {
 </script>
 
 <template>
-  <div class="stack fade-in">
+  <div class="stack">
     <PageHeader title="系统" description="版本、运行路径与进程控制。">
       <template #actions>
         <button class="btn small" type="button" @click="load">

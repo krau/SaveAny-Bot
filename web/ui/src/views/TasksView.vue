@@ -142,7 +142,7 @@ async function remove(taskId: string) {
 </script>
 
 <template>
-  <div class="stack fade-in">
+  <div class="stack">
     <PageHeader title="任务" description="创建下载与转存任务，查看进度或清理记录。">
       <template #actions>
         <button class="btn small" type="button" @click="load">
@@ -172,17 +172,19 @@ async function remove(taskId: string) {
     <TaskTable :tasks="tasks" :busy-id="busyId" @cancel="cancel" @remove="remove" />
 
     <Teleport to="body">
-      <div v-if="createOpen" class="modal-overlay" @click.self="createOpen = false">
-        <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="create-task-title">
-          <div class="modal-head">
-            <h3 id="create-task-title" class="modal-title">新建任务</h3>
-            <button class="btn ghost icon small" type="button" aria-label="关闭" @click="createOpen = false">
-              <AppIcon name="close" :size="17" />
-            </button>
+      <Transition name="modal">
+        <div v-if="createOpen" class="modal-overlay" @click.self="createOpen = false">
+          <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="create-task-title">
+            <div class="modal-head">
+              <h3 id="create-task-title" class="modal-title">新建任务</h3>
+              <button class="btn ghost icon small" type="button" aria-label="关闭" @click="createOpen = false">
+                <AppIcon name="close" :size="17" />
+              </button>
+            </div>
+            <TaskForm :storages="storages" :busy="creating" @submit="create" @cancel="createOpen = false" />
           </div>
-          <TaskForm :storages="storages" :busy="creating" @submit="create" @cancel="createOpen = false" />
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>

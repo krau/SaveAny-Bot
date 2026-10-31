@@ -97,7 +97,7 @@ async function test(storage: StorageRecord) {
 </script>
 
 <template>
-  <div class="stack fade-in">
+  <div class="stack">
     <PageHeader title="存储" description="本地磁盘、WebDAV、对象存储、Telegram 与 rclone 目标。">
       <template #actions>
         <button class="btn small" type="button" @click="load">
@@ -169,17 +169,19 @@ async function test(storage: StorageRecord) {
     </div>
 
     <Teleport to="body">
-      <div v-if="formOpen" class="modal-overlay" @click.self="formOpen = false">
-        <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="storage-dialog-title">
-          <div class="modal-head">
-            <h3 id="storage-dialog-title" class="modal-title">{{ editing ? '编辑存储' : '新建存储' }}</h3>
-            <button class="btn ghost icon small" type="button" aria-label="关闭" @click="formOpen = false">
-              <AppIcon name="close" :size="17" />
-            </button>
+      <Transition name="modal">
+        <div v-if="formOpen" class="modal-overlay" @click.self="formOpen = false">
+          <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="storage-dialog-title">
+            <div class="modal-head">
+              <h3 id="storage-dialog-title" class="modal-title">{{ editing ? '编辑存储' : '新建存储' }}</h3>
+              <button class="btn ghost icon small" type="button" aria-label="关闭" @click="formOpen = false">
+                <AppIcon name="close" :size="17" />
+              </button>
+            </div>
+            <StorageForm :storage="editing" :busy="busy" @submit="save" @cancel="formOpen = false" />
           </div>
-          <StorageForm :storage="editing" :busy="busy" @submit="save" @cancel="formOpen = false" />
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>

@@ -39,6 +39,7 @@ const menu = ref<HTMLElement | null>(null)
 const open = ref(false)
 const activeIndex = ref(-1)
 const menuStyle = ref<Record<string, string>>({})
+const menuPlacement = ref<'top' | 'bottom'>('bottom')
 
 const selectedIndex = computed(() => props.options.findIndex((option) => option.value === props.modelValue))
 const selected = computed(() => (selectedIndex.value >= 0 ? props.options[selectedIndex.value] : null))
@@ -67,8 +68,10 @@ function updatePosition() {
   }
   if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
     style.bottom = `${window.innerHeight - rect.top + 6}px`
+    menuPlacement.value = 'top'
   } else {
     style.top = `${rect.bottom + 6}px`
+    menuPlacement.value = 'bottom'
   }
   menuStyle.value = style
 }
@@ -227,6 +230,7 @@ onUnmounted(() => {
           class="select-menu"
           role="listbox"
           :aria-labelledby="triggerId"
+          :data-placement="menuPlacement"
           :style="menuStyle"
           @mousedown.prevent
         >

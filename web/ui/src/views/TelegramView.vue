@@ -280,7 +280,7 @@ async function logoutUserbot() {
 </script>
 
 <template>
-  <div class="stack fade-in">
+  <div class="stack">
     <PageHeader title="Telegram" description="管理 Bot 与 Userbot 凭据、连接状态和登录会话。">
       <template #actions>
         <button class="btn small" type="button" @click="loadStatus">

@@ -112,7 +112,9 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 <template>
   <div class="app-shell">
     <a class="skip-link" href="#main-content">跳到主内容</a>
-    <div v-if="sidebarOpen" class="sidebar-backdrop" @click="sidebarOpen = false"></div>
+    <Transition name="backdrop">
+      <div v-if="sidebarOpen" class="sidebar-backdrop" @click="sidebarOpen = false"></div>
+    </Transition>
 
     <div class="layout">
       <aside id="primary-navigation" class="sidebar" :class="{ open: sidebarOpen }">
@@ -178,13 +180,18 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
         </header>
 
         <main id="main-content" class="content" tabindex="-1">
-          <RouterView />
+          <RouterView v-slot="{ Component, route: currentRoute }">
+            <Transition name="route" mode="out-in" appear>
+              <component :is="Component" :key="currentRoute.path" />
+            </Transition>
+          </RouterView>
         </main>
       </div>
     </div>
 
     <Teleport to="body">
-      <div v-if="passwordOpen" class="modal-overlay" @click.self="passwordOpen = false">
+      <Transition name="modal">
+        <div v-if="passwordOpen" class="modal-overlay" @click.self="passwordOpen = false">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="password-dialog-title">
           <div class="modal-head">
             <h3 id="password-dialog-title" class="modal-title">修改管理员密码</h3>
@@ -231,6 +238,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
           </form>
         </div>
       </div>
+      </Transition>
     </Teleport>
   </div>
 </template>

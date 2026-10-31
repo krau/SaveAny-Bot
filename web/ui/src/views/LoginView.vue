@@ -45,8 +45,8 @@ async function submit() {
 <template>
   <div class="login-page">
     <svg class="login-trace" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M-40 300H320L458 360H516" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />
-      <path d="M924 360H982L1120 300H1480" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />
+      <path pathLength="1" d="M-40 300H320L458 360H516" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />
+      <path pathLength="1" d="M924 360H982L1120 300H1480" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />
       <circle cx="320" cy="300" r="3" fill="currentColor" />
       <circle cx="1120" cy="300" r="3" fill="currentColor" />
       <circle cx="982" cy="360" r="3" fill="var(--accent)" />

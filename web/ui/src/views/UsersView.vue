@@ -257,7 +257,8 @@ async function remove(user: UserItem) {
     </div>
 
     <Teleport to="body">
-      <div v-if="formOpen" class="modal-overlay" @click.self="formOpen = false">
+      <Transition name="modal">
+        <div v-if="formOpen" class="modal-overlay" @click.self="formOpen = false">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="user-dialog-title">
           <div class="modal-head">
             <h3 id="user-dialog-title" class="modal-title">{{ editing ? '编辑用户' : '添加用户' }}</h3>
@@ -333,6 +334,7 @@ async function remove(user: UserItem) {
           </form>
         </div>
       </div>
+      </Transition>
     </Teleport>
   </div>
 </template>
