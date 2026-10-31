@@ -56,3 +56,17 @@ func (t *Task) Processing() []TaskElementInfo {
 	}
 	return processing
 }
+
+func (t *Task) StorageName() string {
+	if len(t.elems) == 0 {
+		return ""
+	}
+	return t.elems[0].Storage.Name()
+}
+
+func (t *Task) StoragePath() string {
+	if len(t.elems) == 0 {
+		return ""
+	}
+	return t.elems[0].Path
+}

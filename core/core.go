@@ -35,6 +35,13 @@ type Executable interface {
 	Execute(ctx context.Context) error
 }
 
+// DestinationInfo lets task records include the storage target for every
+// creation path, including tasks started from Telegram handlers.
+type DestinationInfo interface {
+	StorageName() string
+	StoragePath() string
+}
+
 func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan struct{}) {
 	defer workerWG.Done()
 	logger := log.FromContext(ctx)
@@ -148,6 +155,10 @@ func AddTaskWithSource(ctx context.Context, task Executable, source string) erro
 		Title:  task.Title(),
 		Status: "queued",
 		Source: source,
+	}
+	if destination, ok := task.(DestinationInfo); ok {
+		record.Storage = destination.StorageName()
+		record.Path = destination.StoragePath()
 	}
 	if err := database.CreateTaskRecord(ctx, record); err != nil {
 		logger.Errorf("Failed to create task record for %s: %v", task.TaskID(), err)

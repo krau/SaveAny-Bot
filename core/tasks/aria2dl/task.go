@@ -11,6 +11,7 @@ import (
 )
 
 var _ core.Executable = (*Task)(nil)
+var _ core.DestinationInfo = (*Task)(nil)
 
 type Task struct {
 	ID          string
@@ -26,6 +27,17 @@ type Task struct {
 // Title implements core.Executable.
 func (t *Task) Title() string {
 	return fmt.Sprintf("[%s](Aria2 GID:%s->%s:%s)", t.Type(), t.GID, t.Storage.Name(), t.StorPath)
+}
+
+func (t *Task) StorageName() string {
+	if t.Storage == nil {
+		return ""
+	}
+	return t.Storage.Name()
+}
+
+func (t *Task) StoragePath() string {
+	return t.StorPath
 }
 
 // Type implements core.Executable.

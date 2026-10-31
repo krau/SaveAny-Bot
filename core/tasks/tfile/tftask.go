@@ -13,6 +13,7 @@ import (
 )
 
 var _ core.Executable = (*Task)(nil)
+var _ core.DestinationInfo = (*Task)(nil)
 
 type Task struct {
 	ID        string

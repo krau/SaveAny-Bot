@@ -70,3 +70,17 @@ func (t *Task) FailedFiles() []string {
 	}
 	return result
 }
+
+func (t *Task) StorageName() string {
+	if len(t.elems) == 0 {
+		return ""
+	}
+	return t.elems[0].TargetStorage.Name()
+}
+
+func (t *Task) StoragePath() string {
+	if len(t.elems) == 0 {
+		return ""
+	}
+	return t.elems[0].TargetPath
+}
