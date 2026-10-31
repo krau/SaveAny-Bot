@@ -1832,6 +1832,51 @@ tbody tr:hover {
   gap: 16px;
 }
 
+.task-modal {
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
+}
+
+.task-modal .modal-head {
+  flex: none;
+}
+
+.task-modal .task-form {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.task-form-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-right: -6px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.task-form-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+.task-form-body::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+}
+
+.task-modal .modal-actions {
+  flex: none;
+  padding-top: 14px;
+  margin-top: 0;
+  border-top: 1px solid var(--line);
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

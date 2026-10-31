@@ -23,7 +23,11 @@ const typeFilter = ref('')
 const busyId = ref('')
 const createOpen = ref(false)
 const creating = ref(false)
+const taskModal = ref<HTMLElement | null>(null)
 let timer: number | undefined
+let taskModalResizeTimer: number | undefined
+let taskModalResizeFrom = 0
+let taskModalResizeVersion = 0
 
 const statusOptions = [
   { value: '', label: '全部状态' },
@@ -87,7 +91,59 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   if (timer) window.clearInterval(timer)
+  if (taskModalResizeTimer) window.clearTimeout(taskModalResizeTimer)
 })
+
+function startTaskModalResize() {
+  const el = taskModal.value
+  if (!el) return
+  if (taskModalResizeTimer) {
+    window.clearTimeout(taskModalResizeTimer)
+    taskModalResizeTimer = undefined
+  }
+  // Freeze the current height before Vue swaps the field set.
+  taskModalResizeVersion += 1
+  taskModalResizeFrom = el.getBoundingClientRect().height
+  el.style.transition = 'none'
+  el.style.height = `${taskModalResizeFrom}px`
+}
+
+function endTaskModalResize() {
+  const el = taskModal.value
+  if (!el || !taskModalResizeFrom) return
+
+  const from = taskModalResizeFrom
+  const version = taskModalResizeVersion
+  el.style.height = 'auto'
+  const to = el.getBoundingClientRect().height
+  el.style.height = `${from}px`
+  void el.offsetHeight
+
+  const finish = () => {
+    taskModalResizeFrom = 0
+    taskModalResizeTimer = undefined
+    if (taskModal.value === el) {
+      el.style.transition = ''
+      el.style.height = ''
+    }
+  }
+
+  if (
+    Math.abs(to - from) < 1 ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    finish()
+    return
+  }
+
+  el.style.transition = 'height var(--duration-fast) var(--ease-smooth-out)'
+  requestAnimationFrame(() => {
+    if (version === taskModalResizeVersion && taskModal.value === el) {
+      el.style.height = `${to}px`
+    }
+  })
+  taskModalResizeTimer = window.setTimeout(finish, 280)
+}
 
 async function create(payload: CreateTaskRequest) {
   creating.value = true
@@ -174,14 +230,27 @@ async function remove(taskId: string) {
     <Teleport to="body">
       <Transition name="modal">
         <div v-if="createOpen" class="modal-overlay" @click.self="createOpen = false">
-          <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="create-task-title">
+          <div
+            ref="taskModal"
+            class="modal wide task-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-task-title"
+          >
             <div class="modal-head">
               <h3 id="create-task-title" class="modal-title">新建任务</h3>
               <button class="btn ghost icon small" type="button" aria-label="关闭" @click="createOpen = false">
                 <AppIcon name="close" :size="17" />
               </button>
             </div>
-            <TaskForm :storages="storages" :busy="creating" @submit="create" @cancel="createOpen = false" />
+            <TaskForm
+              :storages="storages"
+              :busy="creating"
+              @submit="create"
+              @cancel="createOpen = false"
+              @resize-start="startTaskModalResize"
+              @resize-end="endTaskModalResize"
+            />
           </div>
         </div>
       </Transition>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { taskTypeDefs } from '../taskFields'
 import AppSelect from './AppSelect.vue'
@@ -14,12 +14,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   submit: [payload: CreateTaskRequest]
   cancel: []
+  'resize-start': []
+  'resize-end': []
 }>()
 
 const type = ref(taskTypeDefs[0].type)
 const storage = ref('')
 const path = ref('')
 const webhook = ref('')
+const body = ref<HTMLElement | null>(null)
 const values = reactive<Record<string, string>>({})
 const boolValues = reactive<Record<string, boolean>>({})
 const { invalidField, fail, clear } = useFormFeedback()
@@ -66,9 +69,17 @@ watch(
         values[field.name] = ''
       }
     }
+    void nextTick(() => body.value?.scrollTo({ top: 0 }))
   },
   { immediate: true },
 )
+
+function changeType(next: string) {
+  if (next === type.value) return
+  emit('resize-start')
+  type.value = next
+  void nextTick(() => emit('resize-end'))
+}
 
 function splitList(raw: string): string[] {
   return raw
@@ -178,72 +189,79 @@ function submit() {
 </script>
 
 <template>
-  <form class="stack" @submit.prevent="submit" novalidate>
-    <div class="form-grid">
-      <div class="field">
-        <label for="task-type">任务类型</label>
-        <AppSelect id="task-type" v-model="type" :options="typeOptions" />
-        <span class="hint">{{ description }}</span>
+  <form class="stack task-form" @submit.prevent="submit" novalidate>
+    <div ref="body" class="task-form-body">
+      <div class="form-grid">
+        <div class="field">
+          <label for="task-type">任务类型</label>
+          <AppSelect
+            id="task-type"
+            :model-value="type"
+            :options="typeOptions"
+            @update:model-value="changeType"
+          />
+          <span class="hint">{{ description }}</span>
+        </div>
+        <div v-if="!isTransfer" class="field">
+          <label for="task-storage">存储</label>
+          <AppSelect
+            id="task-storage"
+            v-model="storage"
+            :options="storageOptions"
+            @update:model-value="clear('task-storage')"
+          />
+        </div>
+        <div v-if="!isTransfer" class="field">
+          <label for="task-path">目标路径</label>
+          <input id="task-path" v-model="path" placeholder="可留空，例如 downloads/anime" />
+        </div>
+        <div class="field">
+          <label for="task-webhook">Webhook（可选）</label>
+          <input id="task-webhook" v-model="webhook" placeholder="https://example.com/hook" />
+        </div>
       </div>
-      <div v-if="!isTransfer" class="field">
-        <label for="task-storage">存储</label>
-        <AppSelect
-          id="task-storage"
-          v-model="storage"
-          :options="storageOptions"
-          @update:model-value="clear('task-storage')"
-        />
-      </div>
-      <div v-if="!isTransfer" class="field">
-        <label for="task-path">目标路径</label>
-        <input id="task-path" v-model="path" placeholder="可留空，例如 downloads/anime" />
-      </div>
-      <div class="field">
-        <label for="task-webhook">Webhook（可选）</label>
-        <input id="task-webhook" v-model="webhook" placeholder="https://example.com/hook" />
-      </div>
-    </div>
 
-    <template v-for="field in fields" :key="field.name">
-      <label v-if="field.kind === 'bool'" class="checkbox">
-        <input v-model="boolValues[field.name]" type="checkbox" />
-        <span>{{ field.label }}</span>
-      </label>
-      <div
-        v-else
-        class="field"
-        :class="{ 'is-invalid': invalidField === `task-field-${field.name}` }"
-      >
-        <label :for="`task-field-${field.name}`">
-          {{ field.label }}<span v-if="field.required"> *</span>
+      <template v-for="field in fields" :key="field.name">
+        <label v-if="field.kind === 'bool'" class="checkbox">
+          <input v-model="boolValues[field.name]" type="checkbox" />
+          <span>{{ field.label }}</span>
         </label>
-        <AppSelect
-          v-if="field.storageSelect"
-          :id="`task-field-${field.name}`"
-          v-model="values[field.name]"
-          :options="storageOptions"
-          @update:model-value="clear(`task-field-${field.name}`)"
-        />
-        <textarea
-          v-else-if="field.kind === 'list' || field.kind === 'json'"
-          :id="`task-field-${field.name}`"
-          v-model="values[field.name]"
-          :placeholder="field.placeholder"
-          :aria-invalid="invalidField === `task-field-${field.name}` ? 'true' : undefined"
-          @input="clear(`task-field-${field.name}`)"
-        ></textarea>
-        <input
+        <div
           v-else
-          :id="`task-field-${field.name}`"
-          v-model="values[field.name]"
-          :type="field.kind === 'number' ? 'number' : 'text'"
-          :placeholder="field.placeholder"
-          :aria-invalid="invalidField === `task-field-${field.name}` ? 'true' : undefined"
-          @input="clear(`task-field-${field.name}`)"
-        />
-        <span v-if="field.hint" class="hint">{{ field.hint }}</span>
-      </div>
-    </template>
+          class="field"
+          :class="{ 'is-invalid': invalidField === `task-field-${field.name}` }"
+        >
+          <label :for="`task-field-${field.name}`">
+            {{ field.label }}<span v-if="field.required"> *</span>
+          </label>
+          <AppSelect
+            v-if="field.storageSelect"
+            :id="`task-field-${field.name}`"
+            v-model="values[field.name]"
+            :options="storageOptions"
+            @update:model-value="clear(`task-field-${field.name}`)"
+          />
+          <textarea
+            v-else-if="field.kind === 'list' || field.kind === 'json'"
+            :id="`task-field-${field.name}`"
+            v-model="values[field.name]"
+            :placeholder="field.placeholder"
+            :aria-invalid="invalidField === `task-field-${field.name}` ? 'true' : undefined"
+            @input="clear(`task-field-${field.name}`)"
+          ></textarea>
+          <input
+            v-else
+            :id="`task-field-${field.name}`"
+            v-model="values[field.name]"
+            :type="field.kind === 'number' ? 'number' : 'text'"
+            :placeholder="field.placeholder"
+            :aria-invalid="invalidField === `task-field-${field.name}` ? 'true' : undefined"
+            @input="clear(`task-field-${field.name}`)"
+          />
+          <span v-if="field.hint" class="hint">{{ field.hint }}</span>
+        </div>
+      </template>
+    </div>
 
     <div class="modal-actions">
       <button class="btn ghost" type="button" @click="emit('cancel')">取消</button>
