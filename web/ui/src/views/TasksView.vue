@@ -7,6 +7,7 @@ import AppSelect from '../components/AppSelect.vue'
 import PageHeader from '../components/PageHeader.vue'
 import TaskForm from '../components/TaskForm.vue'
 import TaskTable from '../components/TaskTable.vue'
+import { useModalHeightTransition } from '../composables/useModalHeightTransition'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
 import type { CreateTaskRequest, StorageRecord, TaskItem } from '../types'
@@ -24,10 +25,9 @@ const busyId = ref('')
 const createOpen = ref(false)
 const creating = ref(false)
 const taskModal = ref<HTMLElement | null>(null)
+const { startResize: startTaskModalResize, endResize: endTaskModalResize } =
+  useModalHeightTransition(taskModal)
 let timer: number | undefined
-let taskModalResizeTimer: number | undefined
-let taskModalResizeFrom = 0
-let taskModalResizeVersion = 0
 
 const statusOptions = [
   { value: '', label: '全部状态' },
@@ -91,59 +91,7 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   if (timer) window.clearInterval(timer)
-  if (taskModalResizeTimer) window.clearTimeout(taskModalResizeTimer)
 })
-
-function startTaskModalResize() {
-  const el = taskModal.value
-  if (!el) return
-  if (taskModalResizeTimer) {
-    window.clearTimeout(taskModalResizeTimer)
-    taskModalResizeTimer = undefined
-  }
-  // Freeze the current height before Vue swaps the field set.
-  taskModalResizeVersion += 1
-  taskModalResizeFrom = el.getBoundingClientRect().height
-  el.style.transition = 'none'
-  el.style.height = `${taskModalResizeFrom}px`
-}
-
-function endTaskModalResize() {
-  const el = taskModal.value
-  if (!el || !taskModalResizeFrom) return
-
-  const from = taskModalResizeFrom
-  const version = taskModalResizeVersion
-  el.style.height = 'auto'
-  const to = el.getBoundingClientRect().height
-  el.style.height = `${from}px`
-  void el.offsetHeight
-
-  const finish = () => {
-    taskModalResizeFrom = 0
-    taskModalResizeTimer = undefined
-    if (taskModal.value === el) {
-      el.style.transition = ''
-      el.style.height = ''
-    }
-  }
-
-  if (
-    Math.abs(to - from) < 1 ||
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  ) {
-    finish()
-    return
-  }
-
-  el.style.transition = 'height var(--duration-fast) var(--ease-smooth-out)'
-  requestAnimationFrame(() => {
-    if (version === taskModalResizeVersion && taskModal.value === el) {
-      el.style.height = `${to}px`
-    }
-  })
-  taskModalResizeTimer = window.setTimeout(finish, 280)
-}
 
 async function create(payload: CreateTaskRequest) {
   creating.value = true
@@ -232,7 +180,7 @@ async function remove(taskId: string) {
         <div v-if="createOpen" class="modal-overlay" @click.self="createOpen = false">
           <div
             ref="taskModal"
-            class="modal wide task-modal"
+            class="modal wide auto-height-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-task-title"

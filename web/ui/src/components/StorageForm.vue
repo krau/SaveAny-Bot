@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { storageDefaults, storageTypeDef, storageTypeDefs } from '../storageFields'
 import AppSelect from './AppSelect.vue'
@@ -14,6 +14,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   submit: [payload: StorageInput]
   cancel: []
+  'resize-start': []
+  'resize-end': []
 }>()
 
 const isEdit = computed(() => props.storage !== null && props.storage !== undefined)
@@ -92,6 +94,13 @@ watch(type, () => {
   }
 })
 
+function changeType(next: string) {
+  if (next === type.value) return
+  emit('resize-start')
+  type.value = next
+  void nextTick(() => emit('resize-end'))
+}
+
 function submit() {
   clear()
   const storageName = name.value.trim()
@@ -131,8 +140,9 @@ function submit() {
 </script>
 
 <template>
-  <form class="stack" @submit.prevent="submit" novalidate>
-    <div class="form-grid">
+  <form class="stack modal-form" @submit.prevent="submit" novalidate>
+    <div class="modal-form-body">
+      <div class="form-grid">
       <div class="field" :class="{ 'is-invalid': invalidField === 'storage-name' }">
         <label for="storage-name">名称</label>
         <input
@@ -148,7 +158,13 @@ function submit() {
       </div>
       <div class="field">
         <label for="storage-type">类型</label>
-        <AppSelect id="storage-type" v-model="type" :options="storageTypeOptions" :disabled="isEdit" />
+        <AppSelect
+          id="storage-type"
+          :model-value="type"
+          :options="storageTypeOptions"
+          :disabled="isEdit"
+          @update:model-value="changeType"
+        />
       </div>
       <label class="checkbox">
         <input v-model="enable" type="checkbox" />
@@ -183,8 +199,9 @@ function submit() {
       </template>
     </div>
 
-    <div v-if="isEdit" class="hint muted">
-      已保存的密钥显示为 <code>__MASKED__</code>，保持不变即可继续使用原值。
+      <div v-if="isEdit" class="hint muted">
+        已保存的密钥显示为 <code>__MASKED__</code>，保持不变即可继续使用原值。
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn ghost" type="button" @click="emit('cancel')">取消</button>

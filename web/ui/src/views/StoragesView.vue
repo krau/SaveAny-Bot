@@ -5,6 +5,7 @@ import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
 import StorageForm from '../components/StorageForm.vue'
+import { useModalHeightTransition } from '../composables/useModalHeightTransition'
 import { storageTypeIcon, storageTypeLabel } from '../storageFields'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
@@ -19,6 +20,8 @@ const testingId = ref(0)
 const removingId = ref(0)
 const editing = ref<StorageRecord | null>(null)
 const formOpen = ref(false)
+const storageModal = ref<HTMLElement | null>(null)
+const { startResize, endResize } = useModalHeightTransition(storageModal)
 
 async function load() {
   try {
@@ -170,14 +173,27 @@ async function test(storage: StorageRecord) {
     <Teleport to="body">
       <Transition name="modal">
         <div v-if="formOpen" class="modal-overlay" @click.self="formOpen = false">
-          <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="storage-dialog-title">
+          <div
+            ref="storageModal"
+            class="modal wide auto-height-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="storage-dialog-title"
+          >
             <div class="modal-head">
               <h3 id="storage-dialog-title" class="modal-title">{{ editing ? '编辑存储' : '新建存储' }}</h3>
               <button class="btn ghost icon small" type="button" aria-label="关闭" @click="formOpen = false">
                 <AppIcon name="close" :size="17" />
               </button>
             </div>
-            <StorageForm :storage="editing" :busy="busy" @submit="save" @cancel="formOpen = false" />
+            <StorageForm
+              :storage="editing"
+              :busy="busy"
+              @submit="save"
+              @cancel="formOpen = false"
+              @resize-start="startResize"
+              @resize-end="endResize"
+            />
           </div>
         </div>
       </Transition>

@@ -1808,22 +1808,22 @@ tbody tr:hover {
   gap: 16px;
 }
 
-.task-modal {
+.auto-height-modal {
   max-height: calc(100vh - 48px);
   max-height: calc(100dvh - 48px);
   overflow: hidden;
 }
 
-.task-modal .modal-head {
+.auto-height-modal .modal-head {
   flex: none;
 }
 
-.task-modal .task-form {
+.auto-height-modal .modal-form {
   min-height: 0;
   flex: 1 1 auto;
 }
 
-.task-form-body {
+.modal-form-body {
   display: flex;
   min-height: 0;
   flex: 1 1 auto;
@@ -1837,16 +1837,16 @@ tbody tr:hover {
   scrollbar-color: var(--line-strong) transparent;
 }
 
-.task-form-body::-webkit-scrollbar {
+.modal-form-body::-webkit-scrollbar {
   width: 7px;
 }
 
-.task-form-body::-webkit-scrollbar-thumb {
+.modal-form-body::-webkit-scrollbar-thumb {
   background: var(--line-strong);
   border-radius: 999px;
 }
 
-.task-modal .modal-actions {
+.auto-height-modal .modal-actions {
   flex: none;
   padding-top: 14px;
   margin-top: 0;

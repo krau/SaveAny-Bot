@@ -186,8 +186,8 @@ function submit() {
 </script>
 
 <template>
-  <form class="stack task-form" @submit.prevent="submit" novalidate>
-    <div ref="body" class="task-form-body">
+  <form class="stack modal-form" @submit.prevent="submit" novalidate>
+    <div ref="body" class="modal-form-body">
       <div class="form-grid">
         <div class="field">
           <label for="task-type">任务类型</label>
