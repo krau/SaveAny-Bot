@@ -1,14 +1,12 @@
 package handlers
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/types"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/mygotg/ext"
+	"github.com/krau/mygotg/types"
 )
 
 // Regression: callback queries usually arrive as updateShort without entity
@@ -62,13 +60,9 @@ func TestResponsibleUserID(t *testing.T) {
 // it as an error, so every permitted callback was swallowed before the real
 // handler ran.
 func TestWithPermissionInvokesHandler(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.toml")
-	if err := os.WriteFile(path, []byte("workers = 2\n\n[[users]]\nid = 42\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := config.Init(t.Context(), path); err != nil {
-		t.Fatal(err)
-	}
+	cfg := config.Default(t.TempDir())
+	cfg.Users = []config.UserConfig{{ID: 42, Enabled: true}}
+	config.Set(cfg)
 
 	update := &ext.Update{CallbackQuery: &tg.UpdateBotCallbackQuery{UserID: 42}}
 	called := false

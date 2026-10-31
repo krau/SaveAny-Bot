@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/celestix/gotgproto/functions"
 	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/tg"
+	"github.com/krau/mygotg/functions"
 )
 
 type TGFile interface {
@@ -88,7 +88,7 @@ func FromMedia(media tg.MessageMediaClass, client downloader.Client, opts ...TGF
 			}
 		}
 		file := NewTGFile(
-			document.AsInputDocumentFileLocation(),
+			document.AsInputDocumentFileLocation(""),
 			client,
 			document.Size,
 			fileName,

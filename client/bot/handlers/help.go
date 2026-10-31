@@ -3,11 +3,11 @@ package handlers
 import (
 	"fmt"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 func handleHelpCmd(ctx *ext.Context, update *ext.Update) error {

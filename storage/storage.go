@@ -85,6 +85,11 @@ var _ StorageReadable = (*rclone.Rclone)(nil)
 var _ StorageListable = (*webdav.Webdav)(nil)
 var _ StorageReadable = (*webdav.Webdav)(nil)
 
+type StorageCloser interface {
+	Storage
+	Close()
+}
+
 type StorageConstructor func() Storage
 
 var storageConstructors = map[storenum.StorageType]StorageConstructor{

@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
@@ -20,6 +18,8 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 )
 

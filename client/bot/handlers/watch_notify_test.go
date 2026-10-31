@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
+	"github.com/krau/mygotg/ext"
 
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"

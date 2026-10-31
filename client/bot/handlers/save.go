@@ -4,8 +4,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gotd/td/tg"
@@ -21,6 +19,8 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 
 	"github.com/krau/SaveAny-Bot/storage"
 )

@@ -4,11 +4,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 type MediaMessageEvent struct {

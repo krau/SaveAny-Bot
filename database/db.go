@@ -8,20 +8,19 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/krau/SaveAny-Bot/config"
 	"gorm.io/gorm"
 	glogger "gorm.io/gorm/logger"
 )
 
 var db *gorm.DB
 
-func Init(ctx context.Context) {
+func Init(ctx context.Context, path string) {
 	logger := log.FromContext(ctx)
-	if err := os.MkdirAll(filepath.Dir(config.C().DB.Path), 0755); err != nil {
-		logger.Fatal("Failed to create data directory: ", err)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		logger.Fatalf("Failed to create data directory: %v", err)
 	}
 	var err error
-	db, err = gorm.Open(GetDialect(config.C().DB.Path), &gorm.Config{
+	db, err = gorm.Open(GetDialect(path), &gorm.Config{
 		Logger: glogger.New(logger, glogger.Config{
 			Colorful:                  true,
 			SlowThreshold:             time.Second * 5,
@@ -32,53 +31,30 @@ func Init(ctx context.Context) {
 		PrepareStmt: true,
 	})
 	if err != nil {
-		logger.Fatal("Failed to open database: ", err)
+		logger.Fatalf("Failed to open database: %v", err)
 	}
+	_ = os.Chmod(path, 0o600)
 	logger.Debug("Database connected")
-	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}, &WatchChat{}); err != nil {
-		logger.Fatal("Database migration failed; if upgrading from an old version, try deleting the database file and retrying", "error", err)
+	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}, &WatchChat{}, &Setting{}, &StorageRecord{}, &TaskRecord{}, &WebSession{}); err != nil {
+		logger.Fatalf("Database migration failed: %v", err)
 	}
-	if err := syncUsers(ctx); err != nil {
-		logger.Fatal("Failed to sync users:", err)
+	if err := MigrateLegacyPeerIDs(ctx); err != nil {
+		logger.Errorf("Failed to migrate legacy peer IDs: %v", err)
 	}
-	logger.Debug("Database migrated")
 	logger.Info("Database initialized")
 }
 
-func syncUsers(ctx context.Context) error {
-	logger := log.FromContext(ctx)
-	dbUsers, err := GetAllUsers(ctx)
+func Close() error {
+	if db == nil {
+		return nil
+	}
+	sqlDB, err := db.DB()
 	if err != nil {
-		return fmt.Errorf("failed to get users: %w", err)
+		return fmt.Errorf("failed to get sql db: %w", err)
 	}
+	return sqlDB.Close()
+}
 
-	dbUserMap := make(map[int64]User)
-	for _, u := range dbUsers {
-		dbUserMap[u.ChatID] = u
-	}
-
-	cfgUserMap := make(map[int64]struct{})
-	for _, u := range config.C().Users {
-		cfgUserMap[u.ID] = struct{}{}
-	}
-
-	for cfgID := range cfgUserMap {
-		if _, exists := dbUserMap[cfgID]; !exists {
-			if err := CreateUser(ctx, cfgID); err != nil {
-				return fmt.Errorf("failed to create user %d: %w", cfgID, err)
-			}
-			logger.Infof("Created user from config: %d", cfgID)
-		}
-	}
-
-	for dbID, dbUser := range dbUserMap {
-		if _, exists := cfgUserMap[dbID]; !exists {
-			if err := DeleteUser(ctx, &dbUser); err != nil {
-				return fmt.Errorf("failed to delete user %d: %w", dbID, err)
-			}
-			logger.Infof("Deleted user not present in config: %d", dbID)
-		}
-	}
-
-	return nil
+func Transaction(ctx context.Context, fn func(tx *gorm.DB) error) error {
+	return db.WithContext(ctx).Transaction(fn)
 }

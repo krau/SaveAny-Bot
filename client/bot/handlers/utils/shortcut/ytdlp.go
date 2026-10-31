@@ -1,10 +1,10 @@
 package shortcut
 
 import (
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 
 	"github.com/krau/SaveAny-Bot/common/i18n"

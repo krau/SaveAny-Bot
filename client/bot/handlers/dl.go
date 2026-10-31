@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
@@ -16,6 +15,7 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/ext"
 )
 
 func handleDlCmd(ctx *ext.Context, update *ext.Update) error {

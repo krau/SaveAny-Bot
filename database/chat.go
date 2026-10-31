@@ -1,6 +1,10 @@
 package database
 
-import "context"
+import (
+	"context"
+
+	"github.com/gotd/td/constant"
+)
 
 func (user *User) WatchChat(ctx context.Context, chat WatchChat) error {
 	if len(user.WatchChats) == 0 {
@@ -36,4 +40,25 @@ func GetWatchChatsByChatID(ctx context.Context, chatID int64) ([]*WatchChat, err
 		return nil, err
 	}
 	return watchChats, nil
+}
+
+// MigrateLegacyPeerIDs converts TDLib-encoded watch chat IDs written by
+// gotgproto to the plain IDs used by mygotg.
+func MigrateLegacyPeerIDs(ctx context.Context) error {
+	var chats []WatchChat
+	if err := db.WithContext(ctx).Where("chat_id < 0").Find(&chats).Error; err != nil {
+		return err
+	}
+	for _, chat := range chats {
+		plain := constant.TDLibPeerID(chat.ChatID).ToPlain()
+		if plain == 0 || plain == chat.ChatID {
+			continue
+		}
+		if err := db.WithContext(ctx).Model(&WatchChat{}).
+			Where("id = ?", chat.ID).
+			Update("chat_id", plain).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

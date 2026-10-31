@@ -1,8 +1,6 @@
 package shortcut
 
 import (
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -11,6 +9,8 @@ import (
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tasks/directlinks"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 )
 

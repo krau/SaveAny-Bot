@@ -7,9 +7,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/types"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/tg"
@@ -26,6 +23,9 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
+	"github.com/krau/mygotg/types"
 )
 
 func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *tg.Message, tfileopts ...tfile.TGFileOption) (replied *types.Message,

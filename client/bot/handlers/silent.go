@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/cache"
@@ -14,6 +12,8 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 func handleSilentCmd(ctx *ext.Context, update *ext.Update) error {

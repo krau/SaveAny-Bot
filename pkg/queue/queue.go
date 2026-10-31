@@ -184,3 +184,11 @@ func (tq *TaskQueue[T]) Close() {
 	tq.closed = true
 	tq.cond.Broadcast()
 }
+
+// ActiveCount returns the number of queued and running tasks, including
+// tasks whose context has already been cancelled.
+func (tq *TaskQueue[T]) ActiveCount() int {
+	tq.mu.RLock()
+	defer tq.mu.RUnlock()
+	return tq.tasks.Len() + len(tq.runningTaskMap)
+}

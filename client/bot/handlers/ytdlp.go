@@ -5,9 +5,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"

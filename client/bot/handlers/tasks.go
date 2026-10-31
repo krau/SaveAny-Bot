@@ -4,13 +4,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/core"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 func handleTaskCmd(ctx *ext.Context, update *ext.Update) error {

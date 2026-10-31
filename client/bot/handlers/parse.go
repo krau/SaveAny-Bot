@@ -7,8 +7,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
@@ -22,6 +20,8 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 func handleTextMessage(ctx *ext.Context, u *ext.Update) error {

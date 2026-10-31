@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
@@ -16,6 +14,8 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/rule"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {

@@ -32,6 +32,7 @@ type Alist struct {
 	loginInfo   *loginRequest
 	config      config.AlistStorageConfig
 	logger      *log.Logger
+	cancel      context.CancelFunc
 }
 
 // authHeader returns the current token for use in API requests.
@@ -102,8 +103,16 @@ func (a *Alist) Init(ctx context.Context, cfg config.StorageConfig) error {
 	a.tokenMu.Unlock()
 	a.logger.Debug("Logged in to Alist")
 
-	go a.refreshToken(ctx, *alistConfig)
+	runCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	a.cancel = cancel
+	go a.refreshToken(runCtx, *alistConfig)
 	return nil
+}
+
+func (a *Alist) Close() {
+	if a.cancel != nil {
+		a.cancel()
+	}
 }
 
 func (a *Alist) Type() storenum.StorageType {

@@ -10,3 +10,5 @@ docs/
 config.example.toml
 docker-compose.*
 playwright/
+web/ui/node_modules
+web/dist

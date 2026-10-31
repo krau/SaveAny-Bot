@@ -1,3 +1,10 @@
+FROM node:24-alpine AS web
+WORKDIR /ui
+COPY web/ui/package*.json ./
+RUN npm ci
+COPY web/ui ./
+RUN npm run build
+
 FROM golang:alpine AS builder
 
 ARG VERSION="dev"
@@ -11,6 +18,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
 
 COPY . .
+COPY --from=web /dist ./web/dist
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg \
     CGO_ENABLED=0 \

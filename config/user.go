@@ -4,32 +4,40 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 )
 
-type userConfig struct {
+type UserConfig struct {
 	ID        int64    `toml:"id" mapstructure:"id" json:"id"`                      // telegram user id
+	Enabled   bool     `toml:"enabled" mapstructure:"enabled" json:"enabled"`       // whether the user may use the bot
 	Storages  []string `toml:"storages" mapstructure:"storages" json:"storages"`    // storage names
-	Blacklist bool     `toml:"blacklist" mapstructure:"blacklist" json:"blacklist"` // 黑名单模式, storage names 中的存储将不会被使用, 默认为白名单模式
+	Blacklist bool     `toml:"blacklist" mapstructure:"blacklist" json:"blacklist"` // blacklist mode: listed storages are denied
 }
 
-var userIDs []int64
-var storages []string
-var userStorages = make(map[int64][]string)
-
 func (c Config) GetStorageNamesByUserID(userID int64) []string {
-	us, ok := userStorages[userID]
-	if ok {
-		return us
+	for _, u := range c.Users {
+		if u.ID != userID || !u.Enabled {
+			continue
+		}
+		if !u.Blacklist {
+			return u.Storages
+		}
+		all := make([]string, 0, len(c.Storages))
+		for _, st := range c.Storages {
+			all = append(all, st.GetName())
+		}
+		return slice.Compact(slice.Difference(all, u.Storages))
 	}
 	return nil
 }
 
 func (c Config) GetUsersID() []int64 {
-	return userIDs
+	ids := make([]int64, 0, len(c.Users))
+	for _, u := range c.Users {
+		if u.Enabled {
+			ids = append(ids, u.ID)
+		}
+	}
+	return ids
 }
 
 func (c Config) HasStorage(userID int64, storageName string) bool {
-	us, ok := userStorages[userID]
-	if !ok {
-		return false
-	}
-	return slice.Contain(us, storageName)
+	return slice.Contain(c.GetStorageNamesByUserID(userID), storageName)
 }

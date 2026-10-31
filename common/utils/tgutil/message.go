@@ -8,7 +8,6 @@ import (
 	"unicode"
 	"unicode/utf16"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/mathutil"
 	"github.com/duke-git/lancet/v2/slice"
@@ -21,6 +20,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 )
 

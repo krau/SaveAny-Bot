@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"regexp"
@@ -9,8 +10,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
@@ -25,6 +24,8 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/fnamest"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 )
 
@@ -205,12 +206,15 @@ func (w *watchMediaGroupHandler) addFile(chatID int64, userID uint, file tfile.T
 	})
 }
 
-func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent, botCtx *ext.Context) {
-	if userclient.GetCtx() == nil {
-		return
-	}
-	logger := log.FromContext(userclient.GetCtx())
-	for event := range ch {
+// ListenUserbotMediaEvents consumes userbot media events until the channel is
+// closed. resolve returns the client context used for notifications.
+func ListenUserbotMediaEvents(runCtx context.Context, resolve func() *ext.Context) {
+	logger := log.FromContext(runCtx)
+	for event := range userclient.GetMediaMessageCh() {
+		botCtx := resolve()
+		if botCtx == nil {
+			continue
+		}
 		logger.Debug("Received media message event", "chat_id", event.ChatID, "file_name", event.File.Name())
 		ctx := event.Ctx
 		file := event.File

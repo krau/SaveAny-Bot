@@ -153,6 +153,10 @@ func (t *TaskProgressInfo) snapshot() (status TaskStatus, total, downloaded int6
 // status/progress updates and fires the webhook on terminal transitions.
 func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 	t.mu.Lock()
+	if t.Status == TaskStatusCancelled || t.Status == TaskStatusCompleted || t.Status == TaskStatusFailed {
+		t.mu.Unlock()
+		return
+	}
 	switch e.Phase {
 	case taskevent.PhaseStart:
 		t.Status = TaskStatusRunning
@@ -175,11 +179,13 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 			t.DownloadedFiles = e.DownloadedFiles
 		}
 	case taskevent.PhaseDone:
-		if e.Err != nil {
-			t.Status = TaskStatusFailed
-			t.Error = e.Err.Error()
-		} else {
-			t.Status = TaskStatusCompleted
+		if t.Status != TaskStatusCancelled {
+			if e.Err != nil {
+				t.Status = TaskStatusFailed
+				t.Error = e.Err.Error()
+			} else {
+				t.Status = TaskStatusCompleted
+			}
 		}
 	}
 	t.UpdatedAt = time.Now()

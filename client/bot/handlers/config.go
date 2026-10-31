@@ -5,8 +5,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/conflictutil"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -15,6 +13,8 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/fnamest"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 func handleConfigCmd(ctx *ext.Context, update *ext.Update) error {

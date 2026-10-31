@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/retry"
 	"github.com/duke-git/lancet/v2/slice"
@@ -28,6 +27,7 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 	"golang.org/x/time/rate"
 )

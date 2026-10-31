@@ -3,16 +3,14 @@ package handlers
 import (
 	"regexp"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/dispatcher/handlers"
-	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
-	"github.com/celestix/gotgproto/ext"
 	sabotfilters "github.com/krau/SaveAny-Bot/client/bot/handlers/utils/filters"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/re"
-	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
-	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/dispatcher/handlers"
+	"github.com/krau/mygotg/dispatcher/handlers/filters"
+	"github.com/krau/mygotg/ext"
 )
 
 type DescCommandHandler struct {
@@ -45,7 +43,7 @@ var CommandHandlers = []DescCommandHandler{
 	{"update", i18nk.BotMsgCmdUpdate, handleUpdateCmd},
 }
 
-func Register(disp dispatcher.Dispatcher, botCtx *ext.Context) {
+func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewMessage(filters.Message.ChatType(filters.ChatTypeChannel), func(ctx *ext.Context, u *ext.Update) error {
 		return dispatcher.EndGroups
 	}))
@@ -66,7 +64,4 @@ func Register(disp dispatcher.Dispatcher, botCtx *ext.Context) {
 	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleSilentMode(handleMediaMessage, handleSilentSaveMedia)))
 	disp.AddHandler(handlers.NewMessage(filters.Message.Text, handleSilentMode(handleTextMessage, handleSilentSaveText)))
 
-	if config.C().Telegram.Userbot.Enable {
-		go listenMediaMessageEvent(userclient.GetMediaMessageCh(), botCtx)
-	}
 }

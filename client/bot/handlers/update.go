@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/telegram/message/html"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
@@ -15,6 +13,8 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"github.com/unvgo/ghselfupdate"
 )
 

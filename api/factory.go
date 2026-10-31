@@ -3,9 +3,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/client/bot"
+	userclient "github.com/krau/SaveAny-Bot/client/user"
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tasks/aria2dl"
@@ -18,6 +23,7 @@ import (
 	"github.com/krau/SaveAny-Bot/core/tasks/ytdlp"
 	"github.com/krau/SaveAny-Bot/parsers/parsers"
 	"github.com/krau/SaveAny-Bot/pkg/aria2"
+	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
@@ -25,6 +31,8 @@ import (
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/rs/xid"
 )
+
+var ErrClientUnavailable = errors.New("no telegram client available")
 
 type TaskFactory struct {
 	ctx context.Context
@@ -38,6 +46,9 @@ func (f *TaskFactory) CreateTask(req *CreateTaskRequest) (*CreateTaskResponse, e
 	stor, ok := storage.GetStorage(req.Storage)
 	if !ok {
 		return nil, fmt.Errorf("storage not found: %s", req.Storage)
+	}
+	if req.Type != tasktype.TaskTypeTransfer && stor.Type() == storenum.Telegram && bot.ExtContext() == nil && userclient.GetCtx() == nil {
+		return nil, ErrClientUnavailable
 	}
 
 	taskID := xid.New().String()
@@ -71,11 +82,18 @@ func (f *TaskFactory) registerAndEnqueueTask(task core.Executable, taskType task
 	// the API store (and fire the webhook on terminal states) without the task
 	// knowing about the API.
 	taskCtx := taskevent.WithSink(f.ctx, info)
+	if botCtx := bot.ExtContext(); botCtx != nil {
+		taskCtx = tgutil.ExtWithContext(taskCtx, botCtx)
+	} else if userCtx := userclient.GetCtx(); userCtx != nil {
+		taskCtx = tgutil.ExtWithContext(taskCtx, userCtx)
+	}
 
-	err := core.AddTask(taskCtx, task)
-	if err != nil {
+	if err := core.AddTaskWithSource(taskCtx, task, "api"); err != nil {
 		DeleteTask(taskID)
 		return fmt.Errorf("failed to add task: %w", err)
+	}
+	if err := core.EnrichTaskRecord(f.ctx, taskID, storageName, path); err != nil {
+		log.Errorf("Failed to enrich task record %s: %v", taskID, err)
 	}
 
 	return nil
@@ -222,6 +240,9 @@ func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req 
 	if len(params.MessageLinks) == 0 {
 		return nil, fmt.Errorf("no message links provided")
 	}
+	if bot.ExtContext() == nil && userclient.GetCtx() == nil {
+		return nil, ErrClientUnavailable
+	}
 
 	files, err := ExtractFilesFromLinks(f.ctx, params.MessageLinks)
 	if err != nil {
@@ -315,6 +336,9 @@ func (f *TaskFactory) createTransferTask(taskID string, createdAt time.Time, req
 	targetStor, ok := storage.GetStorage(params.TargetStorage)
 	if !ok {
 		return nil, fmt.Errorf("target storage not found: %s", params.TargetStorage)
+	}
+	if targetStor.Type() == storenum.Telegram && bot.ExtContext() == nil && userclient.GetCtx() == nil {
+		return nil, ErrClientUnavailable
 	}
 
 	sourceReadable, ok := sourceStor.(storage.StorageReadable)

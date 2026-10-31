@@ -3,7 +3,7 @@ package tgutil
 import (
 	"context"
 
-	"github.com/celestix/gotgproto/ext"
+	"github.com/krau/mygotg/ext"
 )
 
 type contextKey struct{}

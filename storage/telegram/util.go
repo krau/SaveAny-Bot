@@ -8,10 +8,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/constant"
 	"github.com/gotd/td/tg"
 	"github.com/krau/ffmpeg-go"
+	"github.com/krau/mygotg/ext"
 	"github.com/yapingcat/gomedia/go-mp4"
 )
 
@@ -167,27 +167,39 @@ func extractFrameAt(rs io.ReadSeeker, timestamp float64) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func tryGetInputPeer(ctx *ext.Context, chatID int64) tg.InputPeerClass {
-	peer := ctx.PeerStorage.GetInputPeerById(chatID)
-	if peer != nil && !peer.Zero() {
-		return peer
+func normalizeInputPeer(peer tg.InputPeerClass) tg.InputPeerClass {
+	switch p := peer.(type) {
+	case *tg.InputPeerChannel:
+		if p.ChannelID < 0 {
+			return &tg.InputPeerChannel{
+				ChannelID:  constant.TDLibPeerID(p.ChannelID).ToPlain(),
+				AccessHash: p.AccessHash,
+			}
+		}
+	case *tg.InputPeerChat:
+		if p.ChatID < 0 {
+			return &tg.InputPeerChat{ChatID: constant.TDLibPeerID(p.ChatID).ToPlain()}
+		}
 	}
-	id := constant.TDLibPeerID(chatID)
-	plain := id.ToPlain()
+	return peer
+}
+
+func tryGetInputPeer(ctx *ext.Context, chatID int64) tg.InputPeerClass {
+	plain := constant.TDLibPeerID(chatID).ToPlain()
 	var channel constant.TDLibPeerID
 	channel.Channel(plain)
-	peer = ctx.PeerStorage.GetInputPeerById(int64(channel))
-	if peer != nil && !peer.Zero() {
-		return peer
-	}
 	var chat constant.TDLibPeerID
 	chat.Chat(plain)
-	peer = ctx.PeerStorage.GetInputPeerById(int64(chat))
-	if peer != nil && !peer.Zero() {
-		return peer
-	}
 	var user constant.TDLibPeerID
 	user.User(plain)
-	peer = ctx.PeerStorage.GetInputPeerById(int64(user))
-	return peer
+	for _, id := range []int64{chatID, plain, int64(channel), int64(chat), int64(user)} {
+		if id == 0 {
+			continue
+		}
+		peer := ctx.PeerStorage.GetInputPeerById(id)
+		if peer != nil && !peer.Zero() {
+			return normalizeInputPeer(peer)
+		}
+	}
+	return nil
 }

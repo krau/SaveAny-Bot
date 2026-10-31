@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/validator"
+	"github.com/gotd/td/constant"
 	"github.com/gotd/td/tg"
+	"github.com/krau/mygotg/ext"
 )
 
 func ParseChatID(ctx *ext.Context, idOrUsername string) (int64, error) {
@@ -18,12 +19,12 @@ func ParseChatID(ctx *ext.Context, idOrUsername string) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		return int64(chatID), nil
+		return constant.TDLibPeerID(chatID).ToPlain(), nil
 	}
 	username := idOrUsername
 	peer := ctx.PeerStorage.GetPeerByUsername(username)
 	if peer != nil && peer.ID != 0 {
-		return peer.ID, nil
+		return constant.TDLibPeerID(peer.ID).ToPlain(), nil
 	}
 	chat, err := ctx.ResolveUsername(username)
 	if err != nil {

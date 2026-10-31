@@ -45,11 +45,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/ui/package-lock.json
+
       - name: Extract version from Git Ref
         id: extract_version
         run: |
           VERSION=$(echo "${{ github.ref }}" | sed 's/refs\/tags\/v//')
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Build Web UI
+        run: npm --prefix web/ui ci && npm --prefix web/ui run build
 
       - name: Release Go Binary
         uses: wangyoucao577/go-release-action@v1

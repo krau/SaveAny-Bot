@@ -1,16 +1,15 @@
 module github.com/krau/SaveAny-Bot
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/celestix/gotgproto v1.0.0-beta22
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/charmbracelet/log v1.0.0
 	github.com/gabriel-vasile/mimetype v1.4.15
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gotd/contrib v0.21.1
-	github.com/gotd/td v0.149.0
+	github.com/gotd/td v0.159.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20250916175020-ebf3e50324d3
 	github.com/krau/ffmpeg-go v0.6.0
 	github.com/lrstanley/go-ytdlp v1.3.5
@@ -21,14 +20,15 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/unvgo/ghselfupdate v1.0.1
 	github.com/yapingcat/gomedia v0.0.0-20240906162731-17feea57090c
+	golang.org/x/crypto v0.54.0
 	golang.org/x/net v0.57.0
-	golang.org/x/term v0.45.0
 	golang.org/x/time v0.15.0
 )
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.3 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
+	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/aws/smithy-go v1.24.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -62,6 +62,8 @@ require (
 	github.com/google/pprof v0.0.0-20260802141513-ef3492d7dac3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gotd/ige v0.3.0 // indirect
+	github.com/gotd/log v0.1.0 // indirect
+	github.com/gotd/log/logzap v0.1.1 // indirect
 	github.com/gotd/neo v0.1.5 // indirect
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -81,6 +83,7 @@ require (
 	github.com/ogen-go/ogen v1.24.0 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46 // indirect
@@ -98,7 +101,6 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/mod v0.39.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
 	gopkg.in/ini.v1 v1.67.3 // indirect
@@ -118,6 +120,7 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.19.2 // indirect
+	github.com/krau/mygotg v0.4.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/ncruces/go-sqlite3 v0.35.3 // indirect
 	github.com/ncruces/go-sqlite3/gormlite v0.34.0

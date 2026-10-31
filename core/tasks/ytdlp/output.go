@@ -93,7 +93,7 @@ func splitTypePrefix(template string) (prefix, rest string) {
 	if !ok {
 		return "", template
 	}
-	for _, k := range strings.Split(key, "+") {
+	for k := range strings.SplitSeq(key, "+") {
 		if _, known := ytdlpOutputTypes[k]; !known {
 			return "", template
 		}

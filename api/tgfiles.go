@@ -7,13 +7,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
+	"github.com/gotd/td/constant"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
+	"github.com/krau/mygotg/ext"
 )
 
 type MessageContext struct {
@@ -36,11 +37,7 @@ func getClientContext() (*ext.Context, error) {
 
 func resolveChatID(_ context.Context, idOrUsername string) (int64, error) {
 	if id, err := strconv.ParseInt(idOrUsername, 10, 64); err == nil {
-		// 私有频道 ID 需要加上 -100 前缀
-		if id > 0 {
-			return -1000000000000 - id, nil
-		}
-		return id, nil
+		return constant.TDLibPeerID(id).ToPlain(), nil
 	}
 
 	clientCtx, err := getClientContext()

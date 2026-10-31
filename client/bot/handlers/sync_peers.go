@@ -4,15 +4,15 @@ import (
 	"context"
 	"sync"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/storage"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/query/dialogs"
 	"github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
+	"github.com/krau/mygotg/storage"
 )
 
 var syncpeerMu sync.Mutex

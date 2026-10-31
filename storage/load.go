@@ -17,9 +17,11 @@ var (
 	// Storages maps storage names to initialized storage instances.
 	Storages = make(map[string]Storage)
 
-	userStoragesMu sync.RWMutex
-	// UserStorages maps user IDs to their available storage instances.
-	UserStorages = make(map[int64][]Storage)
+	errorsMu   sync.RWMutex
+	lastErrors = make(map[string]string)
+
+	retiredMu sync.Mutex
+	retired   []Storage
 
 	initFlight singleflight.Group
 )
@@ -42,8 +44,16 @@ func AllStorages() map[string]Storage {
 	return out
 }
 
-// GetStorageByName returns storage by name from cache or creates new one
-// It should NOT be used to get storage for user, use GetStorageByUserIDAndName instead
+// LastErrors returns the initialization errors from the last Reload.
+func LastErrors() map[string]string {
+	errorsMu.RLock()
+	defer errorsMu.RUnlock()
+	out := make(map[string]string, len(lastErrors))
+	maps.Copy(out, lastErrors)
+	return out
+}
+
+// GetStorageByName returns storage by name from cache or creates a new one.
 func GetStorageByName(ctx context.Context, name string) (Storage, error) {
 	if name == "" {
 		return nil, ErrStorageNameEmpty
@@ -60,7 +70,6 @@ func GetStorageByName(ctx context.Context, name string) (Storage, error) {
 		return nil, fmt.Errorf("storage %s not found", name)
 	}
 
-	// Merge concurrent first-time initializations.
 	v, err, _ := initFlight.Do("storage:"+name, func() (any, error) {
 		storageMu.RLock()
 		if existing, ok := Storages[name]; ok {
@@ -90,23 +99,15 @@ func GetStorageByUserIDAndName(ctx context.Context, chatID int64, name string) (
 	if name == "" {
 		return nil, ErrStorageNameEmpty
 	}
-
 	if !config.C().HasStorage(chatID, name) {
 		return nil, fmt.Errorf("no storage %s for user %d", name, chatID)
 	}
-
 	return GetStorageByName(ctx, name)
 }
 
 func GetUserStorages(ctx context.Context, chatID int64) []Storage {
 	if chatID <= 0 {
 		return nil
-	}
-	userStoragesMu.RLock()
-	cached, ok := UserStorages[chatID]
-	userStoragesMu.RUnlock()
-	if ok {
-		return cached
 	}
 	var storages []Storage
 	for _, name := range config.C().GetStorageNamesByUserID(chatID) {
@@ -119,29 +120,77 @@ func GetUserStorages(ctx context.Context, chatID int64) []Storage {
 	return storages
 }
 
-func LoadStorages(ctx context.Context) {
+// Reload rebuilds the storage registry from the current config snapshot.
+func Reload(ctx context.Context) []error {
 	logger := log.FromContext(ctx)
-	logger.Debug("loading storages...")
-	for _, storage := range config.C().Storages {
-		_, err := GetStorageByName(ctx, storage.GetName())
+	logger.Debug("reloading storages...")
+
+	initCtx := context.WithoutCancel(ctx)
+	newStorages := make(map[string]Storage)
+	errs := make(map[string]string)
+	var out []error
+	for _, storageCfg := range config.C().Storages {
+		name := storageCfg.GetName()
+		st, err := NewStorage(initCtx, storageCfg)
 		if err != nil {
-			logger.Errorf("failed to load storage %s: %v", storage.GetName(), err)
+			errs[name] = err.Error()
+			out = append(out, fmt.Errorf("storage %s: %w", name, err))
+			logger.Errorf("failed to load storage %s: %v", name, err)
+			continue
 		}
+		newStorages[name] = st
 	}
-	storageMu.RLock()
-	loaded := len(Storages)
-	storageMu.RUnlock()
-	logger.Infof("successfully loaded %d storages", loaded)
-	for user := range config.C().GetUsersID() {
-		uid := int64(user)
-		storages := GetUserStorages(ctx, uid)
-		userStoragesMu.Lock()
-		UserStorages[uid] = storages
-		userStoragesMu.Unlock()
+
+	if err := ctx.Err(); err != nil {
+		for _, st := range newStorages {
+			if closer, ok := st.(StorageCloser); ok {
+				closer.Close()
+			}
+		}
+		return append(out, err)
+	}
+
+	storageMu.Lock()
+	old := Storages
+	Storages = newStorages
+	storageMu.Unlock()
+
+	// Keep retired instances alive: in-flight tasks may still hold them.
+	retiredMu.Lock()
+	for _, st := range old {
+		retired = append(retired, st)
+	}
+	retiredMu.Unlock()
+
+	errorsMu.Lock()
+	lastErrors = errs
+	errorsMu.Unlock()
+
+	logger.Infof("successfully loaded %d storages", len(newStorages))
+	return out
+}
+
+// CloseAll closes every initialized storage.
+func CloseAll() {
+	storageMu.Lock()
+	all := make([]Storage, 0, len(Storages))
+	for _, st := range Storages {
+		all = append(all, st)
+	}
+	Storages = make(map[string]Storage)
+	storageMu.Unlock()
+	retiredMu.Lock()
+	all = append(all, retired...)
+	retired = nil
+	retiredMu.Unlock()
+	for _, st := range all {
+		if closer, ok := st.(StorageCloser); ok {
+			closer.Close()
+		}
 	}
 }
 
-// GetTelegramStorageByUserID returns the first enabled Telegram storage for the user
+// GetTelegramStorageByUserID returns the first enabled Telegram storage for the user.
 func GetTelegramStorageByUserID(ctx context.Context, chatID int64) (Storage, error) {
 	storages := GetUserStorages(ctx, chatID)
 	for _, stor := range storages {
