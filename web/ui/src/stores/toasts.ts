@@ -17,6 +17,8 @@ export const useToastStore = defineStore('toasts', {
   }),
   actions: {
     push(message: string, tone: ToastTone = 'info', duration = 4200): number {
+      const existing = this.items.find((item) => item.message === message && item.tone === tone)
+      if (existing) return existing.id
       const id = nextId++
       this.items.push({ id, tone, message })
       if (this.items.length > 4) {

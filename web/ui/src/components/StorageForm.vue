@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useFormFeedback } from '../composables/useFormFeedback'
 import { storageDefaults, storageTypeDef, storageTypeDefs } from '../storageFields'
 import AppSelect from './AppSelect.vue'
+import LoadingButton from './LoadingButton.vue'
 import type { JsonObject, StorageInput, StorageRecord } from '../types'
 
 const props = defineProps<{
@@ -21,7 +23,7 @@ const type = ref(storageTypeDefs[0].type)
 const enable = ref(true)
 const values = reactive<Record<string, string>>({})
 const bools = reactive<Record<string, boolean>>({})
-const error = ref('')
+const { invalidField, fail, clear } = useFormFeedback()
 
 const fields = computed(() => storageTypeDef(type.value)?.fields ?? [])
 const storageTypeOptions = storageTypeDefs.map((item) => ({ value: item.type, label: item.label }))
@@ -70,7 +72,7 @@ function loadStorage(storage: StorageRecord) {
 watch(
   () => props.storage,
   (storage) => {
-    error.value = ''
+    clear()
     if (storage) {
       loadStorage(storage)
     } else {
@@ -84,17 +86,17 @@ watch(
 )
 
 watch(type, () => {
-  error.value = ''
+  clear()
   if (!isEdit.value) {
     applyDefaults()
   }
 })
 
 function submit() {
-  error.value = ''
+  clear()
   const storageName = name.value.trim()
   if (!storageName) {
-    error.value = '请填写存储名称'
+    fail('请填写存储名称', 'storage-name')
     return
   }
   const config: JsonObject = {}
@@ -129,16 +131,18 @@ function submit() {
 </script>
 
 <template>
-  <form class="stack" @submit.prevent="submit">
+  <form class="stack" @submit.prevent="submit" novalidate>
     <div class="form-grid">
-      <div class="field">
+      <div class="field" :class="{ 'is-invalid': invalidField === 'storage-name' }">
         <label for="storage-name">名称</label>
         <input
           id="storage-name"
           v-model="name"
           :disabled="isEdit"
           placeholder="例如 my-webdav"
+          :aria-invalid="invalidField === 'storage-name' ? 'true' : undefined"
           required
+          @input="clear('storage-name')"
         />
         <span v-if="isEdit" class="hint">名称不可修改</span>
       </div>
@@ -182,13 +186,11 @@ function submit() {
     <div v-if="isEdit" class="hint muted">
       已保存的密钥显示为 <code>__MASKED__</code>，保持不变即可继续使用原值。
     </div>
-    <div v-if="error" class="form-error">{{ error }}</div>
-
     <div class="modal-actions">
       <button class="btn ghost" type="button" @click="emit('cancel')">取消</button>
-      <button class="btn primary" type="submit" :disabled="props.busy">
-        {{ props.busy ? '保存中…' : isEdit ? '保存修改' : '创建存储' }}
-      </button>
+      <LoadingButton type="submit" class="primary" :loading="props.busy">
+        {{ isEdit ? '保存修改' : '创建存储' }}
+      </LoadingButton>
     </div>
   </form>
 </template>

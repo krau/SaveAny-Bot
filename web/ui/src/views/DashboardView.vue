@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import { errorMessage, storagesApi, tasksApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import PageHeader from '../components/PageHeader.vue'
+import { useToastStore } from '../stores/toasts'
 import { storageTypeIcon, storageTypeLabel } from '../storageFields'
 import type { StorageRecord, TaskItem, TelegramStatus } from '../types'
 import {
@@ -16,10 +17,10 @@ import {
   telegramStateLabel,
 } from '../utils'
 
+const toast = useToastStore()
 const status = ref<TelegramStatus | null>(null)
 const tasks = ref<TaskItem[]>([])
 const storages = ref<StorageRecord[]>([])
-const error = ref('')
 let timer: number | undefined
 
 const activeTasks = computed(
@@ -73,10 +74,6 @@ const statusLine = computed(() => {
   if (!status.value) return '正在读取连接状态'
   return `Bot ${telegramStateLabel(status.value.bot.state)}，Userbot ${telegramStateLabel(status.value.userbot.state)}`
 })
-const statusErrors = computed(() =>
-  [status.value?.bot.error, status.value?.userbot.error].filter((item): item is string => Boolean(item)),
-)
-
 async function load() {
   try {
     const [statusData, taskData, storageData] = await Promise.all([
@@ -87,9 +84,11 @@ async function load() {
     status.value = statusData
     tasks.value = taskData.tasks ?? []
     storages.value = storageData
-    error.value = ''
+    for (const message of [statusData.bot.error, statusData.userbot.error]) {
+      if (message) toast.push(message, 'error', 6000)
+    }
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 
@@ -110,15 +109,12 @@ onUnmounted(() => {
           <AppIcon name="refresh" :size="15" />
           刷新
         </button>
-        <RouterLink class="btn primary small" to="/tasks">
+        <RouterLink class="btn primary small" :to="{ path: '/tasks', query: { create: '1' } }">
           <AppIcon name="plus" :size="15" />
           新建任务
         </RouterLink>
       </template>
     </PageHeader>
-
-    <div v-if="error" class="banner error">{{ error }}</div>
-    <div v-for="message in statusErrors" :key="message" class="banner warning">{{ message }}</div>
 
     <section class="relay-board">
       <div class="relay-status">

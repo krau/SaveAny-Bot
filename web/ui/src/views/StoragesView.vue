@@ -2,16 +2,18 @@
 import { onMounted, ref } from 'vue'
 import { errorMessage, storagesApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
+import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
 import StorageForm from '../components/StorageForm.vue'
 import { storageTypeIcon, storageTypeLabel } from '../storageFields'
+import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
 import type { StorageInput, StorageRecord } from '../types'
 import { storageLocation } from '../utils'
 
 const toast = useToastStore()
+const confirm = useConfirmStore()
 const storages = ref<StorageRecord[]>([])
-const error = ref('')
 const busy = ref(false)
 const testingId = ref(0)
 const removingId = ref(0)
@@ -21,9 +23,8 @@ const formOpen = ref(false)
 async function load() {
   try {
     storages.value = await storagesApi.list()
-    error.value = ''
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 
@@ -59,7 +60,13 @@ async function save(payload: StorageInput) {
 }
 
 async function remove(storage: StorageRecord) {
-  if (!window.confirm(`删除存储 ${storage.name}？`)) return
+  const confirmed = await confirm.ask({
+    title: '删除存储',
+    message: `删除存储 ${storage.name}？已有的文件不会被删除。`,
+    confirmText: '删除存储',
+    danger: true,
+  })
+  if (!confirmed) return
   removingId.value = storage.id
   try {
     await storagesApi.remove(storage.id)
@@ -104,8 +111,6 @@ async function test(storage: StorageRecord) {
       </template>
     </PageHeader>
 
-    <div v-if="error" class="banner error">{{ error }}</div>
-
     <div class="storage-grid">
       <article v-for="storage in storages" :key="storage.id" class="storage-card">
         <div class="storage-card-head">
@@ -130,10 +135,15 @@ async function test(storage: StorageRecord) {
               <AppIcon name="edit" :size="14" />
               编辑
             </button>
-            <button class="btn small ghost" type="button" :disabled="testingId === storage.id" @click="test(storage)">
+            <LoadingButton
+              class="small ghost"
+              type="button"
+              :loading="testingId === storage.id"
+              @click="test(storage)"
+            >
               <AppIcon name="plug" :size="14" />
-              {{ testingId === storage.id ? '测试中…' : '测试' }}
-            </button>
+              测试
+            </LoadingButton>
           </div>
           <button
             class="btn small danger"

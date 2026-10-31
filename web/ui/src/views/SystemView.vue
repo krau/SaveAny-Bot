@@ -2,13 +2,17 @@
 import { onMounted, ref } from 'vue'
 import { ApiError, errorMessage, systemApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
+import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
+import { useConfirmStore } from '../stores/confirm'
+import { useToastStore } from '../stores/toasts'
 import { formatUptime } from '../utils'
 import type { SystemInfo } from '../types'
 
+const toast = useToastStore()
+const confirm = useConfirmStore()
 const info = ref<SystemInfo | null>(null)
 const error = ref('')
-const notice = ref('')
 const busy = ref(false)
 const host = window.location.host
 
@@ -17,35 +21,55 @@ async function load() {
     info.value = await systemApi.info()
     error.value = ''
   } catch (err) {
-    error.value = errorMessage(err)
+    error.value = 'load_failed'
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 
 onMounted(load)
 
 async function restart(force = false) {
-  if (!force && !window.confirm('重启进程？正在运行的任务会被中断。')) return
+  if (
+    !force &&
+    !(await confirm.ask({
+      title: '重启进程',
+      message: '重启进程？正在运行的任务会被中断。',
+      confirmText: '重启进程',
+      danger: true,
+    }))
+  ) {
+    return
+  }
   busy.value = true
-  notice.value = ''
   try {
     await systemApi.restart(force)
-    notice.value = '正在重启…'
+    toast.push('正在重启…', 'info')
     await new Promise((resolve) => setTimeout(resolve, 1500))
     for (let i = 0; i < 20; i += 1) {
       try {
         info.value = await systemApi.info()
-        notice.value = '重启完成'
+        toast.push('重启完成', 'success')
         break
       } catch {
         await new Promise((resolve) => setTimeout(resolve, 1000))
       }
     }
   } catch (err) {
-    if (!force && err instanceof ApiError && err.status === 409 && window.confirm('仍有任务运行，强制重启会中断它们。继续？')) {
+    if (
+      !force &&
+      err instanceof ApiError &&
+      err.status === 409 &&
+      (await confirm.ask({
+        title: '强制重启',
+        message: '仍有任务运行，强制重启会中断它们。继续？',
+        confirmText: '强制重启',
+        danger: true,
+      }))
+    ) {
       await restart(true)
       return
     }
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   } finally {
     busy.value = false
   }
@@ -60,15 +84,12 @@ async function restart(force = false) {
           <AppIcon name="refresh" :size="15" />
           刷新
         </button>
-        <button class="btn small danger" type="button" :disabled="busy" @click="restart()">
+        <LoadingButton class="small danger" type="button" :loading="busy" @click="restart()">
           <AppIcon name="refresh" :size="15" />
-          {{ busy ? '重启中…' : '重启进程' }}
-        </button>
+          重启进程
+        </LoadingButton>
       </template>
     </PageHeader>
-
-    <div v-if="error" class="banner error">{{ error }}</div>
-    <div v-if="notice" class="banner success">{{ notice }}</div>
 
     <div v-if="info" class="process-panel">
       <div>

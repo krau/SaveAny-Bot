@@ -2,15 +2,16 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { errorMessage, settingsApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
+import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
+import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
 import { telegramStateLabel, telegramStateTone } from '../utils'
 import type { JsonObject, TelegramStatus } from '../types'
 
 const toast = useToastStore()
+const confirm = useConfirmStore()
 const status = ref<TelegramStatus | null>(null)
-const error = ref('')
-const statusError = ref('')
 const busy = ref(false)
 const botAction = ref<'start' | 'stop' | 'restart' | ''>('')
 const syncedFlow = ref('')
@@ -80,14 +81,15 @@ function stepClass(step: number): string {
 async function loadStatus() {
   try {
     status.value = await telegramApi.status()
-    statusError.value = ''
     const flow = status.value.userbot.login
+    if (flow?.error) toast.push(flow.error, 'error', 6000)
     if (flow?.state === 'done' && flow.flow_id !== syncedFlow.value) {
       syncedFlow.value = flow.flow_id
+      toast.push('登录完成，会话已保存', 'success')
       await loadSettings()
     }
   } catch (err) {
-    statusError.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 
@@ -108,7 +110,7 @@ async function loadSettings() {
     userbotSession.value = String(userbot.session ?? '')
     settingsLoaded.value = true
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 
@@ -122,7 +124,6 @@ onUnmounted(() => {
 
 async function saveCredentials() {
   busy.value = true
-  error.value = ''
   try {
     const patch: JsonObject = {
       token: token.value,
@@ -169,7 +170,15 @@ async function stopBot(force = false) {
     toast.push('Bot 已停止', 'success')
     await loadStatus()
   } catch (err) {
-    if (!force && window.confirm(`${errorMessage(err)}\n仍要强制停止吗？`)) {
+    if (
+      !force &&
+      (await confirm.ask({
+        title: '强制停止 Bot',
+        message: `${errorMessage(err)}\n仍要强制停止吗？`,
+        confirmText: '强制停止',
+        danger: true,
+      }))
+    ) {
       await stopBot(true)
       return
     }
@@ -186,7 +195,15 @@ async function restartBot(force = false) {
     toast.push('Bot 正在重启', 'info')
     await loadStatus()
   } catch (err) {
-    if (!force && window.confirm(`${errorMessage(err)}\n仍要强制重启吗？`)) {
+    if (
+      !force &&
+      (await confirm.ask({
+        title: '强制重启 Bot',
+        message: `${errorMessage(err)}\n仍要强制重启吗？`,
+        confirmText: '强制重启',
+        danger: true,
+      }))
+    ) {
       await restartBot(true)
       return
     }
@@ -197,7 +214,6 @@ async function restartBot(force = false) {
 }
 
 async function startLogin() {
-  error.value = ''
   try {
     await telegramApi.login(phone.value)
     code.value = ''
@@ -246,7 +262,13 @@ async function cancelLogin() {
 }
 
 async function logoutUserbot() {
-  if (!window.confirm('退出 Userbot 并删除本地会话？')) return
+  const confirmed = await confirm.ask({
+    title: '退出 Userbot',
+    message: '退出 Userbot 并删除本地会话？',
+    confirmText: '退出登录',
+    danger: true,
+  })
+  if (!confirmed) return
   try {
     await telegramApi.logout()
     toast.push('Userbot 已退出登录', 'success')
@@ -268,8 +290,6 @@ async function logoutUserbot() {
       </template>
     </PageHeader>
 
-    <div v-if="error" class="banner error">{{ error }}</div>
-    <div v-if="statusError" class="banner error">{{ statusError }}</div>
 
     <div class="connection-grid">
       <section class="connection-card">
@@ -290,35 +310,35 @@ async function logoutUserbot() {
         </div>
         <div v-if="status?.bot.error" class="field-error">{{ status.bot.error }}</div>
         <div class="connection-actions">
-          <button
-            class="btn small"
+          <LoadingButton
+            class="small"
             :class="{ primary: canStart || botAction === 'start' }"
-            type="button"
+            :loading="botAction === 'start' || botState === 'starting'"
             :disabled="!canStart"
             @click="startBot"
           >
             <AppIcon name="play" :size="14" />
-            {{ botAction === 'start' || botState === 'starting' ? '启动中…' : '启动' }}
-          </button>
-          <button
-            class="btn small"
+            启动
+          </LoadingButton>
+          <LoadingButton
+            class="small"
             :class="{ danger: canStop || botAction === 'stop' }"
-            type="button"
+            :loading="botAction === 'stop'"
             :disabled="!canStop"
             @click="stopBot()"
           >
             <AppIcon name="stop" :size="14" />
-            {{ botAction === 'stop' ? '停止中…' : '停止' }}
-          </button>
-          <button
-            class="btn small"
-            type="button"
+            停止
+          </LoadingButton>
+          <LoadingButton
+            class="small"
+            :loading="botAction === 'restart'"
             :disabled="!canRestartBot"
             @click="restartBot()"
           >
             <AppIcon name="refresh" :size="14" />
-            {{ botAction === 'restart' ? '重启中…' : '重启' }}
-          </button>
+            重启
+          </LoadingButton>
         </div>
       </section>
 
@@ -356,7 +376,7 @@ async function logoutUserbot() {
             <p class="panel-sub">Bot Token 与 Telegram API 配置，保存后尝试立即应用</p>
           </div>
         </div>
-        <form v-if="settingsLoaded" class="stack" @submit.prevent="saveCredentials">
+        <form v-if="settingsLoaded" class="stack" @submit.prevent="saveCredentials" novalidate>
           <div class="form-grid">
             <div class="field">
               <label for="tg-token">Bot Token</label>
@@ -401,9 +421,7 @@ async function logoutUserbot() {
 
           <div class="hint">密钥显示为 __MASKED__ 时保持不变即可继续使用已保存的值。</div>
           <div class="modal-actions">
-            <button class="btn primary" type="submit" :disabled="busy">
-              {{ busy ? '保存中…' : '保存并应用' }}
-            </button>
+            <LoadingButton class="primary" type="submit" :loading="busy">保存并应用</LoadingButton>
           </div>
         </form>
         <div v-else class="loading">正在加载凭据…</div>
@@ -439,8 +457,6 @@ async function logoutUserbot() {
         </div>
 
         <div v-else class="stack">
-          <div v-if="loginFlow?.error" class="form-error">{{ loginFlow.error }}</div>
-
           <div v-if="canSubmitCode" class="field">
             <label for="tg-code">Telegram 验证码</label>
             <div class="row">
@@ -457,7 +473,6 @@ async function logoutUserbot() {
             </div>
           </div>
 
-          <div v-if="flowState === 'done'" class="banner success">登录完成，会话已保存。</div>
           <div v-if="flowState !== 'done'" class="modal-actions" style="justify-content: flex-start">
             <button class="btn ghost" type="button" @click="cancelLogin">取消登录</button>
           </div>

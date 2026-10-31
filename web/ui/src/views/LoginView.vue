@@ -3,9 +3,12 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError } from '../api'
 import { useAuthStore } from '../stores/auth'
+import { useToastStore } from '../stores/toasts'
 import BrandMark from '../components/BrandMark.vue'
+import LoadingButton from '../components/LoadingButton.vue'
 
 const auth = useAuthStore()
+const toast = useToastStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -32,6 +35,7 @@ async function submit() {
     } else {
       error.value = err instanceof Error ? err.message : String(err)
     }
+    toast.push(error.value, 'error', 5000)
   } finally {
     busy.value = false
   }
@@ -39,51 +43,27 @@ async function submit() {
 </script>
 
 <template>
-  <div class="login-shell">
-    <section class="login-story">
+  <div class="login-page">
+    <svg class="login-trace" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M-40 300H320L458 360H516" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />
+      <path d="M924 360H982L1120 300H1480" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />
+      <circle cx="320" cy="300" r="3" fill="currentColor" />
+      <circle cx="1120" cy="300" r="3" fill="currentColor" />
+      <circle cx="982" cy="360" r="3" fill="var(--accent)" />
+    </svg>
+
+    <section class="login-card">
       <div class="login-brand">
-        <span class="brand-mark"><BrandMark :size="22" /></span>
+        <span class="brand-mark login-brand-mark"><BrandMark :size="20" /></span>
         <span>SaveAny-Bot</span>
       </div>
 
-      <div class="login-copy">
-        <h1>把 Telegram 里的文件<br />送到该去的地方</h1>
-        <p>
-          在本机接收链接和文件，按设定的规则归档到本地磁盘、WebDAV、S3 或 Telegram。
-          任务由你的服务调度，文件写入你配置的存储。
-        </p>
-
-        <div class="login-route" aria-label="工作方式">
-          <div class="route-step">
-            <span class="route-node"></span>
-            <strong>接收</strong>
-            <span>消息、直链与图集</span>
-          </div>
-          <span class="route-line" aria-hidden="true"></span>
-          <div class="route-step">
-            <span class="route-node"></span>
-            <strong>调度</strong>
-            <span>按类型分发下载</span>
-          </div>
-          <span class="route-line" aria-hidden="true"></span>
-          <div class="route-step">
-            <span class="route-node"></span>
-            <strong>归档</strong>
-            <span>写入目标存储</span>
-          </div>
-        </div>
+      <div class="login-heading">
+        <h1>管理员登录</h1>
+        <p>输入服务启动时生成的管理员密码。</p>
       </div>
 
-      <p class="login-note">自托管，会话与配置保存在本机</p>
-    </section>
-
-    <section class="login-panel">
-      <form class="login-form" @submit.prevent="submit">
-        <div class="login-form-head">
-          <h2>管理员登录</h2>
-          <p>使用服务启动时生成的管理员密码进入控制台。</p>
-        </div>
-
+      <form class="login-form" @submit.prevent="submit" novalidate>
         <div class="field">
           <label for="login-password">管理员密码</label>
           <input
@@ -93,21 +73,27 @@ async function submit() {
             autocomplete="current-password"
             autofocus
             required
+            :aria-invalid="error ? 'true' : undefined"
+            @input="error = ''"
           />
         </div>
 
-        <div v-if="error" class="form-error">{{ error }}</div>
-
-        <button class="btn primary" type="submit" :disabled="busy || password.length === 0">
-          {{ busy ? '正在登录…' : '登录控制台' }}
-        </button>
-
-        <p class="login-help">
-          首次启动的密码会写入服务日志。也可以通过
-          <code>SAVEANY_ADMIN_PASSWORD</code>
-          在第一次初始化前指定。
-        </p>
+        <LoadingButton
+          type="submit"
+          class="primary"
+          :loading="busy"
+          :disabled="password.length === 0"
+        >
+          登录控制台
+        </LoadingButton>
       </form>
+
+      <p class="login-help">
+        首次启动的密码会写入服务日志。也可以在初始化前设置
+        <code>SAVEANY_ADMIN_PASSWORD</code>。
+      </p>
     </section>
+
+    <p class="login-page-footer">自托管，配置与会话保存在本机</p>
   </div>
 </template>

@@ -1,22 +1,26 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { errorMessage, storagesApi, tasksApi } from '../api'
+import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import AppSelect from '../components/AppSelect.vue'
 import PageHeader from '../components/PageHeader.vue'
 import TaskForm from '../components/TaskForm.vue'
 import TaskTable from '../components/TaskTable.vue'
-import { useUiStore } from '../stores/ui'
+import { useConfirmStore } from '../stores/confirm'
+import { useToastStore } from '../stores/toasts'
 import type { CreateTaskRequest, StorageRecord, TaskItem } from '../types'
 
-const ui = useUiStore()
+const toast = useToastStore()
+const confirm = useConfirmStore()
+const route = useRoute()
+const router = useRouter()
 const tasks = ref<TaskItem[]>([])
 const storages = ref<StorageRecord[]>([])
 const total = ref(0)
 const statusFilter = ref('')
 const typeFilter = ref('')
 const busyId = ref('')
-const error = ref('')
 const createOpen = ref(false)
 const creating = ref(false)
 let timer: number | undefined
@@ -45,9 +49,8 @@ async function load() {
     const data = await tasksApi.list({ status: statusFilter.value, type: typeFilter.value, limit: 100 })
     tasks.value = data.tasks ?? []
     total.value = data.total ?? 0
-    error.value = ''
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 
@@ -55,7 +58,7 @@ async function loadStorages() {
   try {
     storages.value = await storagesApi.list()
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 
@@ -64,9 +67,23 @@ function schedule() {
   timer = window.setInterval(() => void load(), 2000)
 }
 
+async function consumeCreateIntent() {
+  if (route.query.create !== '1') return
+  createOpen.value = true
+  await router.replace({ path: '/tasks' })
+}
+
+watch(
+  () => route.query.create,
+  () => {
+    void consumeCreateIntent()
+  },
+)
+
 onMounted(async () => {
   schedule()
   await Promise.all([load(), loadStorages()])
+  await consumeCreateIntent()
 })
 onUnmounted(() => {
   if (timer) window.clearInterval(timer)
@@ -76,37 +93,48 @@ async function create(payload: CreateTaskRequest) {
   creating.value = true
   try {
     await tasksApi.create(payload)
-    ui.setWarnings([])
+    toast.push('任务已创建', 'success')
     createOpen.value = false
     await load()
   } catch (err) {
-    ui.setWarnings([errorMessage(err)])
+    toast.push(errorMessage(err), 'error', 6000)
   } finally {
     creating.value = false
   }
 }
 
 async function cancel(taskId: string) {
-  if (!window.confirm('取消该任务？')) return
+  const confirmed = await confirm.ask({
+    title: '取消任务',
+    message: '取消该任务？正在下载的内容会被中断。',
+    confirmText: '取消任务',
+  })
+  if (!confirmed) return
   busyId.value = taskId
   try {
     await tasksApi.cancel(taskId)
     await load()
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   } finally {
     busyId.value = ''
   }
 }
 
 async function remove(taskId: string) {
-  if (!window.confirm('删除该任务记录？')) return
+  const confirmed = await confirm.ask({
+    title: '删除任务记录',
+    message: '删除该任务记录？此操作不可撤销。',
+    confirmText: '删除记录',
+    danger: true,
+  })
+  if (!confirmed) return
   busyId.value = taskId
   try {
     await tasksApi.remove(taskId)
     await load()
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   } finally {
     busyId.value = ''
   }
@@ -127,8 +155,6 @@ async function remove(taskId: string) {
         </button>
       </template>
     </PageHeader>
-
-    <div v-if="error" class="banner error">{{ error }}</div>
 
     <div class="filter-bar">
       <div class="filter-field">

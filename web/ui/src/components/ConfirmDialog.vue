@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import AppIcon from './AppIcon.vue'
+
 withDefaults(
   defineProps<{
     title?: string
@@ -22,21 +25,54 @@ const emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
+
+const cancelButton = ref<HTMLButtonElement | null>(null)
+
+function onKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return
+  event.preventDefault()
+  emit('cancel')
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  void nextTick(() => cancelButton.value?.focus())
+})
+
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="modal-overlay" @click.self="emit('cancel')">
-      <div class="modal" role="dialog" aria-modal="true" style="max-width: 420px">
-        <h3 class="modal-title">{{ title }}</h3>
-        <p class="muted" style="margin: 0; white-space: pre-line">{{ message }}</p>
+    <div class="modal-overlay confirm-overlay" @click.self="emit('cancel')">
+      <div
+        class="modal confirm-modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
+      >
+        <div class="confirm-heading">
+          <span class="confirm-icon" :class="{ danger }">
+            <AppIcon :name="danger ? 'alert' : 'check'" :size="18" />
+          </span>
+          <div>
+            <h3 id="confirm-dialog-title" class="modal-title">{{ title }}</h3>
+            <p class="confirm-message">{{ message }}</p>
+          </div>
+        </div>
         <div class="modal-actions">
-          <button class="btn ghost" type="button" :disabled="busy" @click="emit('cancel')">
+          <button
+            ref="cancelButton"
+            class="btn ghost"
+            type="button"
+            :disabled="busy"
+            @click="emit('cancel')"
+          >
             {{ cancelText }}
           </button>
           <button
             class="btn"
-            :class="danger ? 'danger' : 'primary'"
+            :class="danger ? 'danger-solid' : 'primary'"
             type="button"
             :disabled="busy"
             @click="emit('confirm')"

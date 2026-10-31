@@ -2,14 +2,19 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { errorMessage, storagesApi, usersApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
+import LoadingButton from '../components/LoadingButton.vue'
 import AppSelect from '../components/AppSelect.vue'
 import PageHeader from '../components/PageHeader.vue'
+import { useFormFeedback } from '../composables/useFormFeedback'
+import { useConfirmStore } from '../stores/confirm'
+import { useToastStore } from '../stores/toasts'
 import type { StorageRecord, UserItem, UserPatch, UserStorageFilter } from '../types'
 
+const toast = useToastStore()
+const confirm = useConfirmStore()
+const { invalidField, fail, clear, success } = useFormFeedback()
 const users = ref<UserItem[]>([])
 const storages = ref<StorageRecord[]>([])
-const error = ref('')
-const notice = ref('')
 const busy = ref(false)
 const formOpen = ref(false)
 const editing = ref<UserItem | null>(null)
@@ -51,15 +56,15 @@ async function load() {
     const [userList, storageList] = await Promise.all([usersApi.list(), storagesApi.list()])
     users.value = userList
     storages.value = storageList
-    error.value = ''
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 
 onMounted(load)
 
 function openCreate() {
+  clear()
   editing.value = null
   Object.assign(form, {
     chat_id: '', enabled: true, silent: false, default_storage: '', apply_rule: false,
@@ -70,6 +75,7 @@ function openCreate() {
 }
 
 function openEdit(user: UserItem) {
+  clear()
   editing.value = user
   Object.assign(form, {
     chat_id: String(user.chat_id),
@@ -95,7 +101,7 @@ function toggleStorage(name: string) {
 
 async function save() {
   busy.value = true
-  notice.value = ''
+  clear()
   const filter: UserStorageFilter = { storages: form.storages, blacklist: form.blacklist }
   const patch: UserPatch = {
     enabled: form.enabled,
@@ -111,29 +117,39 @@ async function save() {
   try {
     if (editing.value) {
       await usersApi.update(editing.value.id, patch)
-      notice.value = '用户已更新'
+      success('用户已更新')
     } else {
       const chatID = Number(form.chat_id)
-      if (!Number.isFinite(chatID) || chatID === 0) throw new Error('请填写有效的 Telegram Chat ID')
+      if (!Number.isFinite(chatID) || chatID === 0) {
+        fail('请填写有效的 Telegram Chat ID', 'user-chat-id')
+        return
+      }
       await usersApi.create({ chat_id: chatID, ...patch })
-      notice.value = '用户已创建'
+      success('用户已创建')
     }
     formOpen.value = false
     await load()
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   } finally {
     busy.value = false
   }
 }
 
 async function remove(user: UserItem) {
-  if (!window.confirm(`删除用户 ${user.chat_id} 及其目录、规则？`)) return
+  const confirmed = await confirm.ask({
+    title: '删除用户',
+    message: `删除用户 ${user.chat_id} 及其目录、规则？此操作不可撤销。`,
+    confirmText: '删除用户',
+    danger: true,
+  })
+  if (!confirmed) return
   try {
     await usersApi.remove(user.id)
+    success(`${user.chat_id} 已删除`)
     await load()
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 </script>
@@ -155,9 +171,6 @@ async function remove(user: UserItem) {
         </button>
       </template>
     </PageHeader>
-
-    <div v-if="error" class="banner error">{{ error }}</div>
-    <div v-if="notice" class="banner success">{{ notice }}</div>
 
     <div class="filter-bar">
       <span class="count">{{ users.length }} 个用户，{{ enabledUsers }} 个启用</span>
@@ -252,11 +265,19 @@ async function remove(user: UserItem) {
               <AppIcon name="close" :size="17" />
             </button>
           </div>
-          <form class="stack" @submit.prevent="save">
+          <form class="stack" @submit.prevent="save" novalidate>
             <div class="form-grid">
-              <div class="field">
+              <div class="field" :class="{ 'is-invalid': invalidField === 'user-chat-id' }">
                 <label for="user-chat-id">Telegram Chat ID</label>
-                <input id="user-chat-id" v-model="form.chat_id" type="number" :disabled="!!editing" required />
+                <input
+                  id="user-chat-id"
+                  v-model="form.chat_id"
+                  type="number"
+                  :disabled="!!editing"
+                  :aria-invalid="invalidField === 'user-chat-id' ? 'true' : undefined"
+                  required
+                  @input="clear('user-chat-id')"
+                />
               </div>
               <div class="field">
                 <label for="user-default-storage">默认存储</label>
@@ -307,7 +328,7 @@ async function remove(user: UserItem) {
             </div>
             <div class="modal-actions">
               <button class="btn ghost" type="button" @click="formOpen = false">取消</button>
-              <button class="btn primary" type="submit" :disabled="busy">保存</button>
+              <LoadingButton class="primary" type="submit" :loading="busy">保存</LoadingButton>
             </div>
           </form>
         </div>

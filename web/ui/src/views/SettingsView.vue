@@ -3,16 +3,15 @@ import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { errorMessage, settingsApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import AppSelect from '../components/AppSelect.vue'
+import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
 import { settingsGroups } from '../settingsFields'
 import type { SettingsField } from '../settingsFields'
-import { useUiStore } from '../stores/ui'
+import { useToastStore } from '../stores/toasts'
 import type { JsonObject } from '../types'
 
-const ui = useUiStore()
+const toast = useToastStore()
 const values = reactive<Record<string, Record<string, unknown>>>({})
-const error = ref('')
-const notice = ref('')
 const busyGroup = ref('')
 const loaded = ref(false)
 const activeGroup = ref(settingsGroups[0]?.key ?? '')
@@ -39,9 +38,8 @@ async function load() {
       }
     }
     loaded.value = true
-    error.value = ''
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   }
 }
 
@@ -153,25 +151,23 @@ function setTextField(group: string, field: SettingsField, raw: string) {
         delete invalid[fieldKey(group, field.path)]
       } catch {
         invalid[fieldKey(group, field.path)] = `${field.label} 不是合法的 JSON`
-        error.value = invalid[fieldKey(group, field.path)]
+        toast.push(invalid[fieldKey(group, field.path)], 'error')
         return
       }
     }
   }
-  error.value = ''
   writePath(values[group], field.path, value)
 }
 
 async function save(group: string) {
   busyGroup.value = group
-  notice.value = ''
-  error.value = ''
   try {
     const def = settingsGroups.find((item) => item.key === group)
     if (!def) return
     for (const field of def.fields) {
       if (invalid[fieldKey(group, field.path)]) {
-        throw new Error(invalid[fieldKey(group, field.path)])
+        toast.push(invalid[fieldKey(group, field.path)], 'error')
+        return
       }
     }
     const patch: JsonObject = {}
@@ -183,12 +179,16 @@ async function save(group: string) {
       writePath(patch, field.path, (value ?? (field.kind === 'bool' ? false : field.kind === 'number' ? 0 : '')) as never)
     }
     const result = await settingsApi.updateGroup(group, patch)
-    ui.setRestartRequired(result.restart_required ?? [])
-    ui.setWarnings(result.warnings ?? [])
-    notice.value = `${def.title}设置已保存`
+    toast.push(`${def.title}设置已保存`, 'success')
+    if (result.restart_required?.length) {
+      toast.push(`重启后生效：${result.restart_required.join('、')}`, 'info', 8000)
+    }
+    if (result.warnings?.length) {
+      toast.push(result.warnings.join('；'), 'error', 8000)
+    }
     await load()
   } catch (err) {
-    error.value = errorMessage(err)
+    toast.push(errorMessage(err), 'error', 6000)
   } finally {
     busyGroup.value = ''
   }
@@ -206,8 +206,6 @@ async function save(group: string) {
       </template>
     </PageHeader>
 
-    <div v-if="error" class="banner error">{{ error }}</div>
-    <div v-if="notice" class="banner success">{{ notice }}</div>
     <div v-if="!loaded" class="loading">正在加载设置…</div>
 
     <div v-show="loaded" class="settings-mobile-nav">
@@ -235,6 +233,7 @@ async function save(group: string) {
       <div class="settings-sections">
         <form
           v-for="group in settingsGroups"
+          novalidate
           :id="`settings-${group.key}`"
           :key="group.key"
           class="panel settings-group"
@@ -254,7 +253,11 @@ async function save(group: string) {
                 />
                 <span>{{ field.label }}</span>
               </label>
-              <div v-else class="field">
+              <div
+                v-else
+                class="field"
+                :class="{ 'is-invalid': invalid[fieldKey(group.key, field.path)] }"
+              >
                 <label :for="`${group.key}-${field.path}`">{{ field.label }}</label>
                 <AppSelect
                   v-if="field.kind === 'select'"
@@ -268,6 +271,7 @@ async function save(group: string) {
                   :id="`${group.key}-${field.path}`"
                   :value="textValue(group.key, field)"
                   :placeholder="field.placeholder"
+                  :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
                   @input="setTextField(group.key, field, ($event.target as HTMLTextAreaElement).value)"
                 ></textarea>
                 <input
@@ -277,6 +281,7 @@ async function save(group: string) {
                   :type="field.kind === 'number' ? 'number' : field.kind === 'password' ? 'password' : 'text'"
                   :placeholder="field.placeholder"
                   autocomplete="off"
+                  :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
                   @input="setTextField(group.key, field, ($event.target as HTMLInputElement).value)"
                 />
                 <span v-if="field.hint" class="hint">{{ field.hint }}</span>
@@ -284,9 +289,9 @@ async function save(group: string) {
             </template>
           </div>
           <div class="modal-actions">
-            <button class="btn primary" type="submit" :disabled="busyGroup === group.key">
-              {{ busyGroup === group.key ? '保存中…' : '保存' }}
-            </button>
+            <LoadingButton type="submit" class="primary" :loading="busyGroup === group.key">
+              保存
+            </LoadingButton>
           </div>
         </form>
       </div>

@@ -2,15 +2,15 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { errorMessage } from '../api'
+import { useFormFeedback } from '../composables/useFormFeedback'
 import { useAuthStore } from '../stores/auth'
-import { useUiStore } from '../stores/ui'
 import AppIcon from './AppIcon.vue'
+import LoadingButton from './LoadingButton.vue'
 import BrandMark from './BrandMark.vue'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const ui = useUiStore()
 
 const navigation = [
   {
@@ -45,9 +45,8 @@ const passwordOpen = ref(false)
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
-const passwordError = ref('')
-const passwordMessage = ref('')
 const passwordBusy = ref(false)
+const { invalidField, fail, clear, success } = useFormFeedback()
 
 watch(
   () => route.fullPath,
@@ -60,31 +59,29 @@ function openPasswordDialog() {
   currentPassword.value = ''
   newPassword.value = ''
   confirmPassword.value = ''
-  passwordError.value = ''
-  passwordMessage.value = ''
+  clear()
   passwordOpen.value = true
 }
 
 async function submitPassword() {
-  passwordError.value = ''
-  passwordMessage.value = ''
+  clear()
   if (newPassword.value.length < 8) {
-    passwordError.value = '新密码至少需要 8 个字符'
+    fail('新密码至少需要 8 个字符', 'new-password')
     return
   }
   if (newPassword.value !== confirmPassword.value) {
-    passwordError.value = '两次输入的新密码不一致'
+    fail('两次输入的新密码不一致', 'confirm-password')
     return
   }
   passwordBusy.value = true
   try {
     await auth.changePassword(currentPassword.value, newPassword.value)
-    passwordMessage.value = '密码已更新'
+    success('密码已更新')
     currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
   } catch (err) {
-    passwordError.value = errorMessage(err)
+    fail(errorMessage(err))
   } finally {
     passwordBusy.value = false
   }
@@ -181,16 +178,6 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
         </header>
 
         <main id="main-content" class="content" tabindex="-1">
-          <div v-if="ui.restartRequired.length > 0" class="banner warning">
-            <span>
-              以下配置修改需要重启才能生效：
-              <code v-for="field in ui.restartRequired" :key="field">{{ field }}</code>
-            </span>
-            <RouterLink class="btn small" to="/system">前往重启</RouterLink>
-          </div>
-          <div v-if="ui.warnings.length > 0" class="banner error">
-            <span>{{ ui.warnings.join('；') }}</span>
-          </div>
           <RouterView />
         </main>
       </div>
@@ -205,27 +192,41 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
               <AppIcon name="close" :size="17" />
             </button>
           </div>
-          <form class="stack" @submit.prevent="submitPassword">
+          <form class="stack" @submit.prevent="submitPassword" novalidate>
             <div class="field">
               <label for="current-password">当前密码</label>
               <input id="current-password" v-model="currentPassword" type="password" autocomplete="current-password" required />
             </div>
-            <div class="field">
+            <div class="field" :class="{ 'is-invalid': invalidField === 'new-password' }">
               <label for="new-password">新密码</label>
-              <input id="new-password" v-model="newPassword" type="password" autocomplete="new-password" required />
+              <input
+                id="new-password"
+                v-model="newPassword"
+                type="password"
+                autocomplete="new-password"
+                :aria-invalid="invalidField === 'new-password' ? 'true' : undefined"
+                required
+                @input="clear('new-password')"
+              />
               <span class="hint">至少 8 个字符</span>
             </div>
-            <div class="field">
+            <div class="field" :class="{ 'is-invalid': invalidField === 'confirm-password' }">
               <label for="confirm-password">确认新密码</label>
-              <input id="confirm-password" v-model="confirmPassword" type="password" autocomplete="new-password" required />
+              <input
+                id="confirm-password"
+                v-model="confirmPassword"
+                type="password"
+                autocomplete="new-password"
+                :aria-invalid="invalidField === 'confirm-password' ? 'true' : undefined"
+                required
+                @input="clear('confirm-password')"
+              />
             </div>
-            <div v-if="passwordError" class="form-error">{{ passwordError }}</div>
-            <div v-if="passwordMessage" class="banner success">{{ passwordMessage }}</div>
             <div class="modal-actions">
               <button class="btn ghost" type="button" @click="passwordOpen = false">取消</button>
-              <button class="btn primary" type="submit" :disabled="passwordBusy">
-                {{ passwordBusy ? '保存中…' : '保存新密码' }}
-              </button>
+              <LoadingButton type="submit" class="primary" :loading="passwordBusy">
+                保存新密码
+              </LoadingButton>
             </div>
           </form>
         </div>
