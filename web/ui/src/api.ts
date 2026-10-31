@@ -1,3 +1,4 @@
+import { translate } from './i18n'
 import type {
   CreateTaskRequest,
   JsonObject,
@@ -85,7 +86,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       credentials: 'same-origin',
     })
   } catch (err) {
-    throw new ApiError(0, 'network_error', err instanceof Error ? err.message : '网络请求失败')
+    throw new ApiError(0, 'network_error', err instanceof Error ? err.message : translate('errors.network'))
   }
 
   if (response.status === 401 && !options.skipAuthRedirect) {
@@ -102,7 +103,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new ApiError(
       response.status,
       payload.error ?? 'http_error',
-      payload.message ?? `请求失败 (HTTP ${response.status})`,
+      payload.message ?? translate('errors.requestFailed', { status: response.status }),
       payload.fields ?? {},
     )
   }

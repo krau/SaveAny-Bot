@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { taskTypeDefs } from '../taskFields'
 import AppSelect from './AppSelect.vue'
@@ -26,12 +27,13 @@ const body = ref<HTMLElement | null>(null)
 const values = reactive<Record<string, string>>({})
 const boolValues = reactive<Record<string, boolean>>({})
 const { invalidField, fail, clear } = useFormFeedback()
+const { t } = useI18n()
 
 const fields = computed(() => taskTypeDefs.find((item) => item.type === type.value)?.fields ?? [])
 const isTransfer = computed(() => type.value === 'transfer')
-const typeOptions = taskTypeDefs.map((item) => ({ value: item.type, label: item.label }))
+const typeOptions = computed(() => taskTypeDefs.map((item) => ({ value: item.type, label: t(item.label) })))
 const storageOptions = computed(() => [
-  { value: '', label: '请选择存储' },
+  { value: '', label: t('tasks.form.storagePlaceholder') },
   ...props.storages
     .filter((item) => item.enable)
     .map((item) => ({ value: item.name, label: item.name })),
@@ -94,7 +96,7 @@ function buildParams(): JsonObject {
         const list = splitList(raw)
         if (field.required && list.length === 0) {
           invalidField.value = `task-field-${field.name}`
-          throw new Error(`请填写${field.label}`)
+          throw new Error(t('tasks.form.required', { field: t(field.label) }))
         }
         if (list.length > 0) {
           params[field.name] = list
@@ -110,11 +112,11 @@ function buildParams(): JsonObject {
           parsed = JSON.parse(raw)
         } catch {
           invalidField.value = `task-field-${field.name}`
-          throw new Error(`${field.label} 不是合法的 JSON`)
+          throw new Error(t('tasks.form.invalidJson', { field: t(field.label) }))
         }
         if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
           invalidField.value = `task-field-${field.name}`
-          throw new Error(`${field.label} 必须是 JSON 对象`)
+          throw new Error(t('tasks.form.jsonObject', { field: t(field.label) }))
         }
         const options: JsonObject = {}
         for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
@@ -130,7 +132,7 @@ function buildParams(): JsonObject {
         const num = Number(raw)
         if (!Number.isFinite(num)) {
           invalidField.value = `task-field-${field.name}`
-          throw new Error(`${field.label} 必须是数字`)
+          throw new Error(t('tasks.form.notNumber', { field: t(field.label) }))
         }
         params[field.name] = num
         break
@@ -142,7 +144,7 @@ function buildParams(): JsonObject {
       default: {
         if (!raw && field.required) {
           invalidField.value = `task-field-${field.name}`
-          throw new Error(`请填写${field.label}`)
+          throw new Error(t('tasks.form.required', { field: t(field.label) }))
         }
         if (raw) {
           params[field.name] = raw
@@ -167,7 +169,7 @@ function submit() {
     }
     if (!targetStorage) {
       invalidField.value = isTransfer.value ? 'task-field-target_storage' : 'task-storage'
-      throw new Error('请选择存储')
+      throw new Error(t('tasks.form.storageRequired'))
     }
     const payload: CreateTaskRequest = {
       type: type.value,
@@ -190,7 +192,7 @@ function submit() {
     <div ref="body" class="modal-form-body">
       <div class="form-grid">
         <div class="field">
-          <label for="task-type">任务类型</label>
+          <label for="task-type">{{ t('tasks.form.taskType') }}</label>
           <AppSelect
             id="task-type"
             :model-value="type"
@@ -199,7 +201,7 @@ function submit() {
           />
         </div>
         <div v-if="!isTransfer" class="field">
-          <label for="task-storage">存储</label>
+          <label for="task-storage">{{ t('tasks.form.storage') }}</label>
           <AppSelect
             id="task-storage"
             v-model="storage"
@@ -208,19 +210,19 @@ function submit() {
           />
         </div>
         <div v-if="!isTransfer" class="field">
-          <label for="task-path">目标路径</label>
-          <input id="task-path" v-model="path" placeholder="可留空，例如 downloads/anime" />
+          <label for="task-path">{{ t('tasks.form.targetPath') }}</label>
+          <input id="task-path" v-model="path" :placeholder="t('tasks.form.targetPathPlaceholder')" />
         </div>
         <div class="field">
-          <label for="task-webhook">Webhook（可选）</label>
-          <input id="task-webhook" v-model="webhook" placeholder="https://example.com/hook" />
+          <label for="task-webhook">{{ t('tasks.form.webhook') }}</label>
+          <input id="task-webhook" v-model="webhook" :placeholder="t('tasks.form.webhookPlaceholder')" />
         </div>
       </div>
 
       <template v-for="field in fields" :key="field.name">
         <label v-if="field.kind === 'bool'" class="checkbox">
           <input v-model="boolValues[field.name]" type="checkbox" />
-          <span>{{ field.label }}</span>
+          <span>{{ t(field.label) }}</span>
         </label>
         <div
           v-else
@@ -228,7 +230,7 @@ function submit() {
           :class="{ 'is-invalid': invalidField === `task-field-${field.name}` }"
         >
           <label :for="`task-field-${field.name}`">
-            {{ field.label }}<span v-if="field.required"> *</span>
+            {{ t(field.label) }}<span v-if="field.required"> *</span>
           </label>
           <AppSelect
             v-if="field.storageSelect"
@@ -254,14 +256,14 @@ function submit() {
             :aria-invalid="invalidField === `task-field-${field.name}` ? 'true' : undefined"
             @input="clear(`task-field-${field.name}`)"
           />
-          <span v-if="field.hint" class="hint">{{ field.hint }}</span>
+          <span v-if="field.hint" class="hint">{{ t(field.hint) }}</span>
         </div>
       </template>
     </div>
 
     <div class="modal-actions">
-      <button class="btn ghost" type="button" @click="emit('cancel')">取消</button>
-      <LoadingButton type="submit" class="primary" :loading="props.busy">创建任务</LoadingButton>
+      <button class="btn ghost" type="button" @click="emit('cancel')">{{ t('common.actions.cancel') }}</button>
+      <LoadingButton type="submit" class="primary" :loading="props.busy">{{ t('common.actions.createTask') }}</LoadingButton>
     </div>
   </form>
 </template>

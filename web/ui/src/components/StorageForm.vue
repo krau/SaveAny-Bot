@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { storageDefaults, storageTypeDef, storageTypeDefs } from '../storageFields'
 import AppSelect from './AppSelect.vue'
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   'resize-end': []
 }>()
 
+const { t } = useI18n()
 const isEdit = computed(() => props.storage !== null && props.storage !== undefined)
 
 const name = ref('')
@@ -28,7 +30,9 @@ const bools = reactive<Record<string, boolean>>({})
 const { invalidField, fail, clear } = useFormFeedback()
 
 const fields = computed(() => storageTypeDef(type.value)?.fields ?? [])
-const storageTypeOptions = storageTypeDefs.map((item) => ({ value: item.type, label: item.label }))
+const storageTypeOptions = computed(() =>
+  storageTypeDefs.map((item) => ({ value: item.type, label: t(item.label) })),
+)
 
 function clearFields() {
   for (const key of Object.keys(values)) {
@@ -105,13 +109,13 @@ function validateFields(): boolean {
   for (const field of fields.value) {
     const raw = (values[field.name] ?? '').trim()
     if (field.required && raw === '') {
-      fail(`请填写${field.label}`, `storage-field-${field.name}`)
+      fail(t('validation.required', { field: t(field.label) }), `storage-field-${field.name}`)
       return false
     }
     if (field.kind === 'number' && raw !== '') {
       const num = Number(raw)
       if (!Number.isFinite(num) || (field.name === 'chat_id' && num === 0)) {
-        fail(`请填写有效的${field.label}`, `storage-field-${field.name}`)
+        fail(t('validation.invalid', { field: t(field.label) }), `storage-field-${field.name}`)
         return false
       }
     }
@@ -123,7 +127,7 @@ function submit() {
   clear()
   const storageName = name.value.trim()
   if (!storageName) {
-    fail('请填写存储名称', 'storage-name')
+    fail(t('storages.form.nameRequired'), 'storage-name')
     return
   }
   if (!validateFields()) return
@@ -163,20 +167,20 @@ function submit() {
     <div class="modal-form-body">
       <div class="form-grid">
       <div class="field" :class="{ 'is-invalid': invalidField === 'storage-name' }">
-        <label for="storage-name">名称 *</label>
+        <label for="storage-name">{{ t('storages.form.name') }} *</label>
         <input
           id="storage-name"
           v-model="name"
           :disabled="isEdit"
-          placeholder="例如 my-webdav"
+          :placeholder="t('storages.form.namePlaceholder')"
           :aria-invalid="invalidField === 'storage-name' ? 'true' : undefined"
           required
           @input="clear('storage-name')"
         />
-        <span v-if="isEdit" class="hint">名称不可修改</span>
+        <span v-if="isEdit" class="hint">{{ t('storages.form.nameLocked') }}</span>
       </div>
       <div class="field">
-        <label for="storage-type">类型</label>
+        <label for="storage-type">{{ t('storages.form.type') }}</label>
         <AppSelect
           id="storage-type"
           :model-value="type"
@@ -187,7 +191,7 @@ function submit() {
       </div>
       <label class="checkbox">
         <input v-model="enable" type="checkbox" />
-        <span>启用该存储</span>
+        <span>{{ t('storages.form.enable') }}</span>
       </label>
     </div>
 
@@ -195,7 +199,7 @@ function submit() {
       <template v-for="field in fields" :key="field.name">
         <label v-if="field.kind === 'bool'" class="checkbox">
           <input v-model="bools[field.name]" type="checkbox" />
-          <span>{{ field.label }}</span>
+          <span>{{ t(field.label) }}</span>
         </label>
         <div
           v-else
@@ -203,13 +207,13 @@ function submit() {
           :class="{ 'is-invalid': invalidField === `storage-field-${field.name}` }"
         >
           <label :for="`storage-field-${field.name}`">
-            {{ field.label }}<span v-if="field.required"> *</span>
+            {{ t(field.label) }}<span v-if="field.required"> *</span>
           </label>
           <textarea
             v-if="field.kind === 'list'"
             :id="`storage-field-${field.name}`"
             v-model="values[field.name]"
-            :placeholder="field.placeholder"
+            :placeholder="field.placeholder ? t(field.placeholder) : undefined"
             @input="clear(`storage-field-${field.name}`)"
           ></textarea>
           <input
@@ -217,24 +221,24 @@ function submit() {
             :id="`storage-field-${field.name}`"
             v-model="values[field.name]"
             :type="field.kind === 'number' ? 'number' : field.kind === 'secret' ? 'password' : 'text'"
-            :placeholder="field.placeholder"
+            :placeholder="field.placeholder ? t(field.placeholder) : undefined"
             :aria-invalid="invalidField === `storage-field-${field.name}` ? 'true' : undefined"
             autocomplete="off"
             @input="clear(`storage-field-${field.name}`)"
           />
-          <span v-if="field.hint" class="hint">{{ field.hint }}</span>
+          <span v-if="field.hint" class="hint">{{ t(field.hint) }}</span>
         </div>
       </template>
     </div>
 
       <div v-if="isEdit" class="hint muted">
-        已保存的密钥显示为 <code>__MASKED__</code>，保持不变即可继续使用原值。
+        {{ t('storages.form.maskedHintBefore') }}<code>__MASKED__</code>{{ t('storages.form.maskedHintAfter') }}
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn ghost" type="button" @click="emit('cancel')">取消</button>
+      <button class="btn ghost" type="button" @click="emit('cancel')">{{ t('common.actions.cancel') }}</button>
       <LoadingButton type="submit" class="primary" :loading="props.busy">
-        {{ isEdit ? '保存修改' : '创建存储' }}
+        {{ isEdit ? t('common.actions.saveChanges') : t('common.actions.createStorage') }}
       </LoadingButton>
     </div>
   </form>

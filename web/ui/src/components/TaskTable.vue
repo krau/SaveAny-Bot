@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { formatBytes, formatDateTime, taskDisplayTitle, taskStatusLabel, taskStatusTone, taskTypeLabel } from '../utils'
 import type { TaskItem } from '../types'
 import AppIcon from './AppIcon.vue'
+
+const { t } = useI18n()
 
 withDefaults(
   defineProps<{
@@ -11,7 +14,7 @@ withDefaults(
   }>(),
   {
     busyId: '',
-    emptyText: '暂无任务',
+    emptyText: '',
   },
 )
 
@@ -44,9 +47,9 @@ function progressText(task: TaskItem): string {
   if (progress.total_bytes) {
     parts.push(`${formatBytes(progress.downloaded_bytes)} / ${formatBytes(progress.total_bytes)}`)
   } else if (progress.total_files) {
-    parts.push(`${progress.downloaded_files ?? 0} / ${progress.total_files} 个文件`)
+    parts.push(t('tasks.progress.files', { done: progress.downloaded_files ?? 0, total: progress.total_files }))
   }
-  return parts.join('，') || '—'
+  return parts.join(t('tasks.progress.separator')) || '—'
 }
 </script>
 
@@ -56,12 +59,12 @@ function progressText(task: TaskItem): string {
     <table>
       <thead>
         <tr>
-          <th>任务</th>
-          <th>状态</th>
-          <th>存储 / 路径</th>
-          <th>进度</th>
-          <th>创建时间</th>
-          <th>操作</th>
+          <th>{{ t('tasks.table.task') }}</th>
+          <th>{{ t('tasks.table.status') }}</th>
+          <th>{{ t('tasks.table.storagePath') }}</th>
+          <th>{{ t('tasks.table.progress') }}</th>
+          <th>{{ t('tasks.table.createdAt') }}</th>
+          <th>{{ t('tasks.table.actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -100,7 +103,7 @@ function progressText(task: TaskItem): string {
                 @click="emit('cancel', task.task_id)"
               >
                 <AppIcon name="close" :size="14" />
-                取消
+                {{ t('common.actions.cancel') }}
               </button>
               <button
                 v-else
@@ -110,7 +113,7 @@ function progressText(task: TaskItem): string {
                 @click="emit('remove', task.task_id)"
               >
                 <AppIcon name="trash" :size="14" />
-                删除
+                {{ t('common.actions.delete') }}
               </button>
             </div>
           </td>
@@ -118,7 +121,7 @@ function progressText(task: TaskItem): string {
         <tr v-if="tasks.length === 0">
           <td colspan="6" class="empty">
             <span class="empty-icon"><AppIcon name="inbox" :size="17" /></span>
-            <strong>{{ emptyText }}</strong>
+            <strong>{{ emptyText || t('tasks.empty') }}</strong>
           </td>
         </tr>
       </tbody>
@@ -138,8 +141,8 @@ function progressText(task: TaskItem): string {
         <span class="mono">{{ task.task_id }}</span>
       </div>
       <div class="task-mobile-target">
-        {{ task.storage || '未指定存储' }}
-        <span class="task-path">{{ task.path || '根目录' }}</span>
+        {{ task.storage || t('tasks.table.noStorage') }}
+        <span class="task-path">{{ task.path || t('tasks.table.rootPath') }}</span>
       </div>
       <div v-if="task.error" class="field-error">{{ task.error }}</div>
       <div v-if="task.status === 'running'" class="task-mobile-progress">
@@ -159,7 +162,7 @@ function progressText(task: TaskItem): string {
             @click="emit('cancel', task.task_id)"
           >
             <AppIcon name="close" :size="14" />
-            取消
+            {{ t('common.actions.cancel') }}
           </button>
           <button
             v-else
@@ -169,14 +172,14 @@ function progressText(task: TaskItem): string {
             @click="emit('remove', task.task_id)"
           >
             <AppIcon name="trash" :size="14" />
-            删除
+            {{ t('common.actions.delete') }}
           </button>
         </div>
       </div>
     </article>
     <div v-if="tasks.length === 0" class="empty">
       <span class="empty-icon"><AppIcon name="inbox" :size="17" /></span>
-      <strong>{{ emptyText }}</strong>
+      <strong>{{ emptyText || t('tasks.empty') }}</strong>
     </div>
   </div>
 </div>

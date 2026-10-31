@@ -19,67 +19,67 @@ export interface TaskTypeDef {
 export const taskTypeDefs: TaskTypeDef[] = [
   {
     type: 'directlinks',
-    label: '直链下载',
+    label: 'tasks.types.directlinks',
     fields: [
       {
         name: 'urls',
-        label: '下载链接',
+        label: 'tasks.fields.directlinks.urls.label',
         kind: 'list',
         required: true,
         placeholder: 'https://example.com/file.zip\nhttps://example.com/another.zip',
-        hint: '每行一个链接',
+        hint: 'tasks.fields.directlinks.urls.hint',
       },
     ],
   },
   {
     type: 'ytdlp',
-    label: 'yt-dlp 视频',
+    label: 'tasks.types.ytdlp',
     fields: [
       {
         name: 'urls',
-        label: '视频链接',
+        label: 'tasks.fields.ytdlp.urls.label',
         kind: 'list',
         required: true,
         placeholder: 'https://www.youtube.com/watch?v=...',
-        hint: '每行一个链接',
+        hint: 'tasks.fields.ytdlp.urls.hint',
       },
       {
         name: 'flags',
-        label: '额外参数',
+        label: 'tasks.fields.ytdlp.flags.label',
         kind: 'list',
         placeholder: '--cookies-from-browser chrome',
-        hint: '每行一个 yt-dlp 参数',
+        hint: 'tasks.fields.ytdlp.flags.hint',
       },
     ],
   },
   {
     type: 'aria2',
-    label: 'Aria2 下载',
+    label: 'tasks.types.aria2',
     fields: [
       {
         name: 'urls',
-        label: '下载链接',
+        label: 'tasks.fields.aria2.urls.label',
         kind: 'list',
         required: true,
         placeholder: 'https://example.com/file.iso',
-        hint: '每行一个链接',
+        hint: 'tasks.fields.aria2.urls.hint',
       },
       {
         name: 'options',
-        label: 'Aria2 选项 (JSON)',
+        label: 'tasks.fields.aria2.options.label',
         kind: 'json',
         placeholder: '{"split": "8", "max-connection-per-server": "8"}',
-        hint: 'JSON 对象，键值均为字符串（可选）',
+        hint: 'tasks.fields.aria2.options.hint',
       },
     ],
   },
   {
     type: 'parseditem',
-    label: '解析链接',
+    label: 'tasks.types.parseditem',
     fields: [
       {
         name: 'url',
-        label: '页面链接',
+        label: 'tasks.fields.parseditem.url.label',
         kind: 'text',
         required: true,
         placeholder: 'https://example.com/post/123',
@@ -88,25 +88,25 @@ export const taskTypeDefs: TaskTypeDef[] = [
   },
   {
     type: 'tgfiles',
-    label: 'Telegram 文件',
+    label: 'tasks.types.tgfiles',
     fields: [
       {
         name: 'message_links',
-        label: '消息链接',
+        label: 'tasks.fields.tgfiles.message_links.label',
         kind: 'list',
         required: true,
         placeholder: 'https://t.me/c/123456789/42',
-        hint: '每行一个消息链接',
+        hint: 'tasks.fields.tgfiles.message_links.hint',
       },
     ],
   },
   {
     type: 'tphpics',
-    label: 'Telegraph 图集',
+    label: 'tasks.types.tphpics',
     fields: [
       {
         name: 'telegraph_url',
-        label: 'Telegraph 链接',
+        label: 'tasks.fields.tphpics.telegraph_url.label',
         kind: 'text',
         required: true,
         placeholder: 'https://telegra.ph/...',
@@ -115,32 +115,32 @@ export const taskTypeDefs: TaskTypeDef[] = [
   },
   {
     type: 'transfer',
-    label: '存储迁移',
+    label: 'tasks.types.transfer',
     fields: [
       {
         name: 'source_storage',
-        label: '源存储',
+        label: 'tasks.fields.transfer.source_storage.label',
         kind: 'text',
         required: true,
         storageSelect: true,
       },
       {
         name: 'source_path',
-        label: '源路径',
+        label: 'tasks.fields.transfer.source_path.label',
         kind: 'text',
         required: true,
         placeholder: 'folder/subfolder',
       },
       {
         name: 'target_storage',
-        label: '目标存储',
+        label: 'tasks.fields.transfer.target_storage.label',
         kind: 'text',
         required: true,
         storageSelect: true,
       },
       {
         name: 'target_path',
-        label: '目标路径',
+        label: 'tasks.fields.transfer.target_path.label',
         kind: 'text',
         required: true,
         placeholder: 'backup',

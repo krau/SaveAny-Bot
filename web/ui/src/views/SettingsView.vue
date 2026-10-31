@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { errorMessage, settingsApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import AppSelect from '../components/AppSelect.vue'
@@ -10,12 +11,27 @@ import type { SettingsField } from '../settingsFields'
 import { useToastStore } from '../stores/toasts'
 import type { JsonObject } from '../types'
 
+const { t } = useI18n()
 const toast = useToastStore()
 const values = reactive<Record<string, Record<string, unknown>>>({})
 const busyGroup = ref('')
 const loaded = ref(false)
 const activeGroup = ref(settingsGroups[0]?.key ?? '')
-const settingsGroupOptions = settingsGroups.map((group) => ({ value: group.key, label: group.title }))
+const translatedGroups = computed(() =>
+  settingsGroups.map((group) => ({
+    ...group,
+    title: t(group.title),
+    fields: group.fields.map((field) => ({
+      ...field,
+      label: t(field.label),
+      hint: field.hint ? t(field.hint) : undefined,
+      options: field.options?.map((option) => ({ value: option.value, label: t(option.label) })),
+    })),
+  })),
+)
+const settingsGroupOptions = computed(() =>
+  translatedGroups.value.map((group) => ({ value: group.key, label: group.title })),
+)
 const invalid = reactive<Record<string, string>>({})
 let scrollFrame = 0
 let navLock = false
@@ -152,7 +168,7 @@ function setTextField(group: string, field: SettingsField, raw: string) {
         value = JSON.parse(raw)
         delete invalid[fieldKey(group, field.path)]
       } catch {
-        invalid[key] = `${field.label} 不是合法的 JSON`
+        invalid[key] = t('settings.errors.invalidJson', { field: field.label })
         toast.push(invalid[key], 'error')
         return
       }
@@ -164,7 +180,7 @@ function setTextField(group: string, field: SettingsField, raw: string) {
 async function save(group: string) {
   busyGroup.value = group
   try {
-    const def = settingsGroups.find((item) => item.key === group)
+    const def = translatedGroups.value.find((item) => item.key === group)
     if (!def) return
     for (const field of def.fields) {
       const key = fieldKey(group, field.path)
@@ -178,8 +194,8 @@ async function save(group: string) {
         if (!Number.isFinite(value) || (minimum !== undefined && value < minimum)) {
           invalid[key] =
             minimum === undefined
-              ? `${field.label}必须是数字`
-              : `${field.label}不能小于 ${minimum}`
+              ? t('settings.errors.numberRequired', { field: field.label })
+              : t('settings.errors.minValue', { field: field.label, min: minimum })
           toast.push(invalid[key], 'error')
           document.getElementById(`${group}-${field.path}`)?.focus()
           return
@@ -195,12 +211,18 @@ async function save(group: string) {
       writePath(patch, field.path, (value ?? (field.kind === 'bool' ? false : field.kind === 'number' ? 0 : '')) as never)
     }
     const result = await settingsApi.updateGroup(group, patch)
-    toast.push(`${def.title}设置已保存`, 'success')
+    toast.push(t('settings.toast.saved', { group: def.title }), 'success')
     if (result.restart_required?.length) {
-      toast.push(`重启后生效：${result.restart_required.join('、')}`, 'info', 8000)
+      toast.push(
+        t('settings.toast.restartRequired', {
+          items: result.restart_required.join(t('settings.listSeparator')),
+        }),
+        'info',
+        8000,
+      )
     }
     if (result.warnings?.length) {
-      toast.push(result.warnings.join('；'), 'error', 8000)
+      toast.push(result.warnings.join(t('settings.warningSeparator')), 'error', 8000)
     }
     await load()
   } catch (err) {
@@ -213,30 +235,30 @@ async function save(group: string) {
 
 <template>
   <div class="stack">
-    <PageHeader title="设置">
+    <PageHeader :title="t('nav.settings')">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
-          重新加载
+          {{ t('common.actions.reload') }}
         </button>
       </template>
     </PageHeader>
 
-    <div v-if="!loaded" class="loading">正在加载设置…</div>
+    <div v-if="!loaded" class="loading">{{ t('settings.loading') }}</div>
 
     <div v-show="loaded" class="settings-mobile-nav">
       <AppSelect
         :model-value="activeGroup"
         :options="settingsGroupOptions"
-        aria-label="设置分组"
+        :aria-label="t('settings.groupAria')"
         @update:model-value="jumpToGroup"
       />
     </div>
 
     <div v-show="loaded" class="settings-layout">
-      <nav class="settings-nav" aria-label="设置分组">
+      <nav class="settings-nav" :aria-label="t('settings.groupAria')">
         <button
-          v-for="group in settingsGroups"
+          v-for="group in translatedGroups"
           :key="group.key"
           type="button"
           :class="{ active: activeGroup === group.key }"
@@ -248,7 +270,7 @@ async function save(group: string) {
 
       <div class="settings-sections">
         <form
-          v-for="group in settingsGroups"
+          v-for="group in translatedGroups"
           novalidate
           :id="`settings-${group.key}`"
           :key="group.key"
@@ -305,7 +327,7 @@ async function save(group: string) {
           </div>
           <div class="modal-actions">
             <LoadingButton type="submit" class="primary" :loading="busyGroup === group.key">
-              保存
+              {{ t('common.actions.save') }}
             </LoadingButton>
           </div>
         </form>

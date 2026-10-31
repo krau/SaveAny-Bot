@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { errorMessage, storagesApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
@@ -12,6 +13,7 @@ import { useToastStore } from '../stores/toasts'
 import type { StorageInput, StorageRecord } from '../types'
 import { storageLocation } from '../utils'
 
+const { t } = useI18n()
 const toast = useToastStore()
 const confirm = useConfirmStore()
 const storages = ref<StorageRecord[]>([])
@@ -48,10 +50,10 @@ async function save(payload: StorageInput) {
   try {
     if (editing.value) {
       await storagesApi.update(editing.value.id, payload)
-      toast.push('存储已更新', 'success')
+      toast.push(t('storages.updated'), 'success')
     } else {
       await storagesApi.create(payload)
-      toast.push('存储已创建', 'success')
+      toast.push(t('storages.created'), 'success')
     }
     formOpen.value = false
     await load()
@@ -64,16 +66,16 @@ async function save(payload: StorageInput) {
 
 async function remove(storage: StorageRecord) {
   const confirmed = await confirm.ask({
-    title: '删除存储',
-    message: `删除存储 ${storage.name}？已有的文件不会被删除。`,
-    confirmText: '删除存储',
+    title: t('storages.deleteTitle'),
+    message: t('storages.deleteMessage', { name: storage.name }),
+    confirmText: t('storages.deleteTitle'),
     danger: true,
   })
   if (!confirmed) return
   removingId.value = storage.id
   try {
     await storagesApi.remove(storage.id)
-    toast.push(`${storage.name} 已删除`, 'success')
+    toast.push(t('storages.deleted', { name: storage.name }), 'success')
     await load()
   } catch (err) {
     toast.push(errorMessage(err), 'error')
@@ -87,9 +89,13 @@ async function test(storage: StorageRecord) {
   try {
     const result = await storagesApi.test(storage.id)
     if (result.ok) {
-      toast.push(`${storage.name} 连接正常`, 'success')
+      toast.push(t('storages.testOk', { name: storage.name }), 'success')
     } else {
-      toast.push(`${storage.name} 测试失败：${result.error ?? '未知错误'}`, 'error', 6000)
+      toast.push(
+        t('storages.testFailed', { name: storage.name, error: result.error ?? t('storages.unknownError') }),
+        'error',
+        6000,
+      )
     }
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
@@ -101,15 +107,15 @@ async function test(storage: StorageRecord) {
 
 <template>
   <div class="stack">
-    <PageHeader title="存储">
+    <PageHeader :title="t('nav.storages')">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
-          刷新
+          {{ t('common.actions.refresh') }}
         </button>
         <button class="btn primary small" type="button" @click="openCreate">
           <AppIcon name="plus" :size="15" />
-          新建存储
+          {{ t('common.actions.createStorage') }}
         </button>
       </template>
     </PageHeader>
@@ -125,7 +131,7 @@ async function test(storage: StorageRecord) {
             </div>
           </div>
           <span class="badge status" :class="storage.enable ? 'success' : 'muted'">
-            {{ storage.enable ? '已启用' : '已禁用' }}
+            {{ storage.enable ? t('states.enabled') : t('states.disabled') }}
           </span>
         </div>
 
@@ -136,7 +142,7 @@ async function test(storage: StorageRecord) {
           <div class="actions">
             <button class="btn small" type="button" @click="openEdit(storage)">
               <AppIcon name="edit" :size="14" />
-              编辑
+              {{ t('common.actions.edit') }}
             </button>
             <LoadingButton
               class="small ghost"
@@ -145,7 +151,7 @@ async function test(storage: StorageRecord) {
               @click="test(storage)"
             >
               <AppIcon name="plug" :size="14" />
-              测试
+              {{ t('common.actions.test') }}
             </LoadingButton>
           </div>
           <button
@@ -155,17 +161,17 @@ async function test(storage: StorageRecord) {
             @click="remove(storage)"
           >
             <AppIcon name="trash" :size="14" />
-            删除
+            {{ t('common.actions.delete') }}
           </button>
         </div>
       </article>
 
       <div v-if="storages.length === 0" class="storage-empty">
         <span class="empty-icon"><AppIcon name="database" :size="18" /></span>
-        <strong style="color: var(--text-2); font-size: 14px; font-weight: 500">还没有存储</strong>
+        <strong style="color: var(--text-2); font-size: 14px; font-weight: 500">{{ t('storages.empty') }}</strong>
         <button class="btn primary small" type="button" @click="openCreate">
           <AppIcon name="plus" :size="14" />
-          新建存储
+          {{ t('common.actions.createStorage') }}
         </button>
       </div>
     </div>
@@ -181,8 +187,15 @@ async function test(storage: StorageRecord) {
             aria-labelledby="storage-dialog-title"
           >
             <div class="modal-head">
-              <h3 id="storage-dialog-title" class="modal-title">{{ editing ? '编辑存储' : '新建存储' }}</h3>
-              <button class="btn ghost icon small" type="button" aria-label="关闭" @click="formOpen = false">
+              <h3 id="storage-dialog-title" class="modal-title">
+                {{ editing ? t('storages.dialog.edit') : t('storages.dialog.create') }}
+              </h3>
+              <button
+                class="btn ghost icon small"
+                type="button"
+                :aria-label="t('common.close')"
+                @click="formOpen = false"
+              >
                 <AppIcon name="close" :size="17" />
               </button>
             </div>

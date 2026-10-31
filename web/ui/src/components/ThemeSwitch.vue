@@ -1,19 +1,22 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useThemeStore } from '../stores/theme'
 import type { ThemePreference } from '../stores/theme'
 import AppIcon from './AppIcon.vue'
 
 const theme = useThemeStore()
+const { t } = useI18n()
 
-const options: { value: ThemePreference; label: string; icon: string }[] = [
-  { value: 'system', label: '跟随系统', icon: 'monitor' },
-  { value: 'light', label: '浅色', icon: 'sun' },
-  { value: 'dark', label: '深色', icon: 'moon' },
-]
+const options = computed<{ value: ThemePreference; label: string; icon: string }[]>(() => [
+  { value: 'system', label: t('common.theme.system'), icon: 'monitor' },
+  { value: 'light', label: t('common.theme.light'), icon: 'sun' },
+  { value: 'dark', label: t('common.theme.dark'), icon: 'moon' },
+])
 </script>
 
 <template>
-  <div class="theme-switch" role="group" aria-label="主题">
+  <div class="theme-switch" role="group" :aria-label="t('common.theme.label')">
     <button
       v-for="option in options"
       :key="option.value"

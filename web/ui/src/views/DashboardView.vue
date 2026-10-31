@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { errorMessage, storagesApi, tasksApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
@@ -18,6 +19,7 @@ import {
 } from '../utils'
 
 const toast = useToastStore()
+const { t } = useI18n()
 const status = ref<TelegramStatus | null>(null)
 const tasks = ref<TaskItem[]>([])
 const storages = ref<StorageRecord[]>([])
@@ -71,8 +73,11 @@ const dotClass = (state?: string): string => {
   return 'idle'
 }
 const statusLine = computed(() => {
-  if (!status.value) return '正在读取连接状态'
-  return `Bot ${telegramStateLabel(status.value.bot.state)}，Userbot ${telegramStateLabel(status.value.userbot.state)}`
+  if (!status.value) return t('dashboard.status.reading')
+  return t('dashboard.status.line', {
+    bot: telegramStateLabel(status.value.bot.state),
+    userbot: telegramStateLabel(status.value.userbot.state),
+  })
 })
 async function load() {
   try {
@@ -103,15 +108,15 @@ onUnmounted(() => {
 
 <template>
   <div class="stack">
-    <PageHeader title="运行概览">
+    <PageHeader :title="t('nav.overview')">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
-          刷新
+          {{ t('common.actions.refresh') }}
         </button>
         <RouterLink class="btn primary small" :to="{ path: '/tasks', query: { create: '1' } }">
           <AppIcon name="plus" :size="15" />
-          新建任务
+          {{ t('common.actions.createTask') }}
         </RouterLink>
       </template>
     </PageHeader>
@@ -122,14 +127,14 @@ onUnmounted(() => {
         <span>{{ statusLine }}</span>
       </div>
 
-      <div class="relay-flow" aria-label="当前中继链路">
+      <div class="relay-flow" :aria-label="t('dashboard.relay.ariaLabel')">
         <div class="relay-node">
           <div class="relay-node-label">
             <AppIcon name="send" :size="14" />
-            入口
+            {{ t('dashboard.relay.entry') }}
           </div>
           <strong>{{ telegramStateLabel(status?.bot.state) }}</strong>
-          <small>{{ status?.bot.username ? `@${status.bot.username}` : 'Bot 未连接' }}</small>
+          <small>{{ status?.bot.username ? `@${status.bot.username}` : t('dashboard.status.botDisconnected') }}</small>
         </div>
         <div class="relay-link" :class="{ active: activeTasks > 0 }" aria-hidden="true">
           <AppIcon name="arrowRight" :size="17" />
@@ -137,10 +142,10 @@ onUnmounted(() => {
         <div class="relay-node">
           <div class="relay-node-label">
             <AppIcon name="tasks" :size="14" />
-            调度队列
+            {{ t('dashboard.relay.queue') }}
           </div>
-          <strong>{{ activeTasks }} 个任务</strong>
-          <small>{{ activeTasks > 0 ? '正在处理或等待 Worker' : '队列空闲' }}</small>
+          <strong>{{ t('dashboard.relay.queueCount', { n: activeTasks }) }}</strong>
+          <small>{{ activeTasks > 0 ? t('dashboard.relay.queueBusy') : t('dashboard.relay.queueIdle') }}</small>
         </div>
         <div class="relay-link" :class="{ active: activeTasks > 0 }" aria-hidden="true">
           <AppIcon name="arrowRight" :size="17" />
@@ -148,24 +153,24 @@ onUnmounted(() => {
         <div class="relay-node">
           <div class="relay-node-label">
             <AppIcon name="database" :size="14" />
-            归档存储
+            {{ t('dashboard.relay.storage') }}
           </div>
-          <strong>{{ enabledStorages }} 个可用</strong>
-          <small>共 {{ storages.length }} 个已配置存储</small>
+          <strong>{{ t('dashboard.relay.storageAvailable', { n: enabledStorages }) }}</strong>
+          <small>{{ t('dashboard.relay.storageTotal', { n: storages.length }) }}</small>
         </div>
       </div>
 
       <div class="relay-metrics">
         <div class="relay-metric">
-          <span>活动任务</span>
+          <span>{{ t('dashboard.metrics.activeTasks') }}</span>
           <strong>{{ activeTasks }}</strong>
         </div>
         <div class="relay-metric">
-          <span>近 7 天任务</span>
+          <span>{{ t('dashboard.metrics.weekTasks') }}</span>
           <strong>{{ weekTotal }}</strong>
         </div>
         <div class="relay-metric">
-          <span>已完成任务</span>
+          <span>{{ t('dashboard.metrics.completedTasks') }}</span>
           <strong>{{ completedTasks }}</strong>
         </div>
       </div>
@@ -174,8 +179,8 @@ onUnmounted(() => {
     <div class="dashboard-split">
       <section class="panel">
         <div class="panel-head">
-          <h2 class="panel-title">近 7 天任务</h2>
-          <RouterLink class="link-quiet" to="/tasks">查看全部</RouterLink>
+          <h2 class="panel-title">{{ t('dashboard.metrics.weekTasks') }}</h2>
+          <RouterLink class="link-quiet" to="/tasks">{{ t('dashboard.activity.viewAll') }}</RouterLink>
         </div>
         <div class="activity-figure">
           <strong>{{ weekTotal }}</strong>
@@ -184,7 +189,7 @@ onUnmounted(() => {
           v-if="tasks.length > 0"
           class="activity-chart"
           role="img"
-          :aria-label="`最近 7 天共创建 ${weekTotal} 个任务`"
+          :aria-label="t('dashboard.activity.ariaLabel', { n: weekTotal })"
         >
           <div
             v-for="(day, index) in activity"
@@ -197,38 +202,38 @@ onUnmounted(() => {
             <div
               class="chart-bar"
               :style="{ height: `${day.height}px` }"
-              :title="`${day.label} 创建 ${day.count} 个任务`"
+              :title="t('dashboard.activity.barTitle', { label: day.label, n: day.count })"
             ></div>
             <span class="chart-label">{{ day.label }}</span>
           </div>
         </div>
-        <div v-else class="chart-empty">还没有任务记录</div>
+        <div v-else class="chart-empty">{{ t('dashboard.activity.empty') }}</div>
       </section>
 
       <section class="panel">
         <div class="panel-head">
-          <h2 class="panel-title">存储</h2>
-          <RouterLink class="link-quiet" to="/storages">管理</RouterLink>
+          <h2 class="panel-title">{{ t('dashboard.storage.title') }}</h2>
+          <RouterLink class="link-quiet" to="/storages">{{ t('dashboard.storage.manage') }}</RouterLink>
         </div>
         <div v-if="recentStorages.length > 0" class="storage-mini-list">
           <div v-for="storage in recentStorages" :key="storage.id" class="storage-mini">
             <span class="storage-mini-icon"><AppIcon :name="storageTypeIcon(storage.type)" :size="15" /></span>
             <div class="storage-mini-main">
               <strong>{{ storage.name }}</strong>
-              <span>{{ storageTypeLabel(storage.type) }}，{{ storageLocation(storage.config) }}</span>
+              <span>{{ t('dashboard.storage.meta', { type: storageTypeLabel(storage.type), location: storageLocation(storage.config) }) }}</span>
             </div>
             <span class="badge status" :class="storage.enable ? 'success' : 'muted'">
-              {{ storage.enable ? '启用' : '禁用' }}
+              {{ storage.enable ? t('states.enabled') : t('states.disabled') }}
             </span>
           </div>
         </div>
         <div v-else class="empty">
           <span class="empty-icon"><AppIcon name="database" :size="17" /></span>
-          <strong>还没有存储</strong>
+          <strong>{{ t('dashboard.storage.empty') }}</strong>
           <div class="actions" style="justify-content: center; margin-top: 12px">
             <RouterLink class="btn small" to="/storages">
               <AppIcon name="plus" :size="14" />
-              新建存储
+              {{ t('common.actions.createStorage') }}
             </RouterLink>
           </div>
         </div>
@@ -237,16 +242,16 @@ onUnmounted(() => {
 
     <section class="panel">
       <div class="panel-head">
-        <h2 class="panel-title">最近任务</h2>
-        <RouterLink class="link-quiet" to="/tasks">全部任务</RouterLink>
+        <h2 class="panel-title">{{ t('dashboard.tasks.recentTitle') }}</h2>
+        <RouterLink class="link-quiet" to="/tasks">{{ t('dashboard.tasks.all') }}</RouterLink>
       </div>
       <div v-if="recentTasks.length > 0" class="recent-list">
         <div v-for="task in recentTasks" :key="task.task_id" class="recent-task">
           <div class="recent-task-main">
             <div class="recent-task-title">{{ taskDisplayTitle(task) }}</div>
             <div class="recent-task-meta">
-              <span v-if="taskDisplayTitle(task) !== taskTypeLabel(task.type)">{{ taskTypeLabel(task.type) }}，</span>
-              <span>{{ task.storage || '未指定存储' }}，</span>
+              <span v-if="taskDisplayTitle(task) !== taskTypeLabel(task.type)">{{ taskTypeLabel(task.type) }}{{ t('dashboard.tasks.separator') }}</span>
+              <span>{{ task.storage || t('dashboard.tasks.noStorage') }}{{ t('dashboard.tasks.separator') }}</span>
               <span>{{ formatRelativeTime(task.created_at) }}</span>
             </div>
           </div>
@@ -267,7 +272,7 @@ onUnmounted(() => {
       </div>
       <div v-else class="empty">
         <span class="empty-icon"><AppIcon name="inbox" :size="17" /></span>
-        <strong>还没有任务</strong>
+        <strong>{{ t('dashboard.tasks.empty') }}</strong>
       </div>
     </section>
   </div>

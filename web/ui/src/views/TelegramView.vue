@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { errorMessage, settingsApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
@@ -10,6 +11,7 @@ import { useToastStore } from '../stores/toasts'
 import { telegramStateLabel, telegramStateTone } from '../utils'
 import type { JsonObject, TelegramStatus } from '../types'
 
+const { t } = useI18n()
 const toast = useToastStore()
 const confirm = useConfirmStore()
 const { invalidField, fail, clear } = useFormFeedback()
@@ -67,22 +69,22 @@ const showFlowBadge = computed(() => Boolean(loginFlow.value) && flowState.value
 
 const userbotIdentity = computed(() => {
   const userbot = status.value?.userbot
-  if (!userbot) return '未登录'
+  if (!userbot) return t('telegram.userbot.notLoggedIn')
   if (userbot.username) return `@${userbot.username}`
   if (userbot.phone) return userbot.phone
-  return userbot.enabled ? '会话已配置' : '未登录'
+  return userbot.enabled ? t('telegram.userbot.sessionConfigured') : t('telegram.userbot.notLoggedIn')
 })
 
-const flowLabels: Record<string, string> = {
-  starting: '正在启动',
-  code_required: '等待验证码',
-  password_required: '等待两步验证密码',
-  verifying: '正在验证',
-  failed: '登录失败',
-  done: '登录完成',
-  cancelled: '已取消',
-}
-const flowStateLabel = computed(() => flowLabels[flowState.value] ?? '未开始')
+const flowLabels = computed<Record<string, string>>(() => ({
+  starting: t('telegram.flow.states.starting'),
+  code_required: t('telegram.flow.states.codeRequired'),
+  password_required: t('telegram.flow.states.passwordRequired'),
+  verifying: t('telegram.flow.states.verifying'),
+  failed: t('telegram.flow.states.failed'),
+  done: t('telegram.flow.states.done'),
+  cancelled: t('telegram.flow.states.cancelled'),
+}))
+const flowStateLabel = computed(() => flowLabels.value[flowState.value] ?? t('telegram.flow.notStarted'))
 const flowTone = computed(() => {
   if (flowState.value === 'done') return 'success'
   if (flowState.value === 'failed') return 'danger'
@@ -112,7 +114,7 @@ async function loadStatus() {
     if (flow?.error) toast.push(flow.error, 'error', 6000)
     if (flow?.state === 'done' && flow.flow_id !== syncedFlow.value) {
       syncedFlow.value = flow.flow_id
-      toast.push('登录完成，会话已保存', 'success')
+      toast.push(t('telegram.toasts.loginComplete'), 'success')
       await loadSettings()
     }
   } catch (err) {
@@ -152,27 +154,27 @@ onUnmounted(() => {
 function validateBotSettings(): boolean {
   clear()
   if (!token.value.trim()) {
-    fail('请填写 Bot Token', 'tg-token')
+    fail(t('telegram.validation.botToken'), 'tg-token')
     return false
   }
   if (!Number.isInteger(appId.value) || appId.value <= 0) {
-    fail('请填写有效的 API ID', 'tg-app-id')
+    fail(t('telegram.validation.apiId'), 'tg-app-id')
     return false
   }
   if (!appHash.value.trim()) {
-    fail('请填写 API Hash', 'tg-app-hash')
+    fail(t('telegram.validation.apiHash'), 'tg-app-hash')
     return false
   }
   if (!Number.isInteger(rpcRetry.value) || rpcRetry.value < 0) {
-    fail('请填写有效的 RPC 重试次数', 'tg-rpc-retry')
+    fail(t('telegram.validation.rpcRetry'), 'tg-rpc-retry')
     return false
   }
   if (!Number.isFinite(mediaTimeout.value) || mediaTimeout.value < 0) {
-    fail('请填写有效的媒体组超时时间', 'tg-media-timeout')
+    fail(t('telegram.validation.mediaTimeout'), 'tg-media-timeout')
     return false
   }
   if (proxyEnable.value && !proxyURL.value.trim()) {
-    fail('请填写代理地址', 'tg-proxy')
+    fail(t('telegram.validation.proxy'), 'tg-proxy')
     return false
   }
   return true
@@ -192,7 +194,7 @@ async function saveBotSettings() {
     }
     const result = await settingsApi.updateGroup('telegram', patch)
     toast.push(
-      result.warnings?.length ? result.warnings.join('；') : 'Bot 与 API 配置已保存',
+      result.warnings?.length ? result.warnings.join('; ') : t('telegram.toasts.botSaved'),
       result.warnings?.length ? 'error' : 'success',
     )
     await Promise.all([loadSettings(), loadStatus()])
@@ -206,7 +208,7 @@ async function saveBotSettings() {
 function validateUserbotSettings(): boolean {
   clear()
   if (userbotEnable.value && !userbotSession.value.trim()) {
-    fail('请填写会话文件路径', 'tg-session')
+    fail(t('telegram.validation.session'), 'tg-session')
     return false
   }
   return true
@@ -224,7 +226,7 @@ async function saveUserbotSettings() {
     }
     const result = await settingsApi.updateGroup('telegram', patch)
     toast.push(
-      result.warnings?.length ? result.warnings.join('；') : 'Userbot 会话设置已保存',
+      result.warnings?.length ? result.warnings.join('; ') : t('telegram.toasts.userbotSaved'),
       result.warnings?.length ? 'error' : 'success',
     )
     await Promise.all([loadSettings(), loadStatus()])
@@ -239,7 +241,7 @@ async function startBot() {
   botAction.value = 'start'
   try {
     await telegramApi.startBot()
-    toast.push('Bot 正在启动', 'info')
+    toast.push(t('telegram.toasts.botStarting'), 'info')
     await loadStatus()
   } catch (err) {
     toast.push(errorMessage(err), 'error')
@@ -252,15 +254,15 @@ async function stopBot(force = false) {
   botAction.value = 'stop'
   try {
     await telegramApi.stopBot(force)
-    toast.push('Bot 已停止', 'success')
+    toast.push(t('telegram.toasts.botStopped'), 'success')
     await loadStatus()
   } catch (err) {
     if (
       !force &&
       (await confirm.ask({
-        title: '强制停止 Bot',
-        message: `${errorMessage(err)}\n仍要强制停止吗？`,
-        confirmText: '强制停止',
+        title: t('telegram.confirm.forceStopTitle'),
+        message: t('telegram.confirm.forceStopMessage', { error: errorMessage(err) }),
+        confirmText: t('common.actions.forceStop'),
         danger: true,
       }))
     ) {
@@ -277,15 +279,15 @@ async function restartBot(force = false) {
   botAction.value = 'restart'
   try {
     await telegramApi.restartBot(force)
-    toast.push('Bot 正在重启', 'info')
+    toast.push(t('telegram.toasts.botRestarting'), 'info')
     await loadStatus()
   } catch (err) {
     if (
       !force &&
       (await confirm.ask({
-        title: '强制重启 Bot',
-        message: `${errorMessage(err)}\n仍要强制重启吗？`,
-        confirmText: '强制重启',
+        title: t('telegram.confirm.forceRestartTitle'),
+        message: t('telegram.confirm.forceRestartMessage', { error: errorMessage(err) }),
+        confirmText: t('common.actions.forceRestart'),
         danger: true,
       }))
     ) {
@@ -310,7 +312,7 @@ async function startLogin() {
   clear()
   const normalizedPhone = phone.value.replace(/[\s-]/g, '')
   if (!/^\+?\d{6,15}$/.test(normalizedPhone)) {
-    fail('请填写有效的手机号（含国家码）', 'tg-phone')
+    fail(t('telegram.validation.phone'), 'tg-phone')
     return
   }
   loginBusy.value = true
@@ -318,7 +320,7 @@ async function startLogin() {
     await telegramApi.login(phone.value)
     code.value = ''
     password.value = ''
-    toast.push('登录流程已启动', 'info')
+    toast.push(t('telegram.toasts.loginStarted'), 'info')
     await loadStatus()
   } catch (err) {
     toast.push(errorMessage(err), 'error')
@@ -332,7 +334,7 @@ async function submitCode() {
   if (!flow) return
   clear()
   if (!code.value.trim()) {
-    fail('请填写验证码', 'tg-code')
+    fail(t('telegram.validation.code'), 'tg-code')
     return
   }
   try {
@@ -349,7 +351,7 @@ async function submitPassword() {
   if (!flow) return
   clear()
   if (!password.value) {
-    fail('请填写两步验证密码', 'tg-password')
+    fail(t('telegram.validation.password'), 'tg-password')
     return
   }
   try {
@@ -366,7 +368,7 @@ async function cancelLogin() {
   if (!flow) return
   try {
     await telegramApi.cancelLogin(flow.flow_id)
-    toast.push('登录已取消', 'info')
+    toast.push(t('telegram.toasts.loginCancelled'), 'info')
     await loadStatus()
   } catch (err) {
     toast.push(errorMessage(err), 'error')
@@ -375,15 +377,15 @@ async function cancelLogin() {
 
 async function logoutUserbot() {
   const confirmed = await confirm.ask({
-    title: '退出 Userbot',
-    message: '退出 Userbot 并删除本地会话？',
-    confirmText: '退出登录',
+    title: t('telegram.confirm.logoutTitle'),
+    message: t('telegram.confirm.logoutMessage'),
+    confirmText: t('common.actions.logout'),
     danger: true,
   })
   if (!confirmed) return
   try {
     await telegramApi.logout()
-    toast.push('Userbot 已退出登录', 'success')
+    toast.push(t('telegram.toasts.logoutDone'), 'success')
     await Promise.all([loadStatus(), loadSettings()])
   } catch (err) {
     toast.push(errorMessage(err), 'error')
@@ -393,11 +395,11 @@ async function logoutUserbot() {
 
 <template>
   <div class="stack">
-    <PageHeader title="Telegram">
+    <PageHeader :title="t('nav.telegram')">
       <template #actions>
         <button class="btn small" type="button" @click="loadStatus">
           <AppIcon name="refresh" :size="15" />
-          刷新状态
+          {{ t('telegram.actions.refreshStatus') }}
         </button>
       </template>
     </PageHeader>
@@ -415,7 +417,7 @@ async function logoutUserbot() {
         </div>
         <div>
           <div class="connection-identity">
-            {{ status?.bot.username ? `@${status.bot.username}` : '未连接' }}
+            {{ status?.bot.username ? `@${status.bot.username}` : t('telegram.bot.notConnected') }}
           </div>
         </div>
         <div v-if="status?.bot.error" class="field-error">{{ status.bot.error }}</div>
@@ -428,7 +430,7 @@ async function logoutUserbot() {
             @click="startBot"
           >
             <AppIcon name="play" :size="14" />
-            启动
+            {{ t('telegram.actions.start') }}
           </LoadingButton>
           <LoadingButton
             class="small"
@@ -438,7 +440,7 @@ async function logoutUserbot() {
             @click="stopBot()"
           >
             <AppIcon name="stop" :size="14" />
-            停止
+            {{ t('telegram.actions.stop') }}
           </LoadingButton>
           <LoadingButton
             class="small"
@@ -447,7 +449,7 @@ async function logoutUserbot() {
             @click="restartBot()"
           >
             <AppIcon name="refresh" :size="14" />
-            重启
+            {{ t('telegram.actions.restart') }}
           </LoadingButton>
         </div>
       </section>
@@ -469,11 +471,11 @@ async function logoutUserbot() {
         <div class="connection-actions">
           <button v-if="!isUserbotLoggedIn" class="btn small primary" type="button" @click="focusUserbotLogin">
             <AppIcon name="key" :size="14" />
-            登录
+            {{ t('common.actions.signIn') }}
           </button>
           <button v-if="hasUserbotSession" class="btn small danger" type="button" @click="logoutUserbot">
             <AppIcon name="logout" :size="14" />
-            退出登录
+            {{ t('common.actions.logout') }}
           </button>
         </div>
       </section>
@@ -481,7 +483,7 @@ async function logoutUserbot() {
 
     <section class="panel telegram-panel">
       <div class="panel-head">
-        <h2 class="panel-title">Bot 与 API</h2>
+        <h2 class="panel-title">{{ t('telegram.botPanel.title') }}</h2>
       </div>
       <form v-if="settingsLoaded" class="stack" @submit.prevent="saveBotSettings" novalidate>
         <div class="form-grid telegram-form-grid">
@@ -518,7 +520,7 @@ async function logoutUserbot() {
             />
           </div>
           <div class="field" :class="{ 'is-invalid': invalidField === 'tg-rpc-retry' }">
-            <label for="tg-rpc-retry">RPC 重试</label>
+            <label for="tg-rpc-retry">{{ t('telegram.botPanel.rpcRetry') }}</label>
             <input
               id="tg-rpc-retry"
               v-model.number="rpcRetry"
@@ -528,7 +530,7 @@ async function logoutUserbot() {
             />
           </div>
           <div class="field" :class="{ 'is-invalid': invalidField === 'tg-media-timeout' }">
-            <label for="tg-media-timeout">媒体组超时（秒）</label>
+            <label for="tg-media-timeout">{{ t('telegram.botPanel.mediaTimeout') }}</label>
             <input
               id="tg-media-timeout"
               v-model.number="mediaTimeout"
@@ -538,7 +540,7 @@ async function logoutUserbot() {
             />
           </div>
           <div class="field" :class="{ 'is-invalid': invalidField === 'tg-proxy' }">
-            <label for="tg-proxy">代理地址</label>
+            <label for="tg-proxy">{{ t('telegram.botPanel.proxyURL') }}</label>
             <input
               id="tg-proxy"
               v-model="proxyURL"
@@ -549,21 +551,21 @@ async function logoutUserbot() {
             />
             <label class="checkbox">
               <input v-model="proxyEnable" type="checkbox" />
-              <span>使用代理</span>
+              <span>{{ t('telegram.botPanel.proxyEnable') }}</span>
             </label>
           </div>
         </div>
-        <p class="hint">密钥显示为 __MASKED__ 时保持不变即可继续使用已保存的值。</p>
+        <p class="hint">{{ t('telegram.botPanel.maskedHint') }}</p>
         <div class="modal-actions">
-          <LoadingButton class="primary" type="submit" :loading="botBusy">保存并应用</LoadingButton>
+          <LoadingButton class="primary" type="submit" :loading="botBusy">{{ t('common.actions.saveApply') }}</LoadingButton>
         </div>
       </form>
-      <div v-else class="loading">正在加载凭据…</div>
+      <div v-else class="loading">{{ t('telegram.botPanel.loading') }}</div>
     </section>
 
     <section id="userbot-panel" class="panel telegram-panel">
       <div class="panel-head">
-        <h2 class="panel-title">Userbot 登录与会话</h2>
+        <h2 class="panel-title">{{ t('telegram.userbotPanel.title') }}</h2>
         <span v-if="showFlowBadge" class="badge status" :class="flowTone">{{ flowStateLabel }}</span>
       </div>
 
@@ -571,19 +573,19 @@ async function logoutUserbot() {
         <div class="userbot-auth">
           <div v-if="loginCompleted" class="userbot-session-state">
             <span class="userbot-session-icon"><AppIcon name="check" :size="17" /></span>
-            <strong>{{ isUserbotLoggedIn ? 'Userbot 已登录' : '登录完成' }}</strong>
+            <strong>{{ isUserbotLoggedIn ? t('telegram.userbot.loggedIn') : t('telegram.flow.states.done') }}</strong>
           </div>
 
           <template v-else>
             <div class="flow-steps" aria-hidden="true">
-              <span class="flow-step" :class="stepClass(1)">手机号</span>
-              <span class="flow-step" :class="stepClass(2)">验证码</span>
-              <span class="flow-step" :class="stepClass(3)">两步验证</span>
+              <span class="flow-step" :class="stepClass(1)">{{ t('telegram.steps.phone') }}</span>
+              <span class="flow-step" :class="stepClass(2)">{{ t('telegram.steps.code') }}</span>
+              <span class="flow-step" :class="stepClass(3)">{{ t('telegram.steps.password') }}</span>
             </div>
 
             <p v-if="flowWaiting" class="flow-status">
               <AppIcon name="clock" :size="14" />
-              {{ flowState === 'starting' ? '正在连接 Telegram…' : '正在验证，请稍候…' }}
+              {{ flowState === 'starting' ? t('telegram.flow.connecting') : t('telegram.flow.verifying') }}
             </p>
             <p v-if="flowState === 'failed' && loginFlow?.error" class="field-error">
               {{ loginFlow.error }}
@@ -591,7 +593,7 @@ async function logoutUserbot() {
 
             <form v-if="!flowActive" class="stack" @submit.prevent="startLogin" novalidate>
               <div class="field" :class="{ 'is-invalid': invalidField === 'tg-phone' }">
-                <label for="tg-phone">手机号（含国家码）*</label>
+                <label for="tg-phone">{{ t('telegram.login.phoneLabel') }}</label>
                 <input
                   id="tg-phone"
                   ref="phoneInput"
@@ -605,55 +607,55 @@ async function logoutUserbot() {
               <div>
                 <LoadingButton class="primary" type="submit" :loading="loginBusy">
                   <AppIcon name="send" :size="15" />
-                  发送验证码
+                  {{ t('common.actions.sendCode') }}
                 </LoadingButton>
               </div>
-              <p class="hint">验证码会发送到该 Telegram 账号。</p>
+              <p class="hint">{{ t('telegram.login.codeHint') }}</p>
             </form>
 
             <div v-if="canSubmitCode" class="field" :class="{ 'is-invalid': invalidField === 'tg-code' }">
-              <label for="tg-code">Telegram 验证码</label>
+              <label for="tg-code">{{ t('telegram.login.codeLabel') }}</label>
               <div class="row">
                 <input
                   id="tg-code"
                   v-model="code"
                   class="grow"
-                  placeholder="输入收到的验证码"
+                  :placeholder="t('telegram.login.codePlaceholder')"
                   :aria-invalid="invalidField === 'tg-code' ? 'true' : undefined"
                   @input="clear('tg-code')"
                 />
-                <button class="btn primary" type="button" @click="submitCode">提交</button>
+                <button class="btn primary" type="button" @click="submitCode">{{ t('common.actions.submit') }}</button>
               </div>
             </div>
 
             <div v-if="canSubmitPassword" class="field" :class="{ 'is-invalid': invalidField === 'tg-password' }">
-              <label for="tg-password">两步验证密码</label>
+              <label for="tg-password">{{ t('telegram.login.passwordLabel') }}</label>
               <div class="row">
                 <input
                   id="tg-password"
                   v-model="password"
                   class="grow"
                   type="password"
-                  placeholder="输入两步验证密码"
+                  :placeholder="t('telegram.login.passwordPlaceholder')"
                   :aria-invalid="invalidField === 'tg-password' ? 'true' : undefined"
                   @input="clear('tg-password')"
                 />
-                <button class="btn primary" type="button" @click="submitPassword">提交</button>
+                <button class="btn primary" type="button" @click="submitPassword">{{ t('common.actions.submit') }}</button>
               </div>
             </div>
 
             <div v-if="flowActive" class="userbot-cancel">
-              <button class="btn ghost small" type="button" @click="cancelLogin">取消登录</button>
+              <button class="btn ghost small" type="button" @click="cancelLogin">{{ t('common.actions.cancelLogin') }}</button>
             </div>
           </template>
         </div>
 
         <form v-if="settingsLoaded" class="userbot-settings" @submit.prevent="saveUserbotSettings" novalidate>
           <div class="userbot-settings-head">
-            <h3>会话设置</h3>
+            <h3>{{ t('telegram.session.title') }}</h3>
           </div>
           <div class="field" :class="{ 'is-invalid': invalidField === 'tg-session' }">
-            <label for="tg-session">会话文件<span v-if="userbotEnable"> *</span></label>
+            <label for="tg-session">{{ t('telegram.session.file') }}<span v-if="userbotEnable"> *</span></label>
             <input
               id="tg-session"
               v-model="userbotSession"
@@ -664,13 +666,13 @@ async function logoutUserbot() {
           </div>
           <label class="checkbox">
             <input v-model="userbotEnable" type="checkbox" />
-            <span>启用 Userbot</span>
+            <span>{{ t('telegram.session.enable') }}</span>
           </label>
           <div class="userbot-settings-actions">
-            <LoadingButton class="primary" type="submit" :loading="userbotBusy">保存设置</LoadingButton>
+            <LoadingButton class="primary" type="submit" :loading="userbotBusy">{{ t('common.actions.saveSettings') }}</LoadingButton>
           </div>
         </form>
-        <div v-else class="loading">正在加载会话设置…</div>
+        <div v-else class="loading">{{ t('telegram.session.loading') }}</div>
       </div>
     </section>
   </div>

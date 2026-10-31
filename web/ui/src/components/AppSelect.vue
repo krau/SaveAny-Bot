@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AppIcon from './AppIcon.vue'
 
 export interface SelectOption {
@@ -18,12 +19,14 @@ const props = withDefaults(
     ariaLabel?: string
   }>(),
   {
-    placeholder: '请选择',
+    placeholder: '',
     disabled: false,
     id: '',
     ariaLabel: '',
   },
 )
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
@@ -43,7 +46,7 @@ const menuPlacement = ref<'top' | 'bottom'>('bottom')
 
 const selectedIndex = computed(() => props.options.findIndex((option) => option.value === props.modelValue))
 const selected = computed(() => (selectedIndex.value >= 0 ? props.options[selectedIndex.value] : null))
-const display = computed(() => selected.value?.label || props.placeholder)
+const display = computed(() => selected.value?.label || (props.placeholder || t('common.select')))
 const enabledIndices = computed(() =>
   props.options.map((option, index) => ({ option, index })).filter((entry) => !entry.option.disabled).map((entry) => entry.index),
 )

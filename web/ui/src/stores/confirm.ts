@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { translate } from '../i18n'
 
 export interface ConfirmOptions {
   title: string
@@ -19,10 +20,10 @@ export const useConfirmStore = defineStore('confirm', {
   state: (): ConfirmState => ({
     open: false,
     options: {
-      title: '确认操作',
+      title: translate('common.confirmTitle'),
       message: '',
-      confirmText: '确认',
-      cancelText: '取消',
+      confirmText: translate('common.confirm'),
+      cancelText: translate('common.cancel'),
       danger: false,
     },
   }),
@@ -32,8 +33,8 @@ export const useConfirmStore = defineStore('confirm', {
       this.options = {
         title: options.title,
         message: options.message,
-        confirmText: options.confirmText ?? '确认',
-        cancelText: options.cancelText ?? '取消',
+        confirmText: options.confirmText ?? translate('common.confirm'),
+        cancelText: options.cancelText ?? translate('common.cancel'),
         danger: options.danger ?? false,
       }
       this.open = true

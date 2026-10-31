@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { errorMessage, storagesApi, usersApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
@@ -10,6 +11,7 @@ import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
 import type { StorageRecord, UserItem, UserPatch, UserStorageFilter } from '../types'
 
+const { t } = useI18n()
 const toast = useToastStore()
 const confirm = useConfirmStore()
 const { invalidField, fail, clear, success } = useFormFeedback()
@@ -21,21 +23,21 @@ const editing = ref<UserItem | null>(null)
 const enabledStorages = computed(() => storages.value.filter((storage) => storage.enable))
 const enabledUsers = computed(() => users.value.filter((user) => user.enabled).length)
 const defaultStorageOptions = computed(() => [
-  { value: '', label: '未设置' },
+  { value: '', label: t('users.unset') },
   ...enabledStorages.value.map((storage) => ({ value: storage.name, label: storage.name })),
 ])
-const filenameStrategyOptions = [
-  { value: 'default', label: '默认' },
-  { value: 'message', label: '从消息生成' },
-  { value: 'template', label: '自定义模板' },
-]
-const conflictStrategyOptions = [
-  { value: '', label: '默认' },
-  { value: 'rename', label: '始终重命名' },
-  { value: 'ask', label: '每次询问' },
-  { value: 'overwrite', label: '始终覆盖' },
-  { value: 'skip', label: '始终跳过' },
-]
+const filenameStrategyOptions = computed(() => [
+  { value: 'default', label: t('users.filenameStrategy.default') },
+  { value: 'message', label: t('users.filenameStrategy.message') },
+  { value: 'template', label: t('users.filenameStrategy.template') },
+])
+const conflictStrategyOptions = computed(() => [
+  { value: '', label: t('users.conflictStrategy.default') },
+  { value: 'rename', label: t('users.conflictStrategy.rename') },
+  { value: 'ask', label: t('users.conflictStrategy.ask') },
+  { value: 'overwrite', label: t('users.conflictStrategy.overwrite') },
+  { value: 'skip', label: t('users.conflictStrategy.skip') },
+])
 
 const form = reactive({
   chat_id: '',
@@ -102,7 +104,7 @@ function toggleStorage(name: string) {
 async function save() {
   clear()
   if (form.filename_strategy === 'template' && !form.filename_template.trim()) {
-    fail('请填写文件名模板', 'user-template')
+    fail(t('users.toast.templateRequired'), 'user-template')
     return
   }
   busy.value = true
@@ -121,15 +123,15 @@ async function save() {
   try {
     if (editing.value) {
       await usersApi.update(editing.value.id, patch)
-      success('用户已更新')
+      success(t('users.toast.updated'))
     } else {
       const chatID = Number(form.chat_id)
       if (!Number.isFinite(chatID) || chatID === 0) {
-        fail('请填写有效的 Telegram Chat ID', 'user-chat-id')
+        fail(t('users.toast.chatIdInvalid'), 'user-chat-id')
         return
       }
       await usersApi.create({ chat_id: chatID, ...patch })
-      success('用户已创建')
+      success(t('users.toast.created'))
     }
     formOpen.value = false
     await load()
@@ -142,15 +144,15 @@ async function save() {
 
 async function remove(user: UserItem) {
   const confirmed = await confirm.ask({
-    title: '删除用户',
-    message: `删除用户 ${user.chat_id} 及其目录、规则？此操作不可撤销。`,
-    confirmText: '删除用户',
+    title: t('users.confirm.deleteTitle'),
+    message: t('users.confirm.deleteMessage', { chatId: user.chat_id }),
+    confirmText: t('users.confirm.deleteTitle'),
     danger: true,
   })
   if (!confirmed) return
   try {
     await usersApi.remove(user.id)
-    success(`${user.chat_id} 已删除`)
+    success(t('users.toast.deleted', { chatId: user.chat_id }))
     await load()
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
@@ -160,53 +162,53 @@ async function remove(user: UserItem) {
 
 <template>
   <div class="stack">
-    <PageHeader title="用户">
+    <PageHeader :title="t('nav.users')">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
-          刷新
+          {{ t('common.actions.refresh') }}
         </button>
         <button class="btn primary small" type="button" @click="openCreate">
           <AppIcon name="plus" :size="15" />
-          添加用户
+          {{ t('users.add') }}
         </button>
       </template>
     </PageHeader>
 
     <div class="filter-bar">
-      <span class="count">{{ users.length }} 个用户，{{ enabledUsers }} 个启用</span>
+      <span class="count">{{ t('users.count', { count: users.length, enabled: enabledUsers }) }}</span>
       <div class="filter-spacer"></div>
     </div>
 
     <div class="users-table">
       <div class="table-wrap users-table-wrap">
         <table>
-        <thead><tr><th>Chat ID</th><th>状态</th><th>默认存储</th><th>存储过滤</th><th>操作</th></tr></thead>
+        <thead><tr><th>{{ t('users.columns.chatId') }}</th><th>{{ t('users.columns.status') }}</th><th>{{ t('users.columns.defaultStorage') }}</th><th>{{ t('users.columns.storageFilter') }}</th><th>{{ t('users.columns.actions') }}</th></tr></thead>
         <tbody>
           <tr v-for="user in users" :key="user.id">
             <td class="mono">{{ user.chat_id }}</td>
             <td>
               <span class="badge status" :class="user.enabled ? 'success' : 'muted'">
-                {{ user.enabled ? '启用' : '禁用' }}
+                {{ user.enabled ? t('users.status.enabled') : t('users.status.disabled') }}
               </span>
-              <span v-if="user.silent" class="badge info" style="margin-left: 6px">静默</span>
+              <span v-if="user.silent" class="badge info" style="margin-left: 6px">{{ t('users.status.silent') }}</span>
             </td>
             <td>{{ user.default_storage || '—' }}</td>
             <td class="muted">
-              {{ user.storage_filter.blacklist ? '黑名单' : '白名单' }}：
-              {{ user.storage_filter.storages.length ? user.storage_filter.storages.join('、') : (user.storage_filter.blacklist ? '全部' : '无') }}
+              {{ user.storage_filter.blacklist ? t('users.filter.blacklist') : t('users.filter.whitelist') }}{{ t('users.filter.separator') }}
+              {{ user.storage_filter.storages.length ? user.storage_filter.storages.join(t('users.storageSeparator')) : (user.storage_filter.blacklist ? t('users.filter.all') : t('users.filter.none')) }}
             </td>
             <td>
               <div class="actions">
-                <button class="btn small" type="button" @click="openEdit(user)">编辑</button>
-                <button class="btn small danger" type="button" @click="remove(user)">删除</button>
+                <button class="btn small" type="button" @click="openEdit(user)">{{ t('common.actions.edit') }}</button>
+                <button class="btn small danger" type="button" @click="remove(user)">{{ t('common.actions.delete') }}</button>
               </div>
             </td>
           </tr>
           <tr v-if="users.length === 0">
             <td colspan="5" class="empty">
               <span class="empty-icon"><AppIcon name="users" :size="17" /></span>
-              <strong>还没有用户</strong>
+              <strong>{{ t('users.empty') }}</strong>
             </td>
           </tr>
         </tbody>
@@ -219,37 +221,37 @@ async function remove(user: UserItem) {
             <span class="user-chat mono">{{ user.chat_id }}</span>
             <div class="actions">
               <span class="badge status" :class="user.enabled ? 'success' : 'muted'">
-                {{ user.enabled ? '启用' : '禁用' }}
+                {{ user.enabled ? t('users.status.enabled') : t('users.status.disabled') }}
               </span>
-              <span v-if="user.silent" class="badge info">静默</span>
+              <span v-if="user.silent" class="badge info">{{ t('users.status.silent') }}</span>
             </div>
           </div>
           <dl class="user-mobile-details">
             <div>
-              <dt>默认存储</dt>
-              <dd>{{ user.default_storage || '未设置' }}</dd>
+              <dt>{{ t('users.columns.defaultStorage') }}</dt>
+              <dd>{{ user.default_storage || t('users.unset') }}</dd>
             </div>
             <div>
-              <dt>存储过滤</dt>
+              <dt>{{ t('users.columns.storageFilter') }}</dt>
               <dd>
-                {{ user.storage_filter.blacklist ? '黑名单' : '白名单' }}：{{
+                {{ user.storage_filter.blacklist ? t('users.filter.blacklist') : t('users.filter.whitelist') }}{{ t('users.filter.separator') }}{{
                   user.storage_filter.storages.length
-                    ? user.storage_filter.storages.join('、')
+                    ? user.storage_filter.storages.join(t('users.storageSeparator'))
                     : user.storage_filter.blacklist
-                      ? '全部'
-                      : '无'
+                      ? t('users.filter.all')
+                      : t('users.filter.none')
                 }}
               </dd>
             </div>
           </dl>
           <div class="user-mobile-actions">
-            <button class="btn small" type="button" @click="openEdit(user)">编辑</button>
-            <button class="btn small danger" type="button" @click="remove(user)">删除</button>
+            <button class="btn small" type="button" @click="openEdit(user)">{{ t('common.actions.edit') }}</button>
+            <button class="btn small danger" type="button" @click="remove(user)">{{ t('common.actions.delete') }}</button>
           </div>
         </article>
         <div v-if="users.length === 0" class="empty">
           <span class="empty-icon"><AppIcon name="users" :size="17" /></span>
-          <strong>还没有用户</strong>
+          <strong>{{ t('users.empty') }}</strong>
         </div>
       </div>
     </div>
@@ -259,15 +261,15 @@ async function remove(user: UserItem) {
         <div v-if="formOpen" class="modal-overlay" @click.self="formOpen = false">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="user-dialog-title">
           <div class="modal-head">
-            <h3 id="user-dialog-title" class="modal-title">{{ editing ? '编辑用户' : '添加用户' }}</h3>
-            <button class="btn ghost icon small" type="button" aria-label="关闭" @click="formOpen = false">
+            <h3 id="user-dialog-title" class="modal-title">{{ editing ? t('users.edit') : t('users.add') }}</h3>
+            <button class="btn ghost icon small" type="button" :aria-label="t('common.close')" @click="formOpen = false">
               <AppIcon name="close" :size="17" />
             </button>
           </div>
           <form class="stack" @submit.prevent="save" novalidate>
             <div class="form-grid">
               <div class="field" :class="{ 'is-invalid': invalidField === 'user-chat-id' }">
-                <label for="user-chat-id">Telegram Chat ID *</label>
+                <label for="user-chat-id">{{ t('users.form.chatId') }} *</label>
                 <input
                   id="user-chat-id"
                   v-model="form.chat_id"
@@ -279,7 +281,7 @@ async function remove(user: UserItem) {
                 />
               </div>
               <div class="field">
-                <label for="user-default-storage">默认存储</label>
+                <label for="user-default-storage">{{ t('users.form.defaultStorage') }}</label>
                 <AppSelect
                   id="user-default-storage"
                   v-model="form.default_storage"
@@ -288,14 +290,14 @@ async function remove(user: UserItem) {
               </div>
             </div>
             <div class="row">
-              <label class="checkbox"><input v-model="form.enabled" type="checkbox" /><span>启用用户</span></label>
-              <label class="checkbox"><input v-model="form.silent" type="checkbox" /><span>静默模式</span></label>
-              <label class="checkbox"><input v-model="form.apply_rule" type="checkbox" /><span>应用规则</span></label>
-              <label class="checkbox"><input v-model="form.watch_notify" type="checkbox" /><span>监听通知</span></label>
+              <label class="checkbox"><input v-model="form.enabled" type="checkbox" /><span>{{ t('users.form.enabled') }}</span></label>
+              <label class="checkbox"><input v-model="form.silent" type="checkbox" /><span>{{ t('users.form.silent') }}</span></label>
+              <label class="checkbox"><input v-model="form.apply_rule" type="checkbox" /><span>{{ t('users.form.applyRule') }}</span></label>
+              <label class="checkbox"><input v-model="form.watch_notify" type="checkbox" /><span>{{ t('users.form.watchNotify') }}</span></label>
             </div>
             <div class="field">
-              <label>存储过滤（{{ form.blacklist ? '黑名单' : '白名单' }}）</label>
-              <label class="checkbox"><input v-model="form.blacklist" type="checkbox" /><span>黑名单模式</span></label>
+              <label>{{ t('users.form.storageFilter', { mode: form.blacklist ? t('users.filter.blacklist') : t('users.filter.whitelist') }) }}</label>
+              <label class="checkbox"><input v-model="form.blacklist" type="checkbox" /><span>{{ t('users.form.blacklistMode') }}</span></label>
               <div class="checkbox-list">
                 <label v-for="storage in enabledStorages" :key="storage.name">
                   <input type="checkbox" :checked="form.storages.includes(storage.name)" @change="toggleStorage(storage.name)" />
@@ -305,7 +307,7 @@ async function remove(user: UserItem) {
             </div>
             <div class="form-grid">
               <div class="field">
-                <label for="user-fname">文件名策略</label>
+                <label for="user-fname">{{ t('users.form.filenameStrategy') }}</label>
                 <AppSelect
                   id="user-fname"
                   v-model="form.filename_strategy"
@@ -314,7 +316,7 @@ async function remove(user: UserItem) {
                 />
               </div>
               <div class="field">
-                <label for="user-conflict">重名策略</label>
+                <label for="user-conflict">{{ t('users.form.conflictStrategy') }}</label>
                 <AppSelect
                   id="user-conflict"
                   v-model="form.conflict_strategy"
@@ -323,7 +325,7 @@ async function remove(user: UserItem) {
               </div>
             </div>
             <div class="field" :class="{ 'is-invalid': invalidField === 'user-template' }">
-              <label for="user-template">文件名模板</label>
+              <label for="user-template">{{ t('users.form.filenameTemplate') }}</label>
               <input
                 id="user-template"
                 v-model="form.filename_template"
@@ -333,8 +335,8 @@ async function remove(user: UserItem) {
               />
             </div>
             <div class="modal-actions">
-              <button class="btn ghost" type="button" @click="formOpen = false">取消</button>
-              <LoadingButton class="primary" type="submit" :loading="busy">保存</LoadingButton>
+              <button class="btn ghost" type="button" @click="formOpen = false">{{ t('common.actions.cancel') }}</button>
+              <LoadingButton class="primary" type="submit" :loading="busy">{{ t('common.actions.save') }}</LoadingButton>
             </div>
           </form>
         </div>

@@ -9,4 +9,5 @@
 - Theme-aware colors MUST use the CSS variables in `src/assets/main.css`; never hardcode a light-only surface or text color. Theme preference is managed by `useThemeStore`.
 - Modals whose form content changes must tween between content heights instead of using a tall fixed placeholder; keep the actions pinned and scroll only when the viewport constrains the form.
 - UI copy should state the current action or state, not explain the obvious. Avoid page subtitles and explanatory prose in empty states.
+- UI copy MUST use `vue-i18n` keys and provide both `zhHans` and `en` messages; never hardcode user-facing Chinese outside locale resources.
 - Use `pnpm` for every install and script. Do not add npm lockfiles.

@@ -2,16 +2,20 @@ export type SettingsFieldKind = 'text' | 'number' | 'bool' | 'password' | 'selec
 
 export interface SettingsField {
   path: string
+  /** Translation key under `settings.*`. */
   label: string
   kind: SettingsFieldKind
   placeholder?: string
+  /** Translation key under `settings.*`. */
   hint?: string
   min?: number
+  /** Option labels are translation keys under `settings.*`. */
   options?: { value: string; label: string }[]
 }
 
 export interface SettingsGroupDef {
   key: string
+  /** Translation key under `settings.groups.*`. */
   title: string
   fields: SettingsField[]
 }
@@ -19,174 +23,232 @@ export interface SettingsGroupDef {
 export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'core',
-    title: '核心',
+    title: 'settings.groups.core',
     fields: [
       {
         path: 'lang',
-        label: '界面语言',
+        label: 'settings.core.botLanguage',
         kind: 'select',
         options: [
-          { value: 'zh-Hans', label: '简体中文' },
-          { value: 'en', label: 'English' },
+          { value: 'zh-Hans', label: 'settings.core.langOptions.zhHans' },
+          { value: 'en', label: 'settings.core.langOptions.en' },
         ],
       },
-      { path: 'workers', label: 'Worker 数量', kind: 'number', hint: '重启后生效', min: 1 },
-      { path: 'retry', label: '重试次数', kind: 'number', min: 0 },
-      { path: 'threads', label: '下载线程数', kind: 'number', min: 1 },
-      { path: 'stream', label: '流式下载', kind: 'bool' },
-      { path: 'no_clean_cache', label: '保留缓存', kind: 'bool' },
+      {
+        path: 'workers',
+        label: 'settings.core.workers',
+        kind: 'number',
+        hint: 'settings.core.workersHint',
+        min: 1,
+      },
+      { path: 'retry', label: 'settings.core.retry', kind: 'number', min: 0 },
+      { path: 'threads', label: 'settings.core.threads', kind: 'number', min: 1 },
+      { path: 'stream', label: 'settings.core.stream', kind: 'bool' },
+      { path: 'no_clean_cache', label: 'settings.core.noCleanCache', kind: 'bool' },
       {
         path: 'proxy',
-        label: '全局代理',
+        label: 'settings.core.proxy',
         kind: 'text',
         placeholder: 'socks5://127.0.0.1:1080',
-        hint: '重启后生效',
+        hint: 'settings.core.proxyHint',
       },
     ],
   },
   {
     key: 'log',
-    title: '日志',
+    title: 'settings.groups.log',
     fields: [
       {
         path: 'level',
-        label: '日志级别',
+        label: 'settings.log.level',
         kind: 'select',
         options: [
-          { value: 'debug', label: 'debug' },
-          { value: 'info', label: 'info' },
-          { value: 'warn', label: 'warn' },
-          { value: 'error', label: 'error' },
+          { value: 'debug', label: 'settings.log.levels.debug' },
+          { value: 'info', label: 'settings.log.levels.info' },
+          { value: 'warn', label: 'settings.log.levels.warn' },
+          { value: 'error', label: 'settings.log.levels.error' },
         ],
       },
     ],
   },
   {
     key: 'aria2',
-    title: 'Aria2',
+    title: 'settings.groups.aria2',
     fields: [
-      { path: 'enable', label: '启用 Aria2', kind: 'bool' },
+      { path: 'enable', label: 'settings.aria2.enable', kind: 'bool' },
       {
         path: 'url',
-        label: 'RPC 地址',
+        label: 'settings.aria2.url',
         kind: 'text',
         placeholder: 'http://127.0.0.1:6800/jsonrpc',
       },
-      { path: 'secret', label: 'RPC 密钥', kind: 'password' },
-      { path: 'keep_file', label: '保留临时文件', kind: 'bool' },
+      { path: 'secret', label: 'settings.aria2.secret', kind: 'password' },
+      { path: 'keep_file', label: 'settings.aria2.keepFile', kind: 'bool' },
     ],
   },
   {
     key: 'ytdlp',
-    title: 'yt-dlp',
+    title: 'settings.groups.ytdlp',
     fields: [
-      { path: 'max_height', label: '最大高度', kind: 'number', hint: '0 表示不限制', min: 0 },
-      { path: 'format', label: '格式选择', kind: 'text', placeholder: 'bestvideo+bestaudio/best' },
-      { path: 'recode', label: '转码容器', kind: 'text', placeholder: 'mp4' },
+      {
+        path: 'max_height',
+        label: 'settings.ytdlp.maxHeight',
+        kind: 'number',
+        hint: 'settings.ytdlp.maxHeightHint',
+        min: 0,
+      },
+      {
+        path: 'format',
+        label: 'settings.ytdlp.format',
+        kind: 'text',
+        placeholder: 'bestvideo+bestaudio/best',
+      },
+      { path: 'recode', label: 'settings.ytdlp.recode', kind: 'text', placeholder: 'mp4' },
       {
         path: 'filename_template',
-        label: '文件名模板',
+        label: 'settings.ytdlp.filenameTemplate',
         kind: 'text',
         placeholder: '%(title)s.%(ext)s',
       },
-      { path: 'restrict_filenames', label: '限制文件名（仅 ASCII）', kind: 'bool' },
+      {
+        path: 'restrict_filenames',
+        label: 'settings.ytdlp.restrictFilenames',
+        kind: 'bool',
+      },
     ],
   },
   {
     key: 'parser',
-    title: '解析器',
+    title: 'settings.groups.parser',
     fields: [
-      { path: 'plugin_enable', label: '启用插件', kind: 'bool', hint: '重启后生效' },
+      {
+        path: 'plugin_enable',
+        label: 'settings.parser.pluginEnable',
+        kind: 'bool',
+        hint: 'settings.parser.restartHint',
+      },
       {
         path: 'plugin_dirs',
-        label: '插件目录',
+        label: 'settings.parser.pluginDirs',
         kind: 'list',
-        hint: '每行一个目录',
+        hint: 'settings.parser.pluginDirsHint',
         placeholder: 'plugins',
       },
-      { path: 'proxy', label: '解析代理', kind: 'text', placeholder: 'http://127.0.0.1:7890' },
+      { path: 'proxy', label: 'settings.parser.proxy', kind: 'text', placeholder: 'http://127.0.0.1:7890' },
       {
         path: 'configs',
-        label: '插件配置 (JSON)',
+        label: 'settings.parser.configs',
         kind: 'json',
         placeholder: '{"example": {"key": "value"}}',
-        hint: '按插件名组织的 JSON 对象',
+        hint: 'settings.parser.configsHint',
       },
     ],
   },
   {
     key: 'cache',
-    title: '缓存',
+    title: 'settings.groups.cache',
     fields: [
-      { path: 'ttl', label: 'TTL（秒）', kind: 'number', min: 0 },
-      { path: 'num_counters', label: '计数器数量', kind: 'number', min: 1 },
-      { path: 'max_cost', label: '最大开销', kind: 'number', min: 0 },
+      { path: 'ttl', label: 'settings.cache.ttl', kind: 'number', min: 0 },
+      { path: 'num_counters', label: 'settings.cache.numCounters', kind: 'number', min: 1 },
+      { path: 'max_cost', label: 'settings.cache.maxCost', kind: 'number', min: 0 },
     ],
   },
   {
     key: 'db',
-    title: '数据库',
+    title: 'settings.groups.db',
     fields: [
-      { path: 'session', label: '会话数据库', kind: 'text', placeholder: 'data/session.db' },
+      {
+        path: 'session',
+        label: 'settings.db.session',
+        kind: 'text',
+        placeholder: 'data/session.db',
+      },
     ],
   },
   {
     key: 'temp',
-    title: '临时目录',
-    fields: [{ path: 'base_path', label: '基础路径', kind: 'text', placeholder: 'cache/' }],
+    title: 'settings.groups.temp',
+    fields: [
+      { path: 'base_path', label: 'settings.temp.basePath', kind: 'text', placeholder: 'cache/' },
+    ],
   },
   {
     key: 'hook',
-    title: '钩子',
+    title: 'settings.groups.hook',
     fields: [
       {
         path: 'exec.task_before_start',
-        label: '任务开始前',
+        label: 'settings.hook.taskBeforeStart',
         kind: 'text',
         placeholder: '/path/to/hook.sh start',
       },
-      { path: 'exec.task_success', label: '任务成功', kind: 'text' },
-      { path: 'exec.task_fail', label: '任务失败', kind: 'text' },
-      { path: 'exec.task_cancel', label: '任务取消', kind: 'text' },
+      { path: 'exec.task_success', label: 'settings.hook.taskSuccess', kind: 'text' },
+      { path: 'exec.task_fail', label: 'settings.hook.taskFail', kind: 'text' },
+      { path: 'exec.task_cancel', label: 'settings.hook.taskCancel', kind: 'text' },
     ],
   },
   {
     key: 'web',
-    title: 'Web 服务',
+    title: 'settings.groups.web',
     fields: [
-      { path: 'enable', label: '启用 Web 服务', kind: 'bool', hint: '重启后生效' },
+      {
+        path: 'enable',
+        label: 'settings.web.enable',
+        kind: 'bool',
+        hint: 'settings.web.restartHint',
+      },
       {
         path: 'listen',
-        label: '监听地址',
+        label: 'settings.web.listen',
         kind: 'text',
         placeholder: '0.0.0.0:8080',
-        hint: '重启后生效',
+        hint: 'settings.web.listenHint',
       },
       {
         path: 'api_token',
-        label: 'API Token',
+        label: 'settings.web.apiToken',
         kind: 'password',
-        hint: '用于 Bearer 认证，留空禁用',
+        hint: 'settings.web.apiTokenHint',
       },
-      { path: 'secure_cookie', label: 'Secure Cookie', kind: 'bool', hint: '仅在 HTTPS 下启用' },
+      {
+        path: 'secure_cookie',
+        label: 'settings.web.secureCookie',
+        kind: 'bool',
+        hint: 'settings.web.secureCookieHint',
+      },
     ],
   },
 ]
 
 export const telegramGroup: SettingsGroupDef = {
   key: 'telegram',
-  title: 'Telegram 凭据',
+  title: 'settings.groups.telegram',
   fields: [
-    { path: 'token', label: 'Bot Token', kind: 'password', placeholder: '123456:ABC-DEF...' },
-    { path: 'app_id', label: 'API ID', kind: 'number' },
-    { path: 'app_hash', label: 'API Hash', kind: 'password' },
-    { path: 'rpc_retry', label: 'RPC 重试次数', kind: 'number' },
-    { path: 'media_group_timeout', label: '媒体组超时（秒）', kind: 'number' },
-    { path: 'proxy.enable', label: '启用代理', kind: 'bool' },
-    { path: 'proxy.url', label: '代理地址', kind: 'text', placeholder: 'socks5://127.0.0.1:1080' },
-    { path: 'userbot.enable', label: '启用 Userbot', kind: 'bool' },
-    { path: 'userbot.session', label: 'Userbot 会话文件', kind: 'text' },
-    { path: 'userbot.phone', label: 'Userbot 手机号', kind: 'text', placeholder: '+8613800000000' },
+    {
+      path: 'token',
+      label: 'settings.telegram.token',
+      kind: 'password',
+      placeholder: '123456:ABC-DEF...',
+    },
+    { path: 'app_id', label: 'settings.telegram.appId', kind: 'number' },
+    { path: 'app_hash', label: 'settings.telegram.appHash', kind: 'password' },
+    { path: 'rpc_retry', label: 'settings.telegram.rpcRetry', kind: 'number' },
+    { path: 'media_group_timeout', label: 'settings.telegram.mediaGroupTimeout', kind: 'number' },
+    { path: 'proxy.enable', label: 'settings.telegram.proxyEnable', kind: 'bool' },
+    {
+      path: 'proxy.url',
+      label: 'settings.telegram.proxyUrl',
+      kind: 'text',
+      placeholder: 'socks5://127.0.0.1:1080',
+    },
+    { path: 'userbot.enable', label: 'settings.telegram.userbotEnable', kind: 'bool' },
+    { path: 'userbot.session', label: 'settings.telegram.userbotSession', kind: 'text' },
+    {
+      path: 'userbot.phone',
+      label: 'settings.telegram.userbotPhone',
+      kind: 'text',
+      placeholder: '+8613800000000',
+    },
   ],
 }
 

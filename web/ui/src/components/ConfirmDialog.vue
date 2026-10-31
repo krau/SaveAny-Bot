@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { translate } from '../i18n'
 import AppIcon from './AppIcon.vue'
 
 withDefaults(
@@ -12,10 +13,10 @@ withDefaults(
     busy?: boolean
   }>(),
   {
-    title: '确认操作',
+    title: translate('common.confirmTitle'),
     message: '',
-    confirmText: '确认',
-    cancelText: '取消',
+    confirmText: translate('common.confirm'),
+    cancelText: translate('common.cancel'),
     danger: false,
     busy: false,
   },

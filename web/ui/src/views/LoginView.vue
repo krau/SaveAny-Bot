@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError } from '../api'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
 import BrandMark from '../components/BrandMark.vue'
 import LoadingButton from '../components/LoadingButton.vue'
+import LocaleSwitch from '../components/LocaleSwitch.vue'
 import ThemeSwitch from '../components/ThemeSwitch.vue'
 
 const auth = useAuthStore()
 const toast = useToastStore()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const password = ref('')
 const error = ref('')
@@ -27,9 +30,9 @@ async function submit() {
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.status === 401) {
-        error.value = '密码错误'
+        error.value = t('login.invalidPassword')
       } else if (err.status === 429) {
-        error.value = '尝试次数过多，请稍后再试'
+        error.value = t('login.tooManyAttempts')
       } else {
         error.value = err.message
       }
@@ -45,7 +48,7 @@ async function submit() {
 
 <template>
   <div class="login-page">
-    <div class="login-theme"><ThemeSwitch /></div>
+    <div class="login-preferences"><LocaleSwitch /><ThemeSwitch /></div>
     <svg class="login-trace" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
       <path pathLength="1" d="M-40 300H320L458 360H516" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />
       <path pathLength="1" d="M924 360H982L1120 300H1480" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />
@@ -61,12 +64,12 @@ async function submit() {
       </div>
 
       <div class="login-heading">
-        <h1>管理员登录</h1>
+        <h1>{{ t('login.title') }}</h1>
       </div>
 
       <form class="login-form" @submit.prevent="submit" novalidate>
         <div class="field">
-          <label for="login-password">管理员密码</label>
+          <label for="login-password">{{ t('login.password') }}</label>
           <input
             id="login-password"
             v-model="password"
@@ -85,12 +88,12 @@ async function submit() {
           :loading="busy"
           :disabled="password.length === 0"
         >
-          登录控制台
+          {{ t('login.submit') }}
         </LoadingButton>
       </form>
 
       <p class="login-help">
-        密码见启动日志，或通过 <code>SAVEANY_ADMIN_PASSWORD</code> 设置。
+        {{ t('login.helpBefore') }}<code>SAVEANY_ADMIN_PASSWORD</code>{{ t('login.helpAfter') }}
       </p>
     </section>
 

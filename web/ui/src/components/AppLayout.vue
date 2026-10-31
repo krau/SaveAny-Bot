@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { errorMessage } from '../api'
 import { useFormFeedback } from '../composables/useFormFeedback'
@@ -7,36 +8,38 @@ import { useAuthStore } from '../stores/auth'
 import AppIcon from './AppIcon.vue'
 import LoadingButton from './LoadingButton.vue'
 import BrandMark from './BrandMark.vue'
+import LocaleSwitch from './LocaleSwitch.vue'
 import ThemeSwitch from './ThemeSwitch.vue'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const { t } = useI18n()
 
 const navigation = [
   {
-    label: '工作台',
+    labelKey: 'nav.workspace',
     items: [
-      { path: '/', label: '运行概览', icon: 'dashboard' },
-      { path: '/tasks', label: '任务', icon: 'tasks' },
+      { path: '/', labelKey: 'nav.overview', icon: 'dashboard' },
+      { path: '/tasks', labelKey: 'nav.tasks', icon: 'tasks' },
     ],
   },
   {
-    label: '资源',
+    labelKey: 'nav.resources',
     items: [
-      { path: '/storages', label: '存储', icon: 'database' },
-      { path: '/users', label: '用户', icon: 'users' },
+      { path: '/storages', labelKey: 'nav.storages', icon: 'database' },
+      { path: '/users', labelKey: 'nav.users', icon: 'users' },
     ],
   },
   {
-    label: '连接',
-    items: [{ path: '/telegram', label: 'Telegram', icon: 'send' }],
+    labelKey: 'nav.connections',
+    items: [{ path: '/telegram', labelKey: 'nav.telegram', icon: 'send' }],
   },
   {
-    label: '系统',
+    labelKey: 'nav.administration',
     items: [
-      { path: '/settings', label: '设置', icon: 'sliders' },
-      { path: '/system', label: '系统', icon: 'server' },
+      { path: '/settings', labelKey: 'nav.settings', icon: 'sliders' },
+      { path: '/system', labelKey: 'nav.system', icon: 'server' },
     ],
   },
 ]
@@ -67,21 +70,21 @@ function openPasswordDialog() {
 async function submitPassword() {
   clear()
   if (!currentPassword.value) {
-    fail('请输入当前密码', 'current-password')
+    fail(t('login.currentPasswordRequired'), 'current-password')
     return
   }
   if (newPassword.value.length < 8) {
-    fail('新密码至少需要 8 个字符', 'new-password')
+    fail(t('login.passwordTooShort'), 'new-password')
     return
   }
   if (newPassword.value !== confirmPassword.value) {
-    fail('两次输入的新密码不一致', 'confirm-password')
+    fail(t('login.passwordMismatch'), 'confirm-password')
     return
   }
   passwordBusy.value = true
   try {
     await auth.changePassword(currentPassword.value, newPassword.value)
-    success('密码已更新')
+    success(t('login.passwordUpdated'))
     currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
@@ -116,7 +119,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 
 <template>
   <div class="app-shell">
-    <a class="skip-link" href="#main-content">跳到主内容</a>
+    <a class="skip-link" href="#main-content">{{ t('common.skipToContent') }}</a>
     <Transition name="backdrop">
       <div v-if="sidebarOpen" class="sidebar-backdrop" @click="sidebarOpen = false"></div>
     </Transition>
@@ -127,16 +130,16 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
           <span class="brand-mark"><BrandMark :size="22" /></span>
           <div class="brand-copy">
             <strong>SaveAny-Bot</strong>
-            <span>文件中继控制台</span>
+            <span>{{ t('common.fileRelayConsole') }}</span>
           </div>
-          <button class="sidebar-close" type="button" aria-label="关闭导航" @click="sidebarOpen = false">
+          <button class="sidebar-close" type="button" :aria-label="t('common.closeNavigation')" @click="sidebarOpen = false">
             <AppIcon name="close" :size="18" />
           </button>
         </div>
 
-        <nav class="nav" aria-label="主导航">
-          <div v-for="group in navigation" :key="group.label" class="nav-group">
-            <div class="nav-label">{{ group.label }}</div>
+        <nav class="nav" :aria-label="t('common.mainNavigation')">
+          <div v-for="group in navigation" :key="group.labelKey" class="nav-group">
+            <div class="nav-label">{{ t(group.labelKey) }}</div>
             <RouterLink
               v-for="item in group.items"
               :key="item.path"
@@ -145,7 +148,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
               :class="{ 'is-active': route.path === item.path }"
             >
               <AppIcon :name="item.icon" :size="17" />
-              <span>{{ item.label }}</span>
+              <span>{{ t(item.labelKey) }}</span>
             </RouterLink>
           </div>
         </nav>
@@ -153,20 +156,30 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
         <div class="sidebar-foot">
           <div class="sidebar-status">
             <span class="live-dot"></span>
-            <span>管理界面已连接</span>
+            <span>{{ t('common.adminConnected') }}</span>
           </div>
           <div class="theme-control">
-            <span class="theme-control-label">外观</span>
+            <span class="theme-control-label">{{ t('common.language') }}</span>
+            <LocaleSwitch />
+          </div>
+          <div class="theme-control">
+            <span class="theme-control-label">{{ t('common.appearance') }}</span>
             <ThemeSwitch />
           </div>
           <div class="sidebar-account">
-            <button class="sidebar-action" type="button" @click="openPasswordDialog">
+            <button
+              class="sidebar-action"
+              type="button"
+              :aria-label="t('login.changePassword')"
+              :title="t('login.changePassword')"
+              @click="openPasswordDialog"
+            >
               <AppIcon name="key" :size="14" />
-              修改密码
+              {{ t('common.actions.changePassword') }}
             </button>
             <button class="sidebar-action" type="button" @click="handleLogout">
               <AppIcon name="logout" :size="14" />
-              退出登录
+              {{ t('common.actions.logout') }}
             </button>
           </div>
         </div>
@@ -177,7 +190,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
           <button
             class="btn ghost icon menu-button"
             type="button"
-            aria-label="打开导航"
+            :aria-label="t('common.openNavigation')"
             aria-controls="primary-navigation"
             :aria-expanded="sidebarOpen"
             @click="sidebarOpen = true"
@@ -202,14 +215,14 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
         <div v-if="passwordOpen" class="modal-overlay" @click.self="passwordOpen = false">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="password-dialog-title">
           <div class="modal-head">
-            <h3 id="password-dialog-title" class="modal-title">修改管理员密码</h3>
-            <button class="btn ghost icon small" type="button" aria-label="关闭" @click="passwordOpen = false">
+            <h3 id="password-dialog-title" class="modal-title">{{ t('login.changePassword') }}</h3>
+            <button class="btn ghost icon small" type="button" :aria-label="t('common.close')" @click="passwordOpen = false">
               <AppIcon name="close" :size="17" />
             </button>
           </div>
           <form class="stack" @submit.prevent="submitPassword" novalidate>
             <div class="field" :class="{ 'is-invalid': invalidField === 'current-password' }">
-              <label for="current-password">当前密码</label>
+              <label for="current-password">{{ t('login.currentPassword') }}</label>
               <input
                 id="current-password"
                 v-model="currentPassword"
@@ -221,7 +234,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
               />
             </div>
             <div class="field" :class="{ 'is-invalid': invalidField === 'new-password' }">
-              <label for="new-password">新密码</label>
+              <label for="new-password">{{ t('login.newPassword') }}</label>
               <input
                 id="new-password"
                 v-model="newPassword"
@@ -231,10 +244,10 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
                 required
                 @input="clear('new-password')"
               />
-              <span class="hint">至少 8 个字符</span>
+              <span class="hint">{{ t('login.passwordHint') }}</span>
             </div>
             <div class="field" :class="{ 'is-invalid': invalidField === 'confirm-password' }">
-              <label for="confirm-password">确认新密码</label>
+              <label for="confirm-password">{{ t('login.confirmPassword') }}</label>
               <input
                 id="confirm-password"
                 v-model="confirmPassword"
@@ -246,9 +259,9 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
               />
             </div>
             <div class="modal-actions">
-              <button class="btn ghost" type="button" @click="passwordOpen = false">取消</button>
+              <button class="btn ghost" type="button" @click="passwordOpen = false">{{ t('common.actions.cancel') }}</button>
               <LoadingButton type="submit" class="primary" :loading="passwordBusy">
-                保存新密码
+                {{ t('login.saveNewPassword') }}
               </LoadingButton>
             </div>
           </form>

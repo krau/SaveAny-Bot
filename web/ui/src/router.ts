@@ -1,4 +1,6 @@
+import { watch } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import { i18n, translate } from './i18n'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/AppLayout.vue'
 import LoginView from './views/LoginView.vue'
@@ -17,7 +19,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta: { title: '登录', public: true },
+      meta: { title: 'nav.login', public: true },
     },
     {
       path: '/',
@@ -27,43 +29,43 @@ const router = createRouter({
           path: '',
           name: 'dashboard',
           component: DashboardView,
-          meta: { title: '运行概览' },
+          meta: { title: 'nav.overview' },
         },
         {
           path: 'tasks',
           name: 'tasks',
           component: TasksView,
-          meta: { title: '任务' },
+          meta: { title: 'nav.tasks' },
         },
         {
           path: 'storages',
           name: 'storages',
           component: StoragesView,
-          meta: { title: '存储' },
+          meta: { title: 'nav.storages' },
         },
         {
           path: 'users',
           name: 'users',
           component: UsersView,
-          meta: { title: '用户' },
+          meta: { title: 'nav.users' },
         },
         {
           path: 'telegram',
           name: 'telegram',
           component: TelegramView,
-          meta: { title: 'Telegram' },
+          meta: { title: 'nav.telegram' },
         },
         {
           path: 'settings',
           name: 'settings',
           component: SettingsView,
-          meta: { title: '设置' },
+          meta: { title: 'nav.settings' },
         },
         {
           path: 'system',
           name: 'system',
           component: SystemView,
-          meta: { title: '系统' },
+          meta: { title: 'nav.system' },
         },
       ],
     },
@@ -92,9 +94,12 @@ router.beforeEach(async (to) => {
   return true
 })
 
-router.afterEach((to) => {
-  const title = typeof to.meta.title === 'string' ? to.meta.title : ''
-  document.title = title ? `${title} - SaveAny-Bot` : 'SaveAny-Bot'
-})
+function applyTitle(to = router.currentRoute.value) {
+  const key = typeof to.meta.title === 'string' ? to.meta.title : ''
+  document.title = key ? `${translate(key)} - SaveAny-Bot` : 'SaveAny-Bot'
+}
+
+router.afterEach((to) => applyTitle(to))
+watch(i18n.global.locale, () => applyTitle())
 
 export default router

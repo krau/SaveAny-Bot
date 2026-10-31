@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useToastStore } from '../stores/toasts'
 import type { ToastTone } from '../stores/toasts'
 import AppIcon from './AppIcon.vue'
 
 const toasts = useToastStore()
+const { t } = useI18n()
 
 const icons: Record<ToastTone, string> = {
   success: 'check',
@@ -24,7 +26,7 @@ const icons: Record<ToastTone, string> = {
       >
         <span class="toast-icon"><AppIcon :name="icons[item.tone]" :size="17" /></span>
         <p>{{ item.message }}</p>
-        <button class="toast-close" type="button" aria-label="关闭通知" @click="toasts.dismiss(item.id)">
+        <button class="toast-close" type="button" :aria-label="t('common.dismiss')" @click="toasts.dismiss(item.id)">
           <AppIcon name="close" :size="15" />
         </button>
       </div>

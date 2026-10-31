@@ -440,6 +440,7 @@ code {
 
 .sidebar-action {
   display: inline-flex;
+  min-width: 0;
   flex: 1;
   align-items: center;
   gap: 6px;
@@ -451,6 +452,7 @@ code {
   border-radius: 6px;
   font-size: 12px;
   text-align: left;
+  white-space: nowrap;
   transition:
     color 140ms var(--ease),
     background-color 140ms var(--ease);
@@ -474,7 +476,8 @@ code {
   font-size: 12px;
 }
 
-.theme-switch {
+.theme-switch,
+.locale-switch {
   display: inline-flex;
   gap: 2px;
   padding: 2px;
@@ -483,27 +486,31 @@ code {
   border-radius: 8px;
 }
 
-.theme-switch button {
+.theme-switch button,
+.locale-switch button {
   display: grid;
-  width: 26px;
+  min-width: 26px;
   height: 26px;
   place-items: center;
-  padding: 0;
+  padding: 0 5px;
   color: #9aa3ae;
   background: transparent;
   border: 0;
   border-radius: 5px;
+  font-size: 11px;
   transition:
     color 160ms var(--ease),
     background-color 160ms var(--ease);
 }
 
-.theme-switch button:hover {
+.theme-switch button:hover,
+.locale-switch button:hover {
   color: #f2f3f5;
   background: rgba(255, 255, 255, 0.06);
 }
 
-.theme-switch button.active {
+.theme-switch button.active,
+.locale-switch button.active {
   color: var(--ink);
   background: #e9ebef;
 }
@@ -617,9 +624,13 @@ code {
 .page-actions {
   display: flex;
   flex: none;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  width: max-content;
+}
+
+.page-actions .btn {
+  width: 160px;
 }
 
 .stack {
@@ -2592,11 +2603,13 @@ tbody tr:hover {
   background: var(--ink);
 }
 
-.login-theme {
+.login-preferences {
   position: absolute;
   top: 24px;
   right: 24px;
   z-index: 2;
+  display: flex;
+  gap: 8px;
 }
 
 .login-trace {
@@ -2937,7 +2950,19 @@ tbody tr:hover {
   }
 
   .page-actions {
+    display: flex;
     width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .page-actions .btn {
+    width: auto;
+    flex: 0 0 160px;
+  }
+
+  .page-actions .btn:not(:only-child) {
+    flex: 1 1 0;
+    max-width: 190px;
   }
 }
 
@@ -3073,7 +3098,7 @@ tbody tr:hover {
     display: none;
   }
 
-  .login-theme {
+  .login-preferences {
     top: 16px;
     right: 16px;
   }

@@ -1,3 +1,5 @@
+import { translate as t } from './i18n'
+
 export function formatDateTime(value?: string | null): string {
   if (!value) {
     return '—'
@@ -15,18 +17,18 @@ export function taskDisplayTitle(task: { title?: string; type?: string }): strin
   const markdown = raw.match(/^\[[^\]]+\]\((.*)\)$/)
   const inner = (markdown?.[1] ?? raw).trim()
   if (!inner) {
-    return '未命名任务'
+    return t('time.unnamedTask')
   }
   const transfer = inner.match(/^(\d+)\s+files\/([\d.]+)MB$/)
   if (transfer) {
-    return `${transfer[1]} 个文件，${transfer[2]} MB`
+    return t('time.files', { n: transfer[1], size: transfer[2] })
   }
   const arrow = inner.indexOf('->')
   const display = (arrow >= 0 ? inner.slice(0, arrow) : inner).replace(/\.\.\.$/, '').trim()
   if (display) {
     return display
   }
-  return task.type ? taskTypeLabel(task.type) : '未命名任务'
+  return task.type ? taskTypeLabel(task.type) : t('time.unnamedTask')
 }
 
 export function storageLocation(config: Record<string, unknown>): string {
@@ -37,7 +39,7 @@ export function storageLocation(config: Record<string, unknown>): string {
       return `${key} ${String(value)}`
     }
   }
-  return '未填写位置'
+  return t('time.locationUnset')
 }
 
 export function formatRelativeTime(value?: string | null): string {
@@ -49,11 +51,11 @@ export function formatRelativeTime(value?: string | null): string {
     return value
   }
   const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000))
-  if (seconds < 60) return '刚刚'
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟前`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} 小时前`
-  if (seconds < 172800) return '昨天'
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)} 天前`
+  if (seconds < 60) return t('time.justNow')
+  if (seconds < 3600) return t('time.minutesAgo', { n: Math.floor(seconds / 60) })
+  if (seconds < 86400) return t('time.hoursAgo', { n: Math.floor(seconds / 3600) })
+  if (seconds < 172800) return t('time.yesterday')
+  if (seconds < 604800) return t('time.daysAgo', { n: Math.floor(seconds / 86400) })
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
@@ -68,10 +70,10 @@ export function formatUptime(seconds?: number): string {
   const minutes = Math.floor((total % 3600) / 60)
   const secs = total % 60
   const parts: string[] = []
-  if (days > 0) parts.push(`${days} 天`)
-  if (hours > 0) parts.push(`${hours} 小时`)
-  if (minutes > 0) parts.push(`${minutes} 分`)
-  if (parts.length === 0 || secs > 0) parts.push(`${secs} 秒`)
+  if (days > 0) parts.push(t('time.days', { n: days }))
+  if (hours > 0) parts.push(t('time.hours', { n: hours }))
+  if (minutes > 0) parts.push(t('time.minutes', { n: minutes }))
+  if (parts.length === 0 || secs > 0) parts.push(t('time.seconds', { n: secs }))
   return parts.join(' ')
 }
 
@@ -90,15 +92,16 @@ export function formatBytes(bytes?: number): string {
 }
 
 const taskStatusLabels: Record<string, string> = {
-  queued: '排队中',
-  running: '进行中',
-  completed: '已完成',
-  failed: '失败',
-  cancelled: '已取消',
+  queued: 'states.queued',
+  running: 'states.running',
+  completed: 'states.completed',
+  failed: 'states.failed',
+  cancelled: 'states.cancelled',
 }
 
 export function taskStatusLabel(status: string): string {
-  return taskStatusLabels[status] ?? status
+  const key = taskStatusLabels[status]
+  return key ? t(key) : status
 }
 
 export function taskStatusTone(status: string): string {
@@ -117,18 +120,19 @@ export function taskStatusTone(status: string): string {
 }
 
 const telegramStateLabels: Record<string, string> = {
-  stopped: '已停止',
-  starting: '启动中',
-  running: '运行中',
-  error: '错误',
-  login_required: '需要登录',
+  stopped: 'states.stopped',
+  starting: 'states.starting',
+  running: 'states.running',
+  error: 'states.error',
+  login_required: 'states.loginRequired',
 }
 
 export function telegramStateLabel(state?: string): string {
   if (!state) {
-    return '未知'
+    return t('states.unknown')
   }
-  return telegramStateLabels[state] ?? state
+  const key = telegramStateLabels[state]
+  return key ? t(key) : state
 }
 
 export function telegramStateTone(state?: string): string {
@@ -146,15 +150,17 @@ export function telegramStateTone(state?: string): string {
   }
 }
 
+const taskTypeKeys: Record<string, string> = {
+  directlinks: 'taskTypes.directlinks',
+  ytdlp: 'taskTypes.ytdlp',
+  aria2: 'taskTypes.aria2',
+  parseditem: 'taskTypes.parseditem',
+  tgfiles: 'taskTypes.tgfiles',
+  tphpics: 'taskTypes.tphpics',
+  transfer: 'taskTypes.transfer',
+}
+
 export function taskTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    directlinks: '直链下载',
-    ytdlp: 'yt-dlp',
-    aria2: 'Aria2',
-    parseditem: '解析链接',
-    tgfiles: 'Telegram 文件',
-    tphpics: 'Telegraph 图集',
-    transfer: '存储迁移',
-  }
-  return labels[type] ?? type
+  const key = taskTypeKeys[type]
+  return key ? t(key) : type
 }

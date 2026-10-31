@@ -1,3 +1,5 @@
+import { i18n } from './i18n'
+
 export type StorageFieldKind = 'text' | 'number' | 'bool' | 'secret' | 'list'
 
 export interface StorageField {
@@ -18,132 +20,152 @@ export interface StorageTypeDef {
 export const storageTypeDefs: StorageTypeDef[] = [
   {
     type: 'local',
-    label: '本地磁盘',
+    label: 'storages.types.local',
     fields: [
       {
         name: 'base_path',
-        label: '基础路径',
+        label: 'storages.fields.basePath',
         kind: 'text',
-        placeholder: '/data/downloads',
+        placeholder: 'storages.fields.placeholders.localBasePath',
         required: true,
       },
     ],
   },
   {
     type: 'webdav',
-    label: 'WebDAV',
+    label: 'storages.types.webdav',
     fields: [
       {
         name: 'url',
-        label: '服务器地址',
+        label: 'storages.fields.serverUrl',
         kind: 'text',
-        placeholder: 'https://dav.example.com',
+        placeholder: 'storages.fields.placeholders.webdavUrl',
         required: true,
       },
-      { name: 'username', label: '用户名', kind: 'text' },
-      { name: 'password', label: '密码', kind: 'secret' },
-      { name: 'base_path', label: '基础路径', kind: 'text', placeholder: '/saveany' },
+      { name: 'username', label: 'storages.fields.username', kind: 'text' },
+      { name: 'password', label: 'storages.fields.password', kind: 'secret' },
+      {
+        name: 'base_path',
+        label: 'storages.fields.basePath',
+        kind: 'text',
+        placeholder: 'storages.fields.placeholders.basePath',
+      },
     ],
   },
   {
     type: 'alist',
-    label: 'AList',
+    label: 'storages.types.alist',
     fields: [
       {
         name: 'url',
-        label: '服务器地址',
+        label: 'storages.fields.serverUrl',
         kind: 'text',
-        placeholder: 'https://alist.example.com',
+        placeholder: 'storages.fields.placeholders.alistUrl',
         required: true,
       },
-      { name: 'username', label: '用户名', kind: 'text' },
-      { name: 'password', label: '密码', kind: 'secret' },
-      { name: 'token', label: 'Token', kind: 'secret', hint: '可留空，登录后自动获取' },
-      { name: 'base_path', label: '基础路径', kind: 'text', placeholder: '/saveany' },
+      { name: 'username', label: 'storages.fields.username', kind: 'text' },
+      { name: 'password', label: 'storages.fields.password', kind: 'secret' },
+      {
+        name: 'token',
+        label: 'storages.fields.token',
+        kind: 'secret',
+        hint: 'storages.fields.tokenHint',
+      },
+      {
+        name: 'base_path',
+        label: 'storages.fields.basePath',
+        kind: 'text',
+        placeholder: 'storages.fields.placeholders.basePath',
+      },
       {
         name: 'token_exp',
-        label: 'Token 过期时间',
+        label: 'storages.fields.tokenExp',
         kind: 'number',
-        hint: 'Unix 时间戳，可留空由服务端刷新',
+        hint: 'storages.fields.tokenExpHint',
       },
     ],
   },
   {
     type: 's3',
-    label: 'S3 兼容存储',
+    label: 'storages.types.s3',
     fields: [
       {
         name: 'endpoint',
-        label: 'Endpoint',
+        label: 'storages.fields.endpoint',
         kind: 'text',
-        placeholder: 's3.example.com',
+        placeholder: 'storages.fields.placeholders.s3Endpoint',
         required: true,
       },
-      { name: 'access_key_id', label: 'Access Key ID', kind: 'secret', required: true },
-      { name: 'secret_access_key', label: 'Secret Access Key', kind: 'secret', required: true },
-      { name: 'bucket_name', label: 'Bucket', kind: 'text', required: true },
-      { name: 'base_path', label: '基础路径', kind: 'text' },
-      { name: 'use_ssl', label: '使用 SSL', kind: 'bool' },
-      { name: 'region', label: 'Region', kind: 'text', placeholder: 'us-east-1' },
-      { name: 'virtual_host', label: 'Virtual Host 模式', kind: 'bool' },
+      { name: 'access_key_id', label: 'storages.fields.accessKeyId', kind: 'secret', required: true },
+      { name: 'secret_access_key', label: 'storages.fields.secretAccessKey', kind: 'secret', required: true },
+      { name: 'bucket_name', label: 'storages.fields.bucket', kind: 'text', required: true },
+      { name: 'base_path', label: 'storages.fields.basePath', kind: 'text' },
+      { name: 'use_ssl', label: 'storages.fields.useSsl', kind: 'bool' },
+      { name: 'region', label: 'storages.fields.region', kind: 'text', placeholder: 'storages.fields.placeholders.region' },
+      { name: 'virtual_host', label: 'storages.fields.virtualHost', kind: 'bool' },
     ],
   },
   {
     type: 'minio',
-    label: 'MinIO',
+    label: 'storages.types.minio',
     fields: [
       {
         name: 'endpoint',
-        label: 'Endpoint',
+        label: 'storages.fields.endpoint',
         kind: 'text',
-        placeholder: 'minio.example.com:9000',
+        placeholder: 'storages.fields.placeholders.minioEndpoint',
         required: true,
       },
-      { name: 'access_key_id', label: 'Access Key ID', kind: 'secret', required: true },
-      { name: 'secret_access_key', label: 'Secret Access Key', kind: 'secret', required: true },
-      { name: 'bucket_name', label: 'Bucket', kind: 'text', required: true },
-      { name: 'base_path', label: '基础路径', kind: 'text' },
-      { name: 'use_ssl', label: '使用 SSL', kind: 'bool' },
+      { name: 'access_key_id', label: 'storages.fields.accessKeyId', kind: 'secret', required: true },
+      { name: 'secret_access_key', label: 'storages.fields.secretAccessKey', kind: 'secret', required: true },
+      { name: 'bucket_name', label: 'storages.fields.bucket', kind: 'text', required: true },
+      { name: 'base_path', label: 'storages.fields.basePath', kind: 'text' },
+      { name: 'use_ssl', label: 'storages.fields.useSsl', kind: 'bool' },
     ],
   },
   {
     type: 'telegram',
-    label: 'Telegram',
+    label: 'storages.types.telegram',
     fields: [
       {
         name: 'chat_id',
-        label: 'Chat ID',
+        label: 'storages.fields.chatId',
         kind: 'number',
-        hint: '目标频道或群组的数字 ID',
+        hint: 'storages.fields.chatIdHint',
         required: true,
       },
-      { name: 'force_file', label: '强制以文件发送', kind: 'bool' },
-      { name: 'rate_limit', label: '速率限制', kind: 'number', hint: '每秒请求数，0 表示默认' },
-      { name: 'rate_burst', label: '突发数量', kind: 'number' },
-      { name: 'skip_large', label: '跳过超限文件', kind: 'bool', hint: '跳过超过 2GB 的文件' },
-      { name: 'split_large_video', label: '分割大视频', kind: 'bool' },
-      { name: 'split_size_mb', label: '分割大小 (MB)', kind: 'number' },
+      { name: 'force_file', label: 'storages.fields.forceFile', kind: 'bool' },
+      {
+        name: 'rate_limit',
+        label: 'storages.fields.rateLimit',
+        kind: 'number',
+        hint: 'storages.fields.rateLimitHint',
+      },
+      { name: 'rate_burst', label: 'storages.fields.rateBurst', kind: 'number' },
+      { name: 'skip_large', label: 'storages.fields.skipLarge', kind: 'bool', hint: 'storages.fields.skipLargeHint' },
+      { name: 'split_large_video', label: 'storages.fields.splitVideo', kind: 'bool' },
+      { name: 'split_size_mb', label: 'storages.fields.splitSize', kind: 'number' },
     ],
   },
   {
     type: 'rclone',
-    label: 'rclone',
+    label: 'storages.types.rclone',
     fields: [
       {
         name: 'remote',
-        label: 'Remote 名称',
+        label: 'storages.fields.remote',
         kind: 'text',
-        placeholder: 'myremote',
+        placeholder: 'storages.fields.placeholders.remote',
         required: true,
       },
-      { name: 'base_path', label: '基础路径', kind: 'text' },
+      { name: 'base_path', label: 'storages.fields.basePath', kind: 'text' },
       {
         name: 'config_path',
-        label: '配置文件路径',
+        label: 'storages.fields.configPath',
         kind: 'text',
-        hint: '留空使用默认 rclone 配置',
+        hint: 'storages.fields.configPathHint',
       },
-      { name: 'flags', label: '额外参数', kind: 'list', hint: '每行一个参数，例如 --transfers 4' },
+      { name: 'flags', label: 'storages.fields.flags', kind: 'list', hint: 'storages.fields.flagsHint' },
     ],
   },
 ]
@@ -153,7 +175,8 @@ export function storageTypeDef(type: string): StorageTypeDef | undefined {
 }
 
 export function storageTypeLabel(type: string): string {
-  return storageTypeDef(type)?.label ?? type
+  const def = storageTypeDef(type)
+  return def ? (i18n.global.t(def.label) as string) : type
 }
 
 export function storageTypeIcon(type: string): string {

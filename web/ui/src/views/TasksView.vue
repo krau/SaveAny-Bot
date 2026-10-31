@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { errorMessage, storagesApi, tasksApi } from '../api'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
@@ -12,6 +13,7 @@ import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
 import type { CreateTaskRequest, StorageRecord, TaskItem } from '../types'
 
+const { t } = useI18n()
 const toast = useToastStore()
 const confirm = useConfirmStore()
 const route = useRoute()
@@ -29,24 +31,24 @@ const { startResize: startTaskModalResize, endResize: endTaskModalResize } =
   useModalHeightTransition(taskModal)
 let timer: number | undefined
 
-const statusOptions = [
-  { value: '', label: '全部状态' },
-  { value: 'queued', label: '排队中' },
-  { value: 'running', label: '进行中' },
-  { value: 'completed', label: '已完成' },
-  { value: 'failed', label: '失败' },
-  { value: 'cancelled', label: '已取消' },
-]
-const typeOptions = [
-  { value: '', label: '全部类型' },
-  { value: 'directlinks', label: '直链下载' },
-  { value: 'ytdlp', label: 'yt-dlp' },
-  { value: 'aria2', label: 'Aria2' },
-  { value: 'parseditem', label: '解析链接' },
-  { value: 'tgfiles', label: 'Telegram 文件' },
-  { value: 'tphpics', label: 'Telegraph 图集' },
-  { value: 'transfer', label: '存储迁移' },
-]
+const statusOptions = computed(() => [
+  { value: '', label: t('tasks.filters.allStatuses') },
+  { value: 'queued', label: t('tasks.status.queued') },
+  { value: 'running', label: t('tasks.status.running') },
+  { value: 'completed', label: t('tasks.status.completed') },
+  { value: 'failed', label: t('tasks.status.failed') },
+  { value: 'cancelled', label: t('tasks.status.cancelled') },
+])
+const typeOptions = computed(() => [
+  { value: '', label: t('tasks.filters.allTypes') },
+  { value: 'directlinks', label: t('tasks.types.directlinks') },
+  { value: 'ytdlp', label: t('tasks.types.ytdlp') },
+  { value: 'aria2', label: t('tasks.types.aria2') },
+  { value: 'parseditem', label: t('tasks.types.parseditem') },
+  { value: 'tgfiles', label: t('tasks.types.tgfiles') },
+  { value: 'tphpics', label: t('tasks.types.tphpics') },
+  { value: 'transfer', label: t('tasks.types.transfer') },
+])
 
 async function load() {
   try {
@@ -97,7 +99,7 @@ async function create(payload: CreateTaskRequest) {
   creating.value = true
   try {
     await tasksApi.create(payload)
-    toast.push('任务已创建', 'success')
+    toast.push(t('tasks.toast.created'), 'success')
     createOpen.value = false
     await load()
   } catch (err) {
@@ -109,9 +111,9 @@ async function create(payload: CreateTaskRequest) {
 
 async function cancel(taskId: string) {
   const confirmed = await confirm.ask({
-    title: '取消任务',
-    message: '取消该任务？正在下载的内容会被中断。',
-    confirmText: '取消任务',
+    title: t('tasks.confirm.cancelTitle'),
+    message: t('tasks.confirm.cancelMessage'),
+    confirmText: t('tasks.confirm.cancelConfirm'),
   })
   if (!confirmed) return
   busyId.value = taskId
@@ -127,9 +129,9 @@ async function cancel(taskId: string) {
 
 async function remove(taskId: string) {
   const confirmed = await confirm.ask({
-    title: '删除任务记录',
-    message: '删除该任务记录？此操作不可撤销。',
-    confirmText: '删除记录',
+    title: t('tasks.confirm.removeTitle'),
+    message: t('tasks.confirm.removeMessage'),
+    confirmText: t('tasks.confirm.removeConfirm'),
     danger: true,
   })
   if (!confirmed) return
@@ -147,30 +149,30 @@ async function remove(taskId: string) {
 
 <template>
   <div class="stack">
-    <PageHeader title="任务">
+    <PageHeader :title="t('nav.tasks')">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
-          刷新
+          {{ t('common.actions.refresh') }}
         </button>
         <button class="btn primary small" type="button" @click="createOpen = true">
           <AppIcon name="plus" :size="15" />
-          新建任务
+          {{ t('common.actions.createTask') }}
         </button>
       </template>
     </PageHeader>
 
     <div class="filter-bar">
       <div class="filter-field">
-        <label for="task-status-filter">状态</label>
+        <label for="task-status-filter">{{ t('tasks.filters.status') }}</label>
         <AppSelect id="task-status-filter" v-model="statusFilter" :options="statusOptions" @change="load" />
       </div>
       <div class="filter-field">
-        <label for="task-type-filter">类型</label>
+        <label for="task-type-filter">{{ t('tasks.filters.type') }}</label>
         <AppSelect id="task-type-filter" v-model="typeFilter" :options="typeOptions" @change="load" />
       </div>
       <div class="filter-spacer"></div>
-      <span class="count">共 {{ total }} 条记录</span>
+      <span class="count">{{ t('tasks.count', { total }) }}</span>
     </div>
 
     <TaskTable :tasks="tasks" :busy-id="busyId" @cancel="cancel" @remove="remove" />
@@ -186,8 +188,8 @@ async function remove(taskId: string) {
             aria-labelledby="create-task-title"
           >
             <div class="modal-head">
-              <h3 id="create-task-title" class="modal-title">新建任务</h3>
-              <button class="btn ghost icon small" type="button" aria-label="关闭" @click="createOpen = false">
+              <h3 id="create-task-title" class="modal-title">{{ t('tasks.createTitle') }}</h3>
+              <button class="btn ghost icon small" type="button" :aria-label="t('common.close')" @click="createOpen = false">
                 <AppIcon name="close" :size="17" />
               </button>
             </div>
