@@ -137,6 +137,8 @@ function boolValue(group: string, field: SettingsField): boolean {
 }
 
 function setTextField(group: string, field: SettingsField, raw: string) {
+  const key = fieldKey(group, field.path)
+  if (field.kind !== 'json') delete invalid[key]
   let value: unknown = raw
   if (field.kind === 'number') {
     value = raw === '' ? 0 : Number(raw)
@@ -150,8 +152,8 @@ function setTextField(group: string, field: SettingsField, raw: string) {
         value = JSON.parse(raw)
         delete invalid[fieldKey(group, field.path)]
       } catch {
-        invalid[fieldKey(group, field.path)] = `${field.label} 不是合法的 JSON`
-        toast.push(invalid[fieldKey(group, field.path)], 'error')
+        invalid[key] = `${field.label} 不是合法的 JSON`
+        toast.push(invalid[key], 'error')
         return
       }
     }
@@ -165,9 +167,23 @@ async function save(group: string) {
     const def = settingsGroups.find((item) => item.key === group)
     if (!def) return
     for (const field of def.fields) {
-      if (invalid[fieldKey(group, field.path)]) {
-        toast.push(invalid[fieldKey(group, field.path)], 'error')
+      const key = fieldKey(group, field.path)
+      if (invalid[key]) {
+        toast.push(invalid[key], 'error')
         return
+      }
+      if (field.kind === 'number') {
+        const value = Number(readPath(values[group], field.path) ?? 0)
+        const minimum = field.min
+        if (!Number.isFinite(value) || (minimum !== undefined && value < minimum)) {
+          invalid[key] =
+            minimum === undefined
+              ? `${field.label}必须是数字`
+              : `${field.label}不能小于 ${minimum}`
+          toast.push(invalid[key], 'error')
+          document.getElementById(`${group}-${field.path}`)?.focus()
+          return
+        }
       }
     }
     const patch: JsonObject = {}

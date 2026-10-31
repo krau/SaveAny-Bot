@@ -4,6 +4,7 @@ import { errorMessage, settingsApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
+import { useFormFeedback } from '../composables/useFormFeedback'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
 import { telegramStateLabel, telegramStateTone } from '../utils'
@@ -11,6 +12,7 @@ import type { JsonObject, TelegramStatus } from '../types'
 
 const toast = useToastStore()
 const confirm = useConfirmStore()
+const { invalidField, fail, clear } = useFormFeedback()
 const status = ref<TelegramStatus | null>(null)
 const botBusy = ref(false)
 const userbotBusy = ref(false)
@@ -147,7 +149,37 @@ onUnmounted(() => {
   if (timer) window.clearInterval(timer)
 })
 
+function validateBotSettings(): boolean {
+  clear()
+  if (!token.value.trim()) {
+    fail('请填写 Bot Token', 'tg-token')
+    return false
+  }
+  if (!Number.isInteger(appId.value) || appId.value <= 0) {
+    fail('请填写有效的 API ID', 'tg-app-id')
+    return false
+  }
+  if (!appHash.value.trim()) {
+    fail('请填写 API Hash', 'tg-app-hash')
+    return false
+  }
+  if (!Number.isInteger(rpcRetry.value) || rpcRetry.value < 0) {
+    fail('请填写有效的 RPC 重试次数', 'tg-rpc-retry')
+    return false
+  }
+  if (!Number.isFinite(mediaTimeout.value) || mediaTimeout.value < 0) {
+    fail('请填写有效的媒体组超时时间', 'tg-media-timeout')
+    return false
+  }
+  if (proxyEnable.value && !proxyURL.value.trim()) {
+    fail('请填写代理地址', 'tg-proxy')
+    return false
+  }
+  return true
+}
+
 async function saveBotSettings() {
+  if (!validateBotSettings()) return
   botBusy.value = true
   try {
     const patch: JsonObject = {
@@ -171,7 +203,17 @@ async function saveBotSettings() {
   }
 }
 
+function validateUserbotSettings(): boolean {
+  clear()
+  if (userbotEnable.value && !userbotSession.value.trim()) {
+    fail('请填写会话文件路径', 'tg-session')
+    return false
+  }
+  return true
+}
+
 async function saveUserbotSettings() {
+  if (!validateUserbotSettings()) return
   userbotBusy.value = true
   try {
     const patch: JsonObject = {
@@ -265,6 +307,12 @@ async function focusUserbotLogin() {
 }
 
 async function startLogin() {
+  clear()
+  const normalizedPhone = phone.value.replace(/[\s-]/g, '')
+  if (!/^\+?\d{6,15}$/.test(normalizedPhone)) {
+    fail('请填写有效的手机号（含国家码）', 'tg-phone')
+    return
+  }
   loginBusy.value = true
   try {
     await telegramApi.login(phone.value)
@@ -282,6 +330,11 @@ async function startLogin() {
 async function submitCode() {
   const flow = loginFlow.value
   if (!flow) return
+  clear()
+  if (!code.value.trim()) {
+    fail('请填写验证码', 'tg-code')
+    return
+  }
   try {
     await telegramApi.submitCode(flow.flow_id, code.value)
     code.value = ''
@@ -294,6 +347,11 @@ async function submitCode() {
 async function submitPassword() {
   const flow = loginFlow.value
   if (!flow) return
+  clear()
+  if (!password.value) {
+    fail('请填写两步验证密码', 'tg-password')
+    return
+  }
   try {
     await telegramApi.submitPassword(flow.flow_id, password.value)
     password.value = ''
@@ -427,29 +485,68 @@ async function logoutUserbot() {
       </div>
       <form v-if="settingsLoaded" class="stack" @submit.prevent="saveBotSettings" novalidate>
         <div class="form-grid telegram-form-grid">
-          <div class="field">
-            <label for="tg-token">Bot Token</label>
-            <input id="tg-token" v-model="token" type="password" autocomplete="off" />
+          <div class="field" :class="{ 'is-invalid': invalidField === 'tg-token' }">
+            <label for="tg-token">Bot Token *</label>
+            <input
+              id="tg-token"
+              v-model="token"
+              type="password"
+              autocomplete="off"
+              :aria-invalid="invalidField === 'tg-token' ? 'true' : undefined"
+              @input="clear('tg-token')"
+            />
           </div>
-          <div class="field">
-            <label for="tg-app-id">API ID</label>
-            <input id="tg-app-id" v-model.number="appId" type="number" />
+          <div class="field" :class="{ 'is-invalid': invalidField === 'tg-app-id' }">
+            <label for="tg-app-id">API ID *</label>
+            <input
+              id="tg-app-id"
+              v-model.number="appId"
+              type="number"
+              :aria-invalid="invalidField === 'tg-app-id' ? 'true' : undefined"
+              @input="clear('tg-app-id')"
+            />
           </div>
-          <div class="field">
-            <label for="tg-app-hash">API Hash</label>
-            <input id="tg-app-hash" v-model="appHash" type="password" autocomplete="off" />
+          <div class="field" :class="{ 'is-invalid': invalidField === 'tg-app-hash' }">
+            <label for="tg-app-hash">API Hash *</label>
+            <input
+              id="tg-app-hash"
+              v-model="appHash"
+              type="password"
+              autocomplete="off"
+              :aria-invalid="invalidField === 'tg-app-hash' ? 'true' : undefined"
+              @input="clear('tg-app-hash')"
+            />
           </div>
-          <div class="field">
+          <div class="field" :class="{ 'is-invalid': invalidField === 'tg-rpc-retry' }">
             <label for="tg-rpc-retry">RPC 重试</label>
-            <input id="tg-rpc-retry" v-model.number="rpcRetry" type="number" />
+            <input
+              id="tg-rpc-retry"
+              v-model.number="rpcRetry"
+              type="number"
+              :aria-invalid="invalidField === 'tg-rpc-retry' ? 'true' : undefined"
+              @input="clear('tg-rpc-retry')"
+            />
           </div>
-          <div class="field">
+          <div class="field" :class="{ 'is-invalid': invalidField === 'tg-media-timeout' }">
             <label for="tg-media-timeout">媒体组超时（秒）</label>
-            <input id="tg-media-timeout" v-model.number="mediaTimeout" type="number" />
+            <input
+              id="tg-media-timeout"
+              v-model.number="mediaTimeout"
+              type="number"
+              :aria-invalid="invalidField === 'tg-media-timeout' ? 'true' : undefined"
+              @input="clear('tg-media-timeout')"
+            />
           </div>
-          <div class="field">
+          <div class="field" :class="{ 'is-invalid': invalidField === 'tg-proxy' }">
             <label for="tg-proxy">代理地址</label>
-            <input id="tg-proxy" v-model="proxyURL" placeholder="socks5://127.0.0.1:1080" :disabled="!proxyEnable" />
+            <input
+              id="tg-proxy"
+              v-model="proxyURL"
+              placeholder="socks5://127.0.0.1:1080"
+              :disabled="!proxyEnable"
+              :aria-invalid="invalidField === 'tg-proxy' ? 'true' : undefined"
+              @input="clear('tg-proxy')"
+            />
             <label class="checkbox">
               <input v-model="proxyEnable" type="checkbox" />
               <span>使用代理</span>
@@ -493,14 +590,16 @@ async function logoutUserbot() {
             </p>
 
             <form v-if="!flowActive" class="stack" @submit.prevent="startLogin" novalidate>
-              <div class="field">
-                <label for="tg-phone">手机号（含国家码）</label>
+              <div class="field" :class="{ 'is-invalid': invalidField === 'tg-phone' }">
+                <label for="tg-phone">手机号（含国家码）*</label>
                 <input
                   id="tg-phone"
                   ref="phoneInput"
                   v-model="phone"
                   placeholder="+8613800000000"
                   autocomplete="tel"
+                  :aria-invalid="invalidField === 'tg-phone' ? 'true' : undefined"
+                  @input="clear('tg-phone')"
                 />
               </div>
               <div>
@@ -512,18 +611,33 @@ async function logoutUserbot() {
               <p class="hint">验证码会发送到该 Telegram 账号。</p>
             </form>
 
-            <div v-if="canSubmitCode" class="field">
+            <div v-if="canSubmitCode" class="field" :class="{ 'is-invalid': invalidField === 'tg-code' }">
               <label for="tg-code">Telegram 验证码</label>
               <div class="row">
-                <input id="tg-code" v-model="code" class="grow" placeholder="输入收到的验证码" />
+                <input
+                  id="tg-code"
+                  v-model="code"
+                  class="grow"
+                  placeholder="输入收到的验证码"
+                  :aria-invalid="invalidField === 'tg-code' ? 'true' : undefined"
+                  @input="clear('tg-code')"
+                />
                 <button class="btn primary" type="button" @click="submitCode">提交</button>
               </div>
             </div>
 
-            <div v-if="canSubmitPassword" class="field">
+            <div v-if="canSubmitPassword" class="field" :class="{ 'is-invalid': invalidField === 'tg-password' }">
               <label for="tg-password">两步验证密码</label>
               <div class="row">
-                <input id="tg-password" v-model="password" class="grow" type="password" placeholder="输入两步验证密码" />
+                <input
+                  id="tg-password"
+                  v-model="password"
+                  class="grow"
+                  type="password"
+                  placeholder="输入两步验证密码"
+                  :aria-invalid="invalidField === 'tg-password' ? 'true' : undefined"
+                  @input="clear('tg-password')"
+                />
                 <button class="btn primary" type="button" @click="submitPassword">提交</button>
               </div>
             </div>
@@ -538,9 +652,15 @@ async function logoutUserbot() {
           <div class="userbot-settings-head">
             <h3>会话设置</h3>
           </div>
-          <div class="field">
-            <label for="tg-session">会话文件</label>
-            <input id="tg-session" v-model="userbotSession" placeholder="data/usersession.db" />
+          <div class="field" :class="{ 'is-invalid': invalidField === 'tg-session' }">
+            <label for="tg-session">会话文件<span v-if="userbotEnable"> *</span></label>
+            <input
+              id="tg-session"
+              v-model="userbotSession"
+              placeholder="data/usersession.db"
+              :aria-invalid="invalidField === 'tg-session' ? 'true' : undefined"
+              @input="clear('tg-session')"
+            />
           </div>
           <label class="checkbox">
             <input v-model="userbotEnable" type="checkbox" />

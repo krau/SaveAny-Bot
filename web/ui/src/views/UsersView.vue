@@ -100,8 +100,12 @@ function toggleStorage(name: string) {
 }
 
 async function save() {
-  busy.value = true
   clear()
+  if (form.filename_strategy === 'template' && !form.filename_template.trim()) {
+    fail('请填写文件名模板', 'user-template')
+    return
+  }
+  busy.value = true
   const filter: UserStorageFilter = { storages: form.storages, blacklist: form.blacklist }
   const patch: UserPatch = {
     enabled: form.enabled,
@@ -263,7 +267,7 @@ async function remove(user: UserItem) {
           <form class="stack" @submit.prevent="save" novalidate>
             <div class="form-grid">
               <div class="field" :class="{ 'is-invalid': invalidField === 'user-chat-id' }">
-                <label for="user-chat-id">Telegram Chat ID</label>
+                <label for="user-chat-id">Telegram Chat ID *</label>
                 <input
                   id="user-chat-id"
                   v-model="form.chat_id"
@@ -306,6 +310,7 @@ async function remove(user: UserItem) {
                   id="user-fname"
                   v-model="form.filename_strategy"
                   :options="filenameStrategyOptions"
+                  @update:model-value="clear('user-template')"
                 />
               </div>
               <div class="field">
@@ -317,9 +322,15 @@ async function remove(user: UserItem) {
                 />
               </div>
             </div>
-            <div class="field">
+            <div class="field" :class="{ 'is-invalid': invalidField === 'user-template' }">
               <label for="user-template">文件名模板</label>
-              <input id="user-template" v-model="form.filename_template" :placeholder="'{{.origname}}'" />
+              <input
+                id="user-template"
+                v-model="form.filename_template"
+                :placeholder="'{{.origname}}'"
+                :aria-invalid="invalidField === 'user-template' ? 'true' : undefined"
+                @input="clear('user-template')"
+              />
             </div>
             <div class="modal-actions">
               <button class="btn ghost" type="button" @click="formOpen = false">取消</button>

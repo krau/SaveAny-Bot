@@ -66,6 +66,10 @@ function openPasswordDialog() {
 
 async function submitPassword() {
   clear()
+  if (!currentPassword.value) {
+    fail('请输入当前密码', 'current-password')
+    return
+  }
   if (newPassword.value.length < 8) {
     fail('新密码至少需要 8 个字符', 'new-password')
     return
@@ -204,9 +208,17 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
             </button>
           </div>
           <form class="stack" @submit.prevent="submitPassword" novalidate>
-            <div class="field">
+            <div class="field" :class="{ 'is-invalid': invalidField === 'current-password' }">
               <label for="current-password">当前密码</label>
-              <input id="current-password" v-model="currentPassword" type="password" autocomplete="current-password" required />
+              <input
+                id="current-password"
+                v-model="currentPassword"
+                type="password"
+                autocomplete="current-password"
+                :aria-invalid="invalidField === 'current-password' ? 'true' : undefined"
+                required
+                @input="clear('current-password')"
+              />
             </div>
             <div class="field" :class="{ 'is-invalid': invalidField === 'new-password' }">
               <label for="new-password">新密码</label>

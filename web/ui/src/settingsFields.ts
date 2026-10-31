@@ -6,6 +6,7 @@ export interface SettingsField {
   kind: SettingsFieldKind
   placeholder?: string
   hint?: string
+  min?: number
   options?: { value: string; label: string }[]
 }
 
@@ -29,9 +30,9 @@ export const settingsGroups: SettingsGroupDef[] = [
           { value: 'en', label: 'English' },
         ],
       },
-      { path: 'workers', label: 'Worker 数量', kind: 'number', hint: '重启后生效' },
-      { path: 'retry', label: '重试次数', kind: 'number' },
-      { path: 'threads', label: '下载线程数', kind: 'number' },
+      { path: 'workers', label: 'Worker 数量', kind: 'number', hint: '重启后生效', min: 1 },
+      { path: 'retry', label: '重试次数', kind: 'number', min: 0 },
+      { path: 'threads', label: '下载线程数', kind: 'number', min: 1 },
       { path: 'stream', label: '流式下载', kind: 'bool' },
       { path: 'no_clean_cache', label: '保留缓存', kind: 'bool' },
       {
@@ -79,7 +80,7 @@ export const settingsGroups: SettingsGroupDef[] = [
     key: 'ytdlp',
     title: 'yt-dlp',
     fields: [
-      { path: 'max_height', label: '最大高度', kind: 'number', hint: '0 表示不限制' },
+      { path: 'max_height', label: '最大高度', kind: 'number', hint: '0 表示不限制', min: 0 },
       { path: 'format', label: '格式选择', kind: 'text', placeholder: 'bestvideo+bestaudio/best' },
       { path: 'recode', label: '转码容器', kind: 'text', placeholder: 'mp4' },
       {
@@ -117,9 +118,9 @@ export const settingsGroups: SettingsGroupDef[] = [
     key: 'cache',
     title: '缓存',
     fields: [
-      { path: 'ttl', label: 'TTL（秒）', kind: 'number' },
-      { path: 'num_counters', label: '计数器数量', kind: 'number' },
-      { path: 'max_cost', label: '最大开销', kind: 'number' },
+      { path: 'ttl', label: 'TTL（秒）', kind: 'number', min: 0 },
+      { path: 'num_counters', label: '计数器数量', kind: 'number', min: 1 },
+      { path: 'max_cost', label: '最大开销', kind: 'number', min: 0 },
     ],
   },
   {

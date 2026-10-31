@@ -101,6 +101,24 @@ function changeType(next: string) {
   void nextTick(() => emit('resize-end'))
 }
 
+function validateFields(): boolean {
+  for (const field of fields.value) {
+    const raw = (values[field.name] ?? '').trim()
+    if (field.required && raw === '') {
+      fail(`请填写${field.label}`, `storage-field-${field.name}`)
+      return false
+    }
+    if (field.kind === 'number' && raw !== '') {
+      const num = Number(raw)
+      if (!Number.isFinite(num) || (field.name === 'chat_id' && num === 0)) {
+        fail(`请填写有效的${field.label}`, `storage-field-${field.name}`)
+        return false
+      }
+    }
+  }
+  return true
+}
+
 function submit() {
   clear()
   const storageName = name.value.trim()
@@ -108,6 +126,7 @@ function submit() {
     fail('请填写存储名称', 'storage-name')
     return
   }
+  if (!validateFields()) return
   const config: JsonObject = {}
   for (const field of fields.value) {
     const raw = values[field.name] ?? ''
@@ -144,7 +163,7 @@ function submit() {
     <div class="modal-form-body">
       <div class="form-grid">
       <div class="field" :class="{ 'is-invalid': invalidField === 'storage-name' }">
-        <label for="storage-name">名称</label>
+        <label for="storage-name">名称 *</label>
         <input
           id="storage-name"
           v-model="name"
@@ -178,13 +197,20 @@ function submit() {
           <input v-model="bools[field.name]" type="checkbox" />
           <span>{{ field.label }}</span>
         </label>
-        <div v-else class="field">
-          <label :for="`storage-field-${field.name}`">{{ field.label }}</label>
+        <div
+          v-else
+          class="field"
+          :class="{ 'is-invalid': invalidField === `storage-field-${field.name}` }"
+        >
+          <label :for="`storage-field-${field.name}`">
+            {{ field.label }}<span v-if="field.required"> *</span>
+          </label>
           <textarea
             v-if="field.kind === 'list'"
             :id="`storage-field-${field.name}`"
             v-model="values[field.name]"
             :placeholder="field.placeholder"
+            @input="clear(`storage-field-${field.name}`)"
           ></textarea>
           <input
             v-else
@@ -192,7 +218,9 @@ function submit() {
             v-model="values[field.name]"
             :type="field.kind === 'number' ? 'number' : field.kind === 'secret' ? 'password' : 'text'"
             :placeholder="field.placeholder"
+            :aria-invalid="invalidField === `storage-field-${field.name}` ? 'true' : undefined"
             autocomplete="off"
+            @input="clear(`storage-field-${field.name}`)"
           />
           <span v-if="field.hint" class="hint">{{ field.hint }}</span>
         </div>

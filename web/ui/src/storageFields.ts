@@ -6,6 +6,7 @@ export interface StorageField {
   kind: StorageFieldKind
   placeholder?: string
   hint?: string
+  required?: boolean
 }
 
 export interface StorageTypeDef {
@@ -19,14 +20,26 @@ export const storageTypeDefs: StorageTypeDef[] = [
     type: 'local',
     label: '本地磁盘',
     fields: [
-      { name: 'base_path', label: '基础路径', kind: 'text', placeholder: '/data/downloads' },
+      {
+        name: 'base_path',
+        label: '基础路径',
+        kind: 'text',
+        placeholder: '/data/downloads',
+        required: true,
+      },
     ],
   },
   {
     type: 'webdav',
     label: 'WebDAV',
     fields: [
-      { name: 'url', label: '服务器地址', kind: 'text', placeholder: 'https://dav.example.com' },
+      {
+        name: 'url',
+        label: '服务器地址',
+        kind: 'text',
+        placeholder: 'https://dav.example.com',
+        required: true,
+      },
       { name: 'username', label: '用户名', kind: 'text' },
       { name: 'password', label: '密码', kind: 'secret' },
       { name: 'base_path', label: '基础路径', kind: 'text', placeholder: '/saveany' },
@@ -36,7 +49,13 @@ export const storageTypeDefs: StorageTypeDef[] = [
     type: 'alist',
     label: 'AList',
     fields: [
-      { name: 'url', label: '服务器地址', kind: 'text', placeholder: 'https://alist.example.com' },
+      {
+        name: 'url',
+        label: '服务器地址',
+        kind: 'text',
+        placeholder: 'https://alist.example.com',
+        required: true,
+      },
       { name: 'username', label: '用户名', kind: 'text' },
       { name: 'password', label: '密码', kind: 'secret' },
       { name: 'token', label: 'Token', kind: 'secret', hint: '可留空，登录后自动获取' },
@@ -53,10 +72,16 @@ export const storageTypeDefs: StorageTypeDef[] = [
     type: 's3',
     label: 'S3 兼容存储',
     fields: [
-      { name: 'endpoint', label: 'Endpoint', kind: 'text', placeholder: 's3.example.com' },
-      { name: 'access_key_id', label: 'Access Key ID', kind: 'secret' },
-      { name: 'secret_access_key', label: 'Secret Access Key', kind: 'secret' },
-      { name: 'bucket_name', label: 'Bucket', kind: 'text' },
+      {
+        name: 'endpoint',
+        label: 'Endpoint',
+        kind: 'text',
+        placeholder: 's3.example.com',
+        required: true,
+      },
+      { name: 'access_key_id', label: 'Access Key ID', kind: 'secret', required: true },
+      { name: 'secret_access_key', label: 'Secret Access Key', kind: 'secret', required: true },
+      { name: 'bucket_name', label: 'Bucket', kind: 'text', required: true },
       { name: 'base_path', label: '基础路径', kind: 'text' },
       { name: 'use_ssl', label: '使用 SSL', kind: 'bool' },
       { name: 'region', label: 'Region', kind: 'text', placeholder: 'us-east-1' },
@@ -67,10 +92,16 @@ export const storageTypeDefs: StorageTypeDef[] = [
     type: 'minio',
     label: 'MinIO',
     fields: [
-      { name: 'endpoint', label: 'Endpoint', kind: 'text', placeholder: 'minio.example.com:9000' },
-      { name: 'access_key_id', label: 'Access Key ID', kind: 'secret' },
-      { name: 'secret_access_key', label: 'Secret Access Key', kind: 'secret' },
-      { name: 'bucket_name', label: 'Bucket', kind: 'text' },
+      {
+        name: 'endpoint',
+        label: 'Endpoint',
+        kind: 'text',
+        placeholder: 'minio.example.com:9000',
+        required: true,
+      },
+      { name: 'access_key_id', label: 'Access Key ID', kind: 'secret', required: true },
+      { name: 'secret_access_key', label: 'Secret Access Key', kind: 'secret', required: true },
+      { name: 'bucket_name', label: 'Bucket', kind: 'text', required: true },
       { name: 'base_path', label: '基础路径', kind: 'text' },
       { name: 'use_ssl', label: '使用 SSL', kind: 'bool' },
     ],
@@ -79,7 +110,13 @@ export const storageTypeDefs: StorageTypeDef[] = [
     type: 'telegram',
     label: 'Telegram',
     fields: [
-      { name: 'chat_id', label: 'Chat ID', kind: 'number', hint: '目标频道或群组的数字 ID' },
+      {
+        name: 'chat_id',
+        label: 'Chat ID',
+        kind: 'number',
+        hint: '目标频道或群组的数字 ID',
+        required: true,
+      },
       { name: 'force_file', label: '强制以文件发送', kind: 'bool' },
       { name: 'rate_limit', label: '速率限制', kind: 'number', hint: '每秒请求数，0 表示默认' },
       { name: 'rate_burst', label: '突发数量', kind: 'number' },
@@ -92,7 +129,13 @@ export const storageTypeDefs: StorageTypeDef[] = [
     type: 'rclone',
     label: 'rclone',
     fields: [
-      { name: 'remote', label: 'Remote 名称', kind: 'text', placeholder: 'myremote' },
+      {
+        name: 'remote',
+        label: 'Remote 名称',
+        kind: 'text',
+        placeholder: 'myremote',
+        required: true,
+      },
       { name: 'base_path', label: '基础路径', kind: 'text' },
       {
         name: 'config_path',
