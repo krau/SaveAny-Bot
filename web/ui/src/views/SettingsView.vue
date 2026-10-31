@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { errorMessage, settingsApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import AppSelect from '../components/AppSelect.vue'
@@ -16,7 +16,7 @@ const notice = ref('')
 const busyGroup = ref('')
 const loaded = ref(false)
 const activeGroup = ref(settingsGroups[0]?.key ?? '')
-const settingsNav = ref<HTMLElement | null>(null)
+const settingsGroupOptions = settingsGroups.map((group) => ({ value: group.key, label: group.title }))
 const invalid = reactive<Record<string, string>>({})
 let scrollFrame = 0
 let navLock = false
@@ -47,10 +47,11 @@ async function load() {
 
 function updateActiveGroup() {
   if (!loaded.value) return
+  const threshold = window.matchMedia('(max-width: 960px)').matches ? 132 : 88
   let current = settingsGroups[0]?.key ?? ''
   for (const group of settingsGroups) {
     const element = document.getElementById(`settings-${group.key}`)
-    if (element && element.getBoundingClientRect().top <= 112) {
+    if (element && element.getBoundingClientRect().top <= threshold) {
       current = group.key
     }
   }
@@ -74,15 +75,6 @@ function releaseNavLock() {
   navLock = false
   scheduleActiveGroupUpdate()
 }
-
-watch(activeGroup, async () => {
-  if (!window.matchMedia('(max-width: 960px)').matches) return
-  await nextTick()
-  const active = settingsNav.value?.querySelector<HTMLElement>('button.active')
-  if (active) {
-    settingsNav.value?.scrollTo({ left: active.offsetLeft - 16, behavior: 'smooth' })
-  }
-})
 
 onMounted(async () => {
   await load()
@@ -218,8 +210,17 @@ async function save(group: string) {
     <div v-if="notice" class="banner success">{{ notice }}</div>
     <div v-if="!loaded" class="loading">正在加载设置…</div>
 
+    <div v-show="loaded" class="settings-mobile-nav">
+      <AppSelect
+        :model-value="activeGroup"
+        :options="settingsGroupOptions"
+        aria-label="设置分组"
+        @update:model-value="jumpToGroup"
+      />
+    </div>
+
     <div v-show="loaded" class="settings-layout">
-      <nav ref="settingsNav" class="settings-nav" aria-label="设置分组">
+      <nav class="settings-nav" aria-label="设置分组">
         <button
           v-for="group in settingsGroups"
           :key="group.key"

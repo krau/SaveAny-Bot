@@ -165,8 +165,9 @@ async function remove(user: UserItem) {
       <span class="count">访问范围以白名单或黑名单控制</span>
     </div>
 
-    <div class="table-wrap">
-      <table>
+    <div class="users-table">
+      <div class="table-wrap users-table-wrap">
+        <table>
         <thead><tr><th>Chat ID</th><th>状态</th><th>默认存储</th><th>存储过滤</th><th>操作</th></tr></thead>
         <tbody>
           <tr v-for="user in users" :key="user.id">
@@ -198,6 +199,48 @@ async function remove(user: UserItem) {
           </tr>
         </tbody>
       </table>
+      </div>
+
+      <div class="user-mobile-list">
+        <article v-for="user in users" :key="user.id" class="user-mobile-card">
+          <div class="user-mobile-head">
+            <span class="user-chat mono">{{ user.chat_id }}</span>
+            <div class="actions">
+              <span class="badge status" :class="user.enabled ? 'success' : 'muted'">
+                {{ user.enabled ? '启用' : '禁用' }}
+              </span>
+              <span v-if="user.silent" class="badge info">静默</span>
+            </div>
+          </div>
+          <dl class="user-mobile-details">
+            <div>
+              <dt>默认存储</dt>
+              <dd>{{ user.default_storage || '未设置' }}</dd>
+            </div>
+            <div>
+              <dt>存储过滤</dt>
+              <dd>
+                {{ user.storage_filter.blacklist ? '黑名单' : '白名单' }}：{{
+                  user.storage_filter.storages.length
+                    ? user.storage_filter.storages.join('、')
+                    : user.storage_filter.blacklist
+                      ? '全部'
+                      : '无'
+                }}
+              </dd>
+            </div>
+          </dl>
+          <div class="user-mobile-actions">
+            <button class="btn small" type="button" @click="openEdit(user)">编辑</button>
+            <button class="btn small danger" type="button" @click="remove(user)">删除</button>
+          </div>
+        </article>
+        <div v-if="users.length === 0" class="empty">
+          <span class="empty-icon"><AppIcon name="users" :size="17" /></span>
+          <strong>还没有用户</strong>
+          未添加到列表的账号会被机器人拒绝
+        </div>
+      </div>
     </div>
 
     <Teleport to="body">

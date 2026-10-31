@@ -15,11 +15,13 @@ const props = withDefaults(
     placeholder?: string
     disabled?: boolean
     id?: string
+    ariaLabel?: string
   }>(),
   {
     placeholder: '请选择',
     disabled: false,
     id: '',
+    ariaLabel: '',
   },
 )
 
@@ -205,6 +207,7 @@ onUnmounted(() => {
       class="select-trigger"
       :disabled="disabled"
       :aria-expanded="open"
+      :aria-label="ariaLabel || undefined"
       aria-haspopup="listbox"
       :aria-controls="open ? listboxId : undefined"
       :aria-activedescendant="open && activeIndex >= 0 ? optionId(activeIndex) : undefined"

@@ -51,7 +51,8 @@ function progressText(task: TaskItem): string {
 </script>
 
 <template>
-  <div class="table-wrap">
+  <div class="task-table">
+  <div class="table-wrap task-table-wrap">
     <table>
       <thead>
         <tr>
@@ -124,4 +125,61 @@ function progressText(task: TaskItem): string {
       </tbody>
     </table>
   </div>
+
+  <div class="task-mobile-list">
+    <article v-for="task in tasks" :key="task.task_id" class="task-mobile-card">
+      <div class="task-mobile-head">
+        <div class="task-mobile-title">{{ taskDisplayTitle(task) }}</div>
+        <span class="badge status" :class="taskStatusTone(task.status)">
+          {{ taskStatusLabel(task.status) }}
+        </span>
+      </div>
+      <div class="task-mobile-meta">
+        <span v-if="taskDisplayTitle(task) !== taskTypeLabel(task.type)">{{ taskTypeLabel(task.type) }}</span>
+        <span class="mono">{{ task.task_id }}</span>
+      </div>
+      <div class="task-mobile-target">
+        {{ task.storage || '未指定存储' }}
+        <span class="task-path">{{ task.path || '根目录' }}</span>
+      </div>
+      <div v-if="task.error" class="field-error">{{ task.error }}</div>
+      <div v-if="task.status === 'running'" class="task-mobile-progress">
+        <div class="progress">
+          <div class="progress-bar" :style="{ width: `${progressPercent(task)}%` }"></div>
+        </div>
+        <span>{{ progressText(task) }}</span>
+      </div>
+      <div class="task-mobile-foot">
+        <span class="task-mobile-time">{{ formatDateTime(task.created_at) }}</span>
+        <div class="actions">
+          <button
+            v-if="isActive(task.status)"
+            class="btn small"
+            type="button"
+            :disabled="busyId === task.task_id"
+            @click="emit('cancel', task.task_id)"
+          >
+            <AppIcon name="close" :size="14" />
+            取消
+          </button>
+          <button
+            v-else
+            class="btn small danger"
+            type="button"
+            :disabled="busyId === task.task_id"
+            @click="emit('remove', task.task_id)"
+          >
+            <AppIcon name="trash" :size="14" />
+            删除
+          </button>
+        </div>
+      </div>
+    </article>
+    <div v-if="tasks.length === 0" class="empty">
+      <span class="empty-icon"><AppIcon name="inbox" :size="17" /></span>
+      <strong>{{ emptyText }}</strong>
+      创建任务后，下载状态会显示在这里
+    </div>
+  </div>
+</div>
 </template>

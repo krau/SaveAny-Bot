@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { errorMessage } from '../api'
 import { useAuthStore } from '../stores/auth'
@@ -40,7 +40,6 @@ const navigation = [
   },
 ]
 
-const title = computed(() => (typeof route.meta.title === 'string' ? route.meta.title : ''))
 const sidebarOpen = ref(false)
 const passwordOpen = ref(false)
 const currentPassword = ref('')
@@ -152,6 +151,16 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
             <span class="live-dot"></span>
             <span>管理界面已连接</span>
           </div>
+          <div class="sidebar-account">
+            <button class="sidebar-action" type="button" @click="openPasswordDialog">
+              <AppIcon name="key" :size="14" />
+              修改密码
+            </button>
+            <button class="sidebar-action" type="button" @click="handleLogout">
+              <AppIcon name="logout" :size="14" />
+              退出登录
+            </button>
+          </div>
           <div class="sidebar-meta">配置与会话保存在本机 SQLite</div>
         </div>
       </aside>
@@ -168,17 +177,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
           >
             <AppIcon name="menu" :size="19" />
           </button>
-          <span class="topbar-mobile-title">{{ title }}</span>
-          <div class="topbar-actions">
-            <button class="btn ghost small" type="button" aria-label="修改密码" @click="openPasswordDialog">
-              <AppIcon name="key" :size="16" />
-              <span class="btn-label">修改密码</span>
-            </button>
-            <button class="btn ghost small" type="button" aria-label="退出登录" @click="handleLogout">
-              <AppIcon name="logout" :size="16" />
-              <span class="btn-label">退出登录</span>
-            </button>
-          </div>
+          <span class="topbar-mobile-title">SaveAny-Bot</span>
         </header>
 
         <main id="main-content" class="content" tabindex="-1">

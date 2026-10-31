@@ -54,26 +54,22 @@ async function submit() {
         </p>
 
         <div class="login-route" aria-label="工作方式">
-          <div class="route-item">
+          <div class="route-step">
             <span class="route-node"></span>
-            <div>
-              <strong>接收</strong>
-              <span>Bot 消息、直链、Telegraph 图集</span>
-            </div>
+            <strong>接收</strong>
+            <span>消息、直链与图集</span>
           </div>
-          <div class="route-item">
+          <span class="route-line" aria-hidden="true"></span>
+          <div class="route-step">
             <span class="route-node"></span>
-            <div>
-              <strong>调度</strong>
-              <span>按任务类型分发到下载或解析队列</span>
-            </div>
+            <strong>调度</strong>
+            <span>按类型分发下载</span>
           </div>
-          <div class="route-item">
+          <span class="route-line" aria-hidden="true"></span>
+          <div class="route-step">
             <span class="route-node"></span>
-            <div>
-              <strong>归档</strong>
-              <span>写入你选择的存储与目录</span>
-            </div>
+            <strong>归档</strong>
+            <span>写入目标存储</span>
           </div>
         </div>
       </div>

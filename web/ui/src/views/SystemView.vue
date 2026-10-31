@@ -76,7 +76,7 @@ async function restart(force = false) {
         <div class="process-version">{{ info.version }}</div>
         <div class="process-meta">{{ info.commit || 'unknown commit' }}</div>
         <div class="process-meta">{{ info.build_time }}</div>
-        <p class="muted" style="margin: 18px 0 0; font-size: 13px; line-height: 1.65">
+        <p class="muted" style="margin: 18px 0 0; font-size: 14px; line-height: 1.65">
           {{ info.docker ? '运行在 Docker 容器中' : '运行在本地进程中' }}。
           重启会中断正在执行的任务，必要时可使用强制重启。
         </p>
