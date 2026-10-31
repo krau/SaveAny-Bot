@@ -6,4 +6,5 @@
 - Async buttons MUST use `LoadingButton`; keep the normal label and let the component overlay a spinner. Never replace labels with longer "saving..." text or animate button width.
 - Destructive or irreversible actions MUST use `useConfirmStore`; never call `window.confirm`.
 - Motion MUST use the tokens in `src/assets/main.css`, animate only transform/opacity/filter where possible, and keep the global `prefers-reduced-motion` fallback intact.
+- Theme-aware colors MUST use the CSS variables in `src/assets/main.css`; never hardcode a light-only surface or text color. Theme preference is managed by `useThemeStore`.
 - Use `pnpm` for every install and script. Do not add npm lockfiles.

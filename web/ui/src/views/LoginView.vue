@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toasts'
 import BrandMark from '../components/BrandMark.vue'
 import LoadingButton from '../components/LoadingButton.vue'
+import ThemeSwitch from '../components/ThemeSwitch.vue'
 
 const auth = useAuthStore()
 const toast = useToastStore()
@@ -44,6 +45,7 @@ async function submit() {
 
 <template>
   <div class="login-page">
+    <div class="login-theme"><ThemeSwitch /></div>
     <svg class="login-trace" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
       <path pathLength="1" d="M-40 300H320L458 360H516" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />
       <path pathLength="1" d="M924 360H982L1120 300H1480" fill="none" stroke="currentColor" vector-effect="non-scaling-stroke" />

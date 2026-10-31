@@ -7,6 +7,7 @@ import { useAuthStore } from '../stores/auth'
 import AppIcon from './AppIcon.vue'
 import LoadingButton from './LoadingButton.vue'
 import BrandMark from './BrandMark.vue'
+import ThemeSwitch from './ThemeSwitch.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -149,6 +150,10 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
           <div class="sidebar-status">
             <span class="live-dot"></span>
             <span>管理界面已连接</span>
+          </div>
+          <div class="theme-control">
+            <span class="theme-control-label">外观</span>
+            <ThemeSwitch />
           </div>
           <div class="sidebar-account">
             <button class="sidebar-action" type="button" @click="openPasswordDialog">

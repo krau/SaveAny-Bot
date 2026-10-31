@@ -4,11 +4,15 @@ import App from './App.vue'
 import router from './router'
 import { configureApi } from './api'
 import { useAuthStore } from './stores/auth'
+import { useThemeStore } from './stores/theme'
 import './assets/main.css'
 
 const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
+
+const theme = useThemeStore()
+theme.init()
 
 const auth = useAuthStore()
 
