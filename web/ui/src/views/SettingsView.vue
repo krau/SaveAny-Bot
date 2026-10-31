@@ -197,7 +197,7 @@ async function save(group: string) {
 
 <template>
   <div class="stack">
-    <PageHeader title="设置" description="配置保存在数据库中，保存后立即生效，或提示需要重启。">
+    <PageHeader title="设置">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
@@ -241,7 +241,6 @@ async function save(group: string) {
         >
           <div class="settings-group-head">
             <h2>{{ group.title }}</h2>
-            <p>{{ group.description }}</p>
           </div>
           <div class="form-grid">
             <template v-for="field in group.fields" :key="field.path">

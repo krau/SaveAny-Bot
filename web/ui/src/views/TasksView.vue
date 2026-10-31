@@ -199,7 +199,7 @@ async function remove(taskId: string) {
 
 <template>
   <div class="stack">
-    <PageHeader title="任务" description="创建下载与转存任务，查看进度或清理记录。">
+    <PageHeader title="任务">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />

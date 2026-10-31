@@ -98,7 +98,7 @@ async function test(storage: StorageRecord) {
 
 <template>
   <div class="stack">
-    <PageHeader title="存储" description="本地磁盘、WebDAV、对象存储、Telegram 与 rclone 目标。">
+    <PageHeader title="存储">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
@@ -160,7 +160,6 @@ async function test(storage: StorageRecord) {
       <div v-if="storages.length === 0" class="storage-empty">
         <span class="empty-icon"><AppIcon name="database" :size="18" /></span>
         <strong style="color: var(--text-2); font-size: 14px; font-weight: 500">还没有存储</strong>
-        <span>先添加一个目标，任务才能写入文件。</span>
         <button class="btn primary small" type="button" @click="openCreate">
           <AppIcon name="plus" :size="14" />
           新建存储

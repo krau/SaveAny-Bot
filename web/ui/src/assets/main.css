@@ -168,10 +168,6 @@ html[data-theme='dark'] .login-card {
   border-color: var(--line);
 }
 
-html[data-theme='dark'] .login-page-footer {
-  color: var(--text-3);
-}
-
 * {
   box-sizing: border-box;
 }
@@ -465,12 +461,6 @@ code {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.sidebar-meta {
-  color: var(--ink-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .theme-control {
   display: flex;
   align-items: center;
@@ -624,14 +614,6 @@ code {
   line-height: 1.15;
 }
 
-.page-head p {
-  max-width: 68ch;
-  margin: 8px 0 0;
-  color: var(--text-2);
-  font-size: 14px;
-  line-height: 1.65;
-}
-
 .page-actions {
   display: flex;
   flex: none;
@@ -683,12 +665,6 @@ code {
   color: var(--text);
   font-size: 16px;
   font-weight: 500;
-}
-
-.panel-sub {
-  margin: 4px 0 0;
-  color: var(--text-3);
-  font-size: 12px;
 }
 
 .stat-label {
@@ -1988,11 +1964,6 @@ tbody tr:hover {
   line-height: 1.2;
 }
 
-.relay-metric small {
-  color: #aab0b9;
-  font-size: 14px;
-}
-
 .dashboard-split {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.85fr);
@@ -2018,11 +1989,6 @@ tbody tr:hover {
   font-weight: 500;
   letter-spacing: -0.05em;
   line-height: 1;
-}
-
-.activity-figure span {
-  color: var(--text-3);
-  font-size: 12px;
 }
 
 .activity-chart {
@@ -2398,13 +2364,6 @@ tbody tr:hover {
   font-weight: 500;
 }
 
-.settings-group-head p {
-  margin: 5px 0 0;
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 1.6;
-}
-
 /* Telegram */
 
 .connection-grid {
@@ -2453,25 +2412,95 @@ tbody tr:hover {
   overflow-wrap: anywhere;
 }
 
-.connection-meta {
-  margin-top: 5px;
-  color: var(--text-2);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
 .connection-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   padding-top: 2px;
+  margin-top: auto;
 }
 
-.telegram-columns {
+.telegram-panel {
+  scroll-margin-top: 80px;
+}
+
+.telegram-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.userbot-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+  gap: 24px;
   align-items: start;
+}
+
+.userbot-auth {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.userbot-settings {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.userbot-settings-head h3 {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.userbot-settings .checkbox {
+  min-height: 32px;
+  padding-top: 0;
+}
+
+.userbot-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.userbot-session-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--success-soft);
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.userbot-session-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  place-items: center;
+  color: var(--success);
+  background: var(--surface);
+  border-radius: 50%;
+}
+
+.userbot-session-state strong {
+  display: block;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.userbot-cancel {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .flow-status {
@@ -2658,17 +2687,6 @@ tbody tr:hover {
   }
 }
 
-@keyframes login-footer-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 @keyframes login-trace-draw {
   to {
     stroke-dashoffset: 0;
@@ -2708,13 +2726,6 @@ tbody tr:hover {
   line-height: 1.15;
 }
 
-.login-heading p {
-  margin: 8px 0 0;
-  color: var(--text-2);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
 .login-form {
   display: flex;
   flex-direction: column;
@@ -2750,15 +2761,6 @@ tbody tr:hover {
   color: var(--text-2);
   background: var(--surface-muted);
   border-radius: 4px;
-}
-
-.login-page-footer {
-  position: relative;
-  z-index: 1;
-  color: #8d96a3;
-  font-size: 12px;
-  text-align: center;
-  animation: login-footer-in var(--duration-slow) var(--ease-smooth-out) 280ms backwards;
 }
 
 /* Route transitions */
@@ -2831,8 +2833,8 @@ tbody tr:hover {
     grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
   }
 
-  .telegram-columns {
-    grid-template-columns: 1fr;
+  .telegram-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -2905,6 +2907,10 @@ tbody tr:hover {
   .settings-layout {
     grid-template-columns: 1fr;
     gap: 18px;
+  }
+
+  .userbot-layout {
+    grid-template-columns: 1fr;
   }
 
   .settings-mobile-nav {

@@ -28,9 +28,6 @@ const boolValues = reactive<Record<string, boolean>>({})
 const { invalidField, fail, clear } = useFormFeedback()
 
 const fields = computed(() => taskTypeDefs.find((item) => item.type === type.value)?.fields ?? [])
-const description = computed(
-  () => taskTypeDefs.find((item) => item.type === type.value)?.description ?? '',
-)
 const isTransfer = computed(() => type.value === 'transfer')
 const typeOptions = taskTypeDefs.map((item) => ({ value: item.type, label: item.label }))
 const storageOptions = computed(() => [
@@ -200,7 +197,6 @@ function submit() {
             :options="typeOptions"
             @update:model-value="changeType"
           />
-          <span class="hint">{{ description }}</span>
         </div>
         <div v-if="!isTransfer" class="field">
           <label for="task-storage">存储</label>

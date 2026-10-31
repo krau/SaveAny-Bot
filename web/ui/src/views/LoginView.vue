@@ -62,7 +62,6 @@ async function submit() {
 
       <div class="login-heading">
         <h1>管理员登录</h1>
-        <p>输入服务启动时生成的管理员密码。</p>
       </div>
 
       <form class="login-form" @submit.prevent="submit" novalidate>
@@ -91,11 +90,9 @@ async function submit() {
       </form>
 
       <p class="login-help">
-        首次启动的密码会写入服务日志。也可以在初始化前设置
-        <code>SAVEANY_ADMIN_PASSWORD</code>。
+        密码见启动日志，或通过 <code>SAVEANY_ADMIN_PASSWORD</code> 设置。
       </p>
     </section>
 
-    <p class="login-page-footer">自托管，配置与会话保存在本机</p>
   </div>
 </template>

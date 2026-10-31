@@ -13,7 +13,6 @@ export interface TaskField {
 export interface TaskTypeDef {
   type: string
   label: string
-  description: string
   fields: TaskField[]
 }
 
@@ -21,7 +20,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
   {
     type: 'directlinks',
     label: '直链下载',
-    description: '从 HTTP/HTTPS 直链下载文件并上传到存储。',
     fields: [
       {
         name: 'urls',
@@ -36,7 +34,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
   {
     type: 'ytdlp',
     label: 'yt-dlp 视频',
-    description: '使用 yt-dlp 下载视频站点内容。',
     fields: [
       {
         name: 'urls',
@@ -58,7 +55,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
   {
     type: 'aria2',
     label: 'Aria2 下载',
-    description: '通过 Aria2 RPC 下载链接。',
     fields: [
       {
         name: 'urls',
@@ -80,7 +76,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
   {
     type: 'parseditem',
     label: '解析链接',
-    description: '调用插件解析页面中的媒体并下载。',
     fields: [
       {
         name: 'url',
@@ -94,7 +89,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
   {
     type: 'tgfiles',
     label: 'Telegram 文件',
-    description: '下载 Telegram 消息中的文件并上传到存储。',
     fields: [
       {
         name: 'message_links',
@@ -109,7 +103,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
   {
     type: 'tphpics',
     label: 'Telegraph 图集',
-    description: '下载 Telegraph 页面中的图片。',
     fields: [
       {
         name: 'telegraph_url',
@@ -123,7 +116,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
   {
     type: 'transfer',
     label: '存储迁移',
-    description: '在两个存储之间复制文件。',
     fields: [
       {
         name: 'source_storage',

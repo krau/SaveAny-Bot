@@ -103,7 +103,7 @@ onUnmounted(() => {
 
 <template>
   <div class="stack">
-    <PageHeader title="运行概览" description="机器人、任务队列与存储的当前状态。">
+    <PageHeader title="运行概览">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
@@ -159,17 +159,14 @@ onUnmounted(() => {
         <div class="relay-metric">
           <span>活动任务</span>
           <strong>{{ activeTasks }}</strong>
-          <small>排队中或正在运行</small>
         </div>
         <div class="relay-metric">
           <span>近 7 天任务</span>
           <strong>{{ weekTotal }}</strong>
-          <small>按创建时间统计</small>
         </div>
         <div class="relay-metric">
           <span>已完成任务</span>
           <strong>{{ completedTasks }}</strong>
-          <small>最近加载的 {{ tasks.length }} 条记录</small>
         </div>
       </div>
     </section>
@@ -177,15 +174,11 @@ onUnmounted(() => {
     <div class="dashboard-split">
       <section class="panel">
         <div class="panel-head">
-          <div>
-            <h2 class="panel-title">近 7 天任务</h2>
-            <p class="panel-sub">每天创建的任务数，今天的柱形用信号色标记</p>
-          </div>
+          <h2 class="panel-title">近 7 天任务</h2>
           <RouterLink class="link-quiet" to="/tasks">查看全部</RouterLink>
         </div>
         <div class="activity-figure">
           <strong>{{ weekTotal }}</strong>
-          <span>个任务创建于最近 7 天</span>
         </div>
         <div
           v-if="tasks.length > 0"
@@ -209,15 +202,12 @@ onUnmounted(() => {
             <span class="chart-label">{{ day.label }}</span>
           </div>
         </div>
-        <div v-else class="chart-empty">还没有任务记录<br />创建任务后，这里会显示最近 7 天的分布</div>
+        <div v-else class="chart-empty">还没有任务记录</div>
       </section>
 
       <section class="panel">
         <div class="panel-head">
-          <div>
-            <h2 class="panel-title">存储</h2>
-            <p class="panel-sub">可用目标与位置</p>
-          </div>
+          <h2 class="panel-title">存储</h2>
           <RouterLink class="link-quiet" to="/storages">管理</RouterLink>
         </div>
         <div v-if="recentStorages.length > 0" class="storage-mini-list">
@@ -235,7 +225,6 @@ onUnmounted(() => {
         <div v-else class="empty">
           <span class="empty-icon"><AppIcon name="database" :size="17" /></span>
           <strong>还没有存储</strong>
-          添加一个目标后，任务才能写入文件
           <div class="actions" style="justify-content: center; margin-top: 12px">
             <RouterLink class="btn small" to="/storages">
               <AppIcon name="plus" :size="14" />
@@ -248,10 +237,7 @@ onUnmounted(() => {
 
     <section class="panel">
       <div class="panel-head">
-        <div>
-          <h2 class="panel-title">最近任务</h2>
-          <p class="panel-sub">最新创建的任务及其归档目标</p>
-        </div>
+        <h2 class="panel-title">最近任务</h2>
         <RouterLink class="link-quiet" to="/tasks">全部任务</RouterLink>
       </div>
       <div v-if="recentTasks.length > 0" class="recent-list">
@@ -282,7 +268,6 @@ onUnmounted(() => {
       <div v-else class="empty">
         <span class="empty-icon"><AppIcon name="inbox" :size="17" /></span>
         <strong>还没有任务</strong>
-        从任务页创建直链下载、存储迁移或 Telegram 文件任务
       </div>
     </section>
   </div>

@@ -119,7 +119,6 @@ function progressText(task: TaskItem): string {
           <td colspan="6" class="empty">
             <span class="empty-icon"><AppIcon name="inbox" :size="17" /></span>
             <strong>{{ emptyText }}</strong>
-            创建任务后，下载状态会显示在这里
           </td>
         </tr>
       </tbody>
@@ -178,7 +177,6 @@ function progressText(task: TaskItem): string {
     <div v-if="tasks.length === 0" class="empty">
       <span class="empty-icon"><AppIcon name="inbox" :size="17" /></span>
       <strong>{{ emptyText }}</strong>
-      创建任务后，下载状态会显示在这里
     </div>
   </div>
 </div>

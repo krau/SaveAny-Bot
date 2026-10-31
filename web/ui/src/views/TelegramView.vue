@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { errorMessage, settingsApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
@@ -12,9 +12,12 @@ import type { JsonObject, TelegramStatus } from '../types'
 const toast = useToastStore()
 const confirm = useConfirmStore()
 const status = ref<TelegramStatus | null>(null)
-const busy = ref(false)
+const botBusy = ref(false)
+const userbotBusy = ref(false)
+const loginBusy = ref(false)
 const botAction = ref<'start' | 'stop' | 'restart' | ''>('')
 const syncedFlow = ref('')
+const phoneInput = ref<HTMLInputElement | null>(null)
 const phone = ref('')
 const code = ref('')
 const password = ref('')
@@ -40,10 +43,32 @@ const loginFlow = computed(() => status.value?.userbot.login)
 const flowState = computed(() => loginFlow.value?.state ?? '')
 const canSubmitCode = computed(() => flowState.value === 'code_required')
 const canSubmitPassword = computed(() => flowState.value === 'password_required')
-const canRestart = computed(() => {
-  if (!loginFlow.value) return true
-  if (flowState.value === 'failed' || flowState.value === 'cancelled') return true
-  return flowState.value === 'done' && (status.value?.userbot.state === 'login_required' || status.value?.userbot.state === 'error')
+const flowActive = computed(() =>
+  ['starting', 'code_required', 'password_required', 'verifying'].includes(flowState.value),
+)
+const flowWaiting = computed(() => flowState.value === 'starting' || flowState.value === 'verifying')
+
+const isUserbotLoggedIn = computed(() => {
+  const userbot = status.value?.userbot
+  if (!userbot) return false
+  return userbot.state === 'running' || userbot.state === 'starting' || Boolean(userbot.username)
+})
+
+const hasUserbotSession = computed(() => {
+  const userbot = status.value?.userbot
+  if (!userbot) return false
+  return Boolean(userbot.username) || (userbot.enabled && userbot.state !== 'login_required')
+})
+
+const loginCompleted = computed(() => flowState.value === 'done' || isUserbotLoggedIn.value)
+const showFlowBadge = computed(() => Boolean(loginFlow.value) && flowState.value !== 'done')
+
+const userbotIdentity = computed(() => {
+  const userbot = status.value?.userbot
+  if (!userbot) return '未登录'
+  if (userbot.username) return `@${userbot.username}`
+  if (userbot.phone) return userbot.phone
+  return userbot.enabled ? '会话已配置' : '未登录'
 })
 
 const flowLabels: Record<string, string> = {
@@ -122,8 +147,8 @@ onUnmounted(() => {
   if (timer) window.clearInterval(timer)
 })
 
-async function saveCredentials() {
-  busy.value = true
+async function saveBotSettings() {
+  botBusy.value = true
   try {
     const patch: JsonObject = {
       token: token.value,
@@ -132,6 +157,24 @@ async function saveCredentials() {
       rpc_retry: rpcRetry.value,
       media_group_timeout: mediaTimeout.value,
       proxy: { enable: proxyEnable.value, url: proxyURL.value },
+    }
+    const result = await settingsApi.updateGroup('telegram', patch)
+    toast.push(
+      result.warnings?.length ? result.warnings.join('；') : 'Bot 与 API 配置已保存',
+      result.warnings?.length ? 'error' : 'success',
+    )
+    await Promise.all([loadSettings(), loadStatus()])
+  } catch (err) {
+    toast.push(errorMessage(err), 'error')
+  } finally {
+    botBusy.value = false
+  }
+}
+
+async function saveUserbotSettings() {
+  userbotBusy.value = true
+  try {
+    const patch: JsonObject = {
       userbot: {
         enable: userbotEnable.value,
         session: userbotSession.value,
@@ -139,14 +182,14 @@ async function saveCredentials() {
     }
     const result = await settingsApi.updateGroup('telegram', patch)
     toast.push(
-      result.warnings?.length ? result.warnings.join('；') : '已保存并尝试应用',
+      result.warnings?.length ? result.warnings.join('；') : 'Userbot 会话设置已保存',
       result.warnings?.length ? 'error' : 'success',
     )
     await Promise.all([loadSettings(), loadStatus()])
   } catch (err) {
     toast.push(errorMessage(err), 'error')
   } finally {
-    busy.value = false
+    userbotBusy.value = false
   }
 }
 
@@ -213,7 +256,16 @@ async function restartBot(force = false) {
   }
 }
 
+async function focusUserbotLogin() {
+  const panel = document.getElementById('userbot-panel')
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  panel?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+  await nextTick()
+  phoneInput.value?.focus({ preventScroll: true })
+}
+
 async function startLogin() {
+  loginBusy.value = true
   try {
     await telegramApi.login(phone.value)
     code.value = ''
@@ -222,6 +274,8 @@ async function startLogin() {
     await loadStatus()
   } catch (err) {
     toast.push(errorMessage(err), 'error')
+  } finally {
+    loginBusy.value = false
   }
 }
 
@@ -281,7 +335,7 @@ async function logoutUserbot() {
 
 <template>
   <div class="stack">
-    <PageHeader title="Telegram" description="管理 Bot 与 Userbot 凭据、连接状态和登录会话。">
+    <PageHeader title="Telegram">
       <template #actions>
         <button class="btn small" type="button" @click="loadStatus">
           <AppIcon name="refresh" :size="15" />
@@ -289,7 +343,6 @@ async function logoutUserbot() {
         </button>
       </template>
     </PageHeader>
-
 
     <div class="connection-grid">
       <section class="connection-card">
@@ -306,7 +359,6 @@ async function logoutUserbot() {
           <div class="connection-identity">
             {{ status?.bot.username ? `@${status.bot.username}` : '未连接' }}
           </div>
-          <div class="connection-meta">处理消息、命令和文件任务</div>
         </div>
         <div v-if="status?.bot.error" class="field-error">{{ status.bot.error }}</div>
         <div class="connection-actions">
@@ -353,14 +405,15 @@ async function logoutUserbot() {
           </span>
         </div>
         <div>
-          <div class="connection-identity">
-            {{ status?.userbot.username ? `@${status.userbot.username}` : status?.userbot.phone || '未登录' }}
-          </div>
-          <div class="connection-meta">监听消息、下载媒体与自动保存</div>
+          <div class="connection-identity">{{ userbotIdentity }}</div>
         </div>
         <div v-if="status?.userbot.error" class="field-error">{{ status.userbot.error }}</div>
         <div class="connection-actions">
-          <button class="btn small danger" type="button" @click="logoutUserbot">
+          <button v-if="!isUserbotLoggedIn" class="btn small primary" type="button" @click="focusUserbotLogin">
+            <AppIcon name="key" :size="14" />
+            登录
+          </button>
+          <button v-if="hasUserbotSession" class="btn small danger" type="button" @click="logoutUserbot">
             <AppIcon name="logout" :size="14" />
             退出登录
           </button>
@@ -368,116 +421,137 @@ async function logoutUserbot() {
       </section>
     </div>
 
-    <div class="telegram-columns">
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">凭据</h2>
-            <p class="panel-sub">Bot Token 与 Telegram API 配置，保存后尝试立即应用</p>
+    <section class="panel telegram-panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Bot 与 API</h2>
+      </div>
+      <form v-if="settingsLoaded" class="stack" @submit.prevent="saveBotSettings" novalidate>
+        <div class="form-grid telegram-form-grid">
+          <div class="field">
+            <label for="tg-token">Bot Token</label>
+            <input id="tg-token" v-model="token" type="password" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="tg-app-id">API ID</label>
+            <input id="tg-app-id" v-model.number="appId" type="number" />
+          </div>
+          <div class="field">
+            <label for="tg-app-hash">API Hash</label>
+            <input id="tg-app-hash" v-model="appHash" type="password" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="tg-rpc-retry">RPC 重试</label>
+            <input id="tg-rpc-retry" v-model.number="rpcRetry" type="number" />
+          </div>
+          <div class="field">
+            <label for="tg-media-timeout">媒体组超时（秒）</label>
+            <input id="tg-media-timeout" v-model.number="mediaTimeout" type="number" />
+          </div>
+          <div class="field">
+            <label for="tg-proxy">代理地址</label>
+            <input id="tg-proxy" v-model="proxyURL" placeholder="socks5://127.0.0.1:1080" :disabled="!proxyEnable" />
+            <label class="checkbox">
+              <input v-model="proxyEnable" type="checkbox" />
+              <span>使用代理</span>
+            </label>
           </div>
         </div>
-        <form v-if="settingsLoaded" class="stack" @submit.prevent="saveCredentials" novalidate>
-          <div class="form-grid">
-            <div class="field">
-              <label for="tg-token">Bot Token</label>
-              <input id="tg-token" v-model="token" type="password" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label for="tg-app-id">API ID</label>
-              <input id="tg-app-id" v-model.number="appId" type="number" />
-            </div>
-            <div class="field">
-              <label for="tg-app-hash">API Hash</label>
-              <input id="tg-app-hash" v-model="appHash" type="password" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label for="tg-rpc-retry">RPC 重试</label>
-              <input id="tg-rpc-retry" v-model.number="rpcRetry" type="number" />
-            </div>
-            <div class="field">
-              <label for="tg-media-timeout">媒体组超时（秒）</label>
-              <input id="tg-media-timeout" v-model.number="mediaTimeout" type="number" />
-            </div>
+        <p class="hint">密钥显示为 __MASKED__ 时保持不变即可继续使用已保存的值。</p>
+        <div class="modal-actions">
+          <LoadingButton class="primary" type="submit" :loading="botBusy">保存并应用</LoadingButton>
+        </div>
+      </form>
+      <div v-else class="loading">正在加载凭据…</div>
+    </section>
+
+    <section id="userbot-panel" class="panel telegram-panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Userbot 登录与会话</h2>
+        <span v-if="showFlowBadge" class="badge status" :class="flowTone">{{ flowStateLabel }}</span>
+      </div>
+
+      <div class="userbot-layout">
+        <div class="userbot-auth">
+          <div v-if="loginCompleted" class="userbot-session-state">
+            <span class="userbot-session-icon"><AppIcon name="check" :size="17" /></span>
+            <strong>{{ isUserbotLoggedIn ? 'Userbot 已登录' : '登录完成' }}</strong>
           </div>
 
-          <div class="form-grid">
-            <div class="field">
-              <label for="tg-proxy">代理地址</label>
-              <input id="tg-proxy" v-model="proxyURL" placeholder="socks5://127.0.0.1:1080" :disabled="!proxyEnable" />
-              <label class="checkbox" style="padding-top: 2px">
-                <input v-model="proxyEnable" type="checkbox" />
-                <span>使用代理</span>
-              </label>
+          <template v-else>
+            <div class="flow-steps" aria-hidden="true">
+              <span class="flow-step" :class="stepClass(1)">手机号</span>
+              <span class="flow-step" :class="stepClass(2)">验证码</span>
+              <span class="flow-step" :class="stepClass(3)">两步验证</span>
             </div>
-            <div class="field">
-              <label for="tg-session">Userbot 会话文件</label>
-              <input id="tg-session" v-model="userbotSession" placeholder="data/usersession.db" />
-              <label class="checkbox" style="padding-top: 2px">
-                <input v-model="userbotEnable" type="checkbox" />
-                <span>启用 Userbot</span>
-              </label>
-            </div>
-          </div>
 
-          <div class="hint">密钥显示为 __MASKED__ 时保持不变即可继续使用已保存的值。</div>
-          <div class="modal-actions">
-            <LoadingButton class="primary" type="submit" :loading="busy">保存并应用</LoadingButton>
+            <p v-if="flowWaiting" class="flow-status">
+              <AppIcon name="clock" :size="14" />
+              {{ flowState === 'starting' ? '正在连接 Telegram…' : '正在验证，请稍候…' }}
+            </p>
+            <p v-if="flowState === 'failed' && loginFlow?.error" class="field-error">
+              {{ loginFlow.error }}
+            </p>
+
+            <form v-if="!flowActive" class="stack" @submit.prevent="startLogin" novalidate>
+              <div class="field">
+                <label for="tg-phone">手机号（含国家码）</label>
+                <input
+                  id="tg-phone"
+                  ref="phoneInput"
+                  v-model="phone"
+                  placeholder="+8613800000000"
+                  autocomplete="tel"
+                />
+              </div>
+              <div>
+                <LoadingButton class="primary" type="submit" :loading="loginBusy">
+                  <AppIcon name="send" :size="15" />
+                  发送验证码
+                </LoadingButton>
+              </div>
+              <p class="hint">验证码会发送到该 Telegram 账号。</p>
+            </form>
+
+            <div v-if="canSubmitCode" class="field">
+              <label for="tg-code">Telegram 验证码</label>
+              <div class="row">
+                <input id="tg-code" v-model="code" class="grow" placeholder="输入收到的验证码" />
+                <button class="btn primary" type="button" @click="submitCode">提交</button>
+              </div>
+            </div>
+
+            <div v-if="canSubmitPassword" class="field">
+              <label for="tg-password">两步验证密码</label>
+              <div class="row">
+                <input id="tg-password" v-model="password" class="grow" type="password" placeholder="输入两步验证密码" />
+                <button class="btn primary" type="button" @click="submitPassword">提交</button>
+              </div>
+            </div>
+
+            <div v-if="flowActive" class="userbot-cancel">
+              <button class="btn ghost small" type="button" @click="cancelLogin">取消登录</button>
+            </div>
+          </template>
+        </div>
+
+        <form v-if="settingsLoaded" class="userbot-settings" @submit.prevent="saveUserbotSettings" novalidate>
+          <div class="userbot-settings-head">
+            <h3>会话设置</h3>
+          </div>
+          <div class="field">
+            <label for="tg-session">会话文件</label>
+            <input id="tg-session" v-model="userbotSession" placeholder="data/usersession.db" />
+          </div>
+          <label class="checkbox">
+            <input v-model="userbotEnable" type="checkbox" />
+            <span>启用 Userbot</span>
+          </label>
+          <div class="userbot-settings-actions">
+            <LoadingButton class="primary" type="submit" :loading="userbotBusy">保存设置</LoadingButton>
           </div>
         </form>
-        <div v-else class="loading">正在加载凭据…</div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">Userbot 登录</h2>
-            <p class="panel-sub">在网页中完成手机号、验证码与两步验证</p>
-          </div>
-          <span class="badge status" :class="flowTone">{{ flowStateLabel }}</span>
-        </div>
-
-        <div class="flow-steps" aria-hidden="true">
-          <span class="flow-step" :class="stepClass(1)">手机号</span>
-          <span class="flow-step" :class="stepClass(2)">验证码</span>
-          <span class="flow-step" :class="stepClass(3)">两步验证</span>
-        </div>
-
-        <div v-if="canRestart" class="stack">
-          <div class="field">
-            <label for="tg-phone">手机号（含国家码）</label>
-            <input id="tg-phone" v-model="phone" placeholder="+8613800000000" />
-          </div>
-          <div>
-            <button class="btn primary" type="button" @click="startLogin">
-              <AppIcon name="send" :size="15" />
-              发送验证码
-            </button>
-          </div>
-          <p class="hint">验证码会发送到该 Telegram 账号。登录成功后会话保存在本机。</p>
-        </div>
-
-        <div v-else class="stack">
-          <div v-if="canSubmitCode" class="field">
-            <label for="tg-code">Telegram 验证码</label>
-            <div class="row">
-              <input id="tg-code" v-model="code" class="grow" placeholder="输入收到的验证码" />
-              <button class="btn primary" type="button" @click="submitCode">提交</button>
-            </div>
-          </div>
-
-          <div v-if="canSubmitPassword" class="field">
-            <label for="tg-password">两步验证密码</label>
-            <div class="row">
-              <input id="tg-password" v-model="password" class="grow" type="password" placeholder="输入两步验证密码" />
-              <button class="btn primary" type="button" @click="submitPassword">提交</button>
-            </div>
-          </div>
-
-          <div v-if="flowState !== 'done'" class="modal-actions" style="justify-content: flex-start">
-            <button class="btn ghost" type="button" @click="cancelLogin">取消登录</button>
-          </div>
-        </div>
-      </section>
-    </div>
+        <div v-else class="loading">正在加载会话设置…</div>
+      </div>
+    </section>
   </div>
 </template>

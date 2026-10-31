@@ -78,7 +78,7 @@ async function restart(force = false) {
 
 <template>
   <div class="stack">
-    <PageHeader title="系统" description="版本、运行路径与进程控制。">
+    <PageHeader title="系统">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
@@ -97,10 +97,6 @@ async function restart(force = false) {
         <div class="process-version">{{ info.version }}</div>
         <div class="process-meta">{{ info.commit || 'unknown commit' }}</div>
         <div class="process-meta">{{ info.build_time }}</div>
-        <p class="muted" style="margin: 18px 0 0; font-size: 14px; line-height: 1.65">
-          {{ info.docker ? '运行在 Docker 容器中' : '运行在本地进程中' }}。
-          重启会中断正在执行的任务，必要时可使用强制重启。
-        </p>
       </div>
       <div class="process-metrics">
         <div>
@@ -124,10 +120,7 @@ async function restart(force = false) {
 
     <div v-if="info" class="panel">
       <div class="panel-head">
-        <div>
-          <h2 class="panel-title">运行信息</h2>
-          <p class="panel-sub">当前进程使用的路径与监听地址</p>
-        </div>
+        <h2 class="panel-title">运行信息</h2>
         <span class="badge" :class="info.docker ? 'info' : 'muted'">
           {{ info.docker ? 'Docker' : '本地进程' }}
         </span>

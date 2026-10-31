@@ -12,7 +12,6 @@ export interface SettingsField {
 export interface SettingsGroupDef {
   key: string
   title: string
-  description: string
   fields: SettingsField[]
 }
 
@@ -20,7 +19,6 @@ export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'core',
     title: '核心',
-    description: '语言、并发、重试与全局代理。修改 workers 或 proxy 后需要重启。',
     fields: [
       {
         path: 'lang',
@@ -48,7 +46,6 @@ export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'log',
     title: '日志',
-    description: '日志级别即时生效。',
     fields: [
       {
         path: 'level',
@@ -66,7 +63,6 @@ export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'aria2',
     title: 'Aria2',
-    description: 'Aria2 RPC 下载配置。',
     fields: [
       { path: 'enable', label: '启用 Aria2', kind: 'bool' },
       {
@@ -82,7 +78,6 @@ export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'ytdlp',
     title: 'yt-dlp',
-    description: '视频下载格式与命名规则。',
     fields: [
       { path: 'max_height', label: '最大高度', kind: 'number', hint: '0 表示不限制' },
       { path: 'format', label: '格式选择', kind: 'text', placeholder: 'bestvideo+bestaudio/best' },
@@ -99,7 +94,6 @@ export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'parser',
     title: '解析器',
-    description: '解析插件加载配置。插件开关与目录需要重启。',
     fields: [
       { path: 'plugin_enable', label: '启用插件', kind: 'bool', hint: '重启后生效' },
       {
@@ -122,7 +116,6 @@ export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'cache',
     title: '缓存',
-    description: '内存缓存参数，修改后需要重启。',
     fields: [
       { path: 'ttl', label: 'TTL（秒）', kind: 'number' },
       { path: 'num_counters', label: '计数器数量', kind: 'number' },
@@ -132,7 +125,6 @@ export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'db',
     title: '数据库',
-    description: 'Bot 会话数据库路径。修改后需要重启。',
     fields: [
       { path: 'session', label: '会话数据库', kind: 'text', placeholder: 'data/session.db' },
     ],
@@ -140,13 +132,11 @@ export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'temp',
     title: '临时目录',
-    description: '下载过程中的临时文件存放位置。',
     fields: [{ path: 'base_path', label: '基础路径', kind: 'text', placeholder: 'cache/' }],
   },
   {
     key: 'hook',
     title: '钩子',
-    description: '任务生命周期中执行的 Shell 命令。修改后需要重启。',
     fields: [
       {
         path: 'exec.task_before_start',
@@ -162,7 +152,6 @@ export const settingsGroups: SettingsGroupDef[] = [
   {
     key: 'web',
     title: 'Web 服务',
-    description: '监听地址与 API Token。监听地址变更需要重启。',
     fields: [
       { path: 'enable', label: '启用 Web 服务', kind: 'bool', hint: '重启后生效' },
       {
@@ -186,7 +175,6 @@ export const settingsGroups: SettingsGroupDef[] = [
 export const telegramGroup: SettingsGroupDef = {
   key: 'telegram',
   title: 'Telegram 凭据',
-  description: 'Bot Token 与 API 凭据。保存后会尝试立即应用。',
   fields: [
     { path: 'token', label: 'Bot Token', kind: 'password', placeholder: '123456:ABC-DEF...' },
     { path: 'app_id', label: 'API ID', kind: 'number' },

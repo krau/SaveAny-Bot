@@ -165,7 +165,6 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
               退出登录
             </button>
           </div>
-          <div class="sidebar-meta">配置与会话保存在本机 SQLite</div>
         </div>
       </aside>
 

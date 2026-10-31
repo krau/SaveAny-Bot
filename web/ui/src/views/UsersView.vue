@@ -156,10 +156,7 @@ async function remove(user: UserItem) {
 
 <template>
   <div class="stack">
-    <PageHeader
-      title="用户"
-      description="允许使用机器人的 Telegram 账号，以及它们能访问的存储范围。"
-    >
+    <PageHeader title="用户">
       <template #actions>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
@@ -175,7 +172,6 @@ async function remove(user: UserItem) {
     <div class="filter-bar">
       <span class="count">{{ users.length }} 个用户，{{ enabledUsers }} 个启用</span>
       <div class="filter-spacer"></div>
-      <span class="count">访问范围以白名单或黑名单控制</span>
     </div>
 
     <div class="users-table">
@@ -207,7 +203,6 @@ async function remove(user: UserItem) {
             <td colspan="5" class="empty">
               <span class="empty-icon"><AppIcon name="users" :size="17" /></span>
               <strong>还没有用户</strong>
-              未添加到列表的账号会被机器人拒绝
             </td>
           </tr>
         </tbody>
@@ -251,7 +246,6 @@ async function remove(user: UserItem) {
         <div v-if="users.length === 0" class="empty">
           <span class="empty-icon"><AppIcon name="users" :size="17" /></span>
           <strong>还没有用户</strong>
-          未添加到列表的账号会被机器人拒绝
         </div>
       </div>
     </div>
