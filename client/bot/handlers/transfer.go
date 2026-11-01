@@ -32,8 +32,8 @@ func splitTransferSource(userID int64, raw string) (string, string, bool) {
 	sort.SliceStable(names, func(i, j int) bool { return len(names[i]) > len(names[j]) })
 	for _, name := range names {
 		prefix := name + ":"
-		if strings.HasPrefix(raw, prefix) {
-			return name, strings.TrimPrefix(raw, prefix), true
+		if after, ok := strings.CutPrefix(raw, prefix); ok {
+			return name, after, true
 		}
 	}
 	parts := strings.SplitN(raw, ":", 2)
