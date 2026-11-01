@@ -20,7 +20,12 @@ var (
 	ErrDevBuild    = errors.New("not a release build")
 	ErrDocker      = errors.New("built into a Docker image")
 	ErrNotWritable = errors.New("the binary's folder is not writable")
+	ErrRestart     = errors.New(RestartSignal)
 )
+
+// RestartSignal marks a handler error that asks the client to restart the
+// process after an update.
+const RestartSignal = "saveanybot-restart"
 
 var (
 	restarting atomic.Bool

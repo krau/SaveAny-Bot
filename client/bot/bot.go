@@ -16,6 +16,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers"
 	"github.com/krau/SaveAny-Bot/client/middleware"
 	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
@@ -110,7 +111,7 @@ func Start(ctx context.Context) error {
 				MaxRetries:          config.C().Telegram.RpcRetry,
 				AutoFetchReply:      true,
 				ErrorHandler: func(ctx *ext.Context, u *ext.Update, s string) error {
-					if s == "SAVEANTBOT-RESTART" {
+					if s == selfupdate.RestartSignal {
 						mgr.mu.RLock()
 						handler := mgr.restartHandler
 						mgr.mu.RUnlock()

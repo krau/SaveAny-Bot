@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"regexp"
 	"strings"
 
@@ -130,5 +129,5 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 		}),
 	})
 	selfupdate.RequestRestart()
-	return errors.New("SAVEANTBOT-RESTART")
+	return selfupdate.ErrRestart
 }
