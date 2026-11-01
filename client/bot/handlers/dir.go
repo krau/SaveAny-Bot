@@ -18,7 +18,7 @@ import (
 func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	args := strutil.ParseArgsRespectQuotes(update.EffectiveMessage.Text)
-	userChatID := update.GetUserChat().GetID()
+	userChatID := responsibleUserID(update)
 	dirs, err := database.GetUserDirsByChatID(ctx, userChatID)
 	if err != nil {
 		logger.Errorf("Failed to get user directories: %s", err)
@@ -29,7 +29,7 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextStyledTextArray(msgelem.BuildDirHelpStyling(dirs)), nil)
 		return dispatcher.EndGroups
 	}
-	user, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
+	user, err := database.GetUserByChatID(ctx, responsibleUserID(update))
 	if err != nil {
 		logger.Errorf("Failed to get user: %s", err)
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorGetUserFailed)), nil)

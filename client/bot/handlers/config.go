@@ -80,7 +80,7 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 		if err := database.UpdateUser(ctx, user); err != nil {
 			return err
 		}
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 			ID: update.CallbackQuery.GetMsgID(),
 			Message: i18n.T(i18nk.BotMsgConfigInfoFilenameStrategySet, map[string]any{
 				"Strategy": fnamest.GetDisplay(st, config.C().Lang),
@@ -107,7 +107,7 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		currentSt = fnamest.Default
 	}
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 		ID: update.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgConfigPromptSelectFilenameStrategy, map[string]any{
 			"Strategy": fnamest.GetDisplay(currentSt, config.C().Lang),
@@ -133,7 +133,7 @@ func handleConfigConflictSTCallback(ctx *ext.Context, update *ext.Update) error 
 		if err := database.UpdateUser(ctx, user); err != nil {
 			return err
 		}
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 			ID: update.CallbackQuery.GetMsgID(),
 			Message: i18n.T(i18nk.BotMsgConfigInfoConflictStrategySet, map[string]any{
 				"Strategy": conflictutil.Display(selected),
@@ -156,7 +156,7 @@ func handleConfigConflictSTCallback(ctx *ext.Context, update *ext.Update) error 
 	}
 	markup := &tg.ReplyInlineMarkup{Rows: rows}
 	currentSt := conflictutil.EffectiveStrategy(user)
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 		ID: update.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgConfigPromptSelectConflictStrategy, map[string]any{
 			"Strategy": conflictutil.Display(currentSt),
@@ -167,7 +167,7 @@ func handleConfigConflictSTCallback(ctx *ext.Context, update *ext.Update) error 
 }
 
 func handleConfigFnameTmpl(ctx *ext.Context, update *ext.Update) error {
-	userID := update.GetUserChat().GetID()
+	userID := responsibleUserID(update)
 	user, err := database.GetUserByChatID(ctx, userID)
 	if err != nil {
 		return err

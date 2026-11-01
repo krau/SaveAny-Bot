@@ -34,7 +34,7 @@ func handleYtdlpCmd(ctx *ext.Context, update *ext.Update) error {
 
 	logger.Debugf("Preparing yt-dlp download for %d URL(s) with %d flag(s)", len(urls), len(flags))
 
-	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, update.GetUserChat().GetID()), tcbdata.Add{
+	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, responsibleUserID(update)), tcbdata.Add{
 		TaskType:   tasktype.TaskTypeYtdlp,
 		YtdlpURLs:  urls,
 		YtdlpFlags: flags,

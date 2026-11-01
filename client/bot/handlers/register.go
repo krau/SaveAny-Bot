@@ -3,6 +3,7 @@ package handlers
 import (
 	"regexp"
 
+	"github.com/gotd/td/tg"
 	sabotfilters "github.com/krau/SaveAny-Bot/client/bot/handlers/utils/filters"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/re"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
@@ -44,17 +45,43 @@ var CommandHandlers = []DescCommandHandler{
 	{"update", i18nk.BotMsgCmdUpdate, handleUpdateCmd},
 }
 
+// groupGate admits private chats, basic groups, and supergroups. Broadcast
+// channels and updates without a resolvable human sender are rejected.
+func groupGate(_ *ext.Context, u *ext.Update) error {
+	message := u.EffectiveMessage
+	if message == nil || message.Out {
+		return dispatcher.EndGroups
+	}
+	switch message.PeerID.(type) {
+	case *tg.PeerUser, *tg.PeerChat:
+	case *tg.PeerChannel:
+		// The channel entity can be absent from short updates. Broadcast
+		// channel posts are rejected by the sender check below because their
+		// sender is the channel, not a user.
+	default:
+		return dispatcher.EndGroups
+	}
+	if responsibleUserID(u) == 0 {
+		return dispatcher.EndGroups
+	}
+	return dispatcher.ContinueGroups
+}
+
 func Register(disp dispatcher.Dispatcher) {
-	disp.AddHandler(handlers.NewMessage(filters.Message.ChatType(filters.ChatTypeChannel), func(ctx *ext.Context, u *ext.Update) error {
-		return dispatcher.EndGroups
-	}))
-	disp.AddHandler(handlers.NewMessage(filters.Message.ChatType(filters.ChatTypeChat), func(ctx *ext.Context, u *ext.Update) error {
-		return dispatcher.EndGroups
-	}))
+	disp.AddHandler(handlers.NewMessage(filters.Message.All, groupGate))
 	disp.AddHandler(handlers.NewMessage(filters.Message.All, checkPermission))
 	for _, info := range CommandHandlers {
 		disp.AddHandler(handlers.NewCommand(info.Cmd, info.handler))
 	}
+	// Group chats only react to explicit commands and callback buttons. Plain
+	// messages would otherwise save every album or link posted in the group
+	// once privacy mode is disabled.
+	disp.AddHandler(handlers.NewMessage(filters.Message.All, func(ctx *ext.Context, u *ext.Update) error {
+		if isGroupChat(u) {
+			return dispatcher.EndGroups
+		}
+		return dispatcher.ContinueGroups
+	}))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("update"), withPermission(handleUpdateCallback)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeAdd), withPermission(handleAddCallback)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeSetDefault), withPermission(handleSetDefaultCallback)))

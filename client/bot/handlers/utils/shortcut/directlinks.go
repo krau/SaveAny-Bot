@@ -14,12 +14,12 @@ import (
 	"github.com/rs/xid"
 )
 
-func CreateAndAddDirectTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, links []string, msgID int, userID int64) error {
+func CreateAndAddDirectTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, links []string, msgID int, chatID int64) error {
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
-	task := directlinks.NewTask(xid.New().String(), injectCtx, links, stor, dirPath, directlinks.NewProgress(msgID, userID))
+	task := directlinks.NewTask(xid.New().String(), injectCtx, links, stor, dirPath, directlinks.NewProgress(msgID, chatID))
 	if err := core.AddTask(injectCtx, task); err != nil {
 		log.FromContext(ctx).Errorf("Failed to add task: %s", err)
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID: msgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
 				"Error": err.Error(),
@@ -27,7 +27,7 @@ func CreateAndAddDirectTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirP
 		})
 		return dispatcher.EndGroups
 	}
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 		Message: i18n.T(i18nk.BotMsgCommonInfoTaskAdded, nil),
 	})
 	return dispatcher.EndGroups

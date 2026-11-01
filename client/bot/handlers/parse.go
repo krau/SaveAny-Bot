@@ -67,7 +67,7 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	logger.Debug("Parsed item from text message", "title", item.Title, "url", item.URL)
-	userID := u.GetUserChat().GetID()
+	userID := responsibleUserID(u)
 	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, userID), tcbdata.Add{
 		TaskType:   tasktype.TaskTypeParseditem,
 		ParsedItem: item,
@@ -87,7 +87,7 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 		})), nil)
 		return dispatcher.EndGroups
 	}
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(u), &tg.MessagesEditMessageRequest{
 		Message:     text,
 		ReplyMarkup: markup,
 		Entities:    entities,
@@ -116,7 +116,6 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	logger.Debug("Parsed item from text message", "title", item.Title, "url", item.URL)
-	userID := u.GetUserChat().GetID()
 	text, entities, err := msgelem.BuildParsedTextEntity(*item)
 	if err != nil {
 		logger.Errorf("Failed to build parsed text entity: %s", err)
@@ -125,12 +124,12 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 		})), nil)
 		return dispatcher.EndGroups
 	}
-	msg, err := ctx.SendMessage(userID, &tg.MessagesSendMessageRequest{
+	msg, err := ctx.SendMessage(chatID(u), &tg.MessagesSendMessageRequest{
 		Message:  text,
 		Entities: entities,
 		ReplyTo: &tg.InputReplyToMessage{
 			ReplyToMsgID:  u.EffectiveMessage.ID,
-			ReplyToPeerID: u.GetUserChat().AsInputPeer(),
+			ReplyToPeerID: u.EffectiveChat().GetInputPeer(),
 		},
 	})
 	if err != nil {
@@ -144,5 +143,5 @@ func handleSilentSaveText(ctx *ext.Context, u *ext.Update) error {
 	if p := dirutil.PathFromContext(ctx); p != "" {
 		dirPath = path.Join(p, dirPath)
 	}
-	return shortcut.CreateAndAddParsedTaskWithEdit(ctx, stor, dirPath, item, msg.ID, userID)
+	return shortcut.CreateAndAddParsedTaskWithEdit(ctx, stor, dirPath, item, msg.ID, chatID(u))
 }

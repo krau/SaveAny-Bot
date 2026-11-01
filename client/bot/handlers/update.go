@@ -50,7 +50,7 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	indocker := config.Docker == "true"
-	ctx.Sender.To(u.GetUserChat().AsInputPeer()).StyledText(ctx, html.String(nil, func() string {
+	ctx.Sender.To(u.EffectiveChat().GetInputPeer()).StyledText(ctx, html.String(nil, func() string {
 		md := latest.ReleaseNotes
 		md = regexp.MustCompile(`(?m)^###\s+&nbsp;&nbsp;&nbsp;(.+)$`).ReplaceAllString(md, "<b>$1</b>")
 		md = regexp.MustCompile(`(?m)^#####\s+&nbsp;&nbsp;&nbsp;&nbsp;(.+)$`).ReplaceAllString(md, "<i>$1</i>")
@@ -106,7 +106,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 		})))
 		return dispatcher.EndGroups
 	}
-	ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(u), &tg.MessagesEditMessageRequest{
 		ID: u.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgUpdateInfoUpgradingWithVersion, map[string]any{
 			"Current": config.Version,
@@ -114,7 +114,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 	})
 	latest, err := selfupdate.Update(currentV)
 	if err != nil {
-		ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID(u), &tg.MessagesEditMessageRequest{
 			ID: u.CallbackQuery.GetMsgID(),
 			Message: i18n.T(i18nk.BotMsgUpdateErrorUpgradeFailed, map[string]any{
 				"Error": err.Error(),
@@ -122,7 +122,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 		})
 		return dispatcher.EndGroups
 	}
-	ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(u), &tg.MessagesEditMessageRequest{
 		ID: u.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgUpdateInfoUpgradeSuccess, map[string]any{
 			"Version": latest.Version.String(),

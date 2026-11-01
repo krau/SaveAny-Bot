@@ -15,13 +15,13 @@ import (
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
-func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, urls []string, flags []string, msgID int, userID int64) error {
+func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, urls []string, flags []string, msgID int, chatID int64) error {
 	logger := log.FromContext(ctx)
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 
 	if len(urls) == 0 {
 		logger.Error("URLs list is empty")
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
 			Message: i18n.T(i18nk.BotMsgYtdlpErrorNoValidUrls, nil),
 		})
@@ -37,12 +37,12 @@ func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 		flags,
 		stor,
 		dirPath,
-		ytdlp.NewProgress(msgID, userID),
+		ytdlp.NewProgress(msgID, chatID),
 	)
 
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("Failed to add yt-dlp task: %s", err)
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID: msgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
 				"Error": err.Error(),
@@ -51,7 +51,7 @@ func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 		return dispatcher.EndGroups
 	}
 
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 		ID:      msgID,
 		Message: i18n.T(i18nk.BotMsgCommonInfoTaskAdded, nil),
 	})

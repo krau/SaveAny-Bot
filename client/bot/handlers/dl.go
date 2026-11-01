@@ -39,7 +39,7 @@ func handleDlCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDlErrorNoValidLinks)), nil)
 		return nil
 	}
-	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, update.GetUserChat().GetID()), tcbdata.Add{
+	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, responsibleUserID(update)), tcbdata.Add{
 		TaskType:    tasktype.TaskTypeDirectlinks,
 		DirectLinks: links,
 	})
@@ -97,7 +97,7 @@ func handleAria2DlCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	// don't add to aria2 yet
-	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, update.GetUserChat().GetID()), tcbdata.Add{
+	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, responsibleUserID(update)), tcbdata.Add{
 		TaskType:  tasktype.TaskTypeAria2,
 		Aria2URIs: links,
 	})

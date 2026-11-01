@@ -17,7 +17,7 @@ import (
 )
 
 func handleSilentCmd(ctx *ext.Context, update *ext.Update) error {
-	user, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
+	user, err := database.GetUserByChatID(ctx, responsibleUserID(update))
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserInfoFailed, map[string]any{
 			"Error": err.Error(),
@@ -101,7 +101,7 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 					"Error": err.Error(),
 				}))
 			}
-			ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+			ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 				ID:          update.CallbackQuery.GetMsgID(),
 				Message:     i18n.T(i18nk.BotMsgCommonPromptSelectDefaultDir, nil),
 				ReplyMarkup: markup,
@@ -124,7 +124,7 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 			"Dir":  strings.TrimPrefix(dir.Path, "/"),
 		})
 	}
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 		ID:      update.CallbackQuery.GetMsgID(),
 		Message: msg,
 	})
@@ -132,7 +132,7 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 }
 
 func handleStorageCmd(ctx *ext.Context, update *ext.Update) error {
-	userID := update.GetUserChat().GetID()
+	userID := responsibleUserID(update)
 	storages := storage.GetUserStorages(ctx, userID)
 	if len(storages) == 0 {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorNoAvailableStorage, nil)), nil)

@@ -16,12 +16,12 @@ import (
 	"github.com/rs/xid"
 )
 
-func CreateAndAddParsedTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, item *parser.Item, msgID int, userID int64) error {
+func CreateAndAddParsedTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, item *parser.Item, msgID int, chatID int64) error {
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
-	task := parsed.NewTask(xid.New().String(), injectCtx, stor, dirPath, item, parsed.NewProgress(msgID, userID))
+	task := parsed.NewTask(xid.New().String(), injectCtx, stor, dirPath, item, parsed.NewProgress(msgID, chatID))
 	if err := core.AddTask(injectCtx, task); err != nil {
 		log.FromContext(ctx).Errorf("Failed to add task: %s", err)
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID: msgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
 				"Error": err.Error(),
@@ -30,7 +30,7 @@ func CreateAndAddParsedTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirP
 		return dispatcher.EndGroups
 	}
 	text, entities := msgelem.BuildTaskAddedEntities(ctx, item.Title, core.GetLength(ctx))
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 		ID:       msgID,
 		Message:  text,
 		Entities: entities,

@@ -4,11 +4,13 @@ import (
 	"errors"
 
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -17,12 +19,40 @@ import (
 )
 
 // responsibleUserID returns the sender's ID. Callback queries carry it
-// natively; message updates resolve it through the entity map.
+// natively; message updates resolve the sender through the entity map, which
+// also covers group and supergroup chats.
 func responsibleUserID(u *ext.Update) int64 {
-	if u.CallbackQuery != nil {
-		return u.CallbackQuery.GetUserID()
+	return tgutil.SenderID(u)
+}
+
+// chatID returns the chat that replies and edits must target. In private chats
+// this equals the sender ID; in groups and supergroups it is the group chat.
+func chatID(u *ext.Update) int64 {
+	return tgutil.ChatID(u)
+}
+
+// isGroupChat reports whether the update belongs to a basic group or a
+// supergroup. Broadcast channels are not group chats.
+func isGroupChat(u *ext.Update) bool {
+	if u == nil {
+		return false
 	}
-	return u.GetUserChat().GetID()
+	if message := u.EffectiveMessage; message != nil {
+		switch message.PeerID.(type) {
+		case *tg.PeerUser:
+			return false
+		case *tg.PeerChat:
+			return true
+		case *tg.PeerChannel:
+			channel := u.GetChannel()
+			return channel == nil || channel.Megagroup
+		}
+	}
+	if u.GetChat() != nil {
+		return true
+	}
+	channel := u.GetChannel()
+	return channel != nil && channel.Megagroup
 }
 
 func checkPermission(ctx *ext.Context, update *ext.Update) error {
@@ -30,7 +60,9 @@ func checkPermission(ctx *ext.Context, update *ext.Update) error {
 	if !slice.Contain(config.C().GetUsersID(), userID) {
 		if cbq := update.CallbackQuery; cbq != nil {
 			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(cbq.GetQueryID(), i18n.T(i18nk.BotMsgCommonErrorNoPermission, nil)))
-		} else {
+		} else if !isGroupChat(update) {
+			// Stay silent in groups: unaddressed traffic and unauthorized
+			// command attempts must not turn into reply spam.
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorNoPermission, nil)), nil)
 		}
 		return dispatcher.EndGroups
@@ -65,7 +97,7 @@ func skipLinkForMedia(next func(*ext.Context, *ext.Update) error) func(*ext.Cont
 
 func handleSilentMode(next func(*ext.Context, *ext.Update) error, handler func(*ext.Context, *ext.Update) error) func(*ext.Context, *ext.Update) error {
 	return func(ctx *ext.Context, update *ext.Update) error {
-		userID := update.GetUserChat().GetID()
+		userID := responsibleUserID(update)
 		user, err := database.GetUserByChatID(ctx, userID)
 		if err != nil {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserInfoFailed, map[string]any{

@@ -77,7 +77,7 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 			logger.Errorf("failed to edit message: %s", err)
 		}
 	}
-	user, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
+	user, err := database.GetUserByChatID(ctx, tgutil.SenderID(update))
 	if err != nil {
 		logger.Errorf("failed to get user from db: %s", err)
 		editReplied(i18n.T(i18nk.BotMsgCommonErrorGetUserInfoFailed, map[string]any{

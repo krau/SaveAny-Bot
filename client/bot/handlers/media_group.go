@@ -61,7 +61,7 @@ func handleGroupMediaMessage(ctx *ext.Context, update *ext.Update, message *tg.M
 	if !supported {
 		return dispatcher.EndGroups
 	}
-	userId := update.GetUserChat().GetID()
+	userId := responsibleUserID(update)
 	userDB, err := database.GetUserByChatID(ctx, userId)
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, key mediaGroupKey) 
 	}
 	logger.Debugf("Processing media group %d with %d items", key.groupID, len(items))
 
-	userId := update.GetUserChat().GetID()
+	userId := responsibleUserID(update)
 	msg, err := ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgMediaGroupInfoSavingFiles, nil)), nil)
 	if err != nil {
 		logger.Errorf("Failed to reply: %s", err)
@@ -116,10 +116,10 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, key mediaGroupKey) 
 	if stor != nil {
 		// In silent mode
 		if len(items) == 1 {
-			shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, stor, "", items[0], msg.ID)
+			shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, key.chatID, stor, "", items[0], msg.ID)
 			return
 		}
-		shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, stor, "", items, msg.ID)
+		shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, key.chatID, stor, "", items, msg.ID)
 		return
 	}
 
@@ -130,7 +130,7 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, key mediaGroupKey) 
 	})
 	if err != nil {
 		logger.Errorf("Failed to build storage selection keyboard: %s", err)
-		ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(key.chatID, &tg.MessagesEditMessageRequest{
 			ID: msg.ID,
 			Message: i18n.T(i18nk.BotMsgMediaGroupErrorBuildStorageSelectKeyboardFailed, map[string]any{
 				"Error": err.Error(),
@@ -138,7 +138,7 @@ func processMediaGroup(ctx *ext.Context, update *ext.Update, key mediaGroupKey) 
 		})
 		return
 	}
-	ctx.EditMessage(userId, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(key.chatID, &tg.MessagesEditMessageRequest{
 		ID: msg.ID,
 		Message: i18n.T(i18nk.BotMsgMediaGroupInfoGroupFoundFilesSelectStorage, map[string]any{
 			"Count": len(items),

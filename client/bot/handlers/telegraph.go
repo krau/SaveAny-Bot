@@ -27,7 +27,7 @@ func handleTelegraphUrlMessage(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	userID := update.GetUserChat().GetID()
+	userID := responsibleUserID(update)
 	stors := storage.GetUserStorages(ctx, userID)
 	markup, err := msgelem.BuildAddSelectStorageKeyboard(stors, tcbdata.Add{
 		TaskType:    tasktype.TaskTypeTphpics,
@@ -55,7 +55,7 @@ func handleTelegraphUrlMessage(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	text, entities := eb.Complete()
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 		Message:     text,
 		ID:          msg.ID,
 		ReplyMarkup: markup,
@@ -70,11 +70,10 @@ func handleSilentSaveTelegraph(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	userID := update.GetUserChat().GetID()
 	dirpath := result.TphDir
 	if p := dirutil.PathFromContext(ctx); p != "" {
 		dirpath = path.Join(p, dirpath)
 	}
-	return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, result.Page, dirpath, result.Pics, stor, msg.ID)
+	return shortcut.CreateAndAddtelegraphWithEdit(ctx, chatID(update), result.Page, dirpath, result.Pics, stor, msg.ID)
 
 }

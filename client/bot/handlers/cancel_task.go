@@ -28,7 +28,7 @@ func handleCancelCallback(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	ctx.EditMessage(update.CallbackQuery.GetUserID(), &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 		ID:      update.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgCancelInfoCancellingTask, nil),
 	})

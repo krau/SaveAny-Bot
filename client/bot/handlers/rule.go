@@ -39,7 +39,7 @@ func resolveRuleStorage(userChatID int64, arg string) (uint, error) {
 func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	args := strutil.ParseArgsRespectQuotes(update.EffectiveMessage.Text)
-	userChatID := update.GetUserChat().GetID()
+	userChatID := responsibleUserID(update)
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
 		logger.Errorf("Failed to get user rules: %s", err)

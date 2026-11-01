@@ -19,7 +19,7 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 		return err
 	}
 	logger := log.FromContext(ctx)
-	userId := update.GetUserChat().GetID()
+	userId := responsibleUserID(update)
 	stors := storage.GetUserStorages(ctx, userId)
 	if len(files) == 1 {
 		req, err := msgelem.BuildAddOneSelectStorageMessage(ctx, stors, files[0], replied.ID)
@@ -55,9 +55,9 @@ func handleSilentSaveLink(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	userId := update.GetUserChat().GetID()
+	userId := responsibleUserID(update)
 	if len(files) == 1 {
-		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, stor, dirutil.PathFromContext(ctx), files[0], replied.ID)
+		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, chatID(update), stor, dirutil.PathFromContext(ctx), files[0], replied.ID)
 	}
-	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, stor, dirutil.PathFromContext(ctx), files, replied.ID)
+	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, chatID(update), stor, dirutil.PathFromContext(ctx), files, replied.ID)
 }

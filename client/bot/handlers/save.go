@@ -36,7 +36,7 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgSaveHelpText)), nil)
 		return dispatcher.EndGroups
 	}
-	userDB, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
+	userDB, err := database.GetUserByChatID(ctx, responsibleUserID(update))
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func handleSaveCmd(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	userId := update.GetUserChat().GetID()
+	userId := responsibleUserID(update)
 	stors := storage.GetUserStorages(ctx, userId)
 	req, err := msgelem.BuildAddOneSelectStorageMessage(ctx, stors, file, msg.ID)
 	if err != nil {
@@ -71,7 +71,7 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgSaveHelpText)), nil)
 		return dispatcher.EndGroups
 	}
-	userDB, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
+	userDB, err := database.GetUserByChatID(ctx, responsibleUserID(update))
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func handleSilentSaveReplied(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, dirutil.PathFromContext(ctx), file, msg.GetID())
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, responsibleUserID(update), chatID(update), stor, dirutil.PathFromContext(ctx), file, msg.GetID())
 }
 
 func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error {
@@ -110,7 +110,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 	if uctx != nil && validator.IsIntStr(chatArg) {
 		tctx = uctx
 	}
-	chatID, err := tgutil.ParseChatID(tctx, chatArg)
+	sourceChatID, err := tgutil.ParseChatID(tctx, chatArg)
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidIdOrUsername, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
@@ -122,7 +122,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		return dispatcher.EndGroups
 	}
 
-	msgs, err := tgutil.GetMessagesRange(tctx, chatID, int(startID), int(endID))
+	msgs, err := tgutil.GetMessagesRange(tctx, sourceChatID, int(startID), int(endID))
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetMessagesFailed, map[string]any{"Error": err.Error()})), nil)
 		return dispatcher.EndGroups
@@ -169,7 +169,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 	stor := storage.FromContext(ctx)
 	if stor == nil {
 		// not in silent mode
-		stors := storage.GetUserStorages(ctx, update.GetUserChat().GetID())
+		stors := storage.GetUserStorages(ctx, responsibleUserID(update))
 		markup, err := msgelem.BuildAddSelectStorageKeyboard(stors, tcbdata.Add{
 			Files: files,
 		})
@@ -188,5 +188,5 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		})
 		return dispatcher.EndGroups
 	}
-	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, update.GetUserChat().GetID(), stor, "", files, replied.ID)
+	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, responsibleUserID(update), chatID(update), stor, "", files, replied.ID)
 }

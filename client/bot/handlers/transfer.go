@@ -52,7 +52,7 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	userID := update.GetUserChat().GetID()
+	userID := responsibleUserID(update)
 	sourceStorageName, sourcePath, ok := splitTransferSource(userID, args[1])
 	if !ok {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgTransferErrorInvalidSource, nil)), nil)
@@ -165,13 +165,13 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 	return dispatcher.EndGroups
 }
 
-func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storage.Storage, dirPath string, data tcbdata.Add, msgID int) error {
+func handleTransferCallback(ctx *ext.Context, userID, chatID int64, targetStorage storage.Storage, dirPath string, data tcbdata.Add, msgID int) error {
 	logger := log.FromContext(ctx)
 
 	sourceStorage, err := storage.GetStorageByUserIDAndID(ctx, userID, data.TransferSourceStorageID)
 	if err != nil {
 		logger.Errorf("Failed to get source storage: %s", err)
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
 			Message: i18n.T(i18nk.BotMsgTransferErrorStorageNotFound, map[string]any{"StorageName": config.C().GetStorageNameByID(data.TransferSourceStorageID), "Error": err}),
 		})
@@ -180,7 +180,7 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 
 	listable, ok := sourceStorage.(storage.StorageListable)
 	if !ok {
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
 			Message: i18n.T(i18nk.BotMsgTransferErrorStorageNotListable, map[string]any{"StorageName": config.C().GetStorageNameByID(data.TransferSourceStorageID)}),
 		})
@@ -189,14 +189,14 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 
 	// Re-fetch files to get FileInfo (since we only stored paths)
 	// This is necessary to get size and other metadata
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 		ID:      msgID,
 		Message: i18n.T(i18nk.BotMsgTransferInfoFetchingFiles, nil),
 	})
 
 	allFiles, err := listable.ListFiles(ctx, data.TransferSourcePath)
 	if err != nil {
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
 			Message: i18n.T(i18nk.BotMsgTransferErrorListFilesFailed, map[string]any{"Error": err}),
 		})
@@ -222,7 +222,7 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 	}
 
 	if len(elems) == 0 {
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
 			Message: i18n.T(i18nk.BotMsgTransferErrorNoFilesToTransfer, nil),
 		})
@@ -235,19 +235,19 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 		taskID,
 		injectCtx,
 		elems,
-		transfer.NewProgressTracker(msgID, userID),
+		transfer.NewProgressTracker(msgID, chatID),
 		true, // IgnoreErrors
 	)
 
 	if err := core.AddTask(injectCtx, task); err != nil {
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
 			Message: i18n.T(i18nk.BotMsgTransferErrorAddTaskFailed, map[string]any{"Error": err}),
 		})
 		return dispatcher.EndGroups
 	}
 
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 		ID: msgID,
 		Message: i18n.T(i18nk.BotMsgTransferInfoTaskAdded, map[string]any{
 			"Count":  len(elems),

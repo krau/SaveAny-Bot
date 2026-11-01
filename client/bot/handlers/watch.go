@@ -36,7 +36,7 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchHelpText)), nil)
 		return dispatcher.EndGroups
 	}
-	userChatID := update.GetUserChat().GetID()
+	userChatID := responsibleUserID(update)
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
 		logger.Errorf("Failed to get user: %s", err)
@@ -101,7 +101,7 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 
 func handleLswatchCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
-	userChatID := update.GetUserChat().GetID()
+	userChatID := responsibleUserID(update)
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
 		logger.Errorf("Failed to get user: %s", err)
@@ -136,7 +136,7 @@ func handleUnwatchCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorUnwatchNoChatProvided)), nil)
 		return dispatcher.EndGroups
 	}
-	userChatID := update.GetUserChat().GetID()
+	userChatID := responsibleUserID(update)
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
 		logger.Errorf("Failed to get user: %s", err)
