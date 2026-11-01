@@ -19,6 +19,7 @@ import (
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/telegram/uploader"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/worker"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
@@ -57,6 +58,8 @@ type batchMediaItem struct {
 	albumEligible bool
 	useSingleSave bool
 }
+
+type primaryUploadContextKey struct{}
 
 func (t *Telegram) Init(ctx context.Context, cfg storconfig.StorageConfig) error {
 	telegramConfig, ok := cfg.(*storconfig.TelegramStorageConfig)
@@ -107,12 +110,40 @@ func (t *Telegram) SaveWithProgress(
 }
 
 func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, progress *uploadProgress) error {
-	storagePath = path.Clean(storagePath)
-	captionOverride := sourceCaptionOverride(ctx)
-	tctx := tgutil.ExtFromContext(ctx)
-	if tctx == nil {
+	primary := tgutil.ExtFromContext(ctx)
+	if primary == nil {
 		return fmt.Errorf("failed to get telegram context")
 	}
+	fallback := primary
+	if original, ok := ctx.Value(primaryUploadContextKey{}).(*ext.Context); ok && original != nil {
+		fallback = original
+	}
+	tctx := t.uploadContext(primary, storagePath)
+	uploadCtx := ctx
+	if tctx != primary {
+		uploadCtx = tgutil.ExtWithContext(ctx, tctx)
+	}
+	err := t.saveWithContext(uploadCtx, tctx, r, storagePath, progress)
+	if err == nil || tctx == fallback || ctx.Err() != nil {
+		return err
+	}
+	rs, ok := r.(io.ReadSeeker)
+	if !ok {
+		return err
+	}
+	if _, seekErr := rs.Seek(0, io.SeekStart); seekErr != nil {
+		return err
+	}
+	if progress != nil {
+		progress.reset(contentLength(ctx))
+	}
+	log.FromContext(ctx).Warnf("Helper upload failed, retrying with primary bot: %v", err)
+	return t.saveWithContext(tgutil.ExtWithContext(ctx, fallback), fallback, r, storagePath, progress)
+}
+
+func (t *Telegram) saveWithContext(ctx context.Context, tctx *ext.Context, r io.Reader, storagePath string, progress *uploadProgress) error {
+	storagePath = path.Clean(storagePath)
+	captionOverride := sourceCaptionOverride(ctx)
 	size := contentLength(ctx)
 	maxUploadSize := maxUploadFileSize(tctx)
 	if t.config.SkipLarge && size > maxUploadSize {
@@ -135,7 +166,7 @@ func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, pr
 			}
 		}
 		upler := t.newUploader(tctx, size, progress)
-		peer := tryGetInputPeer(tctx, chatID)
+		peer := ensureInputPeer(tctx, chatID)
 		if peer == nil || peer.Zero() {
 			return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
 		}
@@ -193,6 +224,46 @@ func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, pr
 		To(prepared.peer).
 		Media(ctx, prepared.media)
 	return err
+}
+
+// uploadContext picks a helper that can resolve the target path with the same
+// destination as the primary client. Helpers that cannot reach the chat are
+// skipped, so an unusable helper never replaces the primary upload path.
+func (t *Telegram) uploadContext(primary *ext.Context, storagePaths ...string) *ext.Context {
+	if primary == nil {
+		return nil
+	}
+	for _, helper := range worker.UploadExts() {
+		if t.canUploadWith(primary, helper, storagePaths) {
+			return helper
+		}
+	}
+	return primary
+}
+
+func (t *Telegram) canUploadWith(primary, helper *ext.Context, storagePaths []string) bool {
+	if helper == nil {
+		return false
+	}
+	if len(storagePaths) == 0 {
+		return true
+	}
+	for _, storagePath := range storagePaths {
+		primaryName, primaryChatID := t.target(primary, path.Clean(storagePath))
+		helperName, helperChatID := t.target(helper, path.Clean(storagePath))
+		if primaryName != helperName || primaryChatID != helperChatID {
+			return false
+		}
+		peer := ensureInputPeer(helper, helperChatID)
+		if peer == nil || peer.Zero() {
+			return false
+		}
+		// A helper bot cannot initiate a DM with a user who has not started it.
+		if _, isUser := peer.(*tg.InputPeerUser); isUser {
+			return false
+		}
+	}
+	return true
 }
 
 func contentLength(ctx context.Context) int64 {
@@ -281,7 +352,7 @@ func (t *Telegram) prepareMedia(
 	storagePath = path.Clean(storagePath)
 	filename, chatID := t.target(tctx, storagePath)
 	upler := t.newUploader(tctx, size, progress)
-	peer := tryGetInputPeer(tctx, chatID)
+	peer := ensureInputPeer(tctx, chatID)
 	if peer == nil || peer.Zero() {
 		return nil, fmt.Errorf("failed to get input peer for chat ID %d", chatID)
 	}
@@ -392,9 +463,18 @@ func (t *Telegram) saveBatch(
 	items []storagetypes.BatchItem,
 	onProgress func(index int, uploaded, total int64),
 ) error {
-	tctx := tgutil.ExtFromContext(ctx)
-	if tctx == nil {
+	primary := tgutil.ExtFromContext(ctx)
+	if primary == nil {
 		return fmt.Errorf("failed to get telegram context")
+	}
+	ctx = context.WithValue(ctx, primaryUploadContextKey{}, primary)
+	paths := make([]string, 0, len(items))
+	for _, item := range items {
+		paths = append(paths, item.StoragePath)
+	}
+	tctx := t.uploadContext(primary, paths...)
+	if tctx != primary {
+		ctx = tgutil.ExtWithContext(ctx, tctx)
 	}
 
 	inspected := make([]batchMediaItem, 0, len(items))
@@ -408,7 +488,20 @@ func (t *Telegram) saveBatch(
 	}
 	for _, group := range planMediaGroups(inspected) {
 		if err := t.saveMediaGroup(ctx, tctx, group, onProgress); err != nil {
-			return err
+			if tctx == primary || ctx.Err() != nil {
+				return err
+			}
+			for _, mediaItem := range group {
+				if _, seekErr := mediaItem.item.Reader.Seek(0, io.SeekStart); seekErr != nil {
+					return err
+				}
+			}
+			log.FromContext(ctx).Warnf("Helper batch upload failed, retrying group with primary bot: %v", err)
+			ctx = tgutil.ExtWithContext(ctx, primary)
+			tctx = primary
+			if err := t.saveMediaGroup(ctx, tctx, group, onProgress); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

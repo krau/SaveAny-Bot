@@ -64,6 +64,15 @@ type StorageRecord struct {
 
 func (StorageRecord) TableName() string { return "storages" }
 
+// BotWorker is an optional helper bot used for Telegram storage uploads.
+type BotWorker struct {
+	gorm.Model
+	Name        string `gorm:"uniqueIndex;size:64;not null"`
+	Token       string `gorm:"type:text;not null"`
+	SessionPath string `gorm:"size:255"`
+	Enabled     bool   `gorm:"not null"`
+}
+
 type TaskRecord struct {
 	ID         uint   `gorm:"primaryKey"`
 	TaskID     string `gorm:"uniqueIndex;size:32;not null"`

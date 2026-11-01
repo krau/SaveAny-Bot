@@ -184,6 +184,20 @@ func normalizeInputPeer(peer tg.InputPeerClass) tg.InputPeerClass {
 	return peer
 }
 
+func ensureInputPeer(ctx *ext.Context, chatID int64) tg.InputPeerClass {
+	if ctx == nil || chatID == 0 {
+		return nil
+	}
+	if peer := tryGetInputPeer(ctx, chatID); peer != nil && !peer.Zero() {
+		return peer
+	}
+	peer, err := ctx.ResolveInputPeerById(chatID)
+	if err != nil || peer == nil || peer.Zero() {
+		return nil
+	}
+	return peer
+}
+
 func tryGetInputPeer(ctx *ext.Context, chatID int64) tg.InputPeerClass {
 	plain := constant.TDLibPeerID(chatID).ToPlain()
 	var channel constant.TDLibPeerID

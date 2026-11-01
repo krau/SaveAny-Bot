@@ -55,6 +55,13 @@ func NewHandler(deps Deps) http.Handler {
 	mux.HandleFunc("DELETE /api/v1/users/{id}", s.deleteUser)
 
 	mux.HandleFunc("GET /api/v1/telegram/status", s.telegramStatus)
+	mux.HandleFunc("GET /api/v1/telegram/workers", s.listBotWorkers)
+	mux.HandleFunc("POST /api/v1/telegram/workers", s.createBotWorker)
+	mux.HandleFunc("PUT /api/v1/telegram/workers/{id}", s.updateBotWorker)
+	mux.HandleFunc("DELETE /api/v1/telegram/workers/{id}", s.deleteBotWorker)
+	mux.HandleFunc("POST /api/v1/telegram/workers/{id}/start", s.startBotWorker)
+	mux.HandleFunc("POST /api/v1/telegram/workers/{id}/stop", s.stopBotWorker)
+	mux.HandleFunc("POST /api/v1/telegram/workers/{id}/test", s.testBotWorker)
 	mux.HandleFunc("POST /api/v1/telegram/bot/start", s.startBot)
 	mux.HandleFunc("POST /api/v1/telegram/bot/stop", s.stopBot)
 	mux.HandleFunc("POST /api/v1/telegram/bot/restart", s.restartBot)

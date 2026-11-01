@@ -35,7 +35,7 @@ func Init(ctx context.Context, path string) {
 	}
 	_ = os.Chmod(path, 0o600)
 	logger.Debug("Database connected")
-	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}, &WatchChat{}, &Setting{}, &StorageRecord{}, &TaskRecord{}, &WebSession{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}, &WatchChat{}, &Setting{}, &StorageRecord{}, &TaskRecord{}, &WebSession{}, &BotWorker{}); err != nil {
 		logger.Fatalf("Database migration failed: %v", err)
 	}
 	if err := MigrateLegacyPeerIDs(ctx); err != nil {
