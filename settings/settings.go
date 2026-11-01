@@ -133,6 +133,9 @@ func applyGroup(cfg *config.Config, group string, raw []byte) error {
 	case GroupYtdlp:
 		return json.Unmarshal(raw, &cfg.Ytdlp)
 	case GroupParser:
+		// The group payload is complete; reset the map so decoding cannot
+		// mutate the map still referenced by the live config snapshot.
+		cfg.Parser.ParserCfgs = nil
 		return json.Unmarshal(raw, &cfg.Parser)
 	case GroupHook:
 		return json.Unmarshal(raw, &cfg.Hook)
@@ -478,6 +481,9 @@ func restartRequired(oldCfg, newCfg config.Config) []string {
 	}
 	if oldCfg.Parser.PluginEnable != newCfg.Parser.PluginEnable || !equalStrings(oldCfg.Parser.PluginDirs, newCfg.Parser.PluginDirs) {
 		fields = append(fields, "parser.plugin_enable", "parser.plugin_dirs")
+	}
+	if oldCfg.Parser.Proxy != newCfg.Parser.Proxy {
+		fields = append(fields, "parser.proxy")
 	}
 	if oldCfg.Hook != newCfg.Hook {
 		fields = append(fields, "hook.exec")
