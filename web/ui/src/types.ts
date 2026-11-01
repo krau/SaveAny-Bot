@@ -156,6 +156,30 @@ export interface TelegramStatus {
   userbot: UserbotStatus
 }
 
+export interface BotWorker {
+  id: number
+  name: string
+  enabled: boolean
+  session_path?: string
+  token_set: boolean
+  state: string
+  username?: string
+  error?: string
+}
+
+export interface BotWorkerInput {
+  name: string
+  token: string
+  enabled: boolean
+}
+
+export interface BotWorkerTestResult {
+  ok: boolean
+  state?: string
+  username?: string
+  error?: string
+}
+
 export interface SettingsMap {
   [group: string]: JsonObject
 }

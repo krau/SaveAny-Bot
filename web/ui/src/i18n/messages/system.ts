@@ -6,7 +6,7 @@ export const zhHans = {
       uptime: '运行时长',
       tasks: '任务',
       queued: '{n} 个排队',
-      concurrency: '并发下载数',
+      concurrency: '任务并发数',
       loading: '正在读取运行信息…',
     },
     info: {
@@ -42,7 +42,7 @@ export const en = {
       uptime: 'Uptime',
       tasks: 'Tasks',
       queued: '{n} queued',
-      concurrency: 'Concurrent downloads',
+      concurrency: 'Task concurrency',
       loading: 'Reading runtime information…',
     },
     info: {

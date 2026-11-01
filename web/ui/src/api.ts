@@ -1,5 +1,8 @@
 import { translate } from './i18n'
 import type {
+  BotWorker,
+  BotWorkerInput,
+  BotWorkerTestResult,
   CreateTaskRequest,
   JsonObject,
   CreateUserInput,
@@ -262,6 +265,31 @@ export const telegramApi = {
   },
   logout() {
     return request<void>('/telegram/userbot/logout', { method: 'POST', body: {} })
+  },
+}
+
+export const workersApi = {
+  async list(): Promise<BotWorker[]> {
+    const data = await request<{ workers: BotWorker[] }>('/telegram/workers')
+    return data.workers ?? []
+  },
+  create(input: BotWorkerInput) {
+    return request<BotWorker>('/telegram/workers', { method: 'POST', body: input })
+  },
+  update(id: number, input: BotWorkerInput) {
+    return request<BotWorker>(`/telegram/workers/${id}`, { method: 'PUT', body: input })
+  },
+  remove(id: number) {
+    return request<void>(`/telegram/workers/${id}`, { method: 'DELETE' })
+  },
+  start(id: number) {
+    return request<{ state: string }>(`/telegram/workers/${id}/start`, { method: 'POST', body: {} })
+  },
+  stop(id: number) {
+    return request<{ state: string }>(`/telegram/workers/${id}/stop`, { method: 'POST', body: {} })
+  },
+  test(id: number) {
+    return request<BotWorkerTestResult>(`/telegram/workers/${id}/test`, { method: 'POST', body: {} })
   },
 }
 

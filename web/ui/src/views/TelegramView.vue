@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { errorMessage, MASKED_SECRET, settingsApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
+import HelperBotsSection from '../components/HelperBotsSection.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
 import ServerPathPicker from '../components/ServerPathPicker.vue'
@@ -35,6 +36,8 @@ const appId = ref(0)
 const appHash = ref('')
 const rpcRetry = ref(5)
 const mediaTimeout = ref(0)
+const relayChatID = ref(0)
+const relayKeepMessages = ref(false)
 const proxyEnable = ref(false)
 const proxyURL = ref('')
 const userbotEnable = ref(false)
@@ -136,6 +139,8 @@ async function loadSettings() {
     appHash.value = String(telegram.app_hash ?? '')
     rpcRetry.value = Number(telegram.rpc_retry ?? 5)
     mediaTimeout.value = Number(telegram.media_group_timeout ?? 0)
+    relayChatID.value = Number(telegram.relay_chat_id ?? 0)
+    relayKeepMessages.value = Boolean(telegram.relay_keep_messages ?? false)
     proxyEnable.value = Boolean(proxy.enable)
     proxyURL.value = String(proxy.url ?? '')
     userbotEnable.value = Boolean(userbot.enable)
@@ -153,6 +158,10 @@ onMounted(async () => {
 onUnmounted(() => {
   if (timer) window.clearInterval(timer)
 })
+
+function isRelayChatID(id: number): boolean {
+  return id === 0 || (id < 0 && String(id).startsWith('-100'))
+}
 
 function validateBotSettings(): boolean {
   clear()
@@ -174,6 +183,10 @@ function validateBotSettings(): boolean {
   }
   if (!Number.isFinite(mediaTimeout.value) || mediaTimeout.value < 0) {
     fail(t('telegram.validation.mediaTimeout'), 'tg-media-timeout')
+    return false
+  }
+  if (!Number.isInteger(relayChatID.value) || !isRelayChatID(relayChatID.value)) {
+    fail(t('telegram.validation.relayChatId'), 'tg-relay-chat-id')
     return false
   }
   if (proxyEnable.value && !proxyURL.value.trim()) {
@@ -198,6 +211,8 @@ async function saveBotSettings() {
       app_hash: appHash.value,
       rpc_retry: rpcRetry.value,
       media_group_timeout: mediaTimeout.value,
+      relay_chat_id: relayChatID.value,
+      relay_keep_messages: relayKeepMessages.value,
       proxy: { enable: proxyEnable.value, url: proxyURL.value },
     }
     const result = await settingsApi.updateGroup('telegram', patch)
@@ -547,6 +562,24 @@ async function logoutUserbot() {
               @input="clear('tg-media-timeout')"
             />
           </div>
+          <div class="field" :class="{ 'is-invalid': invalidField === 'tg-relay-chat-id' }">
+            <label for="tg-relay-chat-id">{{ t('telegram.botPanel.relayChatId') }}</label>
+            <input
+              id="tg-relay-chat-id"
+              v-model.number="relayChatID"
+              type="number"
+              placeholder="-100..."
+              :aria-invalid="invalidField === 'tg-relay-chat-id' ? 'true' : undefined"
+              :aria-describedby="'tg-relay-chat-id-hint'"
+              @input="clear('tg-relay-chat-id')"
+            />
+            <span id="tg-relay-chat-id-hint" class="hint">{{ t('telegram.botPanel.relayHint') }}</span>
+            <label class="checkbox">
+              <input v-model="relayKeepMessages" type="checkbox" />
+              <span>{{ t('telegram.botPanel.relayKeepMessages') }}</span>
+            </label>
+            <span class="hint">{{ t('telegram.botPanel.relayKeepHint') }}</span>
+          </div>
           <div class="field" :class="{ 'is-invalid': invalidField === 'tg-proxy' }">
             <label for="tg-proxy">{{ t('telegram.botPanel.proxyURL') }}</label>
             <input
@@ -689,6 +722,8 @@ async function logoutUserbot() {
         <div v-else class="loading">{{ t('telegram.session.loading') }}</div>
       </div>
     </section>
+
+    <HelperBotsSection />
 
     <ServerPathPicker
       :open="sessionPickerOpen"
