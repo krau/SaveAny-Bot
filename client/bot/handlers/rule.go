@@ -163,7 +163,7 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorInvalidRuleId, nil)), nil)
 			return dispatcher.EndGroups
 		}
-		if err := database.DeleteRule(ctx, uint(id)); err != nil {
+		if err := database.DeleteRule(ctx, uint(id), user.ID); err != nil {
 			logger.Errorf("failed to delete rule %d: %s", id, err)
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorDeleteRuleFailed, nil)), nil)
 			return dispatcher.EndGroups

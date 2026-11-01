@@ -67,7 +67,7 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorInvalidDirId)), nil)
 			return dispatcher.EndGroups
 		}
-		if err := database.DeleteDirByID(ctx, uint(dirID)); err != nil {
+		if err := database.DeleteDirByID(ctx, uint(dirID), user.ID); err != nil {
 			logger.Errorf("Failed to delete directory: %s", err)
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorDeleteDirFailed)), nil)
 			return dispatcher.EndGroups

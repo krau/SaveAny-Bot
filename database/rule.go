@@ -6,8 +6,10 @@ func CreateRule(ctx context.Context, rule *Rule) error {
 	return db.WithContext(ctx).Create(rule).Error
 }
 
-func DeleteRule(ctx context.Context, ruleID uint) error {
-	return db.WithContext(ctx).Unscoped().Delete(&Rule{}, ruleID).Error
+func DeleteRule(ctx context.Context, ruleID uint, userID uint) error {
+	return db.WithContext(ctx).Unscoped().
+		Where("id = ? AND user_id = ?", ruleID, userID).
+		Delete(&Rule{}).Error
 }
 
 func UpdateUserApplyRule(ctx context.Context, chatID int64, applyRule bool) error {

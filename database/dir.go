@@ -52,6 +52,8 @@ func DeleteDirForUser(ctx context.Context, userID, storageID uint, path string) 
 	return db.WithContext(ctx).Unscoped().Where("user_id = ? AND storage_id = ? AND path = ?", userID, storageID, path).Delete(&Dir{}).Error
 }
 
-func DeleteDirByID(ctx context.Context, id uint) error {
-	return db.WithContext(ctx).Unscoped().Delete(&Dir{}, id).Error
+func DeleteDirByID(ctx context.Context, id uint, userID uint) error {
+	return db.WithContext(ctx).Unscoped().
+		Where("id = ? AND user_id = ?", id, userID).
+		Delete(&Dir{}).Error
 }
