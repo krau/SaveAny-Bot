@@ -175,7 +175,7 @@ export const settingsGroups: SettingsGroupDef[] = [
         path: 'session',
         label: 'settings.db.session',
         kind: 'text',
-        placeholder: 'data/session.db',
+        placeholder: 'data/bot_session.db',
         pathKind: 'file',
       },
     ],

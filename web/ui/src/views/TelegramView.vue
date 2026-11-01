@@ -668,7 +668,7 @@ async function logoutUserbot() {
               <input
                 id="tg-session"
                 v-model="userbotSession"
-                placeholder="data/usersession.db"
+                placeholder="data/userbot_session.db"
                 :aria-invalid="invalidField === 'tg-session' ? 'true' : undefined"
                 @input="clear('tg-session')"
               />

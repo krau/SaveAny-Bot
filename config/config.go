@@ -45,7 +45,22 @@ type webConfig struct {
 	SecureCookie bool   `toml:"secure_cookie" mapstructure:"secure_cookie" json:"secure_cookie"`
 }
 
+const (
+	defaultBotSessionFile     = "bot_session.db"
+	defaultUserbotSessionFile = "userbot_session.db"
+)
+
 var current atomic.Pointer[Config]
+
+// DefaultBotSessionPath returns the v1 bot session database path.
+func DefaultBotSessionPath(dataDir string) string {
+	return filepath.Join(dataDir, defaultBotSessionFile)
+}
+
+// DefaultUserbotSessionPath returns the v1 userbot session database path.
+func DefaultUserbotSessionPath(dataDir string) string {
+	return filepath.Join(dataDir, defaultUserbotSessionFile)
+}
 
 func init() {
 	cfg := Default("./data")
@@ -79,11 +94,11 @@ func DefaultsMap(dataDir string) map[string]any {
 		"telegram.app_hash":        "452b0359b988148995f22ff0f4229750",
 		"telegram.rpc_retry":       5,
 		"telegram.userbot.enable":  false,
-		"telegram.userbot.session": filepath.Join(dataDir, "usersession.db"),
+		"telegram.userbot.session": DefaultUserbotSessionPath(dataDir),
 
 		"temp.base_path": "cache/",
 
-		"db.session": filepath.Join(dataDir, "session.db"),
+		"db.session": DefaultBotSessionPath(dataDir),
 
 		"web.enable":        true,
 		"web.listen":        "0.0.0.0:8080",
@@ -111,12 +126,12 @@ func Default(dataDir string) Config {
 			MaxCost:     1e6,
 		},
 		Temp: tempConfig{BasePath: "cache/"},
-		DB:   dbConfig{Session: filepath.Join(dataDir, "session.db")},
+		DB:   dbConfig{Session: DefaultBotSessionPath(dataDir)},
 		Telegram: telegramConfig{
 			AppID:    1025907,
 			AppHash:  "452b0359b988148995f22ff0f4229750",
 			RpcRetry: 5,
-			Userbot:  userbotConfig{Session: filepath.Join(dataDir, "usersession.db")},
+			Userbot:  userbotConfig{Session: DefaultUserbotSessionPath(dataDir)},
 		},
 		Ytdlp: YtdlpConfig{
 			Recode:           "mp4",

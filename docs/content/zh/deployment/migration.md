@@ -7,7 +7,7 @@ weight: 15
 
 v1 使用本地 SQLite 数据库保存配置。首次启动时，如果检测到 v0 的 `config.toml`，会把它导入数据库一次；之后所有配置都在 Web 控制台管理。
 
-迁移不会删除现有数据库、Bot 会话或存储文件。升级前仍建议完整备份。
+v1 不迁移 Telegram 会话。v0 的 `session.db` 和 `usersession.db` 由旧版 gotgproto 生成，v1 不再读取。迁移只复用业务数据库；Bot 会使用当前 Token 重新登录，启用 Userbot 时需要在 Web 控制台重新登录。升级前请完整备份现有文件。
 
 ## 1. 停止并备份
 
@@ -24,15 +24,22 @@ cp -a config.toml data downloads /path/to/backup/
 
 ## 2. 保留数据目录
 
-v1 默认复用以下文件：
+v1 只复用业务数据库：
 
 | v0 文件 | v1 默认路径 | 说明 |
 |---|---|---|
 | `data/saveany.db` | `data/saveany.db` | 用户、目录、规则、监听和任务记录 |
-| `data/session.db` | `data/session.db` | Bot 会话 |
-| `data/usersession.db` | `data/usersession.db` | Userbot 会话 |
 
 如果 v0 使用了自定义的 `db.path`，用 `--db-path` 指向旧数据库，或把旧数据库文件复制为 `data/saveany.db`。Docker 部署可通过 `SAVEANY_DB_PATH` 指定容器内路径。
+
+v0 的 `data/session.db` 和 `data/usersession.db` 会被忽略，确认已备份后可删除。v1 使用新的会话文件：
+
+| 文件 | 说明 |
+|---|---|
+| `data/bot_session.db` | Bot 会话 |
+| `data/userbot_session.db` | Userbot 会话 |
+
+Bot 使用当前 Token 重新登录。启用 Userbot 时，请稍后在 Telegram 页面重新登录。
 
 ## 3. 首次启动时导入配置
 
@@ -65,7 +72,7 @@ docker compose logs -f saveany-bot
 
 省略 `--config` 时，v1 会依次查找工作目录下的 `./config.toml` 和 `/etc/saveany/config.toml`。
 
-日志中出现配置导入完成后，即可移除 `config.toml` 挂载并重启。v1 在数据库中写入导入标记，不会重复导入。
+日志中出现配置导入完成后，即可移除 `config.toml` 挂载并重启。v1 在数据库中写入导入标记，不会重复导入。`config.toml` 中的 `db.session` 和 `telegram.userbot.session` 会被忽略，v1 始终使用新的会话文件路径。
 
 ## 4. 登录并核对
 
@@ -77,7 +84,8 @@ docker compose logs saveany-bot | grep "admin password"
 
 登录后打开 **指南**，确认：
 
-- Bot Token 和连接状态正确。
+- Bot 已使用当前 Token 重新连接。
+- 若启用了 Userbot，已重新登录并显示账号。
 - 存储已启用且没有初始化错误。
 - 用户列表包含原有账号。v0 配置中不存在的旧用户会被禁用，需要时手动启用。
 - 任务记录、目录、规则和监听仍然存在。
@@ -89,13 +97,17 @@ docker compose logs saveany-bot | grep "admin password"
 - `config.toml` 的后续修改**不会再生效**，请在 Web 控制台修改设置。
 - 更新前备份整个 `data/` 目录，并保留 Docker 数据卷。
 - Docker 更新使用 `docker compose pull && docker compose up -d`。
-- 若更换 Bot Token，建议删除 `data/session.db` 后重启，避免旧会话不匹配。
+- 若更换 Bot Token，建议删除 `data/bot_session.db` 后重启，避免旧会话不匹配。
 
 ## 常见问题
 
 **没有发生导入**
 
 确认配置文件路径正确、内容仍是合法 TOML，并检查启动日志。导入标记只会在导入成功后写入；已有同名存储或配置组不会被覆盖。
+
+**旧会话没有迁移**
+
+v1 不读取旧版 gotgproto 的 `session.db` 或 `usersession.db`。Bot 会使用当前 Token 自动重新登录；启用 Userbot 时，在 Telegram 页面重新登录即可。旧文件可以保留在备份中，确认不再需要后删除。
 
 **数据库路径不同**
 
