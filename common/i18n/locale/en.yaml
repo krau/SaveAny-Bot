@@ -57,6 +57,7 @@ bot:
       transfer: "Transfer files between storages"
       task: "Manage task queue"
       cancel: "Cancel task"
+      retry: "Retry failed files"
       watch: "Watch chats (UserBot)"
       unwatch: "Stop watching chats (UserBot)"
       lswatch: "List watched chats (UserBot)"
@@ -344,6 +345,10 @@ bot:
       start_stats: "Total files: {{.Count}}\nTotal size: {{.SizeMB}} MB"
       info_files_select_storage: "Total {{.Count}} files ({{.SizeMB}} MB), please select target storage"
       error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
+    retry:
+      usage: "Usage: /retry <task_id>"
+      info_started: "Retry task created: {{.TaskID}} ({{.Count}} files)"
+      error_failed: "Failed to retry task: {{.Error}}"
     cancel:
       usage: "Usage: /cancel <task_id>"
       error_cancel_failed: "Failed to cancel task: {{.Error}}"
@@ -371,6 +376,7 @@ bot:
       batch_summary_skipped: "⏭️ Skipped: <code>{{.Count}}</code>"
       batch_done: "<b>✅ Completed</b>\n\nFiles: <code>{{.Count}}</code>\nTotal size: <code>{{.Size}}</code>"
       batch_done_with_skipped: "<b>⚠️ Completed</b>\n\nSucceeded: <code>{{.Success}}</code>\nSkipped: <code>{{.Skipped}}</code>\nTotal size: <code>{{.Size}}</code>"
+      batch_done_with_failed: "<b>⚠️ Completed with failures</b>\n\nSucceeded: <code>{{.Success}}</code>\nFailed: <code>{{.Failed}}</code>\nSkipped: <code>{{.Skipped}}</code>\nTotal size: <code>{{.Size}}</code>{{.List}}"
       batch_canceled: "<b>🚫 Task canceled</b>\n\nFiles: <code>{{.Total}}</code>\nCompleted: <code>{{.Completed}}</code>\nIncomplete: <code>{{.Incomplete}}</code>\nSkipped: <code>{{.Skipped}}</code>"
       batch_failed_item: "<b>❌ Processing failed</b>\n\nFailed file: <code>{{.Index}}. {{.Name}}</code>\nStage: <code>{{.Stage}}</code>\nProgress: <code>{{.Progress}}</code>\nSpeed before failure: <code>{{.Speed}}</code>\nReason: <code>{{.Reason}}</code>\n\n✅ Completed: <code>{{.Completed}}</code>\n❌ Failed: <code>{{.Failed}}</code>\n⏹️ Incomplete: <code>{{.Incomplete}}</code>"
       batch_failed_group: "<b>❌ Batch upload failed</b>\n\nAffected files: <code>{{.Affected}}</code>\nReason: <code>{{.Reason}}</code>\n\n✅ Completed: <code>{{.Completed}}</code>\n❌ Batch failed: <code>{{.Failed}}</code>\n⏹️ Incomplete: <code>{{.Incomplete}}</code>"

@@ -8,7 +8,7 @@ export type JsonValue =
 
 export type JsonObject = { [key: string]: JsonValue }
 
-export type TaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type TaskStatus = 'queued' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled'
 
 export interface TaskProgress {
   total_bytes?: number
@@ -17,6 +17,17 @@ export interface TaskProgress {
   downloaded_files?: number
   percent?: number
   speed_mbps?: number
+}
+
+export interface TaskFileItem {
+  index: number
+  name: string
+  path?: string
+  status: string
+  error?: string
+  size?: number
+  source_chat_id?: number
+  source_message_id?: number
 }
 
 export interface TaskItem {
@@ -33,6 +44,9 @@ export interface TaskItem {
   finished_at?: string
   updated_at?: string
   progress?: TaskProgress
+  items?: TaskFileItem[]
+  failed_items?: TaskFileItem[]
+  failed_count?: number
 }
 
 export interface TaskListResponse {

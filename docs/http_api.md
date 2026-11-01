@@ -48,8 +48,13 @@ Missing or invalid authentication returns `401 Unauthorized`:
 - `queued`
 - `running`
 - `completed`
+- `partial` — the task finished, but one or more files failed
 - `failed`
 - `cancelled`
+
+Tasks that handle multiple files expose per-file outcomes. List responses include the total failed file count in
+`failed_count` and up to five failed items per task in `failed_items`; the single-task endpoint returns every recorded
+file in `items`.
 
 ## Endpoints
 
@@ -351,7 +356,44 @@ curl -X GET "http://127.0.0.1:28080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
 
 ---
 
-## 5) Cancel Task
+## 5) Retry Failed Files
+
+- **Path**: `/api/v1/tasks/{task_id}/retry`
+- **Method**: `POST`
+- **Description**: Create a new task from the failed files of a terminal task. The source messages are fetched again,
+  which also refreshes their file references.
+- **Supported**: Telegram file tasks (`tgfiles`) whose files were saved with a recorded source message.
+- **Request**: empty body. Bearer token (or session cookie with CSRF header) as usual.
+
+### Response
+
+- `202 Accepted`
+
+```json
+{
+  "task_id": "d4f7u1crvimcs4n4j8e1",
+  "status": "queued",
+  "file_count": 2
+}
+```
+
+### Error Examples
+
+- `409 task_active` — the task is still queued or running
+- `409 nothing_to_retry` — the task has no failed or unfinished files
+- `409 storage_missing` — the target storage no longer exists
+- `409 source_unavailable` — a failed file has no recorded source message
+- `400 retry_unsupported` — the task type cannot be retried
+- `503 client_unavailable` — no Telegram client is running
+
+```bash
+curl -X POST "http://127.0.0.1:28080/api/v1/tasks/d4f7u1crvimcs4n4j8d0/retry" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## 6) Cancel Task
 
 - **Path**: `/api/v1/tasks/{task_id}`
 - **Method**: `DELETE`
@@ -404,7 +446,7 @@ curl -X DELETE "http://127.0.0.1:28080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
 
 ---
 
-## 6) List Storages
+## 7) List Storages
 
 - **Path**: `/api/v1/storages`
 - **Method**: `GET`
@@ -444,7 +486,7 @@ curl -X GET "http://127.0.0.1:28080/api/v1/storages" \
 
 ---
 
-## 7) List Supported Task Types
+## 8) List Supported Task Types
 
 - **Path**: `/api/v1/task-types`
 - **Method**: `GET`
@@ -483,7 +525,7 @@ curl -X GET "http://127.0.0.1:28080/api/v1/task-types" \
 
 ---
 
-## 8) Get Media Metadata
+## 9) Get Media Metadata
 
 - **Path**: `/api/v1/media-metadata`
 - **Method**: `GET`
@@ -551,7 +593,7 @@ curl -X GET "http://127.0.0.1:28080/api/v1/media-metadata?url=https%3A%2F%2Fwww.
 ## Webhook Callbacks
 
 When `webhook` is set on a create-task request, a `POST` is sent to that URL
-once the task reaches `completed` or `failed`. Cancelled tasks do not fire a
+once the task reaches `completed`, `partial`, or `failed`. Cancelled tasks do not fire a
 callback, and each task fires at most one. Delivery is asynchronous, so a slow
 endpoint never blocks the task.
 

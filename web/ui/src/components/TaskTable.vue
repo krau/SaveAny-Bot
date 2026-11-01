@@ -21,7 +21,12 @@ withDefaults(
 const emit = defineEmits<{
   cancel: [taskId: string]
   remove: [taskId: string]
+  retry: [taskId: string]
 }>()
+
+function canRetry(task: TaskItem): boolean {
+  return task.type === 'tgfiles' && (task.status === 'failed' || task.status === 'partial')
+}
 
 function isActive(status: string): boolean {
   return status === 'queued' || status === 'running'
@@ -76,6 +81,15 @@ function progressText(task: TaskItem): string {
               <span class="mono">{{ task.task_id }}</span>
             </div>
             <div v-if="task.error" class="field-error">{{ task.error }}</div>
+            <div v-if="task.failed_items?.length" class="task-failed">
+              <div class="task-failed-title">{{ t('tasks.failedFiles') }} ({{ task.failed_count ?? task.failed_items.length }})</div>
+              <ul class="task-failed-items">
+                <li v-for="item in task.failed_items" :key="item.index">
+                  <span class="task-failed-name">{{ item.name }}</span>
+                  <span v-if="item.error" class="task-failed-reason">{{ item.error }}</span>
+                </li>
+              </ul>
+            </div>
           </td>
           <td>
             <span class="badge status" :class="taskStatusTone(task.status)">
@@ -106,7 +120,17 @@ function progressText(task: TaskItem): string {
                 {{ t('common.actions.cancel') }}
               </button>
               <button
-                v-else
+                v-if="canRetry(task)"
+                class="btn small"
+                type="button"
+                :disabled="busyId === task.task_id"
+                @click="emit('retry', task.task_id)"
+              >
+                <AppIcon name="refresh" :size="14" />
+                {{ t('common.actions.retry') }}
+              </button>
+              <button
+                v-if="!isActive(task.status)"
                 class="btn small danger"
                 type="button"
                 :disabled="busyId === task.task_id"
@@ -145,6 +169,15 @@ function progressText(task: TaskItem): string {
         <span class="task-path">{{ task.path || t('tasks.table.rootPath') }}</span>
       </div>
       <div v-if="task.error" class="field-error">{{ task.error }}</div>
+      <div v-if="task.failed_items?.length" class="task-failed">
+        <div class="task-failed-title">{{ t('tasks.failedFiles') }} ({{ task.failed_count ?? task.failed_items.length }})</div>
+        <ul class="task-failed-items">
+          <li v-for="item in task.failed_items" :key="item.index">
+            <span class="task-failed-name">{{ item.name }}</span>
+            <span v-if="item.error" class="task-failed-reason">{{ item.error }}</span>
+          </li>
+        </ul>
+      </div>
       <div v-if="task.status === 'running'" class="task-mobile-progress">
         <div class="progress">
           <div class="progress-bar" :style="{ width: `${progressPercent(task)}%` }"></div>
@@ -165,7 +198,17 @@ function progressText(task: TaskItem): string {
             {{ t('common.actions.cancel') }}
           </button>
           <button
-            v-else
+            v-if="canRetry(task)"
+            class="btn small"
+            type="button"
+            :disabled="busyId === task.task_id"
+            @click="emit('retry', task.task_id)"
+          >
+            <AppIcon name="refresh" :size="14" />
+            {{ t('common.actions.retry') }}
+          </button>
+          <button
+            v-if="!isActive(task.status)"
             class="btn small danger"
             type="button"
             :disabled="busyId === task.task_id"

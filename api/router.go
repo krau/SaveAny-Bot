@@ -75,6 +75,7 @@ func NewHandler(deps Deps) http.Handler {
 	mux.HandleFunc("POST /api/v1/tasks", s.createTask)
 	mux.HandleFunc("GET /api/v1/tasks/{id}", s.getTask)
 	mux.HandleFunc("POST /api/v1/tasks/{id}/cancel", s.cancelTask)
+	mux.HandleFunc("POST /api/v1/tasks/{id}/retry", s.retryTask)
 	mux.HandleFunc("DELETE /api/v1/tasks/{id}", s.deleteTask)
 	mux.HandleFunc("GET /api/v1/task-types", s.taskTypes)
 	mux.HandleFunc("GET /api/v1/media-metadata", s.mediaMetadata)

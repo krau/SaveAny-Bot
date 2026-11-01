@@ -32,8 +32,9 @@ func initQueue() *queue.TaskQueue[Executable] {
 }
 
 const (
-	TaskSourceBot = "bot"
-	TaskSourceAPI = "api"
+	TaskSourceBot   = "bot"
+	TaskSourceAPI   = "api"
+	TaskSourceRetry = "retry"
 )
 
 type Executable interface {
@@ -79,6 +80,8 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 			logger.Errorf("Failed to update task record for %s: %v", exe.TaskID(), dbErr)
 		}
 		err = exe.Execute(taskCtx)
+		items := collectItemResults(exe)
+		failedItems := countItems(items, ItemStatusFailed)
 		status := "completed"
 		if err != nil {
 			if errors.Is(taskCtx.Err(), context.Canceled) {
@@ -94,23 +97,55 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 					logger.Errorf("Failed to execute fail hook for task %s: %v", exe.TaskID(), err)
 				}
 			}
+		} else if failedItems > 0 {
+			status = "partial"
+			logger.Warnf("Task %s finished with %d failed files", exe.TaskID(), failedItems)
+			if err := ExecCommandString(ctx, execHooks.TaskFail); err != nil {
+				logger.Errorf("Failed to execute fail hook for task %s: %v", exe.TaskID(), err)
+			}
 		} else {
 			logger.Infof("Task %s completed successfully", exe.TaskID())
 			if err := ExecCommandString(ctx, execHooks.TaskSuccess); err != nil {
 				logger.Errorf("Failed to execute success hook for task %s: %v", exe.TaskID(), err)
 			}
 		}
+		if len(items) > 0 {
+			records := make([]database.TaskItemRecord, 0, len(items))
+			for _, item := range items {
+				records = append(records, database.TaskItemRecord{
+					Index:        item.Index,
+					Name:         item.Name,
+					Path:         item.Path,
+					StorageName:  item.StorageName,
+					Status:       string(item.Status),
+					Error:        item.Error,
+					Size:         item.Size,
+					SourceChatID: item.SourceChatID,
+					SourceMsgID:  item.SourceMessageID,
+				})
+			}
+			if dbErr := database.ReplaceTaskItems(recordCtx, exe.TaskID(), records); dbErr != nil {
+				logger.Errorf("Failed to store task items for %s: %v", exe.TaskID(), dbErr)
+			}
+		}
 		recordFields := map[string]any{
 			"status":      status,
 			"finished_at": time.Now(),
 		}
-		if err != nil && status != "cancelled" {
+		if status == "partial" {
+			recordFields["error"] = partialError(items)
+		} else if err != nil && status != "cancelled" {
 			recordFields["error"] = err.Error()
 		}
 		if dbErr := database.UpdateTaskRecord(recordCtx, exe.TaskID(), recordFields); dbErr != nil {
 			logger.Errorf("Failed to finish task record for %s: %v", exe.TaskID(), dbErr)
 		}
-		taskevent.Emit(taskCtx, taskevent.Event{TaskID: exe.TaskID(), Phase: taskevent.PhaseDone, Err: err})
+		taskevent.Emit(taskCtx, taskevent.Event{
+			TaskID:  exe.TaskID(),
+			Phase:   taskevent.PhaseDone,
+			Err:     err,
+			Partial: failedItems > 0 && err == nil,
+		})
 		qe.Done(qtask.ID)
 		<-semaphore
 	}
@@ -213,6 +248,12 @@ func EnrichTaskRecord(ctx context.Context, taskID, storageName, storagePath stri
 		"storage_name": storageName,
 		"path":         storagePath,
 	})
+}
+
+// IsTaskRunning reports whether the task is still being executed, including
+// the window between cancellation and the worker persisting its results.
+func IsTaskRunning(id string) bool {
+	return initQueue().IsRunning(id)
 }
 
 func CancelTask(ctx context.Context, id string) error {

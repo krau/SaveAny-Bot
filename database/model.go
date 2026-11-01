@@ -91,6 +91,27 @@ type TaskRecord struct {
 	UpdatedAt   time.Time
 }
 
+// TaskItemRecord is the persisted outcome of one file inside a task. It keeps
+// failed items addressable after the task leaves memory, so they can be
+// reported and retried.
+type TaskItemRecord struct {
+	ID           uint   `gorm:"primaryKey"`
+	TaskID       string `gorm:"index;size:32;not null"`
+	Index        int    `gorm:"not null"`
+	Name         string
+	Path         string
+	StorageName  string
+	Status       string `gorm:"size:16;index;not null"`
+	Error        string `gorm:"type:text"`
+	Size         int64
+	SourceChatID int64
+	SourceMsgID  int
+}
+
+func (TaskItemRecord) TableName() string {
+	return "task_items"
+}
+
 type WebSession struct {
 	ID        string `gorm:"primaryKey;size:64"`
 	CSRF      string `gorm:"size:64;not null"`

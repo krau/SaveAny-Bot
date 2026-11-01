@@ -24,6 +24,7 @@ type Task struct {
 	Progress  ProgressTracker
 	stream    bool
 	localPath string
+	execErr   error
 }
 
 // Title implements core.Exectable.

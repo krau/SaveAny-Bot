@@ -95,6 +95,7 @@ const taskStatusLabels: Record<string, string> = {
   queued: 'states.queued',
   running: 'states.running',
   completed: 'states.completed',
+  partial: 'states.partial',
   failed: 'states.failed',
   cancelled: 'states.cancelled',
 }
@@ -110,6 +111,8 @@ export function taskStatusTone(status: string): string {
       return 'info'
     case 'completed':
       return 'success'
+    case 'partial':
+      return 'warning'
     case 'failed':
       return 'danger'
     case 'cancelled':

@@ -401,6 +401,29 @@ Authorization: Bearer <token>
 
 ---
 
+### POST /api/v1/tasks/{task_id}/retry — 重试失败文件
+
+使用已完成任务中失败的文件创建新任务。Bot 会重新拉取原始消息，同时刷新文件引用。仅支持 Telegram 文件任务（`tgfiles`）。
+
+**路径参数：** `task_id` — 要重试的任务。
+
+**响应 `202 Accepted`：**
+
+```json
+{ "task_id": "d4f7u1crvimcs4n4j8e1", "status": "queued", "file_count": 2 }
+```
+
+**错误响应：**
+- `409 task_active` — 任务仍在排队或运行中
+- `409 nothing_to_retry` — 没有失败或未完成的文件
+- `409 storage_missing` / `409 source_unavailable`
+- `400 retry_unsupported` — 该任务类型不支持重试
+- `503 client_unavailable` — 没有运行中的 Telegram 客户端
+
+任务响应包含单文件结果：列表响应返回失败总数（`failed_count`）以及每个任务最多 5 个失败项（`failed_items`），单任务查询返回全部记录（`items`）。
+
+---
+
 ### DELETE /api/v1/tasks/{task_id} — 取消任务
 
 **路径参数：** `task_id`
@@ -425,6 +448,7 @@ Authorization: Bearer <token>
 | `queued` | 已入队，等待执行 |
 | `running` | 正在执行 |
 | `completed` | 已成功完成 |
+| `partial` | 已完成，但部分文件失败 |
 | `failed` | 执行失败 |
 | `cancelled` | 已通过 DELETE 接口取消 |
 
@@ -432,7 +456,7 @@ Authorization: Bearer <token>
 
 ## Webhook 回调
 
-创建任务时可设置 `webhook` 字段。当任务进入 `completed` 或 `failed` 状态时，Bot 会向该地址发送一个 `POST` 请求。
+创建任务时可设置 `webhook` 字段。当任务进入 `completed`、`partial` 或 `failed` 状态时，Bot 会向该地址发送一个 `POST` 请求。
 
 {{< hint info >}}
 被取消的任务**不会**触发 Webhook——取消操作的发起方已经知晓结果。每个任务最多只会发送一次回调。
@@ -461,6 +485,6 @@ User-Agent: SaveAny-Bot/1.0
 }
 ```
 
-`completed_at` 仅在状态为 `completed` 或 `failed` 时出现。`error` 仅在有错误时出现。
+`completed_at` 仅在状态为 `completed`、`partial` 或 `failed` 时出现。`error` 仅在有错误时出现。
 
 **重试机制：** 最多尝试 3 次。响应非 2xx 或请求出错时会重试，间隔依次为 100 毫秒、400 毫秒。每次请求超时为 30 秒。

@@ -85,9 +85,20 @@ const (
 	TaskStatusQueued    TaskStatus = "queued"
 	TaskStatusRunning   TaskStatus = "running"
 	TaskStatusCompleted TaskStatus = "completed"
+	TaskStatusPartial   TaskStatus = "partial"
 	TaskStatusFailed    TaskStatus = "failed"
 	TaskStatusCancelled TaskStatus = "cancelled"
 )
+
+// IsTerminal reports whether the status is a final state.
+func (s TaskStatus) IsTerminal() bool {
+	switch s {
+	case TaskStatusCompleted, TaskStatusPartial, TaskStatusFailed, TaskStatusCancelled:
+		return true
+	default:
+		return false
+	}
+}
 
 type CreateTaskRequest struct {
 	Type    tasktype.TaskType `json:"type"`
@@ -114,19 +125,33 @@ type TaskProgress struct {
 }
 
 type TaskInfoResponse struct {
-	TaskID     string            `json:"task_id"`
-	Type       tasktype.TaskType `json:"type"`
-	Status     TaskStatus        `json:"status"`
-	Title      string            `json:"title"`
-	Progress   *TaskProgress     `json:"progress,omitempty"`
-	Storage    string            `json:"storage"`
-	Path       string            `json:"path"`
-	Source     string            `json:"source,omitempty"`
-	Error      string            `json:"error,omitempty"`
-	CreatedAt  time.Time         `json:"created_at"`
-	StartedAt  *time.Time        `json:"started_at,omitempty"`
-	FinishedAt *time.Time        `json:"finished_at,omitempty"`
-	UpdatedAt  time.Time         `json:"updated_at"`
+	TaskID      string             `json:"task_id"`
+	Type        tasktype.TaskType  `json:"type"`
+	Status      TaskStatus         `json:"status"`
+	Title       string             `json:"title"`
+	Progress    *TaskProgress      `json:"progress,omitempty"`
+	Storage     string             `json:"storage"`
+	Path        string             `json:"path"`
+	Source      string             `json:"source,omitempty"`
+	Error       string             `json:"error,omitempty"`
+	CreatedAt   time.Time          `json:"created_at"`
+	StartedAt   *time.Time         `json:"started_at,omitempty"`
+	FinishedAt  *time.Time         `json:"finished_at,omitempty"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+	Items       []TaskItemResponse `json:"items,omitempty"`
+	FailedItems []TaskItemResponse `json:"failed_items,omitempty"`
+	FailedCount int                `json:"failed_count,omitempty"`
+}
+
+type TaskItemResponse struct {
+	Index           int    `json:"index"`
+	Name            string `json:"name"`
+	Path            string `json:"path,omitempty"`
+	Status          string `json:"status"`
+	Error           string `json:"error,omitempty"`
+	Size            int64  `json:"size,omitempty"`
+	SourceChatID    int64  `json:"source_chat_id,omitempty"`
+	SourceMessageID int    `json:"source_message_id,omitempty"`
 }
 
 type TasksListResponse struct {

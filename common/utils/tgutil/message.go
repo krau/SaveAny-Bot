@@ -192,10 +192,12 @@ func getMessagesRange(ctx *ext.Context, chatID int64, minId, maxId int) ([]*tg.M
 	return result, nil
 }
 
-func getMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, error) {
+func getMessageByID(ctx *ext.Context, chatID int64, msgID int, useCache bool) (*tg.Message, error) {
 	key := fmt.Sprintf("tgmsg:%d:%d:%d", ctx.Self.ID, chatID, msgID)
-	if msg, ok := cache.Get[*tg.Message](key); ok {
-		return msg, nil
+	if useCache {
+		if msg, ok := cache.Get[*tg.Message](key); ok {
+			return msg, nil
+		}
 	}
 	msgs, err := ctx.GetMessages(chatID, []tg.InputMessageClass{
 		&tg.InputMessageID{ID: msgID},
@@ -216,25 +218,36 @@ func getMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, err
 }
 
 func GetMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, error) {
-	// we don't know what the input chatID is bot api style(e.g. channel with -100 prefix) or plain tdlib style(no any prefix and every id is positive)
-	if msg, err := getMessageByID(ctx, chatID, msgID); err == nil {
+	return lookupMessageByID(ctx, chatID, msgID, true)
+}
+
+// GetMessageByIDFresh fetches the message from Telegram instead of the cache.
+// Use it when the caller needs current file references, for example when
+// retrying a failed download.
+func GetMessageByIDFresh(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, error) {
+	return lookupMessageByID(ctx, chatID, msgID, false)
+}
+
+func lookupMessageByID(ctx *ext.Context, chatID int64, msgID int, useCache bool) (*tg.Message, error) {
+	// we don't know if the input chatID is bot api style(e.g. channel with -100 prefix) or plain tdlib style(no any prefix and every id is positive)
+	if msg, err := getMessageByID(ctx, chatID, msgID, useCache); err == nil {
 		return msg, nil
 	}
 	in := constant.TDLibPeerID(chatID)
 	plain := in.ToPlain()
 	var channel constant.TDLibPeerID
 	channel.Channel(plain)
-	if msg, err := getMessageByID(ctx, int64(channel), msgID); err == nil {
+	if msg, err := getMessageByID(ctx, int64(channel), msgID, useCache); err == nil {
 		return msg, nil
 	}
 	var chat constant.TDLibPeerID
 	chat.Chat(plain)
-	if msg, err := getMessageByID(ctx, int64(chat), msgID); err == nil {
+	if msg, err := getMessageByID(ctx, int64(chat), msgID, useCache); err == nil {
 		return msg, nil
 	}
 	var userID constant.TDLibPeerID
 	userID.User(plain)
-	if msg, err := getMessageByID(ctx, int64(userID), msgID); err == nil {
+	if msg, err := getMessageByID(ctx, int64(userID), msgID, useCache); err == nil {
 		return msg, nil
 	}
 

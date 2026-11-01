@@ -32,6 +32,7 @@ var CommandHandlers = []DescCommandHandler{
 	{"transfer", i18nk.BotMsgCmdTransfer, handleTransferCmd},
 	{"task", i18nk.BotMsgCmdTask, handleTaskCmd},
 	{"cancel", i18nk.BotMsgCmdCancel, handleCancelCmd},
+	{"retry", i18nk.BotMsgCmdRetry, handleRetryCmd},
 	{"config", i18nk.BotMsgCmdConfig, handleConfigCmd},
 	{"fnametmpl", i18nk.BotMsgCmdFnametmpl, handleConfigFnameTmpl},
 	{"help", i18nk.BotMsgCmdHelp, handleHelpCmd},

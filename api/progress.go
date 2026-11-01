@@ -110,7 +110,7 @@ func CleanupExpired() {
 	defer store.mu.Unlock()
 	for id, info := range store.tasks {
 		info.mu.Lock()
-		terminal := info.Status == TaskStatusCompleted || info.Status == TaskStatusFailed || info.Status == TaskStatusCancelled
+		terminal := info.Status.IsTerminal()
 		stale := terminal && now.Sub(info.UpdatedAt) > store.retention
 		info.mu.Unlock()
 		if stale {
@@ -167,7 +167,7 @@ func (t *TaskProgressInfo) snapshot() (status TaskStatus, total, downloaded int6
 // status/progress updates and fires the webhook on terminal transitions.
 func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 	t.mu.Lock()
-	if t.Status == TaskStatusCancelled || t.Status == TaskStatusCompleted || t.Status == TaskStatusFailed {
+	if t.Status.IsTerminal() {
 		t.mu.Unlock()
 		return
 	}
@@ -194,16 +194,19 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 		}
 	case taskevent.PhaseDone:
 		if t.Status != TaskStatusCancelled {
-			if e.Err != nil {
+			switch {
+			case e.Err != nil:
 				t.Status = TaskStatusFailed
 				t.Error = e.Err.Error()
-			} else {
+			case e.Partial:
+				t.Status = TaskStatusPartial
+			default:
 				t.Status = TaskStatusCompleted
 			}
 		}
 	}
 	t.UpdatedAt = time.Now()
-	notify := t.Webhook != "" && !t.webhookNotified && (t.Status == TaskStatusCompleted || t.Status == TaskStatusFailed)
+	notify := t.Webhook != "" && !t.webhookNotified && t.Status.IsTerminal() && t.Status != TaskStatusCancelled
 	if notify {
 		t.webhookNotified = true
 	}

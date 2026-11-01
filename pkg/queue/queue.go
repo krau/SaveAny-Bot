@@ -95,6 +95,14 @@ func (tq *TaskQueue[T]) Done(taskID string) {
 	delete(tq.runningTaskMap, taskID)
 }
 
+// IsRunning reports whether the task is currently being executed.
+func (tq *TaskQueue[T]) IsRunning(taskID string) bool {
+	tq.mu.RLock()
+	defer tq.mu.RUnlock()
+	_, ok := tq.runningTaskMap[taskID]
+	return ok
+}
+
 func (tq *TaskQueue[T]) Length() int {
 	tq.mu.RLock()
 	defer tq.mu.RUnlock()

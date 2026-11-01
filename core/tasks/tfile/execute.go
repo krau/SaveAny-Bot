@@ -19,7 +19,8 @@ import (
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
-func (t *Task) Execute(ctx context.Context) error {
+func (t *Task) Execute(ctx context.Context) (err error) {
+	defer func() { t.execErr = err }()
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", t.File.Name()))
 	if t.Progress != nil {
 		t.Progress.OnStart(ctx, t)
@@ -54,7 +55,7 @@ func (t *Task) Execute(ctx context.Context) error {
 		return fmt.Errorf("failed to download file: %w", err)
 	}
 	logger.Infof("File downloaded successfully")
-	if path.Ext(t.File.Name()) == "" {
+	if path.Ext(t.File.Name()) == "" && path.Ext(t.Path) == "" {
 		ext := fsutil.DetectFileExt(t.localPath)
 		if ext != "" {
 			t.Path = t.Path + ext
@@ -64,6 +65,9 @@ func (t *Task) Execute(ctx context.Context) error {
 	fileStat, err = os.Stat(t.localPath)
 	if err != nil {
 		return fmt.Errorf("failed to get file stat: %w", err)
+	}
+	if t.File.Size() > 0 && fileStat.Size() == 0 {
+		return fmt.Errorf("downloaded file is empty (expected %d bytes)", t.File.Size())
 	}
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
 	if caption, ok := sourceCaption(t.File); ok {

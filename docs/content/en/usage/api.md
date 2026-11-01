@@ -401,6 +401,29 @@ The `progress` field is included when either `total_bytes` or `total_files` is g
 
 ---
 
+### POST /api/v1/tasks/{task_id}/retry — Retry Failed Files
+
+Creates a new task from the failed files of a terminal task. The bot fetches the original messages again, which also refreshes their file references. Supported for Telegram file tasks (`tgfiles`).
+
+**Path parameter:** `task_id` — the task to retry.
+
+**Response `202 Accepted`:**
+
+```json
+{ "task_id": "d4f7u1crvimcs4n4j8e1", "status": "queued", "file_count": 2 }
+```
+
+**Error responses:**
+- `409 task_active` — the task is still queued or running
+- `409 nothing_to_retry` — the task has no failed or unfinished files
+- `409 storage_missing` / `409 source_unavailable`
+- `400 retry_unsupported` — the task type cannot be retried
+- `503 client_unavailable` — no Telegram client is running
+
+Task responses include per-file outcomes: list responses carry the total in `failed_count` plus up to five failed items per task in `failed_items`, and the single-task response carries every recorded file in `items`.
+
+---
+
 ### DELETE /api/v1/tasks/{task_id} — Cancel Task
 
 **Path parameter:** `task_id`
@@ -425,6 +448,7 @@ The `progress` field is included when either `total_bytes` or `total_files` is g
 | `queued` | Task is queued and waiting to run |
 | `running` | Task is currently executing |
 | `completed` | Task finished successfully |
+| `partial` | Task finished, but one or more files failed |
 | `failed` | Task encountered an error |
 | `cancelled` | Task was cancelled via the DELETE endpoint |
 
@@ -432,7 +456,7 @@ The `progress` field is included when either `total_bytes` or `total_files` is g
 
 ## Webhook Callbacks
 
-When a `webhook` URL is provided in the create request, SaveAny-Bot sends a `POST` request to that URL once the task reaches `completed` or `failed`.
+When a `webhook` URL is provided in the create request, SaveAny-Bot sends a `POST` request to that URL once the task reaches `completed`, `partial`, or `failed`.
 
 {{< hint info >}}
 Cancelled tasks do **not** trigger a webhook — cancellation is already known to whoever issued the DELETE. Each task fires at most one callback.
@@ -461,6 +485,6 @@ User-Agent: SaveAny-Bot/1.0
 }
 ```
 
-`completed_at` is only present when status is `completed` or `failed`. `error` is only present when non-empty.
+`completed_at` is only present when status is `completed`, `partial`, or `failed`. `error` is only present when non-empty.
 
 **Retry policy:** Up to 3 attempts. A non-2xx response or a transport error triggers a retry after 100ms, then 400ms. Each request has a 30-second timeout.

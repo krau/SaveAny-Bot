@@ -41,6 +41,8 @@ type Event struct {
 	TotalFiles      int
 	DownloadedFiles int
 	Err             error
+	// Partial marks a successful run where some files failed.
+	Partial bool
 }
 
 // Sink receives task events. Implementations must be safe for concurrent use.

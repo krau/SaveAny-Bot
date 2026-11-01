@@ -303,6 +303,12 @@ export const tasksApi = {
   create(input: CreateTaskRequest) {
     return request<TaskCreated>('/tasks', { method: 'POST', body: input })
   },
+  retry(taskId: string) {
+    return request<{ task_id: string; status: string; file_count: number }>(
+      `/tasks/${encodeURIComponent(taskId)}/retry`,
+      { method: 'POST', body: {} },
+    )
+  },
   cancel(taskId: string) {
     return request<{ task_id: string; status: string }>(
       `/tasks/${encodeURIComponent(taskId)}/cancel`,

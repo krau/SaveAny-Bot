@@ -96,7 +96,7 @@ func CreateWebhookPayload(taskID string, taskType string, status TaskStatus, sto
 		Path:    path,
 	}
 
-	if status == TaskStatusCompleted || status == TaskStatusFailed {
+	if status.IsTerminal() && status != TaskStatusCancelled {
 		now := time.Now()
 		payload.CompletedAt = &now
 	}

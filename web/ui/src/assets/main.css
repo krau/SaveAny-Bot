@@ -1349,6 +1349,39 @@ tbody tr:hover {
   overflow-wrap: anywhere;
 }
 
+.task-failed {
+  margin-top: 7px;
+}
+
+.task-failed-title {
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.task-failed-items {
+  margin: 3px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.task-failed-items li {
+  font-size: 12px;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.task-failed-name {
+  font-family: var(--font-mono);
+}
+
+.task-failed-reason {
+  color: var(--danger);
+  margin-left: 6px;
+}
+
 /* Compact mobile lists */
 
 .task-table,

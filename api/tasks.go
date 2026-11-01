@@ -8,9 +8,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/krau/SaveAny-Bot/client/bot"
+	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/core"
+	"github.com/krau/SaveAny-Bot/core/retry"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
+	"github.com/krau/mygotg/ext"
 )
 
 type mediaMetadataExtractor func(ctx context.Context, url string) (*MediaMetadataResponse, error)
@@ -56,8 +60,25 @@ func (s *server) listTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tasks := make([]TaskInfoResponse, 0, len(records))
+	taskIDs := make([]string, 0, len(records))
 	for i := range records {
-		tasks = append(tasks, taskResponse(&records[i]))
+		taskIDs = append(taskIDs, records[i].TaskID)
+	}
+	failedItems, err := database.ListFailedTaskItems(r.Context(), taskIDs, 5)
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	failedCounts, err := database.CountFailedTaskItems(r.Context(), taskIDs)
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	for i := range records {
+		resp := taskResponse(&records[i])
+		resp.FailedItems = taskItemResponses(failedItems[records[i].TaskID])
+		resp.FailedCount = failedCounts[records[i].TaskID]
+		tasks = append(tasks, resp)
 	}
 	WriteJSON(w, http.StatusOK, TasksListResponse{Tasks: tasks, Total: total})
 }
@@ -68,7 +89,66 @@ func (s *server) getTask(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusNotFound, "task_not_found", "task not found")
 		return
 	}
-	WriteJSON(w, http.StatusOK, taskResponse(record))
+	resp := taskResponse(record)
+	items, err := database.ListTaskItems(r.Context(), record.TaskID)
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	resp.Items = taskItemResponses(items)
+	for _, item := range items {
+		if item.Status == string(core.ItemStatusFailed) {
+			resp.FailedCount++
+		}
+	}
+	WriteJSON(w, http.StatusOK, resp)
+}
+
+func taskItemResponses(items []database.TaskItemRecord) []TaskItemResponse {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]TaskItemResponse, 0, len(items))
+	for _, item := range items {
+		out = append(out, TaskItemResponse{
+			Index:           item.Index,
+			Name:            item.Name,
+			Path:            item.Path,
+			Status:          item.Status,
+			Error:           item.Error,
+			Size:            item.Size,
+			SourceChatID:    item.SourceChatID,
+			SourceMessageID: item.SourceMsgID,
+		})
+	}
+	return out
+}
+
+func (s *server) retryTask(w http.ResponseWriter, r *http.Request) {
+	record, err := database.GetTaskRecord(r.Context(), r.PathValue("id"))
+	if err != nil {
+		WriteError(w, http.StatusNotFound, "task_not_found", "task not found")
+		return
+	}
+	newID, count, err := retry.FailedTask(s.deps.Ctx, []*ext.Context{bot.ExtContext(), userclient.GetCtx()}, record.TaskID)
+	switch {
+	case err == nil:
+		WriteJSON(w, http.StatusAccepted, map[string]any{"task_id": newID, "status": TaskStatusQueued, "file_count": count})
+	case errors.Is(err, retry.ErrTaskActive):
+		WriteError(w, http.StatusConflict, "task_active", err.Error())
+	case errors.Is(err, retry.ErrNothingToRetry):
+		WriteError(w, http.StatusConflict, "nothing_to_retry", err.Error())
+	case errors.Is(err, retry.ErrUnsupportedType):
+		WriteError(w, http.StatusBadRequest, "retry_unsupported", err.Error())
+	case errors.Is(err, retry.ErrStorageMissing):
+		WriteError(w, http.StatusConflict, "storage_missing", err.Error())
+	case errors.Is(err, retry.ErrSourceUnavailable):
+		WriteError(w, http.StatusConflict, "source_unavailable", err.Error())
+	case errors.Is(err, retry.ErrClientUnavailable):
+		WriteError(w, http.StatusServiceUnavailable, "client_unavailable", err.Error())
+	default:
+		WriteError(w, http.StatusInternalServerError, "retry_failed", err.Error())
+	}
 }
 
 func (s *server) cancelTask(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +227,7 @@ func (s *server) mediaMetadata(w http.ResponseWriter, r *http.Request) {
 }
 
 func isTerminal(status string) bool {
-	return status == string(TaskStatusCompleted) || status == string(TaskStatusFailed) || status == string(TaskStatusCancelled)
+	return TaskStatus(status).IsTerminal()
 }
 
 func taskResponse(record *database.TaskRecord) TaskInfoResponse {

@@ -321,7 +321,19 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 		return fmt.Errorf("failed to close cache file: %w", closeErr)
 	}
 	logger.Info("File downloaded successfully")
-	if path.Ext(elem.FileName()) == "" {
+	fileStat, err := os.Stat(elem.localPath)
+	if err != nil {
+		t.markItemFailed(ctx, elem.ID, FailureStageCache, err)
+		t.notifyStateChange(ctx)
+		return fmt.Errorf("failed to get file stat: %w", err)
+	}
+	if elem.File.Size() > 0 && fileStat.Size() == 0 {
+		err := fmt.Errorf("downloaded file is empty (expected %d bytes)", elem.File.Size())
+		t.markItemFailed(ctx, elem.ID, FailureStageDownload, err)
+		t.notifyStateChange(ctx)
+		return err
+	}
+	if path.Ext(elem.FileName()) == "" && path.Ext(elem.Path) == "" {
 		if ext := fsutil.DetectFileExt(elem.localPath); ext != "" {
 			elem.Path += ext
 		}
@@ -432,6 +444,12 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		t.markItemFailed(ctx, elem.ID, FailureStageCache, err)
 		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to get file stat: %w", err)
+	}
+	if elem.File.Size() > 0 && fileStat.Size() == 0 {
+		err := fmt.Errorf("downloaded file is empty (expected %d bytes)", elem.File.Size())
+		t.markItemFailed(ctx, elem.ID, FailureStageDownload, err)
+		t.notifyStateChange(ctx)
+		return err
 	}
 	t.recordDownloadComplete(elem.ID, fileStat.Size())
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())

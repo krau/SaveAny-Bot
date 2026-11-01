@@ -36,6 +36,7 @@ const statusOptions = computed(() => [
   { value: 'queued', label: t('tasks.status.queued') },
   { value: 'running', label: t('tasks.status.running') },
   { value: 'completed', label: t('tasks.status.completed') },
+  { value: 'partial', label: t('tasks.status.partial') },
   { value: 'failed', label: t('tasks.status.failed') },
   { value: 'cancelled', label: t('tasks.status.cancelled') },
 ])
@@ -127,6 +128,25 @@ async function cancel(taskId: string) {
   }
 }
 
+async function retry(taskId: string) {
+  const confirmed = await confirm.ask({
+    title: t('tasks.confirm.retryTitle'),
+    message: t('tasks.confirm.retryMessage'),
+    confirmText: t('tasks.confirm.retryConfirm'),
+  })
+  if (!confirmed) return
+  busyId.value = taskId
+  try {
+    await tasksApi.retry(taskId)
+    toast.push(t('tasks.toast.retried'), 'success')
+    await load()
+  } catch (err) {
+    toast.push(errorMessage(err), 'error', 6000)
+  } finally {
+    busyId.value = ''
+  }
+}
+
 async function remove(taskId: string) {
   const confirmed = await confirm.ask({
     title: t('tasks.confirm.removeTitle'),
@@ -175,7 +195,7 @@ async function remove(taskId: string) {
       <span class="count">{{ t('tasks.count', { total }) }}</span>
     </div>
 
-    <TaskTable :tasks="tasks" :busy-id="busyId" @cancel="cancel" @remove="remove" />
+    <TaskTable :tasks="tasks" :busy-id="busyId" @cancel="cancel" @remove="remove" @retry="retry" />
 
     <Teleport to="body">
       <Transition name="modal">
