@@ -120,7 +120,7 @@ func (t *Task) processElements(ctx context.Context, elems []*TaskElement) error 
 				return err
 			}
 			defer t.unmarkProcessing(elem.ID)
-			err := t.processElement(gctx, *elem)
+			err := t.processElement(gctx, elem)
 			if err != nil && t.IgnoreErrors && !errors.Is(err, context.Canceled) {
 				// Per-item failure: keep siblings running.
 				log.FromContext(ctx).Warnf("Element %s failed (ignored): %v", elem.ID, err)
@@ -343,7 +343,7 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 	return nil
 }
 
-func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
+func (t *Task) processElement(ctx context.Context, elem *TaskElement) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", elem.File.Name()))
 	if elem.stream {
 		pr, pw := io.Pipe()

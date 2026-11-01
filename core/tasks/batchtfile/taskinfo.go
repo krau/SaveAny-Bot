@@ -50,6 +50,8 @@ func (t *Task) Count() int {
 }
 
 func (t *Task) Processing() []TaskElementInfo {
+	t.processingMu.RLock()
+	defer t.processingMu.RUnlock()
 	processing := make([]TaskElementInfo, 0, len(t.elems))
 	for _, elem := range t.processing {
 		processing = append(processing, elem)
