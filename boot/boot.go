@@ -25,9 +25,10 @@ type Result struct {
 }
 
 func Init(ctx context.Context, opts Options) (Result, error) {
-	if err := os.MkdirAll(opts.DataDir, 0o755); err != nil {
+	if err := os.MkdirAll(opts.DataDir, 0o700); err != nil {
 		return Result{}, err
 	}
+	_ = os.Chmod(opts.DataDir, 0o700)
 	database.Init(ctx, opts.DBPath)
 	if !settings.LegacyImported(ctx) {
 		if err := settings.ImportLegacy(ctx, opts.ConfigPath, opts.DataDir); err != nil {
@@ -40,6 +41,11 @@ func Init(ctx context.Context, opts Options) (Result, error) {
 	svc, err := settings.NewService(ctx, opts.DataDir)
 	if err != nil {
 		return Result{}, err
+	}
+	if tempPath := strings.TrimSpace(svc.Config().Temp.BasePath); tempPath != "" {
+		if err := os.MkdirAll(tempPath, 0o755); err != nil {
+			return Result{}, err
+		}
 	}
 	if opts.Listen != "" {
 		svc.SetListenOverride(opts.Listen)

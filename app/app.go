@@ -43,6 +43,7 @@ type App struct {
 
 	applyMu               sync.Mutex
 	mu                    sync.Mutex
+	resumeDone            chan struct{}
 	appliedBotCred        string
 	appliedUserbotSession string
 	flowMu                sync.Mutex
@@ -102,7 +103,11 @@ func (a *App) Start() error {
 			log.Errorf("Failed to apply telegram settings: %v", err)
 		}
 	}()
-	go resume.Run(a.ctx)
+	a.resumeDone = make(chan struct{})
+	go func() {
+		defer close(a.resumeDone)
+		resume.Run(a.ctx)
+	}()
 	return nil
 }
 
@@ -174,6 +179,13 @@ func (a *App) RequestRestart() {
 
 func (a *App) Stop() {
 	a.cancel()
+	if a.resumeDone != nil {
+		select {
+		case <-a.resumeDone:
+		case <-time.After(5 * time.Second):
+			log.Warn("Timed out waiting for queued task recovery to stop")
+		}
+	}
 	if a.web != nil {
 		stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		_ = a.web.Stop(stopCtx)
