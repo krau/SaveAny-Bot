@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"slices"
-
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 
@@ -72,19 +70,24 @@ func cleanCache(cfg config.Config) {
 		return
 	}
 	if cfg.Temp.BasePath != "" && !cfg.Stream {
-		if slices.Contains([]string{"/", ".", "\\", ".."}, filepath.Clean(cfg.Temp.BasePath)) {
-			log.Error("Invalid cache directory", "path", cfg.Temp.BasePath)
-			return
-		}
 		currentDir, err := os.Getwd()
 		if err != nil {
 			log.Error("Failed to get working directory", "error", err)
 			return
 		}
-		cachePath := filepath.Join(currentDir, cfg.Temp.BasePath)
+		cachePath := cfg.Temp.BasePath
+		if !filepath.IsAbs(cachePath) {
+			cachePath = filepath.Join(currentDir, cachePath)
+		}
 		cachePath, err = filepath.Abs(cachePath)
 		if err != nil {
 			log.Error("Failed to get absolute cache path", "error", err)
+			return
+		}
+		cachePath = filepath.Clean(cachePath)
+		// Never clean the working directory or one of its ancestors.
+		if rel, err := filepath.Rel(cachePath, currentDir); err != nil || rel == "." || !strings.HasPrefix(rel, "..") {
+			log.Error("Refusing to clean unsafe cache directory", "path", cachePath)
 			return
 		}
 		if _, err := os.Stat(cachePath); os.IsNotExist(err) {

@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"os"
 
 	"github.com/krau/SaveAny-Bot/boot"
 	"github.com/krau/SaveAny-Bot/cmd/upload"
@@ -24,6 +24,6 @@ func init() {
 
 func Execute(ctx context.Context) {
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
-		fmt.Println(err)
+		os.Exit(1)
 	}
 }
