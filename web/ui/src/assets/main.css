@@ -1487,6 +1487,78 @@ tbody tr:hover {
   border-top: 1px solid var(--line);
 }
 
+.helper-bots-mobile {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.helper-bot-card {
+  min-width: 0;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.helper-bot-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.helper-bot-identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.helper-bot-identity strong {
+  color: var(--text);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.helper-bot-identity .mono {
+  color: var(--text-3);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.helper-bot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.helper-bot-card .field-error {
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+
+.helper-bot-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.helper-bot-actions .btn {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+}
+
+.helper-bots-empty {
+  padding: 22px 16px;
+  text-align: center;
+}
+
 .task-mobile-list > .empty,
 .user-mobile-list > .empty {
   background: var(--surface);
@@ -3140,12 +3212,14 @@ html[data-theme='dark'] .btn.primary:disabled:not(.is-loading) {
 
 @media (max-width: 1080px) {
   .task-table-wrap,
-  .users-table-wrap {
+  .users-table-wrap,
+  .helper-bots-table-wrap {
     display: none;
   }
 
   .task-mobile-list,
-  .user-mobile-list {
+  .user-mobile-list,
+  .helper-bots-mobile {
     display: flex;
   }
 }
@@ -3262,6 +3336,26 @@ html[data-theme='dark'] .btn.primary:disabled:not(.is-loading) {
     font-size: 24px;
   }
 
+  .helper-bots-panel .panel-head {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .helper-bots-panel .panel-title {
+    white-space: nowrap;
+  }
+
+  .helper-bots-panel .panel-head .actions {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  .helper-bots-panel .panel-head .actions .btn {
+    flex: 1 1 130px;
+    justify-content: center;
+  }
+
   .relay-board {
     padding: 22px;
     gap: 20px;
@@ -3325,6 +3419,20 @@ html[data-theme='dark'] .btn.primary:disabled:not(.is-loading) {
 }
 
 @media (max-width: 520px) {
+  .helper-bots-panel .panel-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .helper-bots-panel .panel-head .actions {
+    width: 100%;
+  }
+
+  .helper-bots-panel .panel-head .actions .badge {
+    align-self: center;
+  }
+
   .toast-stack {
     right: 16px;
     bottom: 16px;

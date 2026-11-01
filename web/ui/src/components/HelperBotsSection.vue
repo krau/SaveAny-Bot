@@ -151,7 +151,7 @@ function stateTone(state: string): string {
 </script>
 
 <template>
-  <section class="panel telegram-panel">
+  <section class="panel telegram-panel helper-bots-panel">
     <div class="panel-head">
       <h2 class="panel-title">{{ t('workers.title') }}</h2>
       <div class="actions">
@@ -169,7 +169,7 @@ function stateTone(state: string): string {
     <p class="hint">{{ t('workers.intro') }}</p>
     <p class="hint">{{ t('workers.note') }}</p>
 
-    <div class="table-wrap">
+    <div class="table-wrap helper-bots-table-wrap">
         <table class="users-table">
           <thead>
             <tr>
@@ -241,6 +241,63 @@ function stateTone(state: string): string {
             </tr>
           </tbody>
         </table>
+    </div>
+
+    <div class="helper-bots-mobile">
+      <article v-for="worker in workers" :key="worker.id" class="helper-bot-card">
+        <div class="helper-bot-head">
+          <div class="helper-bot-identity">
+            <strong>{{ worker.name }}</strong>
+            <span class="mono">{{ worker.username ? `@${worker.username}` : '—' }}</span>
+          </div>
+          <span class="badge status" :class="stateTone(worker.state)">{{ stateLabel(worker.state) }}</span>
+        </div>
+        <div class="helper-bot-meta">
+          <span class="badge" :class="worker.enabled ? 'success' : 'muted'">
+            {{ worker.enabled ? t('states.enabled') : t('states.disabled') }}
+          </span>
+        </div>
+        <div v-if="worker.error" class="field-error">{{ worker.error }}</div>
+        <div class="helper-bot-actions">
+          <LoadingButton
+            v-if="worker.state === 'running' || worker.state === 'starting'"
+            class="small"
+            type="button"
+            :loading="actionId === worker.id && action === 'stop'"
+            @click="act(worker, 'stop')"
+          >
+            {{ t('workers.stop') }}
+          </LoadingButton>
+          <LoadingButton
+            v-else
+            class="small"
+            type="button"
+            :loading="actionId === worker.id && action === 'start'"
+            :disabled="!worker.enabled"
+            @click="act(worker, 'start')"
+          >
+            {{ t('workers.start') }}
+          </LoadingButton>
+          <button class="btn small" type="button" @click="openEdit(worker)">
+            {{ t('common.actions.edit') }}
+          </button>
+          <button
+            class="btn small"
+            type="button"
+            :disabled="worker.state !== 'running' || (actionId === worker.id && action !== '')"
+            @click="act(worker, 'test')"
+          >
+            {{ t('workers.test') }}
+          </button>
+          <button class="btn small danger" type="button" :disabled="actionId === worker.id" @click="remove(worker)">
+            {{ t('common.actions.delete') }}
+          </button>
+        </div>
+      </article>
+      <div v-if="workers.length === 0" class="empty helper-bots-empty">
+        <strong>{{ t('workers.empty') }}</strong>
+        <div class="hint">{{ t('workers.emptyHint') }}</div>
+      </div>
     </div>
 
     <Teleport to="body">
