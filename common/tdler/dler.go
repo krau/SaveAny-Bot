@@ -7,6 +7,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/relay"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
+	"github.com/krau/SaveAny-Bot/common/utils/rpclimit"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/consts/tglimit"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -19,7 +20,7 @@ func NewDownloader(ctx context.Context, file tfile.TGFile) (*downloader.Builder,
 		threads = max(threads, min(scalable.WorkerCount()*2, 16))
 	}
 	builder := downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).
-		Download(eofAwareClient{Client: file.Dler(), size: file.Size()}, file.Location()).
+		Download(eofAwareClient{Client: rpclimit.WrapDownloader(file.Dler()), size: file.Size()}, file.Location()).
 		WithThreads(threads)
 	return builder, cleanup
 }

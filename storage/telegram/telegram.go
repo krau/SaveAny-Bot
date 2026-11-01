@@ -21,6 +21,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/worker"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
+	"github.com/krau/SaveAny-Bot/common/utils/rpclimit"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	storconfig "github.com/krau/SaveAny-Bot/config/storage"
@@ -321,7 +322,7 @@ func (t *Telegram) target(tctx *ext.Context, storagePath string) (string, int64)
 }
 
 func (t *Telegram) newUploader(tctx *ext.Context, size int64, progress *uploadProgress) *uploader.Uploader {
-	upler := uploader.NewUploader(tctx.Raw).
+	upler := uploader.NewUploader(rpclimit.WrapUploader(tctx.Raw)).
 		WithPartSize(tglimit.MaxUploadPartSize).
 		WithThreads(dlutil.BestThreads(size, config.C().Threads))
 	if progress != nil {

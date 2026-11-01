@@ -73,6 +73,14 @@ func C() Config {
 	return *current.Load()
 }
 
+// TransferBudget is the upper bound for concurrent Telegram file-part RPCs
+// (download and upload combined). It keeps the per-file thread setting from
+// multiplying with task and element concurrency.
+func TransferBudget() int {
+	cfg := current.Load()
+	return max(cfg.Workers, 1) * max(cfg.Threads, 1)
+}
+
 // Set replaces the current configuration snapshot.
 func Set(cfg Config) {
 	current.Store(&cfg)

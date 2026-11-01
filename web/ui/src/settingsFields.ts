@@ -46,7 +46,13 @@ export const settingsGroups: SettingsGroupDef[] = [
         min: 1,
       },
       { path: 'retry', label: 'settings.core.retry', kind: 'number', min: 0 },
-      { path: 'threads', label: 'settings.core.threads', kind: 'number', min: 1 },
+      {
+        path: 'threads',
+        label: 'settings.core.threads',
+        kind: 'number',
+        hint: 'settings.core.threadsHint',
+        min: 1,
+      },
       { path: 'stream', label: 'settings.core.stream', kind: 'bool' },
       { path: 'no_clean_cache', label: 'settings.core.noCleanCache', kind: 'bool' },
       {
