@@ -366,7 +366,7 @@ func (a *Alist) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.F
 	a.logger.Debugf("Listing files in directory: %s", dirPath)
 
 	reqBody := fsListRequest{
-		Path:     dirPath,
+		Path:     a.JoinStoragePath(dirPath),
 		Password: "",
 		Page:     1,
 		PerPage:  0, // 0 means all files
@@ -443,7 +443,7 @@ func (a *Alist) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, i
 	a.logger.Debugf("Opening file: %s", filePath)
 
 	reqBody := map[string]any{
-		"path":     filePath,
+		"path":     a.JoinStoragePath(filePath),
 		"password": "",
 	}
 
