@@ -195,6 +195,8 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 	case taskevent.PhaseDone:
 		if t.Status != TaskStatusCancelled {
 			switch {
+			case e.Cancelled:
+				t.Status = TaskStatusCancelled
 			case e.Err != nil:
 				t.Status = TaskStatusFailed
 				t.Error = e.Err.Error()
@@ -207,13 +209,14 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 	}
 	t.UpdatedAt = time.Now()
 	notify := t.Webhook != "" && !t.webhookNotified && t.Status.IsTerminal() && t.Status != TaskStatusCancelled
+	status := t.Status
 	if notify {
 		t.webhookNotified = true
 	}
 	t.mu.Unlock()
 
 	if notify {
-		payload := CreateWebhookPayload(t.TaskID, t.Type, t.Status, t.Storage, t.Path, e.Err)
+		payload := CreateWebhookPayload(t.TaskID, t.Type, status, t.Storage, t.Path, e.Err)
 		SendWebhook(context.Background(), payload)
 	}
 }

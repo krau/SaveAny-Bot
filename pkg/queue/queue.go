@@ -90,9 +90,27 @@ func (tq *TaskQueue[T]) Get() (*Task[T], error) {
 // Done stops(cancels) and removes the task from the running tasks.
 func (tq *TaskQueue[T]) Done(taskID string) {
 	tq.mu.Lock()
-	defer tq.mu.Unlock()
+	task := tq.taskMap[taskID]
+	if task == nil {
+		task = tq.runningTaskMap[taskID]
+	}
 	delete(tq.taskMap, taskID)
 	delete(tq.runningTaskMap, taskID)
+	tq.mu.Unlock()
+	if task != nil {
+		task.Cancel()
+	}
+}
+
+// GetTask returns the queued or running task with the given ID.
+func (tq *TaskQueue[T]) GetTask(taskID string) (*Task[T], bool) {
+	tq.mu.RLock()
+	defer tq.mu.RUnlock()
+	task, ok := tq.taskMap[taskID]
+	if !ok {
+		task, ok = tq.runningTaskMap[taskID]
+	}
+	return task, ok
 }
 
 // Has reports whether the task is queued or running.

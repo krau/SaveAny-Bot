@@ -149,10 +149,11 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 			logger.Errorf("Failed to finish task record for %s: %v", exe.TaskID(), dbErr)
 		}
 		taskevent.Emit(taskCtx, taskevent.Event{
-			TaskID:  exe.TaskID(),
-			Phase:   taskevent.PhaseDone,
-			Err:     err,
-			Partial: failedItems > 0 && err == nil,
+			TaskID:    exe.TaskID(),
+			Phase:     taskevent.PhaseDone,
+			Err:       err,
+			Partial:   failedItems > 0 && err == nil,
+			Cancelled: status == "cancelled",
 		})
 		qe.Done(qtask.ID)
 		<-semaphore
@@ -291,8 +292,16 @@ func EnqueueExisting(ctx context.Context, task Executable) error {
 func CancelTask(ctx context.Context, id string) error {
 	q := initQueue()
 	if q.Has(id) {
+		task, _ := q.GetTask(id)
 		err := q.CancelTask(id)
 		if err == nil {
+			if task != nil {
+				taskevent.Emit(task.Context(), taskevent.Event{
+					TaskID:    id,
+					Phase:     taskevent.PhaseDone,
+					Cancelled: true,
+				})
+			}
 			if dbErr := database.UpdateTaskRecord(context.WithoutCancel(ctx), id, map[string]any{
 				"status":      "cancelled",
 				"finished_at": time.Now(),
