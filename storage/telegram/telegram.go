@@ -21,6 +21,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/worker"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/common/utils/rpclimit"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
@@ -210,7 +211,7 @@ func (t *Telegram) saveWithContext(ctx context.Context, tctx *ext.Context, r io.
 				}
 			}
 		}
-		return t.splitUpload(tctx, r, filename, upler, peer, size, splitSize, progress)
+		return t.splitUpload(ctx, tctx, r, filename, upler, peer, size, splitSize, progress)
 	}
 
 	if err := t.limiter.Wait(ctx); err != nil {
@@ -636,7 +637,8 @@ func (t *Telegram) CannotStream() string {
 }
 
 func (t *Telegram) splitUpload(
-	ctx *ext.Context,
+	ctx context.Context,
+	tctx *ext.Context,
 	r io.Reader,
 	filename string,
 	upler *uploader.Uploader,
@@ -645,18 +647,29 @@ func (t *Telegram) splitUpload(
 	progress *uploadProgress,
 ) error {
 	tempId := xid.New().String()
-	outputBase := filepath.Join(config.C().Temp.BasePath, tempId, strings.Split(filename, ".")[0])
+	// Keep a readable part name, but strip glob metacharacters: the base is
+	// reused as a filepath.Glob pattern below.
+	stem, _, _ := strings.Cut(filename, ".")
+	stem = fsutil.SafeBaseName(stem)
+	stem = strings.NewReplacer("*", "_", "?", "_", "[", "_", "]", "_", "\\", "_").Replace(stem)
+	if stem == "" || stem == "." || stem == ".." {
+		stem = tempId
+	}
+	outputBase := filepath.Join(config.C().Temp.BasePath, tempId, stem)
 	defer func() {
 		if err := os.RemoveAll(filepath.Join(config.C().Temp.BasePath, tempId)); err != nil {
 			log.FromContext(ctx).Warnf("Failed to cleanup temp split files: %s", err)
 		}
 	}()
-	if err := CreateSplitZip(ctx, r, fileSize, filename, outputBase, splitSize); err != nil {
+	if err := CreateSplitZip(ctx, r, fileSize, fsutil.SafeBaseName(filename), outputBase, splitSize); err != nil {
 		return fmt.Errorf("failed to create split zip: %w", err)
 	}
 	matched, err := filepath.Glob(outputBase + ".z*")
 	if err != nil {
 		return fmt.Errorf("failed to glob split files: %w", err)
+	}
+	if len(matched) == 0 {
+		return fmt.Errorf("split upload produced no parts")
 	}
 	inputFiles := make([]tg.InputFileClass, 0, len(matched))
 	if progress != nil {
@@ -684,6 +697,9 @@ func (t *Telegram) splitUpload(
 			}
 			partFileSize := partInfo.Size()
 			partName := filepath.Base(partPath)
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			partInputFile, err := upler.Upload(ctx, uploader.NewUpload(partName, partFile, partFileSize))
 			if err != nil {
 				return fmt.Errorf("failed to upload split part %s: %w", partPath, err)
@@ -701,11 +717,15 @@ func (t *Telegram) splitUpload(
 			Filename(filepath.Base(matched[0])).
 			ForceFile(true).
 			MIME("application/zip")
-		_, err = ctx.Sender.
+		_, err = tctx.Sender.
 			WithUploader(upler).
 			To(peer).
-			Media(ctx, doc)
+			Media(tctx, doc)
 		return err
+	}
+
+	if len(inputFiles) == 0 {
+		return fmt.Errorf("split upload produced no parts")
 	}
 
 	multiMedia := make([]message.MultiMediaOption, 0, len(inputFiles))
@@ -716,12 +736,12 @@ func (t *Telegram) splitUpload(
 		multiMedia = append(multiMedia, doc)
 	}
 
-	sender := ctx.Sender
+	sender := tctx.Sender
 
 	if len(multiMedia) <= tglimit.MaxAlbumItems {
 		_, err = sender.WithUploader(upler).
 			To(peer).
-			Album(ctx, multiMedia[0], multiMedia[1:]...)
+			Album(tctx, multiMedia[0], multiMedia[1:]...)
 		return err
 	}
 
@@ -730,7 +750,7 @@ func (t *Telegram) splitUpload(
 		batch := multiMedia[i:end]
 		_, err = sender.WithUploader(upler).
 			To(peer).
-			Album(ctx, batch[0], batch[1:]...)
+			Album(tctx, batch[0], batch[1:]...)
 		if err != nil {
 			return fmt.Errorf("failed to send album batch: %w", err)
 		}

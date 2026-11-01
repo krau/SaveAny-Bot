@@ -10,6 +10,19 @@ import (
 	"time"
 )
 
+// ctxReader aborts a copy when the task context is cancelled.
+type ctxReader struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (r ctxReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.reader.Read(p)
+}
+
 type splitWriter struct {
 	baseName    string
 	partSize    int64
@@ -120,7 +133,7 @@ func CreateSplitZip(ctx context.Context, reader io.Reader, size int64, fileName,
 		return fmt.Errorf("failed to create zip header: %w", err)
 	}
 
-	copied, err := io.Copy(writer, reader)
+	copied, err := io.Copy(writer, ctxReader{ctx: ctx, reader: reader})
 	if err != nil {
 		return fmt.Errorf("failed to write data: %w", err)
 	}
