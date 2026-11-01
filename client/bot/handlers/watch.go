@@ -68,9 +68,8 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 	filter := ""
 	if len(args) > 2 {
 		filterArg := strings.Join(args[2:], " ")
-		filterType, _, _ := strings.Cut(filterArg, ":")
-		filterData := strings.Split(filterArg, ":")[1]
-		if filterType == "" || filterData == "" {
+		filterType, filterData, ok := strings.Cut(filterArg, ":")
+		if !ok || filterType == "" || filterData == "" {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorFilterFormatInvalid)), nil)
 			return dispatcher.EndGroups
 		}
@@ -211,6 +210,9 @@ func (w *watchMediaGroupHandler) addFile(chatID int64, userID uint, file tfile.T
 func ListenUserbotMediaEvents(runCtx context.Context, resolve func() *ext.Context) {
 	logger := log.FromContext(runCtx)
 	for event := range userclient.GetMediaMessageCh() {
+		if event.File == nil || event.Ctx == nil {
+			continue
+		}
 		botCtx := resolve()
 		if botCtx == nil {
 			continue

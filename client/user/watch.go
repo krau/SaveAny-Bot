@@ -51,16 +51,18 @@ func sendMediaMessageEvent(event MediaMessageEvent) {
 
 	if timer, exists := mediaMessageHandler.timers[key]; exists {
 		timer.Stop()
-	} else {
-		mediaMessageHandler.events[key] = event
 	}
+	mediaMessageHandler.events[key] = event
 
 	mediaMessageHandler.timers[key] = time.AfterFunc(mediaMessageHandler.debounce, func() {
 		mediaMessageHandler.mu.Lock()
-		event := mediaMessageHandler.events[key]
+		event, ok := mediaMessageHandler.events[key]
 		delete(mediaMessageHandler.events, key)
 		delete(mediaMessageHandler.timers, key)
 		mediaMessageHandler.mu.Unlock()
+		if !ok {
+			return
+		}
 
 		mediaMessageCh <- event
 	})
