@@ -56,6 +56,7 @@ func (t *Task) Execute(ctx context.Context) error {
 			if file.Name == "" {
 				return fmt.Errorf("failed to determine filename for %s: Content-Disposition header is empty and URL does not contain a valid filename", file.URL)
 			}
+			file.Name = fsutil.SafeBaseName(file.Name)
 
 			return nil
 		})

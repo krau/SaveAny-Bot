@@ -66,7 +66,7 @@ func (t *Task) processPic(ctx context.Context, picUrl string, index int) error {
 			return fmt.Errorf("failed to download picture %s: %w", picUrl, err)
 		}
 		defer body.Close()
-		filename := fmt.Sprintf("%d%s", index+1, path.Ext(picUrl))
+		filename := fsutil.SafeBaseName(fmt.Sprintf("%d%s", index+1, path.Ext(picUrl)))
 		if t.cannotStream {
 			cacheFile, err := fsutil.CreateFile(filepath.Join(config.C().Temp.BasePath,
 				fmt.Sprintf("tph_%s_%s", t.TaskID(), filename),

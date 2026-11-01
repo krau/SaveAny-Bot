@@ -94,11 +94,12 @@ func (t *Task) processResource(ctx context.Context, resource parser.Resource) er
 			}
 			return resp.ContentLength
 		}())
+		filename := fsutil.SafeBaseName(resource.Filename)
 		if t.stream {
-			return t.Stor.Save(ctx, resp.Body, path.Join(t.StorPath, resource.Filename))
+			return t.Stor.Save(ctx, resp.Body, path.Join(t.StorPath, filename))
 		}
 		cacheFile, err := fsutil.CreateFile(filepath.Join(config.C().Temp.BasePath,
-			fmt.Sprintf("resource_%s_%s", t.ID, resource.Filename)))
+			fmt.Sprintf("resource_%s_%s", t.ID, filename)))
 		if err != nil {
 			return fmt.Errorf("failed to create cache file for resource %s: %w", resource.URL, err)
 		}
@@ -137,7 +138,7 @@ func (t *Task) processResource(ctx context.Context, resource parser.Resource) er
 		if err != nil {
 			return fmt.Errorf("failed to seek cache file for resource %s: %w", resource.URL, err)
 		}
-		return t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, resource.Filename))
+		return t.Stor.Save(ctx, cacheFile, path.Join(t.StorPath, filename))
 	}, retry.Context(ctx), retry.RetryTimes(uint(config.C().Retry)))
 	if ctx.Err() != nil {
 		return ctx.Err()
