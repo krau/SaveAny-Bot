@@ -5,6 +5,7 @@ import (
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
@@ -48,6 +49,17 @@ func withPermission(handler func(*ext.Context, *ext.Update) error) func(*ext.Con
 			return err
 		}
 		return handler(ctx, update)
+	}
+}
+
+// skipLinkForMedia lets the media handler save an attached file instead of a
+// link that appears in its caption.
+func skipLinkForMedia(next func(*ext.Context, *ext.Update) error) func(*ext.Context, *ext.Update) error {
+	return func(ctx *ext.Context, update *ext.Update) error {
+		if message := update.EffectiveMessage; message != nil && message.Media != nil && mediautil.IsSupported(message.Media) {
+			return dispatcher.ContinueGroups
+		}
+		return next(ctx, update)
 	}
 }
 

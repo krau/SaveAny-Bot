@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/conflictutil"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -135,6 +136,7 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		return dispatcher.EndGroups
 	}
 	strategy = conflictutil.ResolveStrategy(user, strategy)
+	files = mediautil.ApplyAlbumCaptions(ctx, user, files)
 
 	useRule := user.ApplyRule && user.Rules != nil
 
@@ -224,7 +226,32 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 		}
 	}
 	for _, afiles := range albumFiles {
-		if len(afiles) <= 1 {
+		if len(afiles) == 1 {
+			af := afiles[0]
+			storPath := path.Join(af.dirPath, af.file.Name())
+			if strategy == tcbdata.ConflictStrategyAsk || strategy == tcbdata.ConflictStrategySkip {
+				exists := af.storage.Exists(ctx, storPath)
+				if exists && strategy == tcbdata.ConflictStrategyAsk {
+					conflicts = append(conflicts, conflictutil.FormatPath(af.storage.Name(), storPath))
+					continue
+				}
+				if exists {
+					skipped = append(skipped, af.file.Name())
+					continue
+				}
+			}
+			elem, err := batchtfile.NewTaskElement(af.storage, storPath, af.file)
+			if err != nil {
+				logger.Errorf("Failed to create task element for album file: %s", err)
+				ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+					ID: trackMsgID,
+					Message: i18n.T(i18nk.BotMsgCommonErrorTaskCreateFailed, map[string]any{
+						"Error": err.Error(),
+					}),
+				})
+				return dispatcher.EndGroups
+			}
+			elems = append(elems, *elem)
 			continue
 		}
 		// 对于需要新建目录的文件, 将第一个文件的文件名(去除扩展名)作为目录名

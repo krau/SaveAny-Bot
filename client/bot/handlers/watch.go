@@ -347,6 +347,7 @@ func processWatchMediaGroup(ctx *ext.Context, botCtx *ext.Context, user *databas
 	}
 
 	useRule := user.ApplyRule && user.Rules != nil
+	files = mediautil.ApplyAlbumCaptions(ctx, user, files)
 
 	applyRule := func(file tfile.TGFileMessage) (string, ruleutil.MatchedDirPath) {
 		if !useRule {
@@ -408,7 +409,19 @@ func processWatchMediaGroup(ctx *ext.Context, botCtx *ext.Context, user *databas
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	totalTasks := 0
 	for groupID, afiles := range albumFiles {
-		if len(afiles) <= 1 {
+		if len(afiles) == 1 {
+			af := afiles[0]
+			taskid := xid.New().String()
+			task, err := coretfile.NewTGFileTask(taskid, injectCtx, af.file, af.storage, path.Join(af.dirPath, af.file.Name()), newWatchNotifyProgress(ctx, botCtx, user))
+			if err != nil {
+				logger.Errorf("create task failed for album file: %s", err)
+				continue
+			}
+			if err := core.AddTask(injectCtx, task); err != nil {
+				logger.Errorf("add task failed: %s", err)
+				continue
+			}
+			totalTasks++
 			continue
 		}
 

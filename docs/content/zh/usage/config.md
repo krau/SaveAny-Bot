@@ -70,6 +70,10 @@ SaveAny-Bot 支持在 Telegram 中通过 `/config` 和 `/fnametmpl` 命令自定
 /fnametmpl {{.origname}}
 ```
 
+{{< hint info >}}
+当媒体组按批次保存时 (发送给 Bot 的媒体组, 以及命中 `NEW-FOR-ALBUM` 规则的监听媒体组), 没有自身文本的文件会使用媒体组的文本填充模板变量和消息规则, 因此每个文件都能取得 `{{.msgtags}}` 与 `{{.msgraw}}`. 若模板对多个文件产生相同名称, 后续文件会保留自动生成的名称.
+{{< /hint >}}
+
 {{< hint warning >}}
 模板仅在文件名策略设置为 `自定义模板` 时生效. 如果模板解析失败, SaveAny-Bot 会回退到默认的文件名生成逻辑.
 {{< /hint >}}

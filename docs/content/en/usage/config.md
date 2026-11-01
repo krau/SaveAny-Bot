@@ -70,6 +70,10 @@ Examples:
 /fnametmpl {{.origname}}
 ```
 
+{{< hint info >}}
+When an album is saved as a batch (media groups sent to the bot, and watched albums matched by a `NEW-FOR-ALBUM` rule), files without their own caption use the album's caption for template variables and message rules, so `{{.msgtags}}` and `{{.msgraw}}` are populated for every item. If the template produces the same name for several items, later items keep their generated name.
+{{< /hint >}}
+
 {{< hint warning >}}
 The template only takes effect when the filename strategy is set to `Template`. If template parsing fails, SaveAny-Bot falls back to the default filename naming logic.
 {{< /hint >}}
