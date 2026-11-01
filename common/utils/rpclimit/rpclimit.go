@@ -17,7 +17,7 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 )
 
-var transfer = &limiter{notify: make(chan struct{})}
+var transfer = &limiter{notify: make(chan struct{}, 1)}
 
 // Acquire reserves one transfer slot. It blocks until a slot is free or ctx is
 // done. Every successful Acquire must be paired with Release.
@@ -92,15 +92,18 @@ func (l *limiter) acquire(ctx context.Context, limit int) error {
 		l.mu.Lock()
 		if l.inFlight < limit {
 			l.inFlight++
+			// Hand one wake-up to another waiter when capacity remains.
+			if l.inFlight < limit {
+				l.signalLocked()
+			}
 			l.mu.Unlock()
 			return nil
 		}
-		wait := l.notify
 		l.mu.Unlock()
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-wait:
+		case <-l.notify:
 		}
 	}
 }
@@ -110,11 +113,14 @@ func (l *limiter) release() {
 	if l.inFlight > 0 {
 		l.inFlight--
 	}
-	l.broadcastLocked()
+	l.signalLocked()
 	l.mu.Unlock()
 }
 
-func (l *limiter) broadcastLocked() {
-	close(l.notify)
-	l.notify = make(chan struct{})
+// signalLocked wakes at most one waiter.
+func (l *limiter) signalLocked() {
+	select {
+	case l.notify <- struct{}{}:
+	default:
+	}
 }
