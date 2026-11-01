@@ -18,16 +18,21 @@ const busyGroup = ref('')
 const loaded = ref(false)
 const activeGroup = ref(settingsGroups[0]?.key ?? '')
 const translatedGroups = computed(() =>
-  settingsGroups.map((group) => ({
-    ...group,
-    title: t(group.title),
-    fields: group.fields.map((field) => ({
+  settingsGroups.map((group) => {
+    const fields = group.fields.map((field) => ({
       ...field,
       label: t(field.label),
       hint: field.hint ? t(field.hint) : undefined,
       options: field.options?.map((option) => ({ value: option.value, label: t(option.label) })),
-    })),
-  })),
+    }))
+    return {
+      ...group,
+      title: t(group.title),
+      fields,
+      inputFields: fields.filter((field) => field.kind !== 'bool'),
+      boolFields: fields.filter((field) => field.kind === 'bool'),
+    }
+  }),
 )
 const settingsGroupOptions = computed(() =>
   translatedGroups.value.map((group) => ({ value: group.key, label: group.title })),
@@ -280,52 +285,56 @@ async function save(group: string) {
           <div class="settings-group-head">
             <h2>{{ group.title }}</h2>
           </div>
-          <div class="form-grid">
-            <template v-for="field in group.fields" :key="field.path">
-              <label v-if="field.kind === 'bool'" class="checkbox">
-                <input
-                  type="checkbox"
-                  :checked="boolValue(group.key, field)"
-                  @change="writePath(values[group.key], field.path, ($event.target as HTMLInputElement).checked)"
-                />
-                <span>{{ field.label }}</span>
-              </label>
-              <div
+          <div class="form-grid settings-fields">
+            <div
+              v-for="field in group.inputFields"
+              :key="field.path"
+              class="field"
+              :class="{ 'span-2': field.wide, 'is-invalid': invalid[fieldKey(group.key, field.path)] }"
+            >
+              <label :for="`${group.key}-${field.path}`">{{ field.label }}</label>
+              <AppSelect
+                v-if="field.kind === 'select'"
+                :id="`${group.key}-${field.path}`"
+                :model-value="textValue(group.key, field)"
+                :options="field.options ?? []"
+                @update:model-value="setTextField(group.key, field, $event)"
+              />
+              <textarea
+                v-else-if="field.kind === 'list' || field.kind === 'json'"
+                :id="`${group.key}-${field.path}`"
+                :value="textValue(group.key, field)"
+                :placeholder="field.placeholder"
+                :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
+                @input="setTextField(group.key, field, ($event.target as HTMLTextAreaElement).value)"
+              ></textarea>
+              <input
                 v-else
-                class="field"
-                :class="{ 'is-invalid': invalid[fieldKey(group.key, field.path)] }"
-              >
-                <label :for="`${group.key}-${field.path}`">{{ field.label }}</label>
-                <AppSelect
-                  v-if="field.kind === 'select'"
-                  :id="`${group.key}-${field.path}`"
-                  :model-value="textValue(group.key, field)"
-                  :options="field.options ?? []"
-                  @update:model-value="setTextField(group.key, field, $event)"
-                />
-                <textarea
-                  v-else-if="field.kind === 'list' || field.kind === 'json'"
-                  :id="`${group.key}-${field.path}`"
-                  :value="textValue(group.key, field)"
-                  :placeholder="field.placeholder"
-                  :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
-                  @input="setTextField(group.key, field, ($event.target as HTMLTextAreaElement).value)"
-                ></textarea>
-                <input
-                  v-else
-                  :id="`${group.key}-${field.path}`"
-                  :value="textValue(group.key, field)"
-                  :type="field.kind === 'number' ? 'number' : field.kind === 'password' ? 'password' : 'text'"
-                  :placeholder="field.placeholder"
-                  autocomplete="off"
-                  :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
-                  @input="setTextField(group.key, field, ($event.target as HTMLInputElement).value)"
-                />
-                <span v-if="field.hint" class="hint">{{ field.hint }}</span>
-              </div>
-            </template>
+                :id="`${group.key}-${field.path}`"
+                :value="textValue(group.key, field)"
+                :type="field.kind === 'number' ? 'number' : field.kind === 'password' ? 'password' : 'text'"
+                :placeholder="field.placeholder"
+                autocomplete="off"
+                :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
+                @input="setTextField(group.key, field, ($event.target as HTMLInputElement).value)"
+              />
+              <span v-if="field.hint" class="hint">{{ field.hint }}</span>
+            </div>
           </div>
-          <div class="modal-actions">
+          <div v-if="group.boolFields.length" class="settings-toggles">
+            <label v-for="field in group.boolFields" :key="field.path" class="checkbox settings-toggle">
+              <input
+                type="checkbox"
+                :checked="boolValue(group.key, field)"
+                @change="writePath(values[group.key], field.path, ($event.target as HTMLInputElement).checked)"
+              />
+              <span class="settings-toggle-copy">
+                {{ field.label }}
+                <small v-if="field.hint">{{ field.hint }}</small>
+              </span>
+            </label>
+          </div>
+          <div class="settings-actions">
             <LoadingButton type="submit" class="primary" :loading="busyGroup === group.key">
               {{ t('common.actions.save') }}
             </LoadingButton>

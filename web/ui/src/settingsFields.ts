@@ -11,6 +11,8 @@ export interface SettingsField {
   min?: number
   /** Option labels are translation keys under `settings.*`. */
   options?: { value: string; label: string }[]
+  /** Span both columns in the settings grid. */
+  wide?: boolean
 }
 
 export interface SettingsGroupDef {
@@ -51,6 +53,7 @@ export const settingsGroups: SettingsGroupDef[] = [
         kind: 'text',
         placeholder: 'socks5://127.0.0.1:1080',
         hint: 'settings.core.proxyHint',
+        wide: true,
       },
     ],
   },
@@ -133,14 +136,22 @@ export const settingsGroups: SettingsGroupDef[] = [
         kind: 'list',
         hint: 'settings.parser.pluginDirsHint',
         placeholder: 'plugins',
+        wide: true,
       },
-      { path: 'proxy', label: 'settings.parser.proxy', kind: 'text', placeholder: 'http://127.0.0.1:7890' },
+      {
+        path: 'proxy',
+        label: 'settings.parser.proxy',
+        kind: 'text',
+        placeholder: 'http://127.0.0.1:7890',
+        wide: true,
+      },
       {
         path: 'configs',
         label: 'settings.parser.configs',
         kind: 'json',
         placeholder: '{"example": {"key": "value"}}',
         hint: 'settings.parser.configsHint',
+        wide: true,
       },
     ],
   },
@@ -150,7 +161,7 @@ export const settingsGroups: SettingsGroupDef[] = [
     fields: [
       { path: 'ttl', label: 'settings.cache.ttl', kind: 'number', min: 0 },
       { path: 'num_counters', label: 'settings.cache.numCounters', kind: 'number', min: 1 },
-      { path: 'max_cost', label: 'settings.cache.maxCost', kind: 'number', min: 0 },
+      { path: 'max_cost', label: 'settings.cache.maxCost', kind: 'number', min: 0, wide: true },
     ],
   },
   {

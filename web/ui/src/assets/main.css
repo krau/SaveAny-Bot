@@ -434,33 +434,40 @@ code {
 
 .sidebar-account {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin: 2px 0;
 }
 
 .sidebar-action {
   display: inline-flex;
   min-width: 0;
-  flex: 1;
+  flex: none;
   align-items: center;
   gap: 6px;
-  height: 30px;
-  padding: 0 6px;
+  height: 24px;
+  padding: 0;
   color: #aab0b9;
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 12px;
   text-align: left;
   white-space: nowrap;
-  transition:
-    color 140ms var(--ease),
-    background-color 140ms var(--ease);
+  transition: color 140ms var(--ease);
 }
 
 .sidebar-action:hover {
   color: #f2f3f5;
-  background: rgba(255, 255, 255, 0.06);
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sidebar-account .sidebar-action:last-child {
+  justify-content: flex-end;
+  text-align: right;
 }
 
 .theme-control {
@@ -2373,6 +2380,50 @@ tbody tr:hover {
   color: var(--text);
   font-size: 16px;
   font-weight: 500;
+}
+
+.settings-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-fields > .field:only-child {
+  grid-column: 1 / -1;
+}
+
+.settings-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  padding-top: 18px;
+}
+
+.settings-toggle {
+  min-height: 24px;
+  padding-top: 0;
+  gap: 8px;
+}
+
+.settings-toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-toggle-copy small {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 18px;
+  margin-top: 28px;
+  border-top: 1px solid var(--line);
 }
 
 /* Telegram */
