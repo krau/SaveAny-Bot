@@ -452,6 +452,8 @@ Task responses include per-file outcomes: list responses carry the total in `fai
 | `failed` | Task encountered an error |
 | `cancelled` | Task was cancelled via the DELETE endpoint |
 
+Queued tasks keep their creation parameters and are re-enqueued after a restart. Tasks that were running when the process stopped are marked `failed` with `interrupted by restart`.
+
 ---
 
 ## Webhook Callbacks

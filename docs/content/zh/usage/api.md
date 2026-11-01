@@ -452,6 +452,8 @@ Authorization: Bearer <token>
 | `failed` | 执行失败 |
 | `cancelled` | 已通过 DELETE 接口取消 |
 
+排队中的任务会保存创建参数，重启后自动重新入队。进程停止时正在运行的任务会被标记为 `failed`，原因为 `interrupted by restart`。
+
 ---
 
 ## Webhook 回调

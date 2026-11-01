@@ -19,6 +19,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
+	"github.com/krau/SaveAny-Bot/core/resume"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/parsers"
 	"github.com/krau/SaveAny-Bot/settings"
@@ -101,6 +102,7 @@ func (a *App) Start() error {
 			log.Errorf("Failed to apply telegram settings: %v", err)
 		}
 	}()
+	go resume.Run(a.ctx)
 	return nil
 }
 

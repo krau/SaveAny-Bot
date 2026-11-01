@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tasks/batchtfile"
@@ -73,7 +72,7 @@ func FailedTask(ctx context.Context, extCtxs []*ext.Context, taskID string) (str
 		if item.SourceChatID == 0 || item.SourceMsgID == 0 {
 			return "", 0, fmt.Errorf("%w: %s", ErrSourceUnavailable, item.Name)
 		}
-		msg, clientCtx, err := fetchMessage(candidates, item.SourceChatID, item.SourceMsgID)
+		msg, clientCtx, err := tgutil.GetMessageByIDFreshAny(candidates, item.SourceChatID, item.SourceMsgID)
 		if err != nil {
 			return "", 0, fmt.Errorf("%w: %s: %v", ErrSourceUnavailable, item.Name, err)
 		}
@@ -133,18 +132,6 @@ func itemStorage(ctx context.Context, item database.TaskItemRecord, record *data
 		return nil, fmt.Errorf("%w: %s", ErrStorageMissing, name)
 	}
 	return stor, nil
-}
-
-func fetchMessage(candidates []*ext.Context, chatID int64, msgID int) (*tg.Message, *ext.Context, error) {
-	var lastErr error
-	for _, candidate := range candidates {
-		msg, err := tgutil.GetMessageByIDFresh(candidate, chatID, msgID)
-		if err == nil {
-			return msg, candidate, nil
-		}
-		lastErr = err
-	}
-	return nil, nil, lastErr
 }
 
 // retryableItems prefers failed files; if a task failed before per-item

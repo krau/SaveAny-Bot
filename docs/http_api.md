@@ -628,9 +628,11 @@ after 100ms, then 400ms. Each request times out after 30 seconds.
 
 ## Task Retention
 
-Task records live in memory only and are lost on restart. A task that has
-reached a terminal state is also evicted 24 hours after its last update; the
-sweep runs every 10 minutes.
+Task records are stored in the database and survive restarts. Live progress snapshots are held in memory for 24
+hours after the last update; the sweep runs every 10 minutes.
+
+Queued tasks keep their creation parameters and are re-enqueued after startup. Tasks that were running when the
+process stopped are marked `failed` with `interrupted by restart`.
 
 ## Notes
 

@@ -228,6 +228,27 @@ func GetMessageByIDFresh(ctx *ext.Context, chatID int64, msgID int) (*tg.Message
 	return lookupMessageByID(ctx, chatID, msgID, false)
 }
 
+// GetMessageByIDFreshAny tries each client context in order and returns the
+// message with the client that fetched it. It bypasses the message cache so
+// file references are current.
+func GetMessageByIDFreshAny(ctxs []*ext.Context, chatID int64, msgID int) (*tg.Message, *ext.Context, error) {
+	var lastErr error
+	for _, ctx := range ctxs {
+		if ctx == nil {
+			continue
+		}
+		msg, err := GetMessageByIDFresh(ctx, chatID, msgID)
+		if err == nil {
+			return msg, ctx, nil
+		}
+		lastErr = err
+	}
+	if lastErr == nil {
+		lastErr = fmt.Errorf("no telegram client available")
+	}
+	return nil, nil, lastErr
+}
+
 func lookupMessageByID(ctx *ext.Context, chatID int64, msgID int, useCache bool) (*tg.Message, error) {
 	// we don't know if the input chatID is bot api style(e.g. channel with -100 prefix) or plain tdlib style(no any prefix and every id is positive)
 	if msg, err := getMessageByID(ctx, chatID, msgID, useCache); err == nil {

@@ -82,9 +82,11 @@ type TaskRecord struct {
 	Title       string
 	Status      string `gorm:"size:16;index;not null"`
 	StorageName string
+	StorageID   uint
 	Path        string
 	Source      string `gorm:"size:16;not null"`
 	Error       string `gorm:"type:text"`
+	Params      string `gorm:"type:text"`
 	CreatedAt   time.Time
 	StartedAt   *time.Time
 	FinishedAt  *time.Time

@@ -44,6 +44,17 @@ func ListTaskRecords(ctx context.Context, filter TaskFilter) ([]TaskRecord, int6
 	return records, total, err
 }
 
+// ListQueuedTaskRecords returns every task that was queued but never started,
+// oldest first, for restart recovery.
+func ListQueuedTaskRecords(ctx context.Context) ([]TaskRecord, error) {
+	var records []TaskRecord
+	err := db.WithContext(ctx).
+		Where("status = ?", "queued").
+		Order("created_at ASC").
+		Find(&records).Error
+	return records, err
+}
+
 func DeleteTaskRecord(ctx context.Context, taskID string) error {
 	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Unscoped().Where("task_id = ?", taskID).Delete(&TaskItemRecord{}).Error; err != nil {
@@ -133,9 +144,11 @@ SELECT * FROM (
 	return out, nil
 }
 
+// MarkInterruptedTaskRecords fails tasks that were running when the process
+// stopped. Queued tasks are left for restart recovery.
 func MarkInterruptedTaskRecords(ctx context.Context) error {
 	return db.WithContext(ctx).Model(&TaskRecord{}).
-		Where("status IN ?", []string{"queued", "running"}).
+		Where("status = ?", "running").
 		Updates(map[string]any{
 			"status":      "failed",
 			"error":       "interrupted by restart",

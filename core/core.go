@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -49,6 +51,12 @@ type Executable interface {
 type DestinationInfo interface {
 	StorageName() string
 	StoragePath() string
+}
+
+// ParamSource exposes the creation parameters that a queued task needs to be
+// rebuilt after a restart.
+type ParamSource interface {
+	TaskParams() (json.RawMessage, error)
 }
 
 func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan struct{}) {
@@ -226,7 +234,16 @@ func AddTaskWithSource(ctx context.Context, task Executable, source string) erro
 	}
 	if destination, ok := task.(DestinationInfo); ok {
 		record.StorageName = destination.StorageName()
+		record.StorageID = config.C().GetStorageIDByName(record.StorageName)
 		record.Path = destination.StoragePath()
+	}
+	if source, ok := task.(ParamSource); ok {
+		params, err := source.TaskParams()
+		if err != nil {
+			logger.Warnf("Failed to serialize params for task %s: %v", task.TaskID(), err)
+		} else {
+			record.Params = string(params)
+		}
 	}
 	if err := database.CreateTaskRecord(ctx, record); err != nil {
 		logger.Errorf("Failed to create task record for %s: %v", task.TaskID(), err)
@@ -246,6 +263,7 @@ func AddTaskWithSource(ctx context.Context, task Executable, source string) erro
 func EnrichTaskRecord(ctx context.Context, taskID, storageName, storagePath string) error {
 	return database.UpdateTaskRecord(ctx, taskID, map[string]any{
 		"storage_name": storageName,
+		"storage_id":   config.C().GetStorageIDByName(storageName),
 		"path":         storagePath,
 	})
 }
@@ -256,20 +274,62 @@ func IsTaskRunning(id string) bool {
 	return initQueue().IsRunning(id)
 }
 
+// HasTask reports whether the task is known to the queue, queued or running.
+func HasTask(id string) bool {
+	return initQueue().Has(id)
+}
+
+// EnqueueExisting adds a rebuilt task without creating another record. The
+// progress sink factory is attached so the web console still tracks it.
+func EnqueueExisting(ctx context.Context, task Executable) error {
+	if sink := taskSinkFor(task, TaskSourceBot); sink != nil {
+		ctx = taskevent.WithSink(ctx, sink)
+	}
+	return initQueue().Add(queue.NewTask(ctx, task.TaskID(), task.Title(), task))
+}
+
 func CancelTask(ctx context.Context, id string) error {
-	if queueInstance == nil {
-		return errors.New("task queue is not initialized")
-	}
-	err := queueInstance.CancelTask(id)
-	if err == nil {
-		if dbErr := database.UpdateTaskRecord(context.WithoutCancel(ctx), id, map[string]any{
-			"status":      "cancelled",
-			"finished_at": time.Now(),
-		}); dbErr != nil {
-			log.FromContext(ctx).Errorf("Failed to cancel task record for %s: %v", id, dbErr)
+	q := initQueue()
+	if q.Has(id) {
+		err := q.CancelTask(id)
+		if err == nil {
+			if dbErr := database.UpdateTaskRecord(context.WithoutCancel(ctx), id, map[string]any{
+				"status":      "cancelled",
+				"finished_at": time.Now(),
+			}); dbErr != nil {
+				log.FromContext(ctx).Errorf("Failed to cancel task record for %s: %v", id, dbErr)
+			}
 		}
+		return err
 	}
-	return err
+	// A queued record may not be in the queue yet while restart recovery waits
+	// for a Telegram client.
+	record, err := database.GetTaskRecord(ctx, id)
+	if err != nil {
+		return fmt.Errorf("task %s does not exist", id)
+	}
+	if isTerminalTaskStatus(record.Status) {
+		return fmt.Errorf("task %s is not active", id)
+	}
+	if dbErr := database.UpdateTaskRecord(context.WithoutCancel(ctx), id, map[string]any{
+		"status":      "cancelled",
+		"finished_at": time.Now(),
+	}); dbErr != nil {
+		return dbErr
+	}
+	if q.Has(id) {
+		return q.CancelTask(id)
+	}
+	return nil
+}
+
+func isTerminalTaskStatus(status string) bool {
+	switch status {
+	case "completed", "partial", "failed", "cancelled":
+		return true
+	default:
+		return false
+	}
 }
 
 func GetLength(ctx context.Context) int {
