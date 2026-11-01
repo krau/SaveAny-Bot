@@ -36,7 +36,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	msgID := update.CallbackQuery.GetMsgID()
 	userID := update.CallbackQuery.GetUserID()
 
-	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, data.SelectedStorName)
+	selectedStorage, err := storage.GetStorageByUserIDAndID(ctx, userID, data.SelectedStorageID)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Failed to get storage: %s", err)
 		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
@@ -44,7 +44,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		})))
 		return dispatcher.EndGroups
 	}
-	dirs, err := database.GetDirsByUserChatIDAndStorageName(ctx, userID, data.SelectedStorName)
+	dirs, err := database.GetDirsByUserChatIDAndStorageID(ctx, userID, storage.ID(selectedStorage))
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("failed to get user directories: %w", err)
 	}

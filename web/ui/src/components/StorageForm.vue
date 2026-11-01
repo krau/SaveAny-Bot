@@ -198,13 +198,12 @@ function submit() {
         <input
           id="storage-name"
           v-model="name"
-          :disabled="isEdit"
+          maxlength="64"
           :placeholder="t('storages.form.namePlaceholder')"
           :aria-invalid="invalidField === 'storage-name' ? 'true' : undefined"
           required
           @input="clear('storage-name')"
         />
-        <span v-if="isEdit" class="hint">{{ t('storages.form.nameLocked') }}</span>
       </div>
       <div class="field">
         <label for="storage-type">{{ t('storages.form.type') }}</label>

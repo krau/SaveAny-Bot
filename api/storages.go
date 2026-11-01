@@ -31,8 +31,8 @@ func maskStorageConfig(config map[string]any) map[string]any {
 
 func storageResponse(record *database.StorageRecord, initErr string) StorageRecord {
 	var config map[string]any
-	if record.Config != "" {
-		_ = json.Unmarshal([]byte(record.Config), &config)
+	if record.ConfigJSON != "" {
+		_ = json.Unmarshal([]byte(record.ConfigJSON), &config)
 	}
 	if config == nil {
 		config = make(map[string]any)

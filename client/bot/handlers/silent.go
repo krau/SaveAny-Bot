@@ -24,7 +24,7 @@ func handleSilentCmd(ctx *ext.Context, update *ext.Update) error {
 		})), nil)
 		return nil
 	}
-	if !user.Silent && user.DefaultStorage == "" {
+	if !user.Silent && user.DefaultStorageID == 0 {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorDefaultStorageNotSet, nil)), nil)
 		return nil
 	}
@@ -66,8 +66,8 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 	}
 	userID := update.CallbackQuery.GetUserID()
 
-	storageName := data.StorageName
-	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, storageName)
+	storageID := data.StorageID
+	selectedStorage, err := storage.GetStorageByUserIDAndID(ctx, userID, storageID)
 	if err != nil {
 		return failedAnswer(i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
 			"Error": err.Error(),
@@ -86,16 +86,16 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 		if err != nil {
 			return failedAnswer(i18n.T(i18nk.BotMsgDirErrorGetUserDirsFailed, nil))
 		}
-		user.DefaultDir = dir.ID
+		user.DefaultDirID = dir.ID
 	} else {
-		dirs, err := database.GetDirsByUserIDAndStorageName(ctx, user.ID, storageName)
+		dirs, err := database.GetDirsByUserIDAndStorageID(ctx, user.ID, storageID)
 		if err != nil {
 			return failedAnswer(i18n.T(i18nk.BotMsgCommonErrorGetDirFailed, map[string]any{
 				"Error": err.Error(),
 			}))
 		}
 		if len(dirs) > 0 {
-			markup, err := msgelem.BuildSetDefaultDirMarkup(ctx, storageName, dirs)
+			markup, err := msgelem.BuildSetDefaultDirMarkup(ctx, storageID, dirs)
 			if err != nil {
 				return failedAnswer(i18n.T(i18nk.BotMsgCommonErrorBuildDirSelectKeyboardFailed, map[string]any{
 					"Error": err.Error(),
@@ -109,7 +109,7 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 	}
-	user.DefaultStorage = selectedStorage.Name()
+	user.DefaultStorageID = storageID
 	if err := database.UpdateUser(ctx, user); err != nil {
 		return failedAnswer(i18n.T(i18nk.BotMsgCommonErrorUpdateUserInfoFailed, map[string]any{
 			"Error": err.Error(),

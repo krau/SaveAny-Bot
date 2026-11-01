@@ -53,6 +53,18 @@ func LastErrors() map[string]string {
 	return out
 }
 
+// ID returns the stable database ID for an initialized storage, or zero when
+// the storage cannot be resolved from the current config.
+func ID(st Storage) uint {
+	if st == nil {
+		return 0
+	}
+	if cfg := config.C().GetStorageByName(st.Name()); cfg != nil {
+		return cfg.GetID()
+	}
+	return 0
+}
+
 // GetStorageByName returns storage by name from cache or creates a new one.
 func GetStorageByName(ctx context.Context, name string) (Storage, error) {
 	if name == "" {
@@ -95,6 +107,24 @@ func GetStorageByName(ctx context.Context, name string) (Storage, error) {
 	return v.(Storage), nil
 }
 
+func GetStorageByID(ctx context.Context, id uint) (Storage, error) {
+	cfg := config.C().GetStorageByID(id)
+	if cfg == nil {
+		return nil, fmt.Errorf("storage ID %d not found", id)
+	}
+	return GetStorageByName(ctx, cfg.GetName())
+}
+
+func GetStorageByUserIDAndID(ctx context.Context, chatID int64, id uint) (Storage, error) {
+	if id == 0 {
+		return nil, ErrStorageNameEmpty
+	}
+	if !config.C().HasStorageID(chatID, id) {
+		return nil, fmt.Errorf("no storage ID %d for user %d", id, chatID)
+	}
+	return GetStorageByID(ctx, id)
+}
+
 func GetStorageByUserIDAndName(ctx context.Context, chatID int64, name string) (Storage, error) {
 	if name == "" {
 		return nil, ErrStorageNameEmpty
@@ -110,8 +140,8 @@ func GetUserStorages(ctx context.Context, chatID int64) []Storage {
 		return nil
 	}
 	var storages []Storage
-	for _, name := range config.C().GetStorageNamesByUserID(chatID) {
-		storage, err := GetStorageByName(ctx, name)
+	for _, id := range config.C().GetStorageIDsByUserID(chatID) {
+		storage, err := GetStorageByID(ctx, id)
 		if err != nil {
 			continue
 		}

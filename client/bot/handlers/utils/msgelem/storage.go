@@ -34,12 +34,12 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 	}
 
 	buttons := make([]tg.KeyboardButtonClass, 0)
-	for _, storage := range stors {
+	for _, st := range stors {
 		data := tcbdata.Add{
-			TaskType:         taskType,
-			SelectedStorName: storage.Name(),
-			SelectedDirPath:  adddata.SelectedDirPath,
-			ConflictStrategy: adddata.ConflictStrategy,
+			TaskType:          taskType,
+			SelectedStorageID: storage.ID(st),
+			SelectedDirPath:   adddata.SelectedDirPath,
+			ConflictStrategy:  adddata.ConflictStrategy,
 
 			Files:   adddata.Files,
 			AsBatch: len(adddata.Files) > 1,
@@ -56,9 +56,9 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 			YtdlpURLs:  adddata.YtdlpURLs,
 			YtdlpFlags: adddata.YtdlpFlags,
 
-			TransferSourceStorName: adddata.TransferSourceStorName,
-			TransferSourcePath:     adddata.TransferSourcePath,
-			TransferFiles:          adddata.TransferFiles,
+			TransferSourceStorageID: adddata.TransferSourceStorageID,
+			TransferSourcePath:      adddata.TransferSourcePath,
+			TransferFiles:           adddata.TransferFiles,
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)
@@ -66,7 +66,7 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 			return nil, err
 		}
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: storage.Name(),
+			Text: st.Name(),
 			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
 		})
 	}
@@ -147,9 +147,9 @@ func BuildSetDefaultStorageMarkup(
 	ctx context.Context,
 	stors []storage.Storage) (*tg.ReplyInlineMarkup, error) {
 	buttons := make([]tg.KeyboardButtonClass, 0)
-	for _, storage := range stors {
+	for _, st := range stors {
 		data := tcbdata.SetDefaultStorage{
-			StorageName: storage.Name(),
+			StorageID: storage.ID(st),
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)
@@ -157,7 +157,7 @@ func BuildSetDefaultStorageMarkup(
 			return nil, err
 		}
 		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: storage.Name(),
+			Text: st.Name(),
 			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeSetDefault, dataid),
 		})
 	}
@@ -171,14 +171,14 @@ func BuildSetDefaultStorageMarkup(
 }
 
 func BuildSetDefaultDirMarkup(ctx context.Context,
-	seletedStorage string,
+	storageID uint,
 	dirs []database.Dir) (*tg.ReplyInlineMarkup, error) {
 	buttons := make([]tg.KeyboardButtonClass, 0)
 	for _, dir := range dirs {
 		dataid := xid.New().String()
 		data := tcbdata.SetDefaultStorage{
-			StorageName: seletedStorage,
-			DirID:       dir.ID,
+			StorageID: storageID,
+			DirID:     dir.ID,
 		}
 		err := cache.Set(dataid, data)
 		if err != nil {

@@ -82,8 +82,8 @@ export interface StorageTestResult {
 }
 
 export interface UserStorageFilter {
-  storages: string[]
-  blacklist: boolean
+  storage_ids: number[]
+  mode: string
 }
 
 export interface UserItem {
@@ -91,8 +91,8 @@ export interface UserItem {
   chat_id: number
   enabled: boolean
   silent: boolean
-  default_storage: string
-  default_dir: number
+  default_storage_id: number
+  default_dir_id: number
   apply_rule: boolean
   filename_strategy: string
   filename_template: string
@@ -104,8 +104,8 @@ export interface UserItem {
 export interface UserPatch {
   enabled?: boolean
   silent?: boolean
-  default_storage?: string
-  default_dir?: number
+  default_storage_id?: number
+  default_dir_id?: number
   apply_rule?: boolean
   filename_strategy?: string
   filename_template?: string

@@ -190,7 +190,7 @@ func AddTaskWithSource(ctx context.Context, task Executable, source string) erro
 		Source: source,
 	}
 	if destination, ok := task.(DestinationInfo); ok {
-		record.Storage = destination.StorageName()
+		record.StorageName = destination.StorageName()
 		record.Path = destination.StoragePath()
 	}
 	if err := database.CreateTaskRecord(ctx, record); err != nil {
@@ -210,8 +210,8 @@ func AddTaskWithSource(ctx context.Context, task Executable, source string) erro
 
 func EnrichTaskRecord(ctx context.Context, taskID, storageName, storagePath string) error {
 	return database.UpdateTaskRecord(ctx, taskID, map[string]any{
-		"storage": storageName,
-		"path":    storagePath,
+		"storage_name": storageName,
+		"path":         storagePath,
 	})
 }
 

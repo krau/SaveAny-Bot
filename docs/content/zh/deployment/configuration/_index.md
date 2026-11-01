@@ -14,7 +14,7 @@ weight: 11
 | 指南 | 首次配置检查清单和日常使用说明 |
 | Telegram | Bot Token、API ID/Hash、代理、Userbot 登录 |
 | 存储 | 本地磁盘、WebDAV、Alist、S3、MinIO、Rclone、Telegram 等存储端 |
-| 用户 | Telegram 用户 ID、默认存储、目录、规则和访问控制 |
+| 用户 | Telegram 用户 ID、默认存储、目录、规则和存储访问权限 |
 | 设置 | 任务并发、语言、代理、Aria2、yt-dlp、解析器、缓存、日志、Web 和 API |
 
 部分设置需要重启进程后生效，例如任务并发数、全局代理、数据库会话路径、缓存、插件、Hook 和 Web 监听地址。保存时页面会提示需要重启的字段。
@@ -29,7 +29,7 @@ Bot Token 在 [@BotFather](https://t.me/BotFather) 创建。`API ID` 和 `API Ha
 
 辅助 Bot 是可选项。在 **Telegram** 页面的 **辅助 Bot** 区域填入 BotFather 生成的 Token，并把每个辅助 Bot 加入目标 Telegram 聊天，授予发送文件权限。Telegram 存储上传会分配给运行中且可访问目标聊天的辅助 Bot；无法访问目标聊天的辅助 Bot 会被跳过，上传回退到主 Bot。辅助 Bot 不处理命令。
 
-如需让多个辅助 Bot 分块下载大文件，请在 **Telegram** 页面填写私有 **辅助下载频道 ID**，确认主 Bot 可向该频道发帖，并把至少两个辅助 Bot 加入该频道。主 Bot 会把收到的文件转发到辅助下载频道，各辅助 Bot 获取自己的 file reference 后下载分配到的分块。该功能仅在非 stream 模式下对 8 MB 及以上的文件生效；频道或辅助 Bot 不可用时会回退到单客户端下载。默认在下载完成后删除转发到频道中的消息；开启“下载完成后保留频道转发消息”可保留。
+如需让多个辅助 Bot 分块下载大文件，请在 **Telegram** 页面填写私有 **辅助下载频道 ID**，确认主 Bot 可向该频道发帖，并把至少两个辅助 Bot 加入该频道。主 Bot 会把收到的文件转发到辅助下载频道，各辅助 Bot 获取自己的 file reference 后下载分配到的分块。该功能仅在非 stream 模式下对 8 MB 及以上的文件生效；频道或辅助 Bot 不可用时会回退到单客户端下载。默认保留转发到频道中的消息；关闭“保留频道转发消息”后会在下载结束后自动删除。
 
 ### 存储
 

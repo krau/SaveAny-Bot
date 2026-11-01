@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -17,7 +17,7 @@ import (
 
 func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
-	args := strings.Split(update.EffectiveMessage.Text, " ")
+	args := strutil.ParseArgsRespectQuotes(update.EffectiveMessage.Text)
 	userChatID := update.GetUserChat().GetID()
 	dirs, err := database.GetUserDirsByChatID(ctx, userChatID)
 	if err != nil {
@@ -42,14 +42,15 @@ func handleDirCmd(ctx *ext.Context, update *ext.Update) error {
 			ctx.Reply(update, ext.ReplyTextStyledTextArray(msgelem.BuildDirHelpStyling(dirs)), nil)
 			return dispatcher.EndGroups
 		}
-		if _, err := storage.GetStorageByUserIDAndName(ctx, user.ChatID, args[2]); err != nil {
+		selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, user.ChatID, args[2])
+		if err != nil {
 			logger.Errorf("Failed to get storage %q: %s", args[2], err)
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed,
 				tgutil.EscapeHTMLTemplateData(map[string]any{"Error": err.Error()}))), nil)
 			return dispatcher.EndGroups
 		}
 
-		if err := database.CreateDirForUser(ctx, user.ID, args[2], args[3]); err != nil {
+		if err := database.CreateDirForUser(ctx, user.ID, storage.ID(selectedStorage), args[3]); err != nil {
 			logger.Errorf("Failed to create directory: %s", err)
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgDirErrorCreateDirFailed)), nil)
 			return dispatcher.EndGroups

@@ -46,7 +46,7 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 	if args[1] == "notify" {
 		return handleWatchNotifyCmd(ctx, update, user, args[2:])
 	}
-	if user.DefaultStorage == "" {
+	if user.DefaultStorageID == 0 {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorDefaultStorageNotSet)), nil)
 		return dispatcher.EndGroups
 	}
@@ -88,9 +88,9 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 		}
 	}
 	if err := user.WatchChat(ctx, database.WatchChat{
-		UserID: user.ID,
-		ChatID: chatID,
-		Filter: filter,
+		UserID:        user.ID,
+		ChatID:        chatID,
+		MessageFilter: filter,
 	}); err != nil {
 		logger.Errorf("Failed to watch chat %d: %s", chatID, err)
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorWatchChatFailed, map[string]any{"Error": err.Error()})), nil)
@@ -119,9 +119,9 @@ func handleLswatchCmd(ctx *ext.Context, update *ext.Update) error {
 	for _, chat := range chats {
 		sb.WriteString("- ")
 		sb.WriteString(fmt.Sprintf("%d", chat.ChatID))
-		if chat.Filter != "" {
+		if chat.MessageFilter != "" {
 			sb.WriteString(i18n.T(i18nk.BotMsgWatchInfoWatchListFilterPrefix))
-			sb.WriteString(chat.Filter)
+			sb.WriteString(chat.MessageFilter)
 			sb.WriteString(")")
 		}
 		sb.WriteString("\n")
@@ -225,8 +225,8 @@ func ListenUserbotMediaEvents(runCtx context.Context, resolve func() *ext.Contex
 		}
 		msgText := event.File.Message().GetMessage()
 		for _, chat := range chats {
-			if chat.Filter != "" {
-				filter := strings.Split(chat.Filter, ":")
+			if chat.MessageFilter != "" {
+				filter := strings.Split(chat.MessageFilter, ":")
 				if len(filter) != 2 {
 					logger.Warnf("Invalid filter format in chat %d, skipping", chat.ChatID)
 					continue
@@ -250,18 +250,18 @@ func ListenUserbotMediaEvents(runCtx context.Context, resolve func() *ext.Contex
 				logger.Errorf("Failed to get user by ID %d: %v", chat.UserID, err)
 				continue
 			}
-			if user.DefaultStorage == "" {
+			if user.DefaultStorageID == 0 {
 				logger.Warnf("User %d has no default storage set, skipping media message handling", chat.UserID)
 				continue
 			}
-			stor, err := storage.GetStorageByUserIDAndName(ctx, user.ChatID, user.DefaultStorage)
+			stor, err := storage.GetStorageByUserIDAndID(ctx, user.ChatID, user.DefaultStorageID)
 			if err != nil {
-				logger.Errorf("Failed to get storage by user ID %d and name %s: %v", user.ChatID, user.DefaultStorage, err)
+				logger.Errorf("Failed to get storage ID %d for user %d: %v", user.DefaultStorageID, user.ChatID, err)
 				continue
 			}
 			var defaultDirPath string
-			if user.DefaultDir != 0 {
-				dir, err := database.GetDirByID(ctx, user.DefaultDir)
+			if user.DefaultDirID != 0 {
+				dir, err := database.GetDirByID(ctx, user.DefaultDirID)
 				if err != nil {
 					logger.Warnf("Failed to get default dir for user %d: %v, using root", user.ChatID, err)
 				} else {

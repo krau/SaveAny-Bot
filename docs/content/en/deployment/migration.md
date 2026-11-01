@@ -7,7 +7,7 @@ weight: 15
 
 v1 stores configuration in a local SQLite database. On first startup, it imports a legacy v0 `config.toml` once, then all settings are managed from the web console.
 
-v1 does not migrate Telegram sessions. The v0 `session.db` and `usersession.db` files were created by gotgproto and are no longer read. Migration reuses only the business database; the bot signs in again with the configured token, and an enabled Userbot must sign in again from the web console. Back up all existing files before upgrading.
+v1 does not migrate Telegram sessions. The v0 `session.db` and `usersession.db` files were created by gotgproto and are no longer read. Migration imports the legacy configuration; v1 uses a new database. The bot signs in again with the configured token, and an enabled Userbot must sign in again from the web console. Back up all existing files before upgrading.
 
 ## 1. Stop and back up
 
@@ -24,13 +24,13 @@ Do not run v0 and v1 at the same time, and never share one `data/` directory bet
 
 ## 2. Keep the data directory
 
-v1 reuses only the business database:
+v1 does not reuse the v0 database. Keep the old file as a backup and let v1 create a new `data/saveany.db`:
 
 | v0 file | v1 default | Purpose |
 |---|---|---|
-| `data/saveany.db` | `data/saveany.db` | Users, directories, rules, watches, and task history |
+| `data/saveany.db` | not reused | Keep as a backup; v1 creates a new database |
 
-If v0 used a custom `db.path`, point v1 at the old database with `--db-path`, or copy the old database to `data/saveany.db`. In Docker, set `SAVEANY_DB_PATH` to the path inside the container.
+Do not point v1 at the v0 database with `--db-path` or `SAVEANY_DB_PATH`; the v0 schema is not migrated. Move or rename the old `data/saveany.db` out of the data directory before the first v1 start; v1 must create a new database at the default path. Keep the old file as a backup.
 
 The v0 `data/session.db` and `data/usersession.db` are ignored; delete them after confirming they are backed up. v1 uses new session files:
 
@@ -90,7 +90,8 @@ Open **Guide** after signing in and verify:
 - If the Userbot is enabled, it has signed in again and shows its account.
 - At least one storage is enabled and has no initialization error.
 - The Users list contains your old accounts. Old users that were not present in the v0 config are disabled; enable them manually if needed.
-- Task history, directories, rules, and watches are still present.
+- Storages, users, and settings imported from `config.toml` are present.
+- Recreate directories, rules, and watched chats in v1; v0 database rows are not migrated.
 
 Then send a file or Telegram message link to the bot and confirm a task completes.
 
@@ -111,9 +112,9 @@ Check that the config path is correct and the file is valid TOML. The import mar
 
 v1 does not read the old gotgproto `session.db` or `usersession.db`. The bot signs in again with the current token; if the Userbot is enabled, sign in again on the Telegram page. Keep the old files in your backup and delete them when they are no longer needed.
 
-**The database path is different**
+**The old database is not migrated**
 
-v1 does not treat v0's `[db] path` as the new database location. Use `--db-path` / `SAVEANY_DB_PATH`, or move the old file.
+v1 does not reuse the v0 database or its `[db] path`. Keep the old file as a backup and let v1 create a new database.
 
 **Local storage paths stopped working**
 

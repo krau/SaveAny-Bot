@@ -213,16 +213,34 @@ func ImportLegacy(ctx context.Context, src, dataDir string) error {
 				return err
 			}
 			if err := tx.Create(&database.StorageRecord{
-				Name: base.Name, Type: base.Type, Enable: base.Enable, Config: string(raw),
+				Name: base.Name, Type: base.Type, Enable: base.Enable, ConfigJSON: string(raw),
 			}).Error; err != nil {
 				return err
 			}
 		}
+		storageIDs := make(map[string]uint, len(baseConfigs))
+		for _, base := range baseConfigs {
+			var record database.StorageRecord
+			if err := tx.Where("name = ?", base.Name).First(&record).Error; err != nil {
+				return err
+			}
+			storageIDs[base.Name] = record.ID
+		}
 		for _, u := range cfg.Users {
-			raw, err := json.Marshal(u.Storages)
+			filterIDs := make([]uint, 0, len(u.StorageFilterIDs)+len(u.StorageFilterNames))
+			filterIDs = append(filterIDs, u.StorageFilterIDs...)
+			if len(filterIDs) == 0 {
+				for _, name := range u.StorageFilterNames {
+					if id := storageIDs[name]; id != 0 {
+						filterIDs = append(filterIDs, id)
+					}
+				}
+			}
+			raw, err := json.Marshal(filterIDs)
 			if err != nil {
 				return err
 			}
+			mode := u.FilterMode()
 			var user database.User
 			findErr := tx.Where("chat_id = ?", u.ID).First(&user).Error
 			if findErr != nil && !database.IsNotFound(findErr) {
@@ -230,14 +248,14 @@ func ImportLegacy(ctx context.Context, src, dataDir string) error {
 			}
 			if database.IsNotFound(findErr) {
 				if err := tx.Create(&database.User{
-					ChatID: u.ID, Enabled: true, StoragesJSON: string(raw), Blacklist: u.Blacklist,
+					ChatID: u.ID, Enabled: true, StorageFilterIDsJSON: string(raw), StorageFilterMode: mode,
 				}).Error; err != nil {
 					return err
 				}
 				continue
 			}
 			if err := tx.Model(&user).Updates(map[string]any{
-				"enabled": true, "storages": string(raw), "blacklist": u.Blacklist,
+				"enabled": true, "storage_filter_ids": string(raw), "storage_filter_mode": string(mode),
 			}).Error; err != nil {
 				return err
 			}

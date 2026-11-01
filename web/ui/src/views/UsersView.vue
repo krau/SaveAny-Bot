@@ -24,8 +24,16 @@ const enabledStorages = computed(() => storages.value.filter((storage) => storag
 const enabledUsers = computed(() => users.value.filter((user) => user.enabled).length)
 const defaultStorageOptions = computed(() => [
   { value: '', label: t('users.unset') },
-  ...enabledStorages.value.map((storage) => ({ value: storage.name, label: storage.name })),
+  ...enabledStorages.value.map((storage) => ({ value: String(storage.id), label: storage.name })),
 ])
+function storageName(id: number | string | undefined): string {
+  if (!id) return ''
+  const numeric = Number(id)
+  return storages.value.find((storage) => storage.id === numeric)?.name ?? `#${numeric}`
+}
+function storageNames(ids: number[]): string[] {
+  return ids.map(storageName).filter((name) => name !== '')
+}
 const filenameStrategyOptions = computed(() => [
   { value: 'default', label: t('users.filenameStrategy.default') },
   { value: 'message', label: t('users.filenameStrategy.message') },
@@ -38,19 +46,23 @@ const conflictStrategyOptions = computed(() => [
   { value: 'overwrite', label: t('users.conflictStrategy.overwrite') },
   { value: 'skip', label: t('users.conflictStrategy.skip') },
 ])
+const storageFilterModeOptions = computed(() => [
+  { value: 'blacklist', label: t('users.filter.blacklistOption') },
+  { value: 'whitelist', label: t('users.filter.whitelistOption') },
+])
 
 const form = reactive({
   chat_id: '',
   enabled: true,
   silent: false,
-  default_storage: '',
+  default_storage_id: '',
   apply_rule: false,
   watch_notify: false,
   filename_strategy: '',
   filename_template: '',
   conflict_strategy: '',
-  blacklist: false,
-  storages: [] as string[],
+  mode: 'blacklist',
+  storage_ids: [] as number[],
 })
 
 async function load() {
@@ -69,9 +81,9 @@ function openCreate() {
   clear()
   editing.value = null
   Object.assign(form, {
-    chat_id: '', enabled: true, silent: false, default_storage: '', apply_rule: false,
+    chat_id: '', enabled: true, silent: false, default_storage_id: '', apply_rule: false,
     watch_notify: false, filename_strategy: '', filename_template: '', conflict_strategy: '',
-    blacklist: false, storages: [],
+    mode: 'blacklist', storage_ids: [],
   })
   formOpen.value = true
 }
@@ -83,22 +95,22 @@ function openEdit(user: UserItem) {
     chat_id: String(user.chat_id),
     enabled: user.enabled,
     silent: user.silent,
-    default_storage: user.default_storage,
+    default_storage_id: user.default_storage_id ? String(user.default_storage_id) : '',
     apply_rule: user.apply_rule,
     watch_notify: user.watch_notify,
     filename_strategy: user.filename_strategy,
     filename_template: user.filename_template,
     conflict_strategy: user.conflict_strategy,
-    blacklist: user.storage_filter.blacklist,
-    storages: [...user.storage_filter.storages],
+    mode: user.storage_filter.mode || 'blacklist',
+    storage_ids: [...(user.storage_filter.storage_ids ?? [])],
   })
   formOpen.value = true
 }
 
-function toggleStorage(name: string) {
-  const index = form.storages.indexOf(name)
-  if (index >= 0) form.storages.splice(index, 1)
-  else form.storages.push(name)
+function toggleStorage(id: number) {
+  const index = form.storage_ids.indexOf(id)
+  if (index >= 0) form.storage_ids.splice(index, 1)
+  else form.storage_ids.push(id)
 }
 
 async function save() {
@@ -108,11 +120,11 @@ async function save() {
     return
   }
   busy.value = true
-  const filter: UserStorageFilter = { storages: form.storages, blacklist: form.blacklist }
+  const filter: UserStorageFilter = { storage_ids: form.storage_ids, mode: form.mode }
   const patch: UserPatch = {
     enabled: form.enabled,
     silent: form.silent,
-    default_storage: form.default_storage,
+    default_storage_id: form.default_storage_id ? Number(form.default_storage_id) : 0,
     apply_rule: form.apply_rule,
     watch_notify: form.watch_notify,
     filename_strategy: form.filename_strategy,
@@ -193,10 +205,10 @@ async function remove(user: UserItem) {
               </span>
               <span v-if="user.silent" class="badge info" style="margin-left: 6px">{{ t('users.status.silent') }}</span>
             </td>
-            <td>{{ user.default_storage || '—' }}</td>
+            <td>{{ storageName(user.default_storage_id) || '—' }}</td>
             <td class="muted">
-              {{ user.storage_filter.blacklist ? t('users.filter.blacklist') : t('users.filter.whitelist') }}{{ t('users.filter.separator') }}
-              {{ user.storage_filter.storages.length ? user.storage_filter.storages.join(t('users.storageSeparator')) : (user.storage_filter.blacklist ? t('users.filter.all') : t('users.filter.none')) }}
+              {{ (user.storage_filter.mode || 'blacklist') === 'blacklist' ? t('users.filter.blacklist') : t('users.filter.whitelist') }}{{ t('users.filter.separator') }}
+              {{ (user.storage_filter.storage_ids ?? []).length ? storageNames(user.storage_filter.storage_ids).join(t('users.storageSeparator')) : ((user.storage_filter.mode || 'blacklist') === 'blacklist' ? t('users.filter.all') : t('users.filter.none')) }}
             </td>
             <td>
               <div class="actions">
@@ -229,15 +241,15 @@ async function remove(user: UserItem) {
           <dl class="user-mobile-details">
             <div>
               <dt>{{ t('users.columns.defaultStorage') }}</dt>
-              <dd>{{ user.default_storage || t('users.unset') }}</dd>
+              <dd>{{ storageName(user.default_storage_id) || t('users.unset') }}</dd>
             </div>
             <div>
               <dt>{{ t('users.columns.storageFilter') }}</dt>
               <dd>
-                {{ user.storage_filter.blacklist ? t('users.filter.blacklist') : t('users.filter.whitelist') }}{{ t('users.filter.separator') }}{{
-                  user.storage_filter.storages.length
-                    ? user.storage_filter.storages.join(t('users.storageSeparator'))
-                    : user.storage_filter.blacklist
+                {{ (user.storage_filter.mode || 'blacklist') === 'blacklist' ? t('users.filter.blacklist') : t('users.filter.whitelist') }}{{ t('users.filter.separator') }}{{
+                  (user.storage_filter.storage_ids ?? []).length
+                    ? storageNames(user.storage_filter.storage_ids).join(t('users.storageSeparator'))
+                    : (user.storage_filter.mode || 'blacklist') === 'blacklist'
                       ? t('users.filter.all')
                       : t('users.filter.none')
                 }}
@@ -284,7 +296,7 @@ async function remove(user: UserItem) {
                 <label for="user-default-storage">{{ t('users.form.defaultStorage') }}</label>
                 <AppSelect
                   id="user-default-storage"
-                  v-model="form.default_storage"
+                  v-model="form.default_storage_id"
                   :options="defaultStorageOptions"
                 />
               </div>
@@ -296,11 +308,19 @@ async function remove(user: UserItem) {
               <label class="checkbox"><input v-model="form.watch_notify" type="checkbox" /><span>{{ t('users.form.watchNotify') }}</span></label>
             </div>
             <div class="field">
-              <label>{{ t('users.form.storageFilter', { mode: form.blacklist ? t('users.filter.blacklist') : t('users.filter.whitelist') }) }}</label>
-              <label class="checkbox"><input v-model="form.blacklist" type="checkbox" /><span>{{ t('users.form.blacklistMode') }}</span></label>
+              <label for="user-filter-mode">{{ t('users.form.storageFilterMode') }}</label>
+              <AppSelect
+                id="user-filter-mode"
+                v-model="form.mode"
+                :options="storageFilterModeOptions"
+              />
+              <span class="hint">{{ t('users.form.storageFilterHint') }}</span>
+            </div>
+            <div class="field">
+              <label>{{ t('users.form.storageFilter', { mode: form.mode === 'blacklist' ? t('users.filter.blacklist') : t('users.filter.whitelist') }) }}</label>
               <div class="checkbox-list">
-                <label v-for="storage in enabledStorages" :key="storage.name">
-                  <input type="checkbox" :checked="form.storages.includes(storage.name)" @change="toggleStorage(storage.name)" />
+                <label v-for="storage in enabledStorages" :key="storage.id">
+                  <input type="checkbox" :checked="form.storage_ids.includes(storage.id)" @change="toggleStorage(storage.id)" />
                   <span>{{ storage.name }}</span>
                 </label>
               </div>

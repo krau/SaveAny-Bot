@@ -156,7 +156,7 @@ func taskResponse(record *database.TaskRecord) TaskInfoResponse {
 		Type:       tasktype.TaskType(record.Type),
 		Status:     TaskStatus(record.Status),
 		Title:      record.Title,
-		Storage:    record.Storage,
+		Storage:    record.StorageName,
 		Path:       record.Path,
 		Source:     record.Source,
 		Error:      record.Error,

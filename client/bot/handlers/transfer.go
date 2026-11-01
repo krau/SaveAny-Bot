@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -12,6 +13,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tasks/transfer"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
@@ -23,6 +25,24 @@ import (
 	"github.com/rs/xid"
 )
 
+// splitTransferSource splits "storage:/path" while allowing storage names
+// that contain spaces or colons. Known storage names are matched longest-first.
+func splitTransferSource(userID int64, raw string) (string, string, bool) {
+	names := config.C().GetStorageNamesByUserID(userID)
+	sort.SliceStable(names, func(i, j int) bool { return len(names[i]) > len(names[j]) })
+	for _, name := range names {
+		prefix := name + ":"
+		if strings.HasPrefix(raw, prefix) {
+			return name, strings.TrimPrefix(raw, prefix), true
+		}
+	}
+	parts := strings.SplitN(raw, ":", 2)
+	if len(parts) != 2 || parts[0] == "" {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
+}
+
 func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	args := strutil.ParseArgsRespectQuotes(update.EffectiveMessage.Text)
@@ -32,16 +52,12 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 
-	// Parse source: storage_name:/path
-	sourceParts := strings.SplitN(args[1], ":", 2)
-	if len(sourceParts) != 2 {
+	userID := update.GetUserChat().GetID()
+	sourceStorageName, sourcePath, ok := splitTransferSource(userID, args[1])
+	if !ok {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgTransferErrorInvalidSource, nil)), nil)
 		return dispatcher.EndGroups
 	}
-	sourceStorageName := sourceParts[0]
-	sourcePath := sourceParts[1]
-
-	userID := update.GetUserChat().GetID()
 
 	sourceStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, sourceStorageName)
 	if err != nil {
@@ -123,10 +139,10 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, userID), tcbdata.Add{
-		TaskType:               tasktype.TaskTypeTransfer,
-		TransferSourceStorName: sourceStorageName,
-		TransferSourcePath:     sourcePath,
-		TransferFiles:          filePaths,
+		TaskType:                tasktype.TaskTypeTransfer,
+		TransferSourceStorageID: storage.ID(sourceStorage),
+		TransferSourcePath:      sourcePath,
+		TransferFiles:           filePaths,
 	})
 	if err != nil {
 		logger.Errorf("Failed to build storage selection keyboard: %s", err)
@@ -152,12 +168,12 @@ func handleTransferCmd(ctx *ext.Context, update *ext.Update) error {
 func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storage.Storage, dirPath string, data tcbdata.Add, msgID int) error {
 	logger := log.FromContext(ctx)
 
-	sourceStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, data.TransferSourceStorName)
+	sourceStorage, err := storage.GetStorageByUserIDAndID(ctx, userID, data.TransferSourceStorageID)
 	if err != nil {
 		logger.Errorf("Failed to get source storage: %s", err)
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
-			Message: i18n.T(i18nk.BotMsgTransferErrorStorageNotFound, map[string]any{"StorageName": data.TransferSourceStorName, "Error": err}),
+			Message: i18n.T(i18nk.BotMsgTransferErrorStorageNotFound, map[string]any{"StorageName": config.C().GetStorageNameByID(data.TransferSourceStorageID), "Error": err}),
 		})
 		return dispatcher.EndGroups
 	}
@@ -166,7 +182,7 @@ func handleTransferCallback(ctx *ext.Context, userID int64, targetStorage storag
 	if !ok {
 		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
-			Message: i18n.T(i18nk.BotMsgTransferErrorStorageNotListable, map[string]any{"StorageName": data.TransferSourceStorName}),
+			Message: i18n.T(i18nk.BotMsgTransferErrorStorageNotListable, map[string]any{"StorageName": config.C().GetStorageNameByID(data.TransferSourceStorageID)}),
 		})
 		return dispatcher.EndGroups
 	}

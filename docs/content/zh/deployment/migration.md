@@ -7,7 +7,7 @@ weight: 15
 
 v1 使用本地 SQLite 数据库保存配置。首次启动时，如果检测到 v0 的 `config.toml`，会把它导入数据库一次；之后所有配置都在 Web 控制台管理。
 
-v1 不迁移 Telegram 会话。v0 的 `session.db` 和 `usersession.db` 由旧版 gotgproto 生成，v1 不再读取。迁移只复用业务数据库；Bot 会使用当前 Token 重新登录，启用 Userbot 时需要在 Web 控制台重新登录。升级前请完整备份现有文件。
+v1 不迁移 Telegram 会话。v0 的 `session.db` 和 `usersession.db` 由旧版 gotgproto 生成，v1 不再读取。迁移只导入旧版配置；v1 使用新的数据库。Bot 会使用当前 Token 重新登录，启用 Userbot 时需要在 Web 控制台重新登录。升级前请完整备份现有文件。
 
 ## 1. 停止并备份
 
@@ -24,13 +24,13 @@ cp -a config.toml data downloads /path/to/backup/
 
 ## 2. 保留数据目录
 
-v1 只复用业务数据库：
+v1 不复用 v0 数据库。请保留旧文件作为备份，由 v1 创建新的 `data/saveany.db`：
 
 | v0 文件 | v1 默认路径 | 说明 |
 |---|---|---|
-| `data/saveany.db` | `data/saveany.db` | 用户、目录、规则、监听和任务记录 |
+| `data/saveany.db` | 不复用 | 保留作为备份；v1 创建新数据库 |
 
-如果 v0 使用了自定义的 `db.path`，用 `--db-path` 指向旧数据库，或把旧数据库文件复制为 `data/saveany.db`。Docker 部署可通过 `SAVEANY_DB_PATH` 指定容器内路径。
+不要用 `--db-path` 或 `SAVEANY_DB_PATH` 指向 v0 数据库；v0 schema 不会迁移。请在首次启动 v1 前把旧的 `data/saveany.db` 移出数据目录或改名，v1 必须在默认路径创建新数据库。请保留旧文件作为备份。
 
 v0 的 `data/session.db` 和 `data/usersession.db` 会被忽略，确认已备份后可删除。v1 使用新的会话文件：
 
@@ -90,7 +90,8 @@ docker compose logs saveany-bot | grep -E "Web UI available at|Generated web adm
 - 若启用了 Userbot，已重新登录并显示账号。
 - 存储已启用且没有初始化错误。
 - 用户列表包含原有账号。v0 配置中不存在的旧用户会被禁用，需要时手动启用。
-- 任务记录、目录、规则和监听仍然存在。
+- 从 `config.toml` 导入的存储、用户和设置仍然存在。
+- 目录、规则和监听需要在 v1 中重新创建；v0 数据库行不会迁移。
 
 然后向 Bot 发送一个文件或 Telegram 消息链接，确认任务能正常完成。
 
@@ -111,9 +112,9 @@ docker compose logs saveany-bot | grep -E "Web UI available at|Generated web adm
 
 v1 不读取旧版 gotgproto 的 `session.db` 或 `usersession.db`。Bot 会使用当前 Token 自动重新登录；启用 Userbot 时，在 Telegram 页面重新登录即可。旧文件可以保留在备份中，确认不再需要后删除。
 
-**数据库路径不同**
+**旧数据库不会迁移**
 
-v1 不会把 v0 的 `[db] path` 当作新数据库路径。请用 `--db-path` / `SAVEANY_DB_PATH` 指向旧文件，或移动文件。
+v1 不复用 v0 数据库或其 `[db] path`。请保留旧文件作为备份，让 v1 创建新数据库。
 
 **本地存储路径失效**
 

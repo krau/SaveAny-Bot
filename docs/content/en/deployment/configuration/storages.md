@@ -6,6 +6,8 @@ title: "Storage Configuration"
 
 Add storages on the **Storages** page in the web console and fill in the fields below.
 
+Storage names can contain spaces, Unicode, and symbols (up to 64 characters, excluding control characters). Quote names containing spaces when using bot commands such as `/dir` or `/transfer`. Rename a storage on the same page at any time; user defaults, directories, rules, and storage filters reference the stable storage ID, so they are unaffected by the name change.
+
 ## Alist
 
 `type=alist`

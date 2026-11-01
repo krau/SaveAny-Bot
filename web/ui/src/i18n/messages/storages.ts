@@ -16,7 +16,6 @@ export const zhHans = {
     form: {
       name: '名称',
       namePlaceholder: '例如 my-webdav',
-      nameLocked: '名称不可修改',
       nameRequired: '请填写存储名称',
       type: '类型',
       enable: '启用该存储',
@@ -94,7 +93,6 @@ export const en = {
     form: {
       name: 'Name',
       namePlaceholder: 'e.g. my-webdav',
-      nameLocked: 'The name cannot be changed',
       nameRequired: 'Enter a storage name',
       type: 'Type',
       enable: 'Enable this storage',

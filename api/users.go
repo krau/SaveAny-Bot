@@ -1,12 +1,13 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
-	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/pkg/enums/storagefilter"
 )
 
 func (s *server) listUsers(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +44,7 @@ func (s *server) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	candidate := &database.User{ChatID: body.ChatID, Enabled: true}
-	if fields := applyUserPatch(candidate, body.UserPatch); len(fields) > 0 {
+	if fields := applyUserPatch(r.Context(), candidate, body.UserPatch); len(fields) > 0 {
 		WriteFieldErrors(w, http.StatusBadRequest, "invalid user fields", fields)
 		return
 	}
@@ -56,7 +57,7 @@ func (s *server) createUser(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	if fields := applyUserPatch(user, body.UserPatch); len(fields) > 0 {
+	if fields := applyUserPatch(r.Context(), user, body.UserPatch); len(fields) > 0 {
 		WriteFieldErrors(w, http.StatusBadRequest, "invalid user fields", fields)
 		return
 	}
@@ -84,7 +85,7 @@ func (s *server) updateUser(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "invalid_request", "invalid request body")
 		return
 	}
-	if fields := applyUserPatch(user, body); len(fields) > 0 {
+	if fields := applyUserPatch(r.Context(), user, body); len(fields) > 0 {
 		WriteFieldErrors(w, http.StatusBadRequest, "invalid user fields", fields)
 		return
 	}
@@ -116,27 +117,30 @@ func (s *server) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func userResponse(user *database.User) UserResponse {
-	names := make([]string, 0)
-	if user.StoragesJSON != "" {
-		_ = json.Unmarshal([]byte(user.StoragesJSON), &names)
+	ids := make([]uint, 0)
+	if user.StorageFilterIDsJSON != "" {
+		_ = json.Unmarshal([]byte(user.StorageFilterIDsJSON), &ids)
+	}
+	if ids == nil {
+		ids = make([]uint, 0)
 	}
 	return UserResponse{
 		ID:               user.ID,
 		ChatID:           user.ChatID,
 		Enabled:          user.Enabled,
 		Silent:           user.Silent,
-		DefaultStorage:   user.DefaultStorage,
-		DefaultDir:       user.DefaultDir,
+		DefaultStorageID: user.DefaultStorageID,
+		DefaultDirID:     user.DefaultDirID,
 		ApplyRule:        user.ApplyRule,
 		FilenameStrategy: user.FilenameStrategy,
 		FilenameTemplate: user.FilenameTemplate,
 		ConflictStrategy: user.ConflictStrategy,
 		WatchNotify:      user.WatchNotify,
-		StorageFilter:    UserStorageFilter{Storages: names, Blacklist: user.Blacklist},
+		StorageFilter:    UserStorageFilter{StorageIDs: ids, Mode: user.StorageFilterMode.Normalize()},
 	}
 }
 
-func applyUserPatch(user *database.User, patch UserPatch) map[string]string {
+func applyUserPatch(ctx context.Context, user *database.User, patch UserPatch) map[string]string {
 	fields := make(map[string]string)
 	if patch.Enabled != nil {
 		user.Enabled = *patch.Enabled
@@ -144,15 +148,18 @@ func applyUserPatch(user *database.User, patch UserPatch) map[string]string {
 	if patch.Silent != nil {
 		user.Silent = *patch.Silent
 	}
-	if patch.DefaultStorage != nil {
-		if *patch.DefaultStorage != "" && config.C().GetStorageByName(*patch.DefaultStorage) == nil {
-			fields["default_storage"] = "unknown storage"
-		} else {
-			user.DefaultStorage = *patch.DefaultStorage
+	if patch.DefaultStorageID != nil {
+		if *patch.DefaultStorageID != 0 {
+			if _, err := database.GetStorageRecord(ctx, *patch.DefaultStorageID); err != nil {
+				fields["default_storage_id"] = "unknown storage"
+			}
+		}
+		if _, exists := fields["default_storage_id"]; !exists {
+			user.DefaultStorageID = *patch.DefaultStorageID
 		}
 	}
-	if patch.DefaultDir != nil {
-		user.DefaultDir = *patch.DefaultDir
+	if patch.DefaultDirID != nil {
+		user.DefaultDirID = *patch.DefaultDirID
 	}
 	if patch.ApplyRule != nil {
 		user.ApplyRule = *patch.ApplyRule
@@ -170,18 +177,28 @@ func applyUserPatch(user *database.User, patch UserPatch) map[string]string {
 		user.WatchNotify = *patch.WatchNotify
 	}
 	if patch.StorageFilter != nil {
-		for _, name := range patch.StorageFilter.Storages {
-			if config.C().GetStorageByName(name) == nil {
-				fields["storage_filter.storages"] = "unknown storage: " + name
+		for _, id := range patch.StorageFilter.StorageIDs {
+			if _, err := database.GetStorageRecord(ctx, id); err != nil {
+				fields["storage_filter.storage_ids"] = "unknown storage"
 				break
 			}
 		}
-		raw, err := json.Marshal(patch.StorageFilter.Storages)
+		mode := patch.StorageFilter.Mode
+		if mode == "" {
+			mode = storagefilter.Blacklist
+		} else if !mode.Valid() {
+			fields["storage_filter.mode"] = "must be blacklist or whitelist"
+		}
+		storageIDs := patch.StorageFilter.StorageIDs
+		if storageIDs == nil {
+			storageIDs = make([]uint, 0)
+		}
+		raw, err := json.Marshal(storageIDs)
 		if err != nil {
-			fields["storage_filter.storages"] = err.Error()
+			fields["storage_filter.storage_ids"] = err.Error()
 		} else {
-			user.StoragesJSON = string(raw)
-			user.Blacklist = patch.StorageFilter.Blacklist
+			user.StorageFilterIDsJSON = string(raw)
+			user.StorageFilterMode = mode
 		}
 	}
 	return fields

@@ -37,12 +37,12 @@ func IsConflictStrategy(strategy string) bool {
 }
 
 type Add struct {
-	TaskType         tasktype.TaskType
-	SelectedStorName string
-	DirID            uint
-	SettedDir        bool
-	SelectedDirPath  string
-	ConflictStrategy string
+	TaskType          tasktype.TaskType
+	SelectedStorageID uint
+	DirID             uint
+	SettedDir         bool
+	SelectedDirPath   string
+	ConflictStrategy  string
 	// tfiles
 	Files   []tfile.TGFileMessage
 	AsBatch bool
@@ -60,12 +60,12 @@ type Add struct {
 	YtdlpURLs  []string
 	YtdlpFlags []string
 	// transfer
-	TransferSourceStorName string
-	TransferSourcePath     string
-	TransferFiles          []string // file paths relative to source storage
+	TransferSourceStorageID uint
+	TransferSourcePath      string
+	TransferFiles           []string // file paths relative to source storage
 }
 
 type SetDefaultStorage struct {
-	StorageName string
-	DirID       uint
+	StorageID uint
+	DirID     uint
 }

@@ -35,29 +35,29 @@ func DeleteStorageRecord(ctx context.Context, id uint) error {
 	return db.WithContext(ctx).Unscoped().Delete(&StorageRecord{}, id).Error
 }
 
-// StorageReferences returns how many entities still reference the storage name.
-func StorageReferences(ctx context.Context, name string) (users, dirs, rules int64, err error) {
+// StorageReferences returns how many entities still reference the storage ID.
+func StorageReferences(ctx context.Context, storageID uint) (users, dirs, rules int64, err error) {
 	var allUsers []User
 	if err = db.WithContext(ctx).Find(&allUsers).Error; err != nil {
 		return 0, 0, 0, err
 	}
 	for _, u := range allUsers {
-		if u.DefaultStorage == name {
+		if u.DefaultStorageID == storageID {
 			users++
 			continue
 		}
-		var names []string
-		if u.StoragesJSON != "" {
-			_ = json.Unmarshal([]byte(u.StoragesJSON), &names)
+		var ids []uint
+		if u.StorageFilterIDsJSON != "" {
+			_ = json.Unmarshal([]byte(u.StorageFilterIDsJSON), &ids)
 		}
-		if slices.Contains(names, name) {
+		if slices.Contains(ids, storageID) {
 			users++
 		}
 	}
-	if err = db.WithContext(ctx).Model(&Dir{}).Where("storage_name = ?", name).Count(&dirs).Error; err != nil {
+	if err = db.WithContext(ctx).Model(&Dir{}).Where("storage_id = ?", storageID).Count(&dirs).Error; err != nil {
 		return
 	}
-	if err = db.WithContext(ctx).Model(&Rule{}).Where("storage_name = ?", name).Count(&rules).Error; err != nil {
+	if err = db.WithContext(ctx).Model(&Rule{}).Where("storage_id = ?", storageID).Count(&rules).Error; err != nil {
 		return
 	}
 	return users, dirs, rules, nil

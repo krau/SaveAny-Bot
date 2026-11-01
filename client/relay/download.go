@@ -144,7 +144,7 @@ func (f *relayFile) cleanup(ctx context.Context) {
 	if summary != "" {
 		log.FromContext(ctx).Infof("Relay download finished: %s", summary)
 	}
-	if f.keepMessages && summary != "" {
+	if f.keepMessages {
 		log.FromContext(ctx).Debugf("Relay message %d kept by configuration", f.relayMessageID)
 		return
 	}

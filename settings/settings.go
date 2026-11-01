@@ -9,6 +9,8 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/log"
 	"golang.org/x/crypto/bcrypt"
@@ -167,17 +169,18 @@ func Load(ctx context.Context, dataDir string) (config.Config, error) {
 	}
 	cfg.Users = make([]config.UserConfig, 0, len(users))
 	for _, u := range users {
-		var names []string
-		if u.StoragesJSON != "" {
-			if err := json.Unmarshal([]byte(u.StoragesJSON), &names); err != nil {
+		var ids []uint
+		if u.StorageFilterIDsJSON != "" {
+			if err := json.Unmarshal([]byte(u.StorageFilterIDsJSON), &ids); err != nil {
 				log.Error("Invalid storage filter for user", "chat_id", u.ChatID, "error", err)
 			}
 		}
 		cfg.Users = append(cfg.Users, config.UserConfig{
-			ID:        u.ChatID,
-			Enabled:   u.Enabled,
-			Storages:  names,
-			Blacklist: u.Blacklist,
+			ID:                u.ChatID,
+			Enabled:           u.Enabled,
+			DefaultStorageID:  u.DefaultStorageID,
+			StorageFilterIDs:  ids,
+			StorageFilterMode: u.StorageFilterMode.Normalize(),
 		})
 	}
 
@@ -195,7 +198,7 @@ func Load(ctx context.Context, dataDir string) (config.Config, error) {
 		if !rec.Enable {
 			continue
 		}
-		cfgStorage, err := storcfg.NewStorageConfigFromJSON(rec.Name, rec.Type, true, []byte(rec.Config))
+		cfgStorage, err := storcfg.NewStorageConfigFromJSON(rec.ID, rec.Name, rec.Type, true, []byte(rec.ConfigJSON))
 		if err != nil {
 			log.Error("Invalid storage config, skipping", "storage", rec.Name, "error", err)
 			continue
@@ -559,19 +562,39 @@ func (s *Service) ChangeAdminPassword(current, next string) error {
 	return database.SetSetting(s.ctx, "auth", string(data))
 }
 
+func normalizeStorageName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", errors.New("storage name is required")
+	}
+	if utf8.RuneCountInString(name) > 64 {
+		return "", errors.New("storage name must be at most 64 characters")
+	}
+	for _, r := range name {
+		if unicode.IsControl(r) {
+			return "", errors.New("storage name must not contain control characters")
+		}
+	}
+	return name, nil
+}
+
 func (s *Service) CreateStorage(ctx context.Context, in StorageInput) (*database.StorageRecord, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if strings.TrimSpace(in.Name) == "" || strings.TrimSpace(in.Type) == "" {
-		return nil, errors.New("name and type are required")
+	name, err := normalizeStorageName(in.Name)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(in.Type) == "" {
+		return nil, errors.New("type is required")
 	}
 	records, err := database.ListStorageRecords(ctx)
 	if err != nil {
 		return nil, err
 	}
 	for _, rec := range records {
-		if rec.Name == in.Name {
-			return nil, fmt.Errorf("%w: %s", ErrStorageExists, in.Name)
+		if rec.Name == name {
+			return nil, fmt.Errorf("%w: %s", ErrStorageExists, name)
 		}
 	}
 	raw, err := json.Marshal(in.Config)
@@ -581,7 +604,7 @@ func (s *Service) CreateStorage(ctx context.Context, in StorageInput) (*database
 	if err := validateStorage(ctx, in.Name, in.Type, in.Enable, raw); err != nil {
 		return nil, err
 	}
-	record := &database.StorageRecord{Name: in.Name, Type: in.Type, Enable: in.Enable, Config: string(raw)}
+	record := &database.StorageRecord{Name: name, Type: in.Type, Enable: in.Enable, ConfigJSON: string(raw)}
 	if err := database.CreateStorageRecord(ctx, record); err != nil {
 		return nil, err
 	}
@@ -598,12 +621,28 @@ func (s *Service) UpdateStorage(ctx context.Context, id uint, in StorageInput) (
 	if err != nil {
 		return nil, err
 	}
-	if in.Name != "" && in.Name != record.Name {
-		return nil, errors.New("storage name is immutable")
+	oldName := record.Name
+	name := oldName
+	if strings.TrimSpace(in.Name) != "" {
+		name, err = normalizeStorageName(in.Name)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if name != oldName {
+		records, err := database.ListStorageRecords(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, existing := range records {
+			if existing.ID != record.ID && existing.Name == name {
+				return nil, fmt.Errorf("%w: %s", ErrStorageExists, name)
+			}
+		}
 	}
 	var current map[string]any
-	if record.Config != "" {
-		if err := json.Unmarshal([]byte(record.Config), &current); err != nil {
+	if record.ConfigJSON != "" {
+		if err := json.Unmarshal([]byte(record.ConfigJSON), &current); err != nil {
 			current = make(map[string]any)
 		}
 	}
@@ -620,10 +659,11 @@ func (s *Service) UpdateStorage(ctx context.Context, id uint, in StorageInput) (
 	if err != nil {
 		return nil, err
 	}
-	if err := validateStorage(ctx, record.Name, record.Type, in.Enable, raw); err != nil {
+	if err := validateStorage(ctx, name, record.Type, in.Enable, raw); err != nil {
 		return nil, err
 	}
-	record.Config = string(raw)
+	record.Name = name
+	record.ConfigJSON = string(raw)
 	record.Enable = in.Enable
 	if err := database.UpdateStorageRecord(ctx, record); err != nil {
 		return nil, err
@@ -641,7 +681,7 @@ func (s *Service) DeleteStorage(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	users, dirs, rules, err := database.StorageReferences(ctx, record.Name)
+	users, dirs, rules, err := database.StorageReferences(ctx, record.ID)
 	if err != nil {
 		return err
 	}
@@ -659,7 +699,7 @@ func (s *Service) TestStorage(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	cfg, err := storcfg.NewStorageConfigFromJSON(record.Name, record.Type, true, []byte(record.Config))
+	cfg, err := storcfg.NewStorageConfigFromJSON(record.ID, record.Name, record.Type, true, []byte(record.ConfigJSON))
 	if err != nil {
 		return err
 	}
@@ -684,7 +724,7 @@ func (s *Service) TestStorage(ctx context.Context, id uint) error {
 }
 
 func validateStorage(ctx context.Context, name, typ string, enable bool, raw []byte) error {
-	cfg, err := storcfg.NewStorageConfigFromJSON(name, typ, enable, raw)
+	cfg, err := storcfg.NewStorageConfigFromJSON(0, name, typ, enable, raw)
 	if err != nil {
 		return err
 	}

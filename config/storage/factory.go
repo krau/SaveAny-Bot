@@ -94,7 +94,7 @@ func NewStorageConfig(base *BaseConfig) (StorageConfig, error) {
 }
 
 // NewStorageConfigFromJSON builds a storage config from JSON-encoded type-specific fields.
-func NewStorageConfigFromJSON(name, typ string, enable bool, raw []byte) (StorageConfig, error) {
+func NewStorageConfigFromJSON(id uint, name, typ string, enable bool, raw []byte) (StorageConfig, error) {
 	st, err := storenum.ParseStorageType(typ)
 	if err != nil {
 		return nil, fmt.Errorf("invalid storage type %s: %w", typ, err)
@@ -110,7 +110,7 @@ func NewStorageConfigFromJSON(name, typ string, enable bool, raw []byte) (Storag
 		}
 	}
 	reflect.ValueOf(configValue).Elem().FieldByName("BaseConfig").Set(reflect.ValueOf(BaseConfig{
-		Name: name, Type: typ, Enable: enable,
+		ID: id, Name: name, Type: typ, Enable: enable,
 	}))
 	return configValue, nil
 }

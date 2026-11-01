@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/krau/SaveAny-Bot/pkg/enums/storagefilter"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/settings"
 )
@@ -134,8 +135,8 @@ type TasksListResponse struct {
 }
 
 type UserStorageFilter struct {
-	Storages  []string `json:"storages"`
-	Blacklist bool     `json:"blacklist"`
+	StorageIDs []uint             `json:"storage_ids"`
+	Mode       storagefilter.Mode `json:"mode"`
 }
 
 type UserResponse struct {
@@ -143,8 +144,8 @@ type UserResponse struct {
 	ChatID           int64             `json:"chat_id"`
 	Enabled          bool              `json:"enabled"`
 	Silent           bool              `json:"silent"`
-	DefaultStorage   string            `json:"default_storage"`
-	DefaultDir       uint              `json:"default_dir"`
+	DefaultStorageID uint              `json:"default_storage_id"`
+	DefaultDirID     uint              `json:"default_dir_id"`
 	ApplyRule        bool              `json:"apply_rule"`
 	FilenameStrategy string            `json:"filename_strategy"`
 	FilenameTemplate string            `json:"filename_template"`
@@ -156,8 +157,8 @@ type UserResponse struct {
 type UserPatch struct {
 	Enabled          *bool              `json:"enabled,omitempty"`
 	Silent           *bool              `json:"silent,omitempty"`
-	DefaultStorage   *string            `json:"default_storage,omitempty"`
-	DefaultDir       *uint              `json:"default_dir,omitempty"`
+	DefaultStorageID *uint              `json:"default_storage_id,omitempty"`
+	DefaultDirID     *uint              `json:"default_dir_id,omitempty"`
 	ApplyRule        *bool              `json:"apply_rule,omitempty"`
 	FilenameStrategy *string            `json:"filename_strategy,omitempty"`
 	FilenameTemplate *string            `json:"filename_template,omitempty"`

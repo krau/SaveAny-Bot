@@ -71,13 +71,23 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 		ruleData := args[3]
 		storageName := args[4]
 		dirPath := args[5]
+		storageID := uint(0)
+		if !strings.EqualFold(storageName, rule.RuleStorNameChosen) {
+			if !config.C().HasStorage(user.ChatID, storageName) {
+				ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorStorageNotFound, map[string]any{
+					"Storage": storageName,
+				})), nil)
+				return dispatcher.EndGroups
+			}
+			storageID = config.C().GetStorageIDByName(storageName)
+		}
 
 		rd := &database.Rule{
-			Type:        ruleType.String(),
-			Data:        ruleData,
-			StorageName: storageName,
-			DirPath:     dirPath,
-			UserID:      user.ID,
+			Type:      ruleType.String(),
+			Content:   ruleData,
+			StorageID: storageID,
+			DirPath:   dirPath,
+			UserID:    user.ID,
 		}
 		if err := database.CreateRule(ctx, rd); err != nil {
 			logger.Errorf("failed to create rule: %s", err)
@@ -102,15 +112,16 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 		if len(args) >= 4 {
 			basePath = args[3]
 		}
+		storageID := config.C().GetStorageIDByName(storageName)
 		presets := rule.PresetCategories(basePath)
 		imported := 0
 		for _, p := range presets {
 			rd := &database.Rule{
-				Type:        rule.FileNameRegex.String(),
-				Data:        p.Regex,
-				StorageName: storageName,
-				DirPath:     p.Dir,
-				UserID:      user.ID,
+				Type:      rule.FileNameRegex.String(),
+				Content:   p.Regex,
+				StorageID: storageID,
+				DirPath:   p.Dir,
+				UserID:    user.ID,
 			}
 			if err := database.CreateRule(ctx, rd); err != nil {
 				logger.Errorf("failed to create preset rule %s: %s", p.Name, err)

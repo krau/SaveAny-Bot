@@ -64,19 +64,19 @@ func handleSilentMode(next func(*ext.Context, *ext.Update) error, handler func(*
 		if !user.Silent {
 			return next(ctx, update)
 		}
-		if user.DefaultStorage == "" {
+		if user.DefaultStorageID == 0 {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorDefaultStorageNotSet, nil)), nil)
 			return next(ctx, update)
 		}
-		stor, err := storage.GetStorageByUserIDAndName(ctx, userID, user.DefaultStorage)
+		stor, err := storage.GetStorageByUserIDAndID(ctx, userID, user.DefaultStorageID)
 		if err != nil {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
 				"Error": err.Error(),
 			})), nil)
 			return dispatcher.EndGroups
 		}
-		if user.DefaultDir != 0 {
-			dir, err := database.GetDirByID(ctx, user.DefaultDir)
+		if user.DefaultDirID != 0 {
+			dir, err := database.GetDirByID(ctx, user.DefaultDirID)
 			if err != nil {
 				ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetDirFailed, map[string]any{
 					"Error": err.Error(),

@@ -12,6 +12,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tasks/batchtfile"
 	tftask "github.com/krau/SaveAny-Bot/core/tasks/tfile"
@@ -298,12 +299,12 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID int64, stor st
 
 func promptTGFileConflictStrategy(ctx *ext.Context, userID int64, storageName, dirPath string, files []tfile.TGFileMessage, asBatch bool, conflicts []string, trackMsgID int) error {
 	markup, err := msgelem.BuildConflictStrategyMarkup(tcbdata.Add{
-		TaskType:         tasktype.TaskTypeTgfiles,
-		SelectedStorName: storageName,
-		SettedDir:        true,
-		SelectedDirPath:  dirPath,
-		Files:            files,
-		AsBatch:          asBatch,
+		TaskType:          tasktype.TaskTypeTgfiles,
+		SelectedStorageID: config.C().GetStorageIDByName(storageName),
+		SettedDir:         true,
+		SelectedDirPath:   dirPath,
+		Files:             files,
+		AsBatch:           asBatch,
 	})
 	if err != nil {
 		return err

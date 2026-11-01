@@ -97,7 +97,7 @@ func DefaultsMap(dataDir string) map[string]any {
 		"telegram.userbot.enable":      false,
 		"telegram.userbot.session":     DefaultUserbotSessionPath(dataDir),
 		"telegram.relay_chat_id":       0,
-		"telegram.relay_keep_messages": false,
+		"telegram.relay_keep_messages": true,
 
 		"temp.base_path": "cache/",
 
@@ -131,10 +131,11 @@ func Default(dataDir string) Config {
 		Temp: tempConfig{BasePath: "cache/"},
 		DB:   dbConfig{Session: DefaultBotSessionPath(dataDir)},
 		Telegram: telegramConfig{
-			AppID:    1025907,
-			AppHash:  "452b0359b988148995f22ff0f4229750",
-			RpcRetry: 5,
-			Userbot:  userbotConfig{Session: DefaultUserbotSessionPath(dataDir)},
+			AppID:             1025907,
+			AppHash:           "452b0359b988148995f22ff0f4229750",
+			RpcRetry:          5,
+			Userbot:           userbotConfig{Session: DefaultUserbotSessionPath(dataDir)},
+			RelayKeepMessages: true,
 		},
 		Ytdlp: YtdlpConfig{
 			Recode:           "mp4",
@@ -154,6 +155,35 @@ func (c Config) GetStorageByName(name string) storage.StorageConfig {
 		}
 	}
 	return nil
+}
+
+func (c Config) GetStorageIDByName(name string) uint {
+	if st := c.GetStorageByName(name); st != nil {
+		return st.GetID()
+	}
+	return 0
+}
+
+func (c Config) GetStorageByID(id uint) storage.StorageConfig {
+	if id == 0 {
+		return nil
+	}
+	for _, st := range c.Storages {
+		if st.GetID() == id {
+			return st
+		}
+	}
+	return nil
+}
+
+func (c Config) GetStorageNameByID(id uint) string {
+	if id == 0 {
+		return ""
+	}
+	if st := c.GetStorageByID(id); st != nil {
+		return st.GetName()
+	}
+	return ""
 }
 
 // ProxyTransport builds the HTTP transport used for the configured proxy.
