@@ -175,13 +175,13 @@ func (c *Client) call(ctx context.Context, method string, params []any, result a
 
 	resp, err := c.client.Do(httpReq)
 	if err != nil {
-		return fmt.Errorf("%w: failed to send request: %v", ErrRPCFailed, err)
+		return fmt.Errorf("%w: failed to send request: %w", ErrRPCFailed, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("%w: failed to read response: %v", ErrRPCFailed, err)
+		return fmt.Errorf("%w: failed to read response: %w", ErrRPCFailed, err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
