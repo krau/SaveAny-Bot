@@ -10,6 +10,9 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
+
+	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 )
 
 type Page struct {
@@ -122,7 +125,7 @@ func (c *Client) Download(ctx context.Context, durl string) (io.ReadCloser, erro
 
 func NewClient() *Client {
 	return &Client{
-		client: &http.Client{},
+		client: netutil.PublicOnlyHTTPClient(30 * time.Second),
 	}
 }
 
@@ -133,6 +136,7 @@ func NewClientWithProxy(proxyUrl string) (*Client, error) {
 	}
 	p := http.ProxyURL(u)
 	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
 			Proxy: p,
 		},
