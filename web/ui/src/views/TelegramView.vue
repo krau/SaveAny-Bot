@@ -562,38 +562,44 @@ async function logoutUserbot() {
               @input="clear('tg-media-timeout')"
             />
           </div>
-          <div class="field" :class="{ 'is-invalid': invalidField === 'tg-relay-chat-id' }">
-            <label for="tg-relay-chat-id">{{ t('telegram.botPanel.relayChatId') }}</label>
-            <input
-              id="tg-relay-chat-id"
-              v-model.number="relayChatID"
-              type="number"
-              placeholder="-100..."
-              :aria-invalid="invalidField === 'tg-relay-chat-id' ? 'true' : undefined"
-              :aria-describedby="'tg-relay-chat-id-hint'"
-              @input="clear('tg-relay-chat-id')"
-            />
-            <span id="tg-relay-chat-id-hint" class="hint">{{ t('telegram.botPanel.relayHint') }}</span>
-            <label class="checkbox">
-              <input v-model="relayKeepMessages" type="checkbox" />
-              <span>{{ t('telegram.botPanel.relayKeepMessages') }}</span>
-            </label>
-            <span class="hint">{{ t('telegram.botPanel.relayKeepHint') }}</span>
-          </div>
           <div class="field" :class="{ 'is-invalid': invalidField === 'tg-proxy' }">
             <label for="tg-proxy">{{ t('telegram.botPanel.proxyURL') }}</label>
-            <input
-              id="tg-proxy"
-              v-model="proxyURL"
-              placeholder="socks5://127.0.0.1:1080"
-              :disabled="!proxyEnable"
-              :aria-invalid="invalidField === 'tg-proxy' ? 'true' : undefined"
-              @input="clear('tg-proxy')"
-            />
-            <label class="checkbox">
-              <input v-model="proxyEnable" type="checkbox" />
-              <span>{{ t('telegram.botPanel.proxyEnable') }}</span>
-            </label>
+            <div class="proxy-row">
+              <input
+                id="tg-proxy"
+                v-model="proxyURL"
+                placeholder="socks5://127.0.0.1:1080"
+                :disabled="!proxyEnable"
+                :aria-invalid="invalidField === 'tg-proxy' ? 'true' : undefined"
+                @input="clear('tg-proxy')"
+              />
+              <label class="checkbox">
+                <input v-model="proxyEnable" type="checkbox" />
+                <span>{{ t('telegram.botPanel.proxyEnable') }}</span>
+              </label>
+            </div>
+          </div>
+          <div class="relay-settings span-full">
+            <div class="field" :class="{ 'is-invalid': invalidField === 'tg-relay-chat-id' }">
+              <label for="tg-relay-chat-id">{{ t('telegram.botPanel.relayChatId') }}</label>
+              <input
+                id="tg-relay-chat-id"
+                v-model.number="relayChatID"
+                type="number"
+                placeholder="-100..."
+                :aria-invalid="invalidField === 'tg-relay-chat-id' ? 'true' : undefined"
+                :aria-describedby="'tg-relay-chat-id-hint'"
+                @input="clear('tg-relay-chat-id')"
+              />
+              <span id="tg-relay-chat-id-hint" class="hint">{{ t('telegram.botPanel.relayHint') }}</span>
+            </div>
+            <div class="field relay-toggle">
+              <label class="checkbox">
+                <input v-model="relayKeepMessages" type="checkbox" />
+                <span>{{ t('telegram.botPanel.relayKeepMessages') }}</span>
+              </label>
+              <span class="hint">{{ t('telegram.botPanel.relayKeepHint') }}</span>
+            </div>
           </div>
         </div>
         <p v-if="hasSavedSecret" class="hint">{{ t('telegram.botPanel.maskedHint') }}</p>

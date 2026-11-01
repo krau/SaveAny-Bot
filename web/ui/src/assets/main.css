@@ -933,7 +933,8 @@ code {
   gap: 16px 18px;
 }
 
-.form-grid .span-2 {
+.form-grid .span-2,
+.form-grid .span-full {
   grid-column: 1 / -1;
 }
 
@@ -2798,6 +2799,34 @@ html[data-theme='dark'] .btn.primary:disabled:not(.is-loading) {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.relay-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 16px 24px;
+  align-items: start;
+}
+
+.relay-toggle {
+  padding-top: 26px;
+}
+
+.proxy-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proxy-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.proxy-row .checkbox {
+  min-height: auto;
+  flex: none;
+  padding-top: 0;
+}
+
 .userbot-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
@@ -3393,6 +3422,15 @@ html[data-theme='dark'] .btn.primary:disabled:not(.is-loading) {
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .relay-settings {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .relay-toggle {
+    padding-top: 0;
   }
 
   .modal {
