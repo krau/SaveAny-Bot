@@ -18,6 +18,24 @@ import (
 	"github.com/krau/mygotg/ext"
 )
 
+// resolveRuleStorage accepts a storage ID or a storage name. IDs avoid the
+// ambiguity of names that contain spaces; CHOSEN keeps the rule storage-less.
+func resolveRuleStorage(userChatID int64, arg string) (uint, error) {
+	if strings.EqualFold(arg, rule.RuleStorNameChosen) {
+		return 0, nil
+	}
+	if id, err := strconv.ParseUint(arg, 10, 32); err == nil {
+		if !config.C().HasStorageID(userChatID, uint(id)) {
+			return 0, fmt.Errorf("storage ID %d not found", id)
+		}
+		return uint(id), nil
+	}
+	if !config.C().HasStorage(userChatID, arg) {
+		return 0, fmt.Errorf("storage not found: %s", arg)
+	}
+	return config.C().GetStorageIDByName(arg), nil
+}
+
 func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	args := strutil.ParseArgsRespectQuotes(update.EffectiveMessage.Text)
@@ -69,17 +87,14 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 		}
 
 		ruleData := args[3]
-		storageName := args[4]
+		storageArg := args[4]
 		dirPath := args[5]
-		storageID := uint(0)
-		if !strings.EqualFold(storageName, rule.RuleStorNameChosen) {
-			if !config.C().HasStorage(user.ChatID, storageName) {
-				ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorStorageNotFound, map[string]any{
-					"Storage": storageName,
-				})), nil)
-				return dispatcher.EndGroups
-			}
-			storageID = config.C().GetStorageIDByName(storageName)
+		storageID, err := resolveRuleStorage(user.ChatID, storageArg)
+		if err != nil {
+			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorStorageNotFound, map[string]any{
+				"Storage": storageArg,
+			})), nil)
+			return dispatcher.EndGroups
 		}
 
 		rd := &database.Rule{
@@ -101,10 +116,11 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 			ctx.Reply(update, ext.ReplyTextStyledTextArray(msgelem.BuildRuleHelpStyling(user.ApplyRule, user.Rules)), nil)
 			return dispatcher.EndGroups
 		}
-		storageName := args[2]
-		if !config.C().HasStorage(user.ChatID, storageName) {
+		storageArg := args[2]
+		storageID, err := resolveRuleStorage(user.ChatID, storageArg)
+		if err != nil {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgRuleErrorStorageNotFound, map[string]any{
-				"Storage": storageName,
+				"Storage": storageArg,
 			})), nil)
 			return dispatcher.EndGroups
 		}
@@ -112,7 +128,6 @@ func handleRuleCmd(ctx *ext.Context, update *ext.Update) error {
 		if len(args) >= 4 {
 			basePath = args[3]
 		}
-		storageID := config.C().GetStorageIDByName(storageName)
 		presets := rule.PresetCategories(basePath)
 		imported := 0
 		for _, p := range presets {

@@ -17,15 +17,16 @@ Currently supported rule types:
 
 Basic syntax for adding rules:
 
-"RuleType RuleContent StorageName Path"
+"RuleType RuleContent StorageID|StorageName Path"
 
-Pay attention to spaces; the bot can only parse correctly formatted syntax. Below is an example of a valid rule command:
+A numeric storage argument is treated as a storage ID (shown on the Storages page of the web console); anything else is treated as a storage name. Use an ID when the name contains spaces, or quote the name. Below is an example of a valid rule command:
 
 ```
-/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /videos
+/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ 3 /videos
+/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ "My Alist" /videos
 ```
 
-In addition, if `CHOSEN` is used as the storage name in the rule, it means files will be stored under the path of the storage you selected by clicking the inline button.
+In addition, if `CHOSEN` is used as the storage in the rule, it means files will be stored under the path of the storage you selected by clicking the inline button.
 
 You can also toggle whether rules are applied with `/rule switch`. When rule mode is off, all files go to the default storage.
 
@@ -34,12 +35,12 @@ You can also toggle whether rules are applied with `/rule switch`. When rule mod
 Manually writing regex rules for common file types is tedious, so the bot ships a built-in set of preset categories (video, image, audio, document, archive) that you can import in one command:
 
 ```
-/rule preset <storage> [base_path]
+/rule preset <storage_id|storage_name> [base_path]
 ```
 
 Parameters:
 
-- `storage`: Target storage name (must exist and be accessible to you)
+- `storage`: Target storage ID or name (must exist and be accessible to you)
 - `base_path`: Optional. Each preset category's subdirectory is created under this path. If omitted, the default category directory names are used directly.
 
 Examples:
