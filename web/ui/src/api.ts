@@ -26,6 +26,9 @@ export interface ApiErrorBody {
   fields?: Record<string, string>
 }
 
+/** Sentinel returned by the API for a secret that is already stored. */
+export const MASKED_SECRET = '__MASKED__'
+
 export class ApiError extends Error {
   readonly status: number
   readonly code: string

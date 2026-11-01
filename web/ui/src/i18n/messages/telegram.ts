@@ -15,7 +15,7 @@ export const zhHans = {
       mediaTimeout: '媒体组超时（秒）',
       proxyURL: '代理地址',
       proxyEnable: '使用代理',
-      maskedHint: '密钥显示为 __MASKED__ 时保持不变即可继续使用已保存的值。',
+      maskedHint: '已保存的密钥不会再次显示。保持不变并保存即可继续使用原值；输入新值可替换。',
       loading: '正在加载凭据…',
     },
     userbotPanel: {
@@ -110,7 +110,7 @@ export const en = {
       mediaTimeout: 'Media group timeout (seconds)',
       proxyURL: 'Proxy URL',
       proxyEnable: 'Use proxy',
-      maskedHint: 'Leave the secret as __MASKED__ to keep using the saved value.',
+      maskedHint: 'Saved secrets are hidden. Keep the field unchanged to retain the current value, or enter a new one to replace it.',
       loading: 'Loading credentials…',
     },
     userbotPanel: {

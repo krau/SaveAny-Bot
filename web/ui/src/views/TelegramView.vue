@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { errorMessage, settingsApi, telegramApi } from '../api'
+import { errorMessage, MASKED_SECRET, settingsApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
@@ -39,6 +39,7 @@ const userbotEnable = ref(false)
 const userbotSession = ref('')
 
 const botState = computed(() => status.value?.bot.state ?? '')
+const hasSavedSecret = computed(() => token.value === MASKED_SECRET || appHash.value === MASKED_SECRET)
 const canStart = computed(() => !botAction.value && botState.value !== 'running' && botState.value !== 'starting')
 const canStop = computed(() => !botAction.value && (botState.value === 'running' || botState.value === 'starting'))
 const canRestartBot = computed(() => !botAction.value && (botState.value === 'running' || botState.value === 'error'))
@@ -555,7 +556,7 @@ async function logoutUserbot() {
             </label>
           </div>
         </div>
-        <p class="hint">{{ t('telegram.botPanel.maskedHint') }}</p>
+        <p v-if="hasSavedSecret" class="hint">{{ t('telegram.botPanel.maskedHint') }}</p>
         <div class="modal-actions">
           <LoadingButton class="primary" type="submit" :loading="botBusy">{{ t('common.actions.saveApply') }}</LoadingButton>
         </div>

@@ -2,6 +2,7 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useFormFeedback } from '../composables/useFormFeedback'
+import { MASKED_SECRET } from '../api'
 import { storageDefaults, storageTypeDef, storageTypeDefs } from '../storageFields'
 import AppSelect from './AppSelect.vue'
 import LoadingButton from './LoadingButton.vue'
@@ -30,6 +31,9 @@ const bools = reactive<Record<string, boolean>>({})
 const { invalidField, fail, clear } = useFormFeedback()
 
 const fields = computed(() => storageTypeDef(type.value)?.fields ?? [])
+const hasSavedSecrets = computed(() =>
+  fields.value.some((field) => field.kind === 'secret' && values[field.name] === MASKED_SECRET),
+)
 const storageTypeOptions = computed(() =>
   storageTypeDefs.map((item) => ({ value: item.type, label: t(item.label) })),
 )
@@ -231,8 +235,8 @@ function submit() {
       </template>
     </div>
 
-      <div v-if="isEdit" class="hint muted">
-        {{ t('storages.form.maskedHintBefore') }}<code>__MASKED__</code>{{ t('storages.form.maskedHintAfter') }}
+      <div v-if="isEdit && hasSavedSecrets" class="hint muted">
+        {{ t('storages.form.maskedHint') }}
       </div>
     </div>
     <div class="modal-actions">

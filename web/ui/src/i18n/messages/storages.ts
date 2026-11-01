@@ -20,8 +20,7 @@ export const zhHans = {
       nameRequired: '请填写存储名称',
       type: '类型',
       enable: '启用该存储',
-      maskedHintBefore: '已保存的密钥显示为 ',
-      maskedHintAfter: '，保持不变即可继续使用原值。',
+      maskedHint: '已保存的密钥不会再次显示。保持不变即可继续使用原值；输入新值可替换。',
     },
     types: {
       local: '本地磁盘',
@@ -99,8 +98,7 @@ export const en = {
       nameRequired: 'Enter a storage name',
       type: 'Type',
       enable: 'Enable this storage',
-      maskedHintBefore: 'Saved secrets are shown as ',
-      maskedHintAfter: '. Leave them unchanged to keep the existing values.',
+      maskedHint: 'Saved secrets are hidden. Leave them unchanged to keep the existing values, or enter new ones to replace them.',
     },
     types: {
       local: 'Local disk',
