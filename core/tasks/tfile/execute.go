@@ -45,7 +45,11 @@ func (t *Task) Execute(ctx context.Context) error {
 			t.Progress.OnDone(ctx, t, err)
 		}
 	}()
-	_, err = tdler.NewDownloader(t.File).Parallel(ctx, wrAt)
+	downloader, cleanup := tdler.NewDownloader(ctx, t.File)
+	if cleanup != nil {
+		defer cleanup(ctx)
+	}
+	_, err = downloader.Parallel(ctx, wrAt)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}

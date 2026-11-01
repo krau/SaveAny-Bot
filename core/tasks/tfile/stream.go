@@ -23,7 +23,11 @@ func executeStream(ctx context.Context, task *Task) error {
 	errg.Go(func() error {
 		defer pw.Close()
 		logger.Info("Starting file download in stream mode")
-		_, err := tdler.NewDownloader(task.File).Stream(uploadCtx, wr)
+		downloader, cleanup := tdler.NewDownloader(ctx, task.File)
+		if cleanup != nil {
+			defer cleanup(ctx)
+		}
+		_, err := downloader.Stream(uploadCtx, wr)
 		if err != nil {
 			logger.Errorf("Failed to download file: %v", err)
 			pw.CloseWithError(err)

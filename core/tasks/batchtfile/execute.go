@@ -304,7 +304,11 @@ func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 			DownloadedBytes: downloaded,
 		})
 	})
-	_, downloadErr := tdler.NewDownloader(elem.File).Parallel(ctx, wrAt)
+	downloader, cleanup := tdler.NewDownloader(ctx, elem.File)
+	if cleanup != nil {
+		defer cleanup(ctx)
+	}
+	_, downloadErr := downloader.Parallel(ctx, wrAt)
 	closeErr := localFile.Close()
 	if downloadErr != nil {
 		t.markItemFailed(ctx, elem.ID, FailureStageDownload, downloadErr)
@@ -355,7 +359,11 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 		errg.Go(func() error {
 			defer pw.Close()
 			logger.Info("Starting file download in stream mode")
-			_, err := tdler.NewDownloader(elem.File).Stream(uploadCtx, wr)
+			downloader, cleanup := tdler.NewDownloader(uploadCtx, elem.File)
+			if cleanup != nil {
+				defer cleanup(uploadCtx)
+			}
+			_, err := downloader.Stream(uploadCtx, wr)
 			if err != nil {
 				logger.Errorf("Failed to download file: %v", err)
 				t.markItemFailed(uploadCtx, elem.ID, FailureStageDownload, err)
@@ -401,7 +409,11 @@ func (t *Task) processElement(ctx context.Context, elem TaskElement) error {
 			DownloadedBytes: downloaded,
 		})
 	})
-	_, err = tdler.NewDownloader(elem.File).Parallel(ctx, wrAt)
+	downloader, cleanup := tdler.NewDownloader(ctx, elem.File)
+	if cleanup != nil {
+		defer cleanup(ctx)
+	}
+	_, err = downloader.Parallel(ctx, wrAt)
 	if err != nil {
 		t.markItemFailed(ctx, elem.ID, FailureStageDownload, err)
 		t.notifyStateChange(ctx)

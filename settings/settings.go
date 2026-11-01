@@ -436,6 +436,9 @@ func validateGroup(cfg *config.Config, group string) error {
 		if cfg.Telegram.AppID < 0 {
 			return errors.New("app_id must be non-negative")
 		}
+		if id := cfg.Telegram.RelayChatID; id != 0 && (id > 0 || !strings.HasPrefix(fmt.Sprint(id), "-100")) {
+			return errors.New("relay_chat_id must be 0 or a channel ID starting with -100")
+		}
 	}
 	return nil
 }

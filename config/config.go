@@ -91,11 +91,13 @@ func DefaultsMap(dataDir string) map[string]any {
 		"cache.num_counters": 1e5,
 		"cache.max_cost":     1e6,
 
-		"telegram.app_id":          1025907,
-		"telegram.app_hash":        "452b0359b988148995f22ff0f4229750",
-		"telegram.rpc_retry":       5,
-		"telegram.userbot.enable":  false,
-		"telegram.userbot.session": DefaultUserbotSessionPath(dataDir),
+		"telegram.app_id":              1025907,
+		"telegram.app_hash":            "452b0359b988148995f22ff0f4229750",
+		"telegram.rpc_retry":           5,
+		"telegram.userbot.enable":      false,
+		"telegram.userbot.session":     DefaultUserbotSessionPath(dataDir),
+		"telegram.relay_chat_id":       0,
+		"telegram.relay_keep_messages": false,
 
 		"temp.base_path": "cache/",
 
