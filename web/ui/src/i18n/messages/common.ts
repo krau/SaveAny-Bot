@@ -2,6 +2,7 @@ export const zhHans = {
   nav: {
     workspace: '工作台',
     overview: '运行概览',
+    guide: '指南',
     login: '登录',
     tasks: '任务',
     resources: '资源',
@@ -127,6 +128,7 @@ export const en = {
   nav: {
     workspace: 'Workspace',
     overview: 'Overview',
+    guide: 'Guide',
     login: 'Sign in',
     tasks: 'Tasks',
     resources: 'Resources',

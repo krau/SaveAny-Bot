@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/auth'
 import AppLayout from './components/AppLayout.vue'
 import LoginView from './views/LoginView.vue'
 import DashboardView from './views/DashboardView.vue'
+import GuideView from './views/GuideView.vue'
 import TasksView from './views/TasksView.vue'
 import StoragesView from './views/StoragesView.vue'
 import UsersView from './views/UsersView.vue'
@@ -30,6 +31,12 @@ const router = createRouter({
           name: 'dashboard',
           component: DashboardView,
           meta: { title: 'nav.overview' },
+        },
+        {
+          path: 'guide',
+          name: 'guide',
+          component: GuideView,
+          meta: { title: 'nav.guide' },
         },
         {
           path: 'tasks',

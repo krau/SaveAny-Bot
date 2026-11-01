@@ -30,6 +30,25 @@ func LegacyImported(ctx context.Context) bool {
 	return ok
 }
 
+// LegacyImportTime returns the time at which a v0 configuration was imported.
+// The boolean reports whether an import marker exists, even if its value is
+// malformed.
+func LegacyImportTime(ctx context.Context) (time.Time, bool) {
+	value, ok, err := database.GetSetting(ctx, legacyImportedKey)
+	if err != nil {
+		log.Errorf("Failed to read legacy import marker: %v", err)
+		return time.Time{}, false
+	}
+	if !ok {
+		return time.Time{}, false
+	}
+	importedAt, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return time.Time{}, true
+	}
+	return importedAt, true
+}
+
 // ImportLegacy imports a legacy TOML configuration exactly once.
 func ImportLegacy(ctx context.Context, src, dataDir string) error {
 	data, err := readLegacyConfig(src)
@@ -93,7 +112,7 @@ func ImportLegacy(ctx context.Context, src, dataDir string) error {
 		legacyChatIDs = append(legacyChatIDs, u.ID)
 	}
 
-	return database.Transaction(ctx, func(tx *gorm.DB) error {
+	err = database.Transaction(ctx, func(tx *gorm.DB) error {
 		for key, value := range groups {
 			if err := tx.Save(&database.Setting{Key: key, Value: value}).Error; err != nil {
 				return err
@@ -152,6 +171,11 @@ func ImportLegacy(ctx context.Context, src, dataDir string) error {
 			Key: legacyImportedKey, Value: time.Now().UTC().Format(time.RFC3339),
 		}).Error
 	})
+	if err != nil {
+		return err
+	}
+	log.Info("Legacy configuration imported into the database")
+	return nil
 }
 
 func cfgListenFromAPI(v *viper.Viper) string {

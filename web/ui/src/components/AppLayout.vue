@@ -21,6 +21,7 @@ const navigation = [
     labelKey: 'nav.workspace',
     items: [
       { path: '/', labelKey: 'nav.overview', icon: 'dashboard' },
+      { path: '/guide', labelKey: 'nav.guide', icon: 'bookOpen' },
       { path: '/tasks', labelKey: 'nav.tasks', icon: 'tasks' },
     ],
   },

@@ -2,12 +2,12 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { errorMessage, storagesApi, tasksApi, telegramApi } from '../api'
+import { errorMessage, onboardingApi, storagesApi, tasksApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import PageHeader from '../components/PageHeader.vue'
 import { useToastStore } from '../stores/toasts'
 import { storageTypeIcon, storageTypeLabel } from '../storageFields'
-import type { StorageRecord, TaskItem, TelegramStatus } from '../types'
+import type { OnboardingStatus, StorageRecord, TaskItem, TelegramStatus } from '../types'
 import {
   formatRelativeTime,
   storageLocation,
@@ -21,6 +21,8 @@ import {
 const toast = useToastStore()
 const { t } = useI18n()
 const status = ref<TelegramStatus | null>(null)
+const onboarding = ref<OnboardingStatus | null>(null)
+const setupTotal = 3
 const tasks = ref<TaskItem[]>([])
 const storages = ref<StorageRecord[]>([])
 let timer: number | undefined
@@ -31,6 +33,29 @@ const activeTasks = computed(
 const enabledStorages = computed(() => storages.value.filter((storage) => storage.enable).length)
 const recentTasks = computed(() => tasks.value.slice(0, 6))
 const recentStorages = computed(() => storages.value.slice(0, 4))
+const setupVisible = computed(() => Boolean(onboarding.value && !onboarding.value.complete))
+const setupDone = computed(() => {
+  const steps = onboarding.value?.steps
+  if (!steps) return 0
+  return [steps.bot_configured, steps.storage_ready, steps.user_ready].filter(Boolean).length
+})
+const setupSteps = computed(() => {
+  const steps = onboarding.value?.steps
+  if (!steps) return []
+  return [
+    { key: 'bot', done: steps.bot_configured, label: t('dashboard.setup.steps.bot') },
+    { key: 'storage', done: steps.storage_ready, label: t('dashboard.setup.steps.storage') },
+    { key: 'user', done: steps.user_ready, label: t('dashboard.setup.steps.user') },
+  ]
+})
+const nextSetupPath = computed(() => {
+  const steps = onboarding.value?.steps
+  if (!steps) return '/guide'
+  if (!steps.bot_configured) return '/telegram'
+  if (!steps.storage_ready) return '/storages'
+  if (!steps.user_ready) return '/users'
+  return '/guide'
+})
 
 function localDayKey(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -92,6 +117,11 @@ async function load() {
     for (const message of [statusData.bot.error, statusData.userbot.error]) {
       if (message) toast.push(message, 'error', 6000)
     }
+    try {
+      onboarding.value = await onboardingApi.status()
+    } catch {
+      // The setup card is supplemental; dashboard data remains usable without it.
+    }
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
   }
@@ -120,6 +150,32 @@ onUnmounted(() => {
         </RouterLink>
       </template>
     </PageHeader>
+
+    <section v-if="setupVisible" class="setup-callout">
+      <div class="setup-callout-main">
+        <span class="setup-eyebrow">
+          {{ t(onboarding?.legacy.imported ? 'dashboard.setup.legacyEyebrow' : 'dashboard.setup.eyebrow') }}
+        </span>
+        <h2>{{ t('dashboard.setup.title') }}</h2>
+        <p>{{ t('dashboard.setup.body') }}</p>
+        <div class="setup-checks">
+          <span v-for="step in setupSteps" :key="step.key" class="setup-check" :class="{ done: step.done }">
+            <span class="setup-check-icon">
+              <AppIcon v-if="step.done" name="check" :size="12" />
+            </span>
+            {{ step.label }}
+          </span>
+        </div>
+      </div>
+      <div class="setup-callout-side">
+        <strong>{{ setupDone }}<span>/{{ setupTotal }}</span></strong>
+        <small>{{ t('dashboard.setup.requiredSteps') }}</small>
+        <div class="actions">
+          <RouterLink class="btn primary small" :to="nextSetupPath">{{ t('dashboard.setup.continue') }}</RouterLink>
+          <RouterLink class="btn small" to="/guide">{{ t('dashboard.setup.guide') }}</RouterLink>
+        </div>
+      </div>
+    </section>
 
     <section class="relay-board">
       <div class="relay-status">

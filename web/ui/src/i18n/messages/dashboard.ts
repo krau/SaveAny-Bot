@@ -1,5 +1,19 @@
 export const zhHans = {
   dashboard: {
+    setup: {
+      eyebrow: '首次启动',
+      legacyEyebrow: '配置已导入',
+      title: '完成配置以开始使用',
+      body: '连接 Telegram Bot、添加存储并授权账号后，就能向 Bot 发送文件或链接。',
+      requiredSteps: '必需步骤',
+      guide: '打开指南',
+      continue: '继续配置',
+      steps: {
+        bot: 'Bot',
+        storage: '存储',
+        user: '账号',
+      },
+    },
     status: {
       reading: '正在读取连接状态',
       line: 'Bot {bot}，Userbot {userbot}',
@@ -45,6 +59,20 @@ export const zhHans = {
 
 export const en = {
   dashboard: {
+    setup: {
+      eyebrow: 'First run',
+      legacyEyebrow: 'Settings imported',
+      title: 'Finish setup to start using SaveAny-Bot',
+      body: 'Connect a Telegram bot, add storage, and allow your account. Then send files or links to the bot.',
+      requiredSteps: 'Required steps',
+      guide: 'Open guide',
+      continue: 'Continue setup',
+      steps: {
+        bot: 'Bot',
+        storage: 'Storage',
+        user: 'Account',
+      },
+    },
     status: {
       reading: 'Reading connection status',
       line: 'Bot {bot}, Userbot {userbot}',

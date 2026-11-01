@@ -35,6 +35,7 @@ func NewHandler(deps Deps) http.Handler {
 	mux.HandleFunc("POST /api/v1/auth/logout", s.logout)
 	mux.HandleFunc("GET /api/v1/auth/me", s.me)
 	mux.HandleFunc("POST /api/v1/auth/password", s.changePassword)
+	mux.HandleFunc("GET /api/v1/onboarding", s.onboarding)
 
 	mux.HandleFunc("GET /api/v1/settings", s.getSettings)
 	mux.HandleFunc("PUT /api/v1/settings/{group}", s.updateSettings)

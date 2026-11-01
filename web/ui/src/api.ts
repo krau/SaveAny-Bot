@@ -4,6 +4,7 @@ import type {
   JsonObject,
   CreateUserInput,
   MeResponse,
+  OnboardingStatus,
   SettingsMap,
   SettingsUpdateResult,
   StorageInput,
@@ -162,6 +163,12 @@ export const authApi = {
       method: 'POST',
       body: { current_password: currentPassword, new_password: newPassword },
     })
+  },
+}
+
+export const onboardingApi = {
+  status() {
+    return request<OnboardingStatus>('/onboarding')
   },
 }
 

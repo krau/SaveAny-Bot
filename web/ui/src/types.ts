@@ -182,3 +182,23 @@ export interface MeResponse {
   authenticated: boolean
   csrf_token?: string
 }
+
+export interface OnboardingSteps {
+  bot_configured: boolean
+  storage_ready: boolean
+  user_ready: boolean
+  bot_running: boolean
+  first_task: boolean
+}
+
+export interface OnboardingLegacy {
+  imported: boolean
+  imported_at?: string
+}
+
+export interface OnboardingStatus {
+  complete: boolean
+  steps: OnboardingSteps
+  bot_state: string
+  legacy: OnboardingLegacy
+}
