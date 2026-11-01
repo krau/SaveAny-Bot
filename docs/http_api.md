@@ -4,26 +4,26 @@ This document describes all currently registered HTTP API endpoints in SaveAny-B
 
 ## Base URL
 
-- Default: `http://0.0.0.0:8080`
-- Config source: `[api]` section in `config.toml` (`host`, `port`, `enable`, `token`)
+- Default: `http://127.0.0.1:8080`
+- The API shares the Web console listener. Configure the listener and API token under **Settings → Web**.
 
 ## Authentication
 
-When `[api].token` is non-empty, all endpoints require:
+When an API token is configured under **Settings → Web**, requests require:
 
 ```http
 Authorization: Bearer <your-api-token>
 ```
 
-If token is empty, authentication middleware is not applied.
+Without a token, use the Web console session cookie. Non-GET requests made with
+a cookie also require the `X-CSRF-Token` header.
 
-A missing header, a header that is not `Bearer <token>`, or a wrong token all
-return `401 Unauthorized`:
+Missing or invalid authentication returns `401 Unauthorized`:
 
 ```json
 {
   "error": "unauthorized",
-  "message": "invalid token"
+  "message": "authentication required"
 }
 ```
 
@@ -61,8 +61,7 @@ return `401 Unauthorized`:
 
 ### Request
 
-- Headers:
-  - `Authorization: Bearer <token>` (only if API token is configured)
+- Headers: none
 - Body: none
 
 ### Response

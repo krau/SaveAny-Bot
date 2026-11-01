@@ -4,7 +4,7 @@ title: "Storage Configuration"
 
 # Storage Configuration
 
-Please first read the [Configuration Guide](../) to understand the basic format of the configuration file.
+Add storages on the **Storages** page in the web console and fill in the fields below.
 
 ## Alist
 
@@ -12,7 +12,7 @@ Please first read the [Configuration Guide](../) to understand the basic format 
 
 Stream mode is not supported.
 
-```toml
+```text
 url = "https://alist.example.com" # URL of Alist
 username = "your_username"  # Username for Alist
 password = "your_password" # Password for Alist
@@ -27,14 +27,14 @@ token = "your_token"
 
 `type=local`
 
-```toml
+```text
 base_path = "./downloads" # Base path for local storage, all files will be stored under this path
 ```
 
 ## WebDAV
 `type=webdav`
 
-```toml
+```text
 url = "https://webdav.example.com" # URL of WebDAV
 username = "your_username"  # Username for WebDAV
 password = "your_password" # Password for WebDAV
@@ -45,7 +45,7 @@ base_path = "/path/to/webdav" # Base path in WebDAV, all files will be stored un
 
 `type=s3`
 
-```toml
+```text
 endpoint = "s3.example.com" # Endpoint for S3, defaults to AWS S3 endpoint if not set
 region = "us-east-1" # Region for S3
 access_key_id = "your_access_key_id" # Access key ID for S3
@@ -75,7 +75,7 @@ If you are using a third-party S3-compatible service, it usually uses path-style
 
 Stream mode is not supported.
 
-```toml
+```text
 chat_id = "123456789" # Telegram chat ID, the bot will send files to this chat
 force_file = false # Force sending as file, default is false
 skip_large = false # Skip large files, default is false. If enabled, files exceeding Telegram's limit will not be uploaded.
@@ -89,7 +89,7 @@ split_size_mb = 0 # Split size in MB. 0 uses the uploader account limit: 2000 MB
 
 Supports multiple cloud storage services through the [rclone](https://rclone.org/) command-line tool. You need to install rclone and configure remote storage first.
 
-```toml
+```text
 # Remote name configured in rclone, can be any remote defined in rclone.conf
 remote = "mydrive"
 # Base path in the remote storage, all files will be stored under this path
@@ -117,7 +117,7 @@ rclone supports many cloud storage services, including but not limited to:
 
 After configuring Google Drive, you can configure the storage like this:
 
-```toml
+```text
 [[storages]]
 name = "GoogleDrive"
 type = "rclone"
@@ -128,7 +128,7 @@ base_path = "/SaveAnyBot"
 
 If using a custom rclone config file:
 
-```toml
+```text
 [[storages]]
 name = "MyRemote"
 type = "rclone"

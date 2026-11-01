@@ -1,30 +1,49 @@
 ---
 title: "安装与更新"
+weight: 10
 ---
 
 # 安装与更新
 
-## 从预编译文件部署(推荐)
+准备一个空数据目录即可启动，然后在 Web 控制台完成 Bot、存储和用户配置。
 
-在 [Release](https://github.com/krau/SaveAny-Bot/releases) 页面下载对应平台的二进制文件.
+## 从预编译文件部署
 
-在解压后目录新建 `config.toml` 文件, 参考 [配置说明](../configuration) 编辑配置文件
-
-运行:
+在 [Release](https://github.com/krau/SaveAny-Bot/releases) 页面下载对应平台的二进制文件并解压：
 
 ```bash
 chmod +x saveany-bot
 ./saveany-bot
 ```
 
+程序默认使用当前目录下的 `data/` 保存数据库和会话。首次启动会生成管理员密码并打印到日志：
+
+```text
+Generated web admin password; change it after login password=...
+```
+
+也可以指定密码和监听地址：
+
+```bash
+SAVEANY_ADMIN_PASSWORD='your-password' \
+SAVEANY_LISTEN='0.0.0.0:8080' \
+./saveany-bot
+```
+
+启动后访问 `http://localhost:8080`，按 **指南** 页面完成：
+
+1. 在 Telegram 页面填写 Bot Token。
+2. 在存储页面添加至少一个存储。
+3. 在用户页面添加你的 Telegram User ID。
+
 ### 进程守护
 
 {{< tabs "daemon" >}}
 {{< tab "systemd (常规 Linux)" >}}
 
-创建文件 <code>/etc/systemd/system/saveany-bot.service</code> 并写入以下内容:
+创建 `/etc/systemd/system/saveany-bot.service`：
 
-{{< codeblock >}}
+```ini
 [Unit]
 Description=SaveAnyBot
 After=systemd-user-sessions.service
@@ -37,121 +56,95 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
-{{< /codeblock >}}
+```
 
-设为开机启动并启动服务:
-
-{{< codeblock >}}
+```bash
 systemctl enable --now saveany-bot
-{{< /codeblock >}}
+```
 
 {{< /tab >}}
-
 {{< tab "procd (OpenWrt)" >}}
 
-<h4>添加开机自启动服务</h4>
+创建 `/etc/init.d/saveanybot`，参考 [wrt_init](https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init) 并修改工作目录与程序路径：
 
-创建文件 <code>/etc/init.d/saveanybot</code> ，参考 <a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init" target="_blank">wrt_init</a> 并自行修改:
-
-{{< codeblock >}}
+```sh
 #!/bin/sh /etc/rc.common
-
-#This is the OpenWRT init.d script for SaveAnyBot
-
-START=99 
+START=99
 STOP=10
 description="SaveAnyBot"
-
 WORKING_DIR="/mnt/mmc1-1/SaveAnyBot"
 EXEC_PATH="$WORKING_DIR/saveany-bot"
-start() {
-    echo "Starting SaveAnyBot..."
-    cd $WORKING_DIR
-    $EXEC_PATH &
-}
-stop() {
-    echo "Stopping SaveAnyBot..."
-    killall saveany-bot
-}
-reload() {
-    stop
-    start
-}
+start() { cd $WORKING_DIR && $EXEC_PATH & }
+stop() { killall saveany-bot; }
+```
 
-{{< /codeblock >}}
-
-赋予权限:
-
-{{< codeblock >}}
+```bash
 chmod +x /etc/init.d/saveanybot
-{{< /codeblock >}}
-
-然后将文件复制到 <code>/etc/rc.d</code> 并重命名为 <code>S99saveanybot</code>, 同样赋予权限:
-
-{{< codeblock >}}
-chmod +x /etc/rc.d/S99saveanybot
-{{< /codeblock >}}
-
-<h4>添加快捷指令</h4>
-
-创建文件 <code>/usr/bin/sabot</code> ，参考 <a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_bin" target="_blank">wrt_bin</a>  并自行修改，注意此处文件编码仅支持 ANSI 936 .
-
-随后赋予权限:
-
-{{< codeblock >}}
-chmod +x /usr/bin/sabot
-{{< /codeblock >}}
-
-使用: <code>sudo sabot start|stop|restart|status|enable|disable</code>
+ln -s /etc/init.d/saveanybot /etc/rc.d/S99saveanybot
+```
 
 {{< /tab >}}
 {{< /tabs >}}
-
 
 ## 使用 Docker 部署
 
 ### Docker Compose
 
-下载 [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml) 文件, 在同目录下新建 `config.toml` 文件, 参考 [config.example.toml](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) 编辑配置文件.
-
-启动:
+下载 [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml)，按需修改端口和数据目录，然后启动：
 
 ```bash
 docker compose up -d
+docker compose logs -f saveany-bot
+```
+
+默认挂载：
+
+- `./data:/app/data` — 设置、任务记录和会话
+- `./downloads:/app/downloads` — 本地存储的默认目录
+- `./cache:/app/cache` — 下载缓存
+
+可以设置管理员密码，否则从日志读取自动生成的密码：
+
+```yaml
+environment:
+  SAVEANY_ADMIN_PASSWORD: change-me
 ```
 
 ### Docker
 
-```shell
+```bash
 docker run -d --name saveany-bot \
-    -v /path/to/config.toml:/app/config.toml \
-    -v /path/to/downloads:/app/downloads \
+    -p 8080:8080 \
+    -v ./data:/app/data \
+    -v ./downloads:/app/downloads \
+    -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
+访问 `http://localhost:8080`，按指南完成配置。本地存储在容器中的路径可填写 `/app/downloads`。
 
 ## 更新
 
-若使用预编译二进制文件部署, 使用以下 CLI 命令更新:
+### 预编译二进制
 
 ```bash
 ./saveany-bot up
 ```
 
-该命令会就地替换二进制文件; 已运行的 Bot 会在重启后才使用新版本. 也可以在 Telegram 中发送 `/update`, Bot 会自行下载新版本、替换自身二进制并就地重启进程 (Windows 上无法就地重启, 进程会退出, 由服务管理器启动新版本).
+也可以在 Telegram 中发送 `/update`。更新后的进程会自动重启；Windows 上需要由服务管理器重新启动。
 
-如果是 Docker 部署, 使用以下命令更新:
-
-docker:
+### Docker
 
 ```bash
 docker pull ghcr.io/krau/saveany-bot:latest
 docker restart saveany-bot
 ```
 
-docker compose:
+### Docker Compose
 
 ```bash
 docker compose pull
-docker compose restart
+docker compose up -d
 ```
+
+更新前请备份 `data/`，并保留 Docker 数据卷。

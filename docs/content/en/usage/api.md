@@ -9,41 +9,27 @@ SaveAny-Bot provides an HTTP API that allows you to programmatically create down
 
 ## Enabling the API
 
-Add or modify the following section in `config.toml`:
+The API shares the web console listener and port; there is nothing separate to enable. After signing in, set an API token under **Settings → Web**:
 
-```toml
-[api]
-enable = true
-host   = "0.0.0.0"   # Bind address, default 0.0.0.0
-port   = 8080         # Listen port, default 8080
-token  = "your-token" # Auth token — strongly recommended
-```
+- `API Token`: used with `Authorization: Bearer <token>`; when empty, the signed-in session is used.
+- `Web listen address`: shared by the console and API, for example `0.0.0.0:8080`.
 
-You can also override these settings with environment variables (prefix `SAVEANY_`):
-
-| Environment Variable | Config Key |
-|---|---|
-| `SAVEANY_API_ENABLE` | `api.enable` |
-| `SAVEANY_API_HOST` | `api.host` |
-| `SAVEANY_API_PORT` | `api.port` |
-| `SAVEANY_API_TOKEN` | `api.token` |
-
-{{< hint warning >}}
-If `token` is empty, the API server will be accessible **without any authentication**, which is a security risk.
-{{< /hint >}}
+All endpoints live under `/api/v1`.
 
 ## Authentication
 
-When `token` is configured, all API requests must include a Bearer token in the HTTP header:
+Set an API token under **Settings → Web**, then send it in the request header:
 
 ```
 Authorization: Bearer <your-token>
 ```
 
-On authentication failure, the server returns `401`:
+You can also use the web console login cookie. Non-GET requests made with a cookie also require the `X-CSRF-Token` header.
+
+Authentication failures return `401`:
 
 ```json
-{ "error": "unauthorized", "message": "invalid token" }
+{ "error": "unauthorized", "message": "authentication required" }
 ```
 
 ## Error Response Format
@@ -241,7 +227,7 @@ Download videos or audio via yt-dlp, supporting YouTube, Bilibili, and 1000+ oth
 ##### aria2 — Aria2 Download
 
 {{< hint warning >}}
-Requires Aria2 to be enabled and configured (RPC) in the config file.
+Requires Aria2 to be enabled and configured (RPC) under **Settings → Aria2**.
 {{< /hint >}}
 
 Download files via the Aria2 download manager, supporting HTTP/HTTPS, FTP, BitTorrent (magnet links, torrent files), and more.

@@ -9,41 +9,27 @@ SaveAny-Bot 提供了一套 HTTP API，允许你通过程序化方式创建下�
 
 ## 启用 API
 
-在 `config.toml` 中添加或修改以下配置：
+API 与 Web 控制台共用监听地址和端口，不需要单独启用。登录 Web 控制台后，在 **设置 → Web** 中设置 API Token：
 
-```toml
-[api]
-enable = true
-host   = "0.0.0.0"   # 监听地址，默认 0.0.0.0
-port   = 8080         # 监听端口，默认 8080
-token  = "your-token" # 鉴权 Token，强烈建议设置
-```
+- `API Token`：用于 `Authorization: Bearer <token>` 调用；留空时使用登录会话。
+- `Web 监听地址`：API 与控制台共用，例如 `0.0.0.0:8080`。
 
-也可通过环境变量覆盖（前缀 `SAVEANY_`）：
-
-| 环境变量 | 对应配置项 |
-|---|---|
-| `SAVEANY_API_ENABLE` | `api.enable` |
-| `SAVEANY_API_HOST` | `api.host` |
-| `SAVEANY_API_PORT` | `api.port` |
-| `SAVEANY_API_TOKEN` | `api.token` |
-
-{{< hint warning >}}
-若 `token` 为空，API 服务将**不进行任何鉴权**即可访问，存在安全风险。
-{{< /hint >}}
+所有接口位于 `/api/v1` 下。
 
 ## 鉴权
 
-当配置了 `token` 时，所有 API 请求均需在 HTTP 请求头中携带 Bearer Token：
+推荐在 **设置 → Web** 中配置 API Token，然后在请求头中携带：
 
 ```
 Authorization: Bearer <your-token>
 ```
 
+也可以使用 Web 控制台的登录 Cookie。通过 Cookie 发起的非 GET 请求还需要 `X-CSRF-Token` 请求头。
+
 鉴权失败时返回 `401`：
 
 ```json
-{ "error": "unauthorized", "message": "invalid token" }
+{ "error": "unauthorized", "message": "authentication required" }
 ```
 
 ## 错误响应格式
@@ -241,7 +227,7 @@ Authorization: Bearer <token>
 ##### aria2 — Aria2 下载
 
 {{< hint warning >}}
-需要在配置文件中启用并配置 Aria2 RPC。
+需要在 **设置 → Aria2** 中启用并配置 Aria2 RPC。
 {{< /hint >}}
 
 通过 Aria2 下载管理器下载文件，支持 HTTP/HTTPS、FTP、BitTorrent（磁力链接、种子）等协议。

@@ -1,270 +1,55 @@
 ---
 title: "配置说明"
+weight: 11
 ---
 
 # 配置说明
 
-SaveAnyBot 的配置文件使用 toml 格式, 你可以在 [TOML 官方网站](https://toml.io/) 上了解更多关于 toml 的语法.
+设置保存在数据目录下的 SQLite 数据库（默认 `data/saveany.db`），通过 Web 控制台管理。首次启动使用默认值，管理员密码会打印在启动日志中，也可以用 `SAVEANY_ADMIN_PASSWORD` 指定。
 
-SaveAnyBot 需要读取工作目录下的 `config.toml` 文件作为配置文件, 若缺少该文件则会创建默认文件, 并尝试从环境变量中加载配置.
+## 配置页面
 
-以下是一个最简的配置文件示例:
+| 页面 | 内容 |
+|---|---|
+| 指南 | 首次配置检查清单和日常使用说明 |
+| Telegram | Bot Token、API ID/Hash、代理、Userbot 登录 |
+| 存储 | 本地磁盘、WebDAV、Alist、S3、MinIO、Rclone、Telegram 等存储端 |
+| 用户 | Telegram 用户 ID、默认存储、目录、规则和访问控制 |
+| 设置 | 并发、语言、代理、Aria2、yt-dlp、解析器、缓存、日志、Web 和 API |
 
-```toml
-[telegram]
-token = "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+部分设置需要重启进程后生效，例如 Worker 数量、全局代理、数据库会话路径、缓存、插件、Hook 和 Web 监听地址。保存时页面会提示需要重启的字段。
 
-[[users]]
-# telegram user id
-id = 777000
-blacklist = true
+### Telegram
 
-[[storages]]
-name = "本机存储"
-type = "local"
-enable = true
-base_path = "./downloads"
-```
+Bot Token 在 [@BotFather](https://t.me/BotFather) 创建。`API ID` 和 `API Hash` 已提供默认值，通常无需修改；启用 Userbot 时建议使用自己的 [Telegram API](https://my.telegram.org/apps) 凭据。
 
-## 详细配置
+保存 Bot 配置后会自动启动连接。Userbot 的登录在 Telegram 页面完成，不需要进入容器终端。
 
-### 全局配置
+### 存储
 
-- `lang`: Bot 使用的语言, 默认为 `zh-CN` (简体中文), 设为 `en` 则使用英语.
-- `stream`: 是否启用 Stream 模式, 默认为 `false`. 启用后 Bot 将直接将文件流式传输到存储端(若存储端支持), 不需要下载到本地
-{{< hint warning >}}
-Stream 模式对于磁盘空间有限的部署环境十分有用, 但也有一些弊端:
-<br />
-<ul>
-<li>无法使用多线程从 Telegram 下载文件, 速度较慢.</li>
-<li>网络不稳定时, 任务失败率高.</li>
-<li>无法在中间层对文件进行处理, 例如自动文件类型识别.</li>
-<li>并非支持所有存储端, 不支持的存储端可能会降级为普通模式或无法上传.</li>
-</ul>
-{{< /hint >}}
-- `workers`: 同时处理任务数量, 默认为 3
-- `threads`: 下载文件时使用的线程数, 默认为 4. 仅在未启用 Stream 模式时生效.
-- `retry`: 任务失败时的重试次数, 默认为 3.
-- `proxy`: 全局代理配置, 配置后程序内一切网络连接将会尝试使用该代理, 可选.
+存储端在 **存储** 页面添加并启用。本地磁盘只需要一个基础路径：
 
-```toml
-lang = "zh-CN"
-stream = false
-workers = 3
-threads = 4
-retry = 3
-proxy = "socks5://127.0.0.1:7890"
-```
+- Docker 部署通常填写 `/app/downloads`。
+- 二进制部署可以填写 `./downloads` 或绝对路径。
 
-### Telegram 配置
+存储端字段说明见 [存储端配置](./storages)。
 
-- `token`: 你的 Telegram Bot Token, 可以通过 [BotFather](https://t.me/botfather) 创建 Bot 并获取 Token.
-- `app_id`, `app_hash`: Telegram API ID & Hash, 在 [Telegram API](https://my.telegram.org/apps) 创建应用获取, 若不提供则使用默认值.
-- `flood_retry`: Flood 控制重试次数, 默认为 5.
-- `rpc_retry`: RPC 请求重试次数, 默认为 5.
-- `proxy`: 代理配置, 可选.
-  - `enable`: 是否启用代理.
-  - `url`: 代理地址
-- `userbot`: userbot 配置, 可选.
-  - `enable`: 启用 userbot 集成, 需要登录用户账号, 此时请务必使用自己的 api id & hash.
-  - `session`: userbot 会话文件路径, 默认为 `data/usersession.db`.
+### 用户
 
-{{< hint warning >}}
-启用 userbot 集成后, bot 可以下载私密频道和群组的文件, 但具有无法避免的账号被封禁的风险.
-<br />
-开启 userbot 集成后第一次启动 bot 时需要通过终端交互输入手机号, 2FA 和验证码.
-<br />
-如果你使用 docker 部署, 请使用 -it 参数为容器提供交互式环境, 然后执行登录操作.
-{{< /hint >}}
+只有 **用户** 页面中启用的 Telegram User ID 能使用 Bot。新建用户时至少填写数字 User ID；默认存储可以留空，之后再设置。
 
-```toml
-[telegram]
-token = "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-app_id = 1025907
-app_hash = "452b0359b988148995f22ff0f4229750"
-flood_retry = 5
-rpc_retry = 5
-[telegram.proxy]
-enable = false
-url = "socks5://127.0.0.1:7890"
-[telegram.userbot]
-enable = false
-session = "data/usersession.db"
-```
+## 环境变量
 
-### Aria2 配置
+| 变量 | 说明 |
+|---|---|
+| `SAVEANY_DATA_DIR` | 数据目录，默认 `./data` |
+| `SAVEANY_DB_PATH` | SQLite 文件路径，默认 `<data-dir>/saveany.db` |
+| `SAVEANY_LISTEN` | Web 监听地址，例如 `0.0.0.0:8080` |
+| `SAVEANY_ADMIN_PASSWORD` | 首次启动时设置管理员密码；未设置则自动生成并打印 |
 
-Aria2 是一个强大的下载管理器，支持 HTTP/HTTPS、FTP、BitTorrent 等多种协议。启用后，Bot 可以使用 `/aria2dl` 命令通过 Aria2 下载文件。
+## 安全
 
-- `enable`: 是否启用 Aria2 支持，默认为 `false`
-- `url`: Aria2 RPC 地址，通常为 `http://localhost:6800/jsonrpc`
-- `secret`: Aria2 RPC 密钥，如果你在 Aria2 中配置了 `rpc-secret`，需要在此填写
-- `remove_after_transfer`: 转存完成后是否删除 Aria2 下载的本地文件，默认为 `true`
-
-{{< hint info >}}
-Aria2 需要单独安装和运行。你可以参考 [Aria2 官方文档](https://aria2.github.io/) 了解如何安装和配置 Aria2。
-{{< /hint >}}
-
-```toml
-[aria2]
-enable = true
-url = "http://localhost:6800/jsonrpc"
-secret = "your-rpc-secret"
-remove_after_transfer = true
-```
-
-### yt-dlp 配置
-
-用于配置 `/ytdlp` 命令以及 HTTP API 中 `ytdlp` 任务类型在未传自定义参数时的默认行为.
-
-- `max_height`: 默认下载的最高视频清晰度 (按高度限制), 如 `1080`, `720`, `480`; `0` 表示不限制 (下载最佳画质). 当设置了 `format` 时此项被忽略.
-- `format`: 直接指定 yt-dlp format 选择表达式, 设置后优先级高于 `max_height`, 例如 `bv*[height<=720]+ba/b`.
-- `recode`: 下载后转封装的视频容器格式 (如 `mp4`), 留空则不转封装.
-- `filename_template`: 下载文件名模板 (yt-dlp output template), 默认 `%(title)s.%(ext)s`. 模板中的目录会创建在 bot 的下载目录下, 并保留到存储路径中.
-- `restrict_filenames`: 将文件名限制为 ASCII 字符 (yt-dlp `--restrict-filenames`), 同时会去掉空格和 `&`. 默认关闭.
-
-{{< hint info >}}
-`max_height`、`format` 和 `recode` 仅在使用 `/ytdlp` 命令 (或 API 的 `ytdlp` 任务类型) 且未传任何自定义参数时生效. `filename_template` 和 `restrict_filenames` 在传了其他参数时依然生效, 除非自己传了对应的参数 (`-o/--output`、`--restrict-filenames` 或 `--no-restrict-filenames`).
-{{< /hint >}}
-
-```toml
-[ytdlp]
-max_height = 1080
-format = ""        # 例如 "bv*[height<=720]+ba/b"
-recode = "mp4"     # 留空则不转封装
-filename_template = "%(title)s.%(ext)s"  # 例如 "%(uploader)s - %(title)s.%(ext)s"
-restrict_filenames = false
-```
-
-### HTTP API 配置
-
-启用后, SaveAny-Bot 会暴露一套 HTTP API, 用于以编程方式创建/查询/取消任务. 完整的接口说明见 [HTTP API](../../usage/api).
-
-- `enable`: 是否启用 HTTP API 服务, 默认为 `false`.
-- `host`: 监听地址, 默认 `0.0.0.0`.
-- `port`: 监听端口, 默认 `8080`.
-- `token`: 鉴权 Token, **强烈建议设置** — 若为空, API 将在无任何鉴权的情况下暴露.
-
-```toml
-[api]
-enable = false
-host = "0.0.0.0"
-port = 8080
-token = "your-token"
-```
-
-### 日志配置
-
-- `level`: 日志级别, 可选 `debug`, `info`, `warn`, `error`, `fatal`. 默认为 `info`.
-
-```toml
-[log]
-level = "info"
-```
-
-### 存储端列表
-
-存储端列表用于定义 Bot 支持的存储位置, 每个存储端需要指定名称、类型和相关配置, 使用双中括号语法 `[[storages]]` 定义.
-
-每一个存储端至少需要以下字段:
-
-- `name`: 存储端名称, 用于在 Bot 中识别, 需要唯一
-- `enable`: 是否启用该存储端, 默认为 `true`
-- `type`: 存储端类型, 目前支持以下类型:
-  - `local`: 本地磁盘
-  - `alist`: Alist
-  - `webdav`: WebDAV
-  - `s3`: aws S3 及其他兼容 S3 的服务
-  - `rclone`: 调用 rclone 实现上传
-  - `telegram`: 上传到 Telegram
-
-示例, 这是一个包含本地存储和 webdav 存储的配置:
-
-```toml
-[[storages]]
-name = "本地存储"
-type = "local"
-enable = true
-# 以下是 local 类型存储的自定义配置
-base_path = "./downloads"
-
-[[storages]]
-name = "WebDAV"
-type = "webdav"
-enable = true
-# 以下是 webdav 类型存储的自定义配置
-url = "https://example.com/webdav"
-base_path = "/path/to/webdav"
-username = "your_username"
-password = "your_password"
-```
-
-所有存储端的自定义配置项可查看 [存储端配置](./storages) 
-
-### 用户列表
-
-用户列表用于定义对存储端的访问控制, 每个用户需要指定 Telegram 上的用户 ID, 使用双中括号语法 `[[users]]` 定义.
-
-- `id`: 用户的 Telegram User ID
-- `storages`: 过滤的存储端列表, 使用存储端名称定义, 默认为白名单模式 (即只允许访问列表中的存储端)
-- `blacklist`: 是否启用黑名单模式, 默认为 `false`. 若启用黑名单模式, 则仅允许访问**没有**在列表中的存储端.
-
-示例, 这是一个包含三个用户的配置, 用户 `123123` 只能访问本地存储, 用户 `456456` 只能访问除 WebDAV 以外的存储, 用户 `789789` 启用黑名单模式但没有指定存储端, 因此可以访问所有存储:
-
-```toml
-[[users]]
-id = 123123
-storages = ["本地存储"]
-
-[[users]]
-id = 456456
-storages = ["WebDAV"]
-blacklist = true
-
-[[users]]
-id = 789789
-storages = []
-blacklist = true
-```
-
-### 事件触发
-
-事件触发提供了在 Bot 处理任务时根据任务状态执行自定义操作的能力, 目前仅支持任意命令执行. 使用 `[hook.exec]` 配置.
-
-目前具有以下几种事件类型:
-
-- `task_before_start`: 任务即将开始前
-- `task_success`: 任务成功完成后
-- `task_fail`: 任务失败后
-- `task_cancel`: 任务被取消后
-
-提供的配置值需要为完整的命令行命令, Bot 会在事件发生时执行该命令. 示例:
-
-```toml
-[hook.exec]
-task_before_start = "echo '任务即将开始'"
-task_success = "bash /path/to/success_script.sh"
-task_fail = "curl -X POST https://example.com/api/notify -d '任务失败'"
-task_cancel = "bash /path/to/cancel_script.sh"
-```
-
-### 解析器
-
-解析器为 Bot 提供了处理非 Telegram 文件的能力, 例如从其他网站下载文件. 使用 `[parsers]` 配置.
-
-```toml
-[parsers]
-plugin_enable = true # 是否启用解析器插件
-plugin_dirs = ["./plugins"] # 插件目录, 可以是多个目录
-```
-
-上述两个配置项只用于控制以 JavaScript 编写的解析器插件, Bot 还有内置的使用 Go 实现的解析器, 目前默认开启.
-
-### 杂项
-
-```toml
-no_clean_cache = false # 是否在退出时不清空缓存文件夹
-# 临时下载文件夹配置
-[temp]
-base_path = "./cache"
-```
+- Web 控制台和 HTTP API 共用监听端口；若暴露到公网，请使用反向代理和 HTTPS。
+- 设置中的 `API Token` 用于 Bearer Token 调用 `/api/v1` 接口；为空时 API 依赖登录会话。
+- 首次登录后立即修改自动生成的管理员密码。
+- 不要公开 `data/`、Bot Token、Userbot 会话或 API Token。

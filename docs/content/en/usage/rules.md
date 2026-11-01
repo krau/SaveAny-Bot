@@ -76,7 +76,7 @@ Matches based on filename regex. The rule content must be a valid regular expres
 FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ MyAlist /videos
 ```
 
-This means files with extensions mp4, mkv, ts, avi, flv will be saved to the `/videos` directory in the storage named `MyAlist` (also affected by the `base_path` in the configuration file).
+This means files with extensions mp4, mkv, ts, avi, flv will be saved to the `/videos` directory in the storage named `MyAlist` (also affected by the `base_path` in storage settings).
 
 ## MESSAGE-REGEX
 

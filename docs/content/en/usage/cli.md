@@ -7,7 +7,7 @@ weight: 21
 
 Besides running the Telegram bot with `./saveany-bot` (no subcommand), the binary exposes two helper subcommands for moving local files into a storage backend: `upload` (one-shot) and `watch` (continuous).
 
-These subcommands load the same `config.toml` as the bot, initialize the database and caches, then perform their task. They do **not** start the Telegram bot itself, although storages of type `telegram` will spin up the bot client just for the upload.
+These subcommands load the same database settings as the bot, initialize the database and caches, then perform their task. They do **not** start the Telegram bot itself, although storages of type `telegram` will spin up the bot client just for the upload.
 
 ## `upload` — Upload a Single File
 
@@ -20,7 +20,7 @@ Flags:
 | Flag | Required | Description |
 |---|---|---|
 | `-f, --file` | Yes | Path to the local file to upload |
-| `-s, --storage` | Yes | Target storage name (must exist in `config.toml`) |
+| `-s, --storage` | Yes | Target storage name (must exist in the web console storage list) |
 | `-d, --dir` | No | Destination directory within the storage. Defaults to the storage's `base_path` |
 | `--no-progress` | No | Disable the terminal progress bar |
 
@@ -82,7 +82,7 @@ Examples:
 
 - Relative directory structure is preserved under the destination directory. A file written to `./inbox/sub/file.txt` with `--path ./inbox` is uploaded to `<dest_dir>/sub/file.txt`.
 - `watch` runs until interrupted (e.g. `Ctrl-C` / `SIGINT`); in-flight uploads are drained before exit.
-- Retries follow the global `retry` value from `config.toml`, with `--retry-delay` between attempts.
+- Retries follow the global `retry` value from Settings, with `--retry-delay` between attempts.
 - Telegram-type storages will start the bot client automatically to perform uploads.
 
 {{< hint warning >}}

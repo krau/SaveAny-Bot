@@ -6,7 +6,7 @@ weight: 6
 # Aria2 Download
 
 {{< hint warning >}}
-This feature requires enabling Aria2 in the configuration file and configuring the RPC connection.
+This feature requires enabling Aria2 under **Settings → Aria2** and configuring the RPC connection.
 {{< /hint >}}
 
 Use the `/aria2dl` command to download files via the Aria2 download manager, supporting HTTP/HTTPS, FTP, BitTorrent, and other protocols.
@@ -30,12 +30,8 @@ Examples:
 
 Configure Aria2:
 
-Add to `config.toml`:
+Enable it under **Settings → Aria2** in the web console and fill in:
 
-```toml
-[aria2]
-enable = true
-url = "http://localhost:6800/jsonrpc"
-secret = "your-rpc-secret"  # If rpc-secret is configured
-remove_after_transfer = true  # Remove local files after transfer
-```
+- `URL`: Aria2 RPC address, for example `http://localhost:6800/jsonrpc`
+- `Secret`: required when `rpc-secret` is configured
+- `Keep file`: keep the local file downloaded by Aria2 after the transfer

@@ -4,7 +4,7 @@ title: "存储端配置"
 
 # 存储端配置
 
-请先阅读 [配置说明](../) 了解配置文件的基本格式.
+在 Web 控制台的 **存储** 页面添加存储时填写以下字段。
 
 ## Alist
 
@@ -12,7 +12,7 @@ title: "存储端配置"
 
 不支持 Stream 模式.
 
-```toml
+```text
 url = "https://alist.example.com" # Alist 的 URL
 username = "your_username"  # Alist 的用户名
 password = "your_password" # Alist 的密码
@@ -27,14 +27,14 @@ token = "your_token"
 
 `type=local`
 
-```toml
+```text
 base_path = "./downloads" # 本地存储的基础路径, 所有文件将存储在此路径下
 ```
 
 ## WebDAV
 `type=webdav`
 
-```toml
+```text
 url = "https://webdav.example.com" # WebDAV 的 URL
 username = "your_username"  # WebDAV
 password = "your_password" # WebDAV 的密码
@@ -45,7 +45,7 @@ base_path = "/path/to/webdav" # WebDAV 中的基础路径, 所有文件将存储
 
 `type=s3`
 
-```toml
+```text
 endpoint = "s3.example.com" # S3 的端点, 默认为 aws S3 的端点
 region = "us-east-1" # S3 的区域
 access_key_id = "your_access_key_id" # S3 的访问密钥 ID
@@ -75,7 +75,7 @@ https://s3.example.com/your_bucket_name/path/to/s3/your_file
 
 不支持 Stream 模式.
 
-```toml
+```text
 # Telegram 聊天 ID, Bot 将把文件发送到这个聊天
 chat_id = "123456789"
 # 是否强制使用文件方式发送, 默认为 false
@@ -96,7 +96,7 @@ split_size_mb = 0
 
 通过 [rclone](https://rclone.org/) 命令行工具支持多种云存储服务. 需要先安装 rclone 并配置好远程存储.
 
-```toml
+```text
 # rclone 配置的远程名称, 可以是任何在 rclone.conf 中配置的远程
 remote = "mydrive"
 # 在远程存储中的基础路径, 所有文件将存储在此路径下
@@ -124,7 +124,7 @@ rclone 支持多种云存储服务, 包括但不限于:
 
 配置 Google Drive 后, 可以这样配置存储:
 
-```toml
+```text
 [[storages]]
 name = "GoogleDrive"
 type = "rclone"
@@ -135,7 +135,7 @@ base_path = "/SaveAnyBot"
 
 如果使用自定义的 rclone 配置文件:
 
-```toml
+```text
 [[storages]]
 name = "MyRemote"
 type = "rclone"

@@ -7,7 +7,7 @@ weight: 21
 
 除了直接运行 `./saveany-bot` (不带子命令) 启动 Telegram Bot 外, 这个二进制文件还提供两个把本地文件上传到存储后端的辅助子命令: `upload` (一次性) 和 `watch` (持续监听).
 
-这些子命令会读取与 Bot 相同的 `config.toml`, 初始化数据库和缓存, 然后执行任务. 它们**不会**启动 Telegram Bot 本身, 但 `telegram` 类型的存储会在需要上传时临时启动 Bot 客户端来执行上传.
+这些子命令会读取与 Bot 相同的数据库设置, 初始化数据库和缓存, 然后执行任务. 它们**不会**启动 Telegram Bot 本身, 但 `telegram` 类型的存储会在需要上传时临时启动 Bot 客户端来执行上传.
 
 ## `upload` — 上传单个文件
 
@@ -20,7 +20,7 @@ saveany-bot upload -f <文件> -s <存储名> [-d <目录>] [--no-progress]
 | 参数 | 必填 | 说明 |
 |---|---|---|
 | `-f, --file` | 是 | 待上传的本地文件路径 |
-| `-s, --storage` | 是 | 目标存储名 (必须存在于 `config.toml`) |
+| `-s, --storage` | 是 | 目标存储名 (必须在 Web 控制台的存储页面中存在) |
 | `-d, --dir` | 否 | 存储中的目标目录, 默认使用存储的 `base_path` |
 | `--no-progress` | 否 | 关闭终端进度条 |
 
@@ -82,7 +82,7 @@ saveany-bot watch -p <路径> -s <存储名> [-d <目录>] [选项]
 
 - 相对子目录结构会被保留: 以 `--path ./inbox` 为例, 写入 `./inbox/sub/file.txt` 的文件会被上传到 `<目标目录>/sub/file.txt`.
 - `watch` 会一直运行直到被中断 (如 `Ctrl-C` / `SIGINT`), 退出前会等待所有进行中的上传完成.
-- 重试次数遵循 `config.toml` 中的全局 `retry` 值, 各次重试之间间隔 `--retry-delay`.
+- 重试次数遵循 设置中的全局 `retry` 值, 各次重试之间间隔 `--retry-delay`.
 - `telegram` 类型的存储会自动启动 Bot 客户端来执行上传.
 
 {{< hint warning >}}

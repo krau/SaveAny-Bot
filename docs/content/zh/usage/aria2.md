@@ -6,7 +6,7 @@ weight: 6
 # Aria2 下载
 
 {{< hint warning >}}
-该功能需要在配置文件中启用 Aria2 并配置 RPC 连接.
+该功能需要在 **设置 → Aria2** 中启用并配置 RPC 连接.
 {{< /hint >}}
 
 使用 `/aria2dl` 命令可以通过 Aria2 下载管理器下载文件, 支持 HTTP/HTTPS、FTP、BitTorrent 等多种协议.
@@ -30,12 +30,8 @@ weight: 6
 
 配置 Aria2:
 
-在 `config.toml` 中添加:
+在 Web 控制台的 **设置 → Aria2** 中启用，并填写:
 
-```toml
-[aria2]
-enable = true
-url = "http://localhost:6800/jsonrpc"
-secret = "your-rpc-secret"  # 如果配置了 rpc-secret
-remove_after_transfer = true  # 转存完成后删除本地文件
-```
+- `URL`: Aria2 RPC 地址，例如 `http://localhost:6800/jsonrpc`
+- `Secret`: 配置了 `rpc-secret` 时填写
+- `保留文件`: 转存完成后是否保留 Aria2 下载的本地文件

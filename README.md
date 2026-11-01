@@ -40,39 +40,38 @@
 
 ## 📦 Quick Start
 
-Create a `config.toml` file with the following content:
-
-```toml
-lang = "en" # Language setting, "en" for English
-[telegram]
-token = "" # Your bot token, obtained from @BotFather
-[telegram.proxy]
-# Enable proxy for Telegram
-enable = false
-url = "socks5://127.0.0.1:7890"
-
-[[storages]]
-name = "Local Disk"
-type = "local"
-enable = true
-base_path = "./downloads"
-
-[[users]]
-id = 114514 # Your Telegram account id
-storages = []
-blacklist = true
-```
-
-Run Save Any Bot with Docker:
+SaveAny-Bot is configured in the web console. Start it with empty data, downloads, and cache directories:
 
 ```bash
 docker run -d --name saveany-bot \
-    -v ./config.toml:/app/config.toml \
+    -p 8080:8080 \
+    -v ./data:/app/data \
     -v ./downloads:/app/downloads \
+    -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-Please [**read the docs**](https://sabot.unv.app/en/) for more configuration options and usage.
+Open `http://localhost:8080`. The admin password is printed in the startup log:
+
+```bash
+docker logs saveany-bot | grep "admin password"
+```
+
+Set `SAVEANY_ADMIN_PASSWORD` to choose it instead. After signing in, the Guide page covers the required setup:
+
+1. Connect your Telegram bot.
+2. Add a storage destination.
+3. Allow your Telegram account.
+
+Then send files or message links to the bot and watch them in the Tasks page.
+
+To run the binary, download a release, extract it, and start it. It creates `data/` and prints the generated admin password:
+
+```bash
+./saveany-bot
+```
+
+Please [**read the docs**](https://sabot.unv.app/en/) for storage backends and usage.
 
 ## Sponsors
 

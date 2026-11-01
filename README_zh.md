@@ -38,38 +38,38 @@
 
 ## 快速开始
 
-创建文件 `config.toml` 并填入以下内容:
-
-```toml
-[telegram]
-token = "" # 你的 Bot Token, 在 @BotFather 获取
-[telegram.proxy]
-# 启用代理连接 telegram
-enable = false
-url = "socks5://127.0.0.1:7890"
-
-[[storages]]
-name = "本地磁盘"
-type = "local"
-enable = true
-base_path = "./downloads"
-
-[[users]]
-id = 114514 # 你的 Telegram 账号 id
-storages = []
-blacklist = true
-```
-
-使用 Docker 运行 Save Any Bot:
+SaveAny-Bot 在 Web 控制台中配置。使用空的数据、下载和缓存目录启动:
 
 ```bash
 docker run -d --name saveany-bot \
-    -v ./config.toml:/app/config.toml \
+    -p 8080:8080 \
+    -v ./data:/app/data \
     -v ./downloads:/app/downloads \
+    -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-请 [**查看文档**](https://sabot.unv.app/) 以获取更多配置选项和使用方法.
+打开 `http://localhost:8080`。首次启动的管理员密码会打印在日志中:
+
+```bash
+docker logs saveany-bot | grep "admin password"
+```
+
+也可以通过 `SAVEANY_ADMIN_PASSWORD` 指定。登录后，指南页面会引导完成必要配置:
+
+1. 连接 Telegram Bot。
+2. 添加存储位置。
+3. 授权你的 Telegram 账号。
+
+完成后，向 Bot 发送文件或消息链接，即可在任务页查看转存进度。
+
+使用预编译二进制时，下载 Release、解压并直接运行。程序会创建 `data/` 目录并输出管理员密码:
+
+```bash
+./saveany-bot
+```
+
+更多存储端和使用方法请 [**查看文档**](https://sabot.unv.app/)。
 
 ## 赞助
 
