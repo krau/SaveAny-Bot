@@ -1,5 +1,7 @@
 package parsed
 
+import "maps"
+
 type TaskInfo interface {
 	TaskID() string
 	Site() string
@@ -42,7 +44,11 @@ func (t *Task) DownloadedBytes() int64 {
 func (t *Task) Processing() map[string]ResourceInfo {
 	t.processingMu.RLock()
 	defer t.processingMu.RUnlock()
-	return t.processing
+	// Return a snapshot: callers render it while resource goroutines mutate the
+	// live map.
+	snapshot := make(map[string]ResourceInfo, len(t.processing))
+	maps.Copy(snapshot, t.processing)
+	return snapshot
 }
 
 type ResourceInfo interface {
