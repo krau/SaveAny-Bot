@@ -4,8 +4,11 @@ import { useI18n } from 'vue-i18n'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { MASKED_SECRET } from '../api'
 import { storageDefaults, storageTypeDef, storageTypeDefs } from '../storageFields'
+import type { StorageField } from '../storageFields'
+import AppIcon from './AppIcon.vue'
 import AppSelect from './AppSelect.vue'
 import LoadingButton from './LoadingButton.vue'
+import ServerPathPicker from './ServerPathPicker.vue'
 import type { JsonObject, StorageInput, StorageRecord } from '../types'
 
 const props = defineProps<{
@@ -28,6 +31,8 @@ const type = ref(storageTypeDefs[0].type)
 const enable = ref(true)
 const values = reactive<Record<string, string>>({})
 const bools = reactive<Record<string, boolean>>({})
+const pathPickerOpen = ref(false)
+const pathPickerField = ref<StorageField | null>(null)
 const { invalidField, fail, clear } = useFormFeedback()
 
 const fields = computed(() => storageTypeDef(type.value)?.fields ?? [])
@@ -101,6 +106,24 @@ watch(type, () => {
     applyDefaults()
   }
 })
+
+function openPathPicker(field: StorageField) {
+  pathPickerField.value = field
+  pathPickerOpen.value = true
+}
+
+function closePathPicker() {
+  pathPickerOpen.value = false
+  pathPickerField.value = null
+}
+
+function selectPath(path: string) {
+  const field = pathPickerField.value
+  if (!field) return
+  values[field.name] = path
+  clear(`storage-field-${field.name}`)
+  closePathPicker()
+}
 
 function changeType(next: string) {
   if (next === type.value) return
@@ -220,16 +243,26 @@ function submit() {
             :placeholder="field.placeholder ? t(field.placeholder) : undefined"
             @input="clear(`storage-field-${field.name}`)"
           ></textarea>
-          <input
-            v-else
-            :id="`storage-field-${field.name}`"
-            v-model="values[field.name]"
-            :type="field.kind === 'number' ? 'number' : field.kind === 'secret' ? 'password' : 'text'"
-            :placeholder="field.placeholder ? t(field.placeholder) : undefined"
-            :aria-invalid="invalidField === `storage-field-${field.name}` ? 'true' : undefined"
-            autocomplete="off"
-            @input="clear(`storage-field-${field.name}`)"
-          />
+          <div v-else class="path-input-row">
+            <input
+              :id="`storage-field-${field.name}`"
+              v-model="values[field.name]"
+              :type="field.kind === 'number' ? 'number' : field.kind === 'secret' ? 'password' : 'text'"
+              :placeholder="field.placeholder ? t(field.placeholder) : undefined"
+              :aria-invalid="invalidField === `storage-field-${field.name}` ? 'true' : undefined"
+              autocomplete="off"
+              @input="clear(`storage-field-${field.name}`)"
+            />
+            <button
+              v-if="field.pathKind"
+              class="btn small"
+              type="button"
+              @click="openPathPicker(field)"
+            >
+              <AppIcon :name="field.pathKind === 'directory' ? 'folder' : 'file'" :size="14" />
+              {{ t('common.pathPicker.browse') }}
+            </button>
+          </div>
           <span v-if="field.hint" class="hint">{{ t(field.hint) }}</span>
         </div>
       </template>
@@ -246,4 +279,12 @@ function submit() {
       </LoadingButton>
     </div>
   </form>
+
+  <ServerPathPicker
+    :open="pathPickerOpen"
+    :mode="pathPickerField?.pathKind ?? 'directory'"
+    :initial-path="pathPickerField ? values[pathPickerField.name] : ''"
+    @close="closePathPicker"
+    @select="selectPath"
+  />
 </template>

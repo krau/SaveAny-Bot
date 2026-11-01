@@ -6,6 +6,7 @@ import AppIcon from '../components/AppIcon.vue'
 import AppSelect from '../components/AppSelect.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
+import ServerPathPicker from '../components/ServerPathPicker.vue'
 import { settingsGroups } from '../settingsFields'
 import type { SettingsField } from '../settingsFields'
 import { useToastStore } from '../stores/toasts'
@@ -38,6 +39,10 @@ const settingsGroupOptions = computed(() =>
   translatedGroups.value.map((group) => ({ value: group.key, label: group.title })),
 )
 const invalid = reactive<Record<string, string>>({})
+const pathPickerOpen = ref(false)
+const pathPickerMode = ref<'file' | 'directory'>('file')
+const pathPickerInitial = ref('')
+const pathPickerTarget = ref<{ group: string; field: SettingsField } | null>(null)
 let scrollFrame = 0
 let navLock = false
 
@@ -155,6 +160,38 @@ function textValue(group: string, field: SettingsField): string {
 
 function boolValue(group: string, field: SettingsField): boolean {
   return Boolean(readPath(values[group] ?? {}, field.path))
+}
+
+function openPathPicker(group: string, field: SettingsField) {
+  pathPickerTarget.value = { group, field }
+  pathPickerMode.value = field.pathKind ?? 'file'
+  pathPickerInitial.value = textValue(group, field)
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .find(Boolean) ?? ''
+  pathPickerOpen.value = true
+}
+
+function closePathPicker() {
+  pathPickerOpen.value = false
+  pathPickerTarget.value = null
+}
+
+function selectPath(path: string) {
+  const target = pathPickerTarget.value
+  if (!target) return
+  const { group, field } = target
+  if (field.kind === 'list') {
+    const entries = textValue(group, field)
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+    if (!entries.includes(path)) entries.push(path)
+    setTextField(group, field, entries.join('\n'))
+  } else {
+    setTextField(group, field, path)
+  }
+  closePathPicker()
 }
 
 function setTextField(group: string, field: SettingsField, raw: string) {
@@ -300,24 +337,44 @@ async function save(group: string) {
                 :options="field.options ?? []"
                 @update:model-value="setTextField(group.key, field, $event)"
               />
-              <textarea
-                v-else-if="field.kind === 'list' || field.kind === 'json'"
-                :id="`${group.key}-${field.path}`"
-                :value="textValue(group.key, field)"
-                :placeholder="field.placeholder"
-                :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
-                @input="setTextField(group.key, field, ($event.target as HTMLTextAreaElement).value)"
-              ></textarea>
-              <input
-                v-else
-                :id="`${group.key}-${field.path}`"
-                :value="textValue(group.key, field)"
-                :type="field.kind === 'number' ? 'number' : field.kind === 'password' ? 'password' : 'text'"
-                :placeholder="field.placeholder"
-                autocomplete="off"
-                :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
-                @input="setTextField(group.key, field, ($event.target as HTMLInputElement).value)"
-              />
+              <div v-else-if="field.kind === 'list' || field.kind === 'json'" class="path-input-column">
+                <textarea
+                  :id="`${group.key}-${field.path}`"
+                  :value="textValue(group.key, field)"
+                  :placeholder="field.placeholder"
+                  :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
+                  @input="setTextField(group.key, field, ($event.target as HTMLTextAreaElement).value)"
+                ></textarea>
+                <button
+                  v-if="field.pathKind"
+                  class="btn small"
+                  type="button"
+                  @click="openPathPicker(group.key, field)"
+                >
+                  <AppIcon :name="field.pathKind === 'directory' ? 'folder' : 'file'" :size="14" />
+                  {{ t('common.pathPicker.browse') }}
+                </button>
+              </div>
+              <div v-else class="path-input-row">
+                <input
+                  :id="`${group.key}-${field.path}`"
+                  :value="textValue(group.key, field)"
+                  :type="field.kind === 'number' ? 'number' : field.kind === 'password' ? 'password' : 'text'"
+                  :placeholder="field.placeholder"
+                  autocomplete="off"
+                  :aria-invalid="invalid[fieldKey(group.key, field.path)] ? 'true' : undefined"
+                  @input="setTextField(group.key, field, ($event.target as HTMLInputElement).value)"
+                />
+                <button
+                  v-if="field.pathKind"
+                  class="btn small"
+                  type="button"
+                  @click="openPathPicker(group.key, field)"
+                >
+                  <AppIcon :name="field.pathKind === 'directory' ? 'folder' : 'file'" :size="14" />
+                  {{ t('common.pathPicker.browse') }}
+                </button>
+              </div>
               <span v-if="field.hint" class="hint">{{ field.hint }}</span>
             </div>
           </div>
@@ -342,5 +399,13 @@ async function save(group: string) {
         </form>
       </div>
     </div>
+
+    <ServerPathPicker
+      :open="pathPickerOpen"
+      :mode="pathPickerMode"
+      :initial-path="pathPickerInitial"
+      @close="closePathPicker"
+      @select="selectPath"
+    />
   </div>
 </template>

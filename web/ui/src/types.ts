@@ -183,6 +183,23 @@ export interface MeResponse {
   csrf_token?: string
 }
 
+export interface FilesystemEntry {
+  name: string
+  path: string
+  is_dir: boolean
+  size?: number
+}
+
+export interface FilesystemListing {
+  path: string
+  parent?: string
+  root: string
+  cwd: string
+  selected?: string
+  entries: FilesystemEntry[]
+  truncated?: boolean
+}
+
 export interface OnboardingSteps {
   bot_configured: boolean
   storage_ready: boolean

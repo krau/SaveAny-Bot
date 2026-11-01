@@ -13,6 +13,8 @@ export interface SettingsField {
   options?: { value: string; label: string }[]
   /** Span both columns in the settings grid. */
   wide?: boolean
+  /** Local path fields can use the server-side picker. */
+  pathKind?: 'file' | 'directory'
 }
 
 export interface SettingsGroupDef {
@@ -137,6 +139,7 @@ export const settingsGroups: SettingsGroupDef[] = [
         hint: 'settings.parser.pluginDirsHint',
         placeholder: 'plugins',
         wide: true,
+        pathKind: 'directory',
       },
       {
         path: 'proxy',
@@ -173,6 +176,7 @@ export const settingsGroups: SettingsGroupDef[] = [
         label: 'settings.db.session',
         kind: 'text',
         placeholder: 'data/session.db',
+        pathKind: 'file',
       },
     ],
   },
@@ -180,7 +184,13 @@ export const settingsGroups: SettingsGroupDef[] = [
     key: 'temp',
     title: 'settings.groups.temp',
     fields: [
-      { path: 'base_path', label: 'settings.temp.basePath', kind: 'text', placeholder: 'cache/' },
+      {
+        path: 'base_path',
+        label: 'settings.temp.basePath',
+        kind: 'text',
+        placeholder: 'cache/',
+        pathKind: 'directory',
+      },
     ],
   },
   {

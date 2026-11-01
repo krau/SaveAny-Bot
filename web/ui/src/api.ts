@@ -3,6 +3,7 @@ import type {
   CreateTaskRequest,
   JsonObject,
   CreateUserInput,
+  FilesystemListing,
   MeResponse,
   OnboardingStatus,
   SettingsMap,
@@ -166,6 +167,12 @@ export const authApi = {
       method: 'POST',
       body: { current_password: currentPassword, new_password: newPassword },
     })
+  },
+}
+
+export const filesystemApi = {
+  list(path?: string) {
+    return request<FilesystemListing>(`/filesystem${query({ path })}`)
   },
 }
 

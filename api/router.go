@@ -73,6 +73,7 @@ func NewHandler(deps Deps) http.Handler {
 
 	mux.HandleFunc("GET /api/v1/system/info", s.systemInfo)
 	mux.HandleFunc("POST /api/v1/system/restart", s.restartSystem)
+	mux.HandleFunc("GET /api/v1/filesystem", s.listFilesystem)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusNotFound, "not_found", "endpoint not found: "+r.URL.Path)

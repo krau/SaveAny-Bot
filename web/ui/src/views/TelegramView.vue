@@ -5,6 +5,7 @@ import { errorMessage, MASKED_SECRET, settingsApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
+import ServerPathPicker from '../components/ServerPathPicker.vue'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
@@ -26,6 +27,7 @@ const phone = ref('')
 const code = ref('')
 const password = ref('')
 const settingsLoaded = ref(false)
+const sessionPickerOpen = ref(false)
 let timer: number | undefined
 
 const token = ref('')
@@ -179,6 +181,11 @@ function validateBotSettings(): boolean {
     return false
   }
   return true
+}
+
+function selectSessionPath(path: string) {
+  userbotSession.value = path
+  sessionPickerOpen.value = false
 }
 
 async function saveBotSettings() {
@@ -657,13 +664,19 @@ async function logoutUserbot() {
           </div>
           <div class="field" :class="{ 'is-invalid': invalidField === 'tg-session' }">
             <label for="tg-session">{{ t('telegram.session.file') }}<span v-if="userbotEnable"> *</span></label>
-            <input
-              id="tg-session"
-              v-model="userbotSession"
-              placeholder="data/usersession.db"
-              :aria-invalid="invalidField === 'tg-session' ? 'true' : undefined"
-              @input="clear('tg-session')"
-            />
+            <div class="path-input-row">
+              <input
+                id="tg-session"
+                v-model="userbotSession"
+                placeholder="data/usersession.db"
+                :aria-invalid="invalidField === 'tg-session' ? 'true' : undefined"
+                @input="clear('tg-session')"
+              />
+              <button class="btn small" type="button" @click="sessionPickerOpen = true">
+                <AppIcon name="file" :size="14" />
+                {{ t('common.pathPicker.browse') }}
+              </button>
+            </div>
           </div>
           <label class="checkbox">
             <input v-model="userbotEnable" type="checkbox" />
@@ -676,5 +689,13 @@ async function logoutUserbot() {
         <div v-else class="loading">{{ t('telegram.session.loading') }}</div>
       </div>
     </section>
+
+    <ServerPathPicker
+      :open="sessionPickerOpen"
+      mode="file"
+      :initial-path="userbotSession"
+      @close="sessionPickerOpen = false"
+      @select="selectSessionPath"
+    />
   </div>
 </template>

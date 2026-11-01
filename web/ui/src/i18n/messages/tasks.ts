@@ -54,6 +54,7 @@ export const zhHans = {
       jsonObject: '{field} 必须是 JSON 对象',
       notNumber: '{field} 必须是数字',
       storageRequired: '请选择存储',
+      pathOutsideStorage: '所选目录不在该存储中',
     },
     types: {
       directlinks: '直链下载',
@@ -181,6 +182,7 @@ export const en = {
       jsonObject: '{field} must be a JSON object',
       notNumber: '{field} must be a number',
       storageRequired: 'Select storage',
+      pathOutsideStorage: 'The selected folder is outside this storage.',
     },
     types: {
       directlinks: 'Direct link',

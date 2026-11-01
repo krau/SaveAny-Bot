@@ -9,6 +9,8 @@ export interface StorageField {
   placeholder?: string
   hint?: string
   required?: boolean
+  /** Path fields can use the server-side file picker. */
+  pathKind?: 'file' | 'directory'
 }
 
 export interface StorageTypeDef {
@@ -28,6 +30,7 @@ export const storageTypeDefs: StorageTypeDef[] = [
         kind: 'text',
         placeholder: 'storages.fields.placeholders.localBasePath',
         required: true,
+        pathKind: 'directory',
       },
     ],
   },
@@ -164,6 +167,7 @@ export const storageTypeDefs: StorageTypeDef[] = [
         label: 'storages.fields.configPath',
         kind: 'text',
         hint: 'storages.fields.configPathHint',
+        pathKind: 'file',
       },
       { name: 'flags', label: 'storages.fields.flags', kind: 'list', hint: 'storages.fields.flagsHint' },
     ],

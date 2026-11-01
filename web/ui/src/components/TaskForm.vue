@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { errorMessage, filesystemApi } from '../api'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { taskTypeDefs } from '../taskFields'
+import AppIcon from './AppIcon.vue'
 import AppSelect from './AppSelect.vue'
 import LoadingButton from './LoadingButton.vue'
+import ServerPathPicker from './ServerPathPicker.vue'
 import type { CreateTaskRequest, JsonObject, StorageRecord } from '../types'
 
 const props = defineProps<{
@@ -26,6 +29,10 @@ const webhook = ref('')
 const body = ref<HTMLElement | null>(null)
 const values = reactive<Record<string, string>>({})
 const boolValues = reactive<Record<string, boolean>>({})
+const pathPickerOpen = ref(false)
+const pathPickerLoading = ref(false)
+const pathPickerInitial = ref('')
+const pathPickerRoot = ref('')
 const { invalidField, fail, clear } = useFormFeedback()
 const { t } = useI18n()
 
@@ -38,6 +45,13 @@ const storageOptions = computed(() => [
     .filter((item) => item.enable)
     .map((item) => ({ value: item.name, label: item.name })),
 ])
+const selectedStorage = computed(() => props.storages.find((item) => item.name === storage.value))
+const localStorageRoot = computed(() => {
+  const selected = selectedStorage.value
+  if (!selected || selected.type !== 'local') return ''
+  const basePath = selected.config.base_path
+  return typeof basePath === 'string' ? basePath.trim() : ''
+})
 
 watch(
   () => props.storages,
@@ -50,6 +64,10 @@ watch(
   },
   { immediate: true },
 )
+
+watch(storage, () => {
+  pathPickerOpen.value = false
+})
 
 watch(
   type,
@@ -155,6 +173,33 @@ function buildParams(): JsonObject {
   return params
 }
 
+async function openTaskPathPicker() {
+  if (!localStorageRoot.value) return
+  pathPickerLoading.value = true
+  try {
+    const listing = await filesystemApi.list(localStorageRoot.value)
+    pathPickerRoot.value = listing.path
+    const relative = path.value.trim().replace(/^[/\\]+/, '')
+    pathPickerInitial.value = relative ? `${listing.path}/${relative}` : listing.path
+    pathPickerOpen.value = true
+  } catch (err) {
+    fail(errorMessage(err))
+  } finally {
+    pathPickerLoading.value = false
+  }
+}
+
+function selectTaskPath(selected: string) {
+  const root = pathPickerRoot.value
+  if (!root) return
+  if (selected !== root && !selected.startsWith(`${root}/`) && !selected.startsWith(`${root}\\`)) {
+    fail(t('tasks.form.pathOutsideStorage'))
+    return
+  }
+  path.value = selected === root ? '' : selected.slice(root.length + 1)
+  pathPickerOpen.value = false
+}
+
 function submit() {
   clear()
   try {
@@ -211,7 +256,18 @@ function submit() {
         </div>
         <div v-if="!isTransfer" class="field">
           <label for="task-path">{{ t('tasks.form.targetPath') }}</label>
-          <input id="task-path" v-model="path" :placeholder="t('tasks.form.targetPathPlaceholder')" />
+          <div class="path-input-row">
+            <input id="task-path" v-model="path" :placeholder="t('tasks.form.targetPathPlaceholder')" />
+            <LoadingButton
+              v-if="localStorageRoot"
+              class="small"
+              :loading="pathPickerLoading"
+              @click="openTaskPathPicker"
+            >
+              <AppIcon name="folder" :size="14" />
+              {{ t('common.pathPicker.browse') }}
+            </LoadingButton>
+          </div>
         </div>
         <div class="field">
           <label for="task-webhook">{{ t('tasks.form.webhook') }}</label>
@@ -266,4 +322,13 @@ function submit() {
       <LoadingButton type="submit" class="primary" :loading="props.busy">{{ t('common.actions.createTask') }}</LoadingButton>
     </div>
   </form>
+
+  <ServerPathPicker
+    :open="pathPickerOpen"
+    mode="directory"
+    :initial-path="pathPickerInitial"
+    :root-path="pathPickerRoot"
+    @close="pathPickerOpen = false"
+    @select="selectTaskPath"
+  />
 </template>
