@@ -195,5 +195,8 @@ func taskResponse(record *database.TaskRecord) TaskInfoResponse {
 			}
 		}
 	}
+	if resp.Progress == nil && resp.Status == TaskStatusCompleted {
+		resp.Progress = &TaskProgress{Percent: 100}
+	}
 	return resp
 }

@@ -5,12 +5,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 )
 
-// TaskProgressInfo stores the progress of an API-submitted task. All fields are
-// guarded by mu. It implements taskevent.Sink so the task layer can update it
-// without knowing about the API.
+// TaskProgressInfo stores live progress for a task. All fields are guarded by
+// mu. It implements taskevent.Sink so the task layer can update it without
+// knowing about the API.
 type TaskProgressInfo struct {
 	mu              sync.Mutex
 	TaskID          string
@@ -31,8 +32,8 @@ type TaskProgressInfo struct {
 	webhookNotified bool
 }
 
-// progressStore holds all API tasks. Entries are removed a fixed duration after
-// they reach a terminal state to bound memory usage.
+// progressStore holds all tracked tasks. Entries are removed a fixed duration
+// after they reach a terminal state to bound memory usage.
 type progressStore struct {
 	mu        sync.RWMutex
 	tasks     map[string]*TaskProgressInfo
@@ -42,6 +43,19 @@ type progressStore struct {
 var store = &progressStore{
 	tasks:     make(map[string]*TaskProgressInfo),
 	retention: 24 * time.Hour,
+}
+
+// TaskProgressSink creates the in-memory observer used by tasks started
+// outside the API. Their progress is rendered in the task list but no webhook
+// is attached.
+func TaskProgressSink(task core.Executable) taskevent.Sink {
+	storageName := ""
+	storagePath := ""
+	if destination, ok := task.(core.DestinationInfo); ok {
+		storageName = destination.StorageName()
+		storagePath = destination.StoragePath()
+	}
+	return RegisterTask(task.TaskID(), task.Type().String(), storageName, storagePath, task.Title(), "")
 }
 
 func RegisterTask(taskID, taskType, storage, path, title, webhook string) *TaskProgressInfo {

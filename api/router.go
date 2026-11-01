@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/log"
 
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/core"
 )
 
 type server struct {
@@ -28,6 +29,7 @@ func NewHandler(deps Deps) http.Handler {
 	}
 	go s.sessionCleanup(deps.Ctx)
 	StartCleanupLoop(deps.Ctx)
+	core.SetTaskSinkFactory(TaskProgressSink)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", s.health)

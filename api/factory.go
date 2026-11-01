@@ -88,7 +88,7 @@ func (f *TaskFactory) registerAndEnqueueTask(task core.Executable, taskType task
 		taskCtx = tgutil.ExtWithContext(taskCtx, userCtx)
 	}
 
-	if err := core.AddTaskWithSource(taskCtx, task, "api"); err != nil {
+	if err := core.AddTaskWithSource(taskCtx, task, core.TaskSourceAPI); err != nil {
 		DeleteTask(taskID)
 		return fmt.Errorf("failed to add task: %w", err)
 	}

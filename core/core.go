@@ -18,6 +18,9 @@ var (
 	queueOnce     sync.Once
 	queueInstance *queue.TaskQueue[Executable]
 	workerWG      sync.WaitGroup
+
+	taskSinkFactoryMu sync.RWMutex
+	taskSinkFactory   func(Executable) taskevent.Sink
 )
 
 // initQueue lazily creates the shared task queue.
@@ -27,6 +30,11 @@ func initQueue() *queue.TaskQueue[Executable] {
 	})
 	return queueInstance
 }
+
+const (
+	TaskSourceBot = "bot"
+	TaskSourceAPI = "api"
+)
 
 type Executable interface {
 	Type() tasktype.TaskType
@@ -142,13 +150,38 @@ func WaitWorkers(timeout time.Duration) bool {
 }
 
 func AddTask(ctx context.Context, task Executable) error {
-	return AddTaskWithSource(ctx, task, "bot")
+	return AddTaskWithSource(ctx, task, TaskSourceBot)
+}
+
+// SetTaskSinkFactory installs the optional observer used for tasks started
+// outside the API. The API task path registers its own sink with webhook data.
+func SetTaskSinkFactory(factory func(Executable) taskevent.Sink) {
+	taskSinkFactoryMu.Lock()
+	taskSinkFactory = factory
+	taskSinkFactoryMu.Unlock()
+}
+
+func taskSinkFor(task Executable, source string) taskevent.Sink {
+	if source == TaskSourceAPI {
+		return nil
+	}
+	taskSinkFactoryMu.RLock()
+	factory := taskSinkFactory
+	taskSinkFactoryMu.RUnlock()
+	if factory == nil {
+		return nil
+	}
+	return factory(task)
 }
 
 // AddTaskWithSource records the task before enqueueing it so every execution
 // has a matching database row.
 func AddTaskWithSource(ctx context.Context, task Executable, source string) error {
 	logger := log.FromContext(ctx)
+	sink := taskSinkFor(task, source)
+	if sink != nil {
+		ctx = taskevent.WithSink(ctx, sink)
+	}
 	record := &database.TaskRecord{
 		TaskID: task.TaskID(),
 		Type:   task.Type().String(),
@@ -164,6 +197,9 @@ func AddTaskWithSource(ctx context.Context, task Executable, source string) erro
 		logger.Errorf("Failed to create task record for %s: %v", task.TaskID(), err)
 	}
 	if err := initQueue().Add(queue.NewTask(ctx, task.TaskID(), task.Title(), task)); err != nil {
+		if sink != nil {
+			sink.Emit(taskevent.Event{TaskID: task.TaskID(), Phase: taskevent.PhaseDone, Err: err})
+		}
 		if dbErr := database.DeleteTaskRecord(ctx, task.TaskID()); dbErr != nil {
 			logger.Errorf("Failed to remove task record for %s: %v", task.TaskID(), dbErr)
 		}

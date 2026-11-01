@@ -84,7 +84,7 @@ function progressText(task: TaskItem): string {
           </td>
           <td>
             <div>{{ task.storage || '—' }}</div>
-            <div class="task-path">{{ task.path || '—' }}</div>
+            <div class="task-path">{{ task.path || t('tasks.table.rootPath') }}</div>
           </td>
           <td style="min-width: 170px">
             <div v-if="task.status === 'running'" class="progress">
