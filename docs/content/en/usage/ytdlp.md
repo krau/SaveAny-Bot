@@ -38,6 +38,8 @@ Common parameters:
 - `--write-sub`: Download subtitles
 - `--write-thumbnail`: Download thumbnail
 
+For safety, flags that execute programs, load external configuration, or read and write arbitrary files are rejected: `--exec`, `--exec-before-download`, `--config-location`, `--load-info-json`, `--batch-file`, `--downloader`, `--external-downloader`, `--paths`, `--cache-dir`, `--postprocessor-args`, `--netrc-cmd`, `--plugin-dirs`, `--update` and similar.
+
 ## File names
 
 Downloaded files are named after the video title (`%(title)s.%(ext)s`) and saved into the storage directory you selected. Pass a yt-dlp output template to customize the name:

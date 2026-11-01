@@ -38,6 +38,8 @@ weight: 7
 - `--write-sub`: 下载字幕
 - `--write-thumbnail`: 下载缩略图
 
+出于安全考虑, 会执行程序、加载外部配置或读写任意文件的参数将被拒绝: `--exec`, `--exec-before-download`, `--config-location`, `--load-info-json`, `--batch-file`, `--downloader`, `--external-downloader`, `--paths`, `--cache-dir`, `--postprocessor-args`, `--netrc-cmd`, `--plugin-dirs`, `--update` 等.
+
 ## 文件名
 
 下载的文件以视频标题命名 (`%(title)s.%(ext)s`), 并保存到你所选择的存储目录中. 可以通过 yt-dlp 的 output template 自定义文件名:

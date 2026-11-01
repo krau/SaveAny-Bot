@@ -87,6 +87,9 @@ func (t *Task) Execute(ctx context.Context) error {
 // task. The bot owns the output directory: the configured template roots every
 // output in tempDir, and custom -o/--output templates are re-rooted there.
 func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string) (*ytdlp.Command, []string, error) {
+	if err := validateCustomFlags(flags); err != nil {
+		return nil, nil, err
+	}
 	flags, err := rewriteOutputTemplates(flags, tempDir)
 	if err != nil {
 		return nil, nil, err

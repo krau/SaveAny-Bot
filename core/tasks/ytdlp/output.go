@@ -14,6 +14,47 @@ import (
 // and their position, so repeated templates still override each other the way
 // yt-dlp expects. A -o/--output without a template is rejected, since yt-dlp
 // would consume the following argument (a URL or another flag) as the template.
+// forbiddenYtdlpFlags can execute programs, load configuration, or read and
+// write arbitrary files, so they are never accepted from user input.
+var forbiddenYtdlpFlags = map[string]struct{}{
+	"--exec":                 {},
+	"--exec-before-download": {},
+	"--config-location":      {},
+	"--config-locations":     {},
+	"--load-info-json":       {},
+	"--batch-file":           {},
+	"--downloader":           {},
+	"--external-downloader":  {},
+	"--paths":                {},
+	"--cache-dir":            {},
+	"--postprocessor-args":   {},
+	"--ppa":                  {},
+	"--netrc":                {},
+	"--netrc-cmd":            {},
+	"--proxy":                {},
+	"--cookies":              {},
+	"--cookies-from-browser": {},
+	"--plugin-dirs":          {},
+	"--update":               {},
+	"--update-to":            {},
+}
+
+func validateCustomFlags(flags []string) error {
+	for _, flag := range flags {
+		name := flag
+		if before, _, ok := strings.Cut(flag, "="); ok {
+			name = before
+		}
+		if _, forbidden := forbiddenYtdlpFlags[name]; forbidden {
+			return fmt.Errorf("yt-dlp flag %s is not allowed", name)
+		}
+		if name == "-P" || strings.HasPrefix(name, "-P") || name == "-U" {
+			return fmt.Errorf("yt-dlp flag %s is not allowed", name)
+		}
+	}
+	return nil
+}
+
 func rewriteOutputTemplates(flags []string, dir string) ([]string, error) {
 	rewritten := make([]string, 0, len(flags))
 	for i := 0; i < len(flags); i++ {
