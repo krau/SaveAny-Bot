@@ -5,9 +5,12 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    # 首次启动时指定管理员密码；留空则自动生成并打印到日志
+    # Set the admin password on first start; leave empty to generate one in the log
+    # environment:
+    #   SAVEANY_ADMIN_PASSWORD: change-me
     volumes:
       - ./data:/app/data
-      - ./config.toml:/app/config.toml
       - ./downloads:/app/downloads
       - ./cache:/app/cache
     # 使用 host 模式以便访问宿主机服务 (如代理)
