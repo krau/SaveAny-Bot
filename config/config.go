@@ -48,6 +48,7 @@ type webConfig struct {
 const (
 	defaultBotSessionFile     = "bot_session.db"
 	defaultUserbotSessionFile = "userbot_session.db"
+	defaultWebListen          = "127.0.0.1:28080"
 )
 
 var current atomic.Pointer[Config]
@@ -101,7 +102,7 @@ func DefaultsMap(dataDir string) map[string]any {
 		"db.session": DefaultBotSessionPath(dataDir),
 
 		"web.enable":        true,
-		"web.listen":        "0.0.0.0:8080",
+		"web.listen":        defaultWebListen,
 		"web.api_token":     "",
 		"web.secure_cookie": false,
 
@@ -139,7 +140,7 @@ func Default(dataDir string) Config {
 		},
 		Web: webConfig{
 			Enable: true,
-			Listen: "0.0.0.0:8080",
+			Listen: defaultWebListen,
 		},
 	}
 }
@@ -185,7 +186,16 @@ func ProxyTransport(proxyStr string) (*http.Transport, error) {
 
 // GeneratePassword returns a URL-safe random password with ~120 bits of entropy.
 func GeneratePassword() string {
-	buf := make([]byte, 15)
+	return randomBase64(15)
+}
+
+// GenerateToken returns a URL-safe token with 256 bits of entropy.
+func GenerateToken() string {
+	return randomBase64(32)
+}
+
+func randomBase64(size int) string {
+	buf := make([]byte, size)
 	if _, err := rand.Read(buf); err != nil {
 		panic(fmt.Sprintf("failed to read random bytes: %v", err))
 	}

@@ -16,21 +16,21 @@ chmod +x saveany-bot
 ./saveany-bot
 ```
 
-程序默认使用当前目录下的 `data/` 保存数据库和会话。首次启动会生成管理员密码并打印到日志：
+程序默认使用当前目录下的 `data/` 保存数据库和会话。Web UI 默认监听 `127.0.0.1:28080`，启动时会打印带访问 Token 的直达地址：
 
 ```text
-Generated web admin password; change it after login password=...
+Web UI available at http://127.0.0.1:28080/?token=...
 ```
 
-也可以指定密码和监听地址：
+打开该地址即可登录。未在 **设置 → Web** 中配置访问 Token 时，每次启动都会重新生成。
+
+如需在其他网卡或端口访问，设置监听地址：
 
 ```bash
-SAVEANY_ADMIN_PASSWORD='your-password' \
-SAVEANY_LISTEN='0.0.0.0:8080' \
-./saveany-bot
+SAVEANY_LISTEN='0.0.0.0:28080' ./saveany-bot
 ```
 
-启动后访问 `http://localhost:8080`，按 **指南** 页面完成：
+自动生成的管理员密码仍可用于密码登录；也可以通过 `SAVEANY_ADMIN_PASSWORD` 指定。该密码只在首次启动时打印。登录后可在侧栏的 **修改密码** 对话框里更换。打开日志中的地址后，按 **指南** 页面完成：
 
 1. 在 Telegram 页面填写 Bot Token。
 2. 在存储页面添加至少一个存储。
@@ -103,25 +103,27 @@ docker compose logs -f saveany-bot
 - `./downloads:/app/downloads` — 本地存储的默认目录
 - `./cache:/app/cache` — 下载缓存
 
-可以设置管理员密码，否则从日志读取自动生成的密码：
+可以设置管理员密码，否则从日志读取自动生成的密码。使用桥接网络时同时设置监听地址：
 
 ```yaml
 environment:
   SAVEANY_ADMIN_PASSWORD: change-me
+  SAVEANY_LISTEN: 0.0.0.0:28080
 ```
 
 ### Docker
 
 ```bash
 docker run -d --name saveany-bot \
-    -p 8080:8080 \
+    -p 28080:28080 \
+    -e SAVEANY_LISTEN=0.0.0.0:28080 \
     -v ./data:/app/data \
     -v ./downloads:/app/downloads \
     -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-访问 `http://localhost:8080`，按指南完成配置。本地存储在容器中的路径可填写 `/app/downloads`。
+从日志中读取带 Token 的地址并打开。本地存储在容器中的路径可填写 `/app/downloads`。
 
 ## 更新
 

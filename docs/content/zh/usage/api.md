@@ -9,22 +9,24 @@ SaveAny-Bot 提供了一套 HTTP API，允许你通过程序化方式创建下�
 
 ## 启用 API
 
-API 与 Web 控制台共用监听地址和端口，不需要单独启用。登录 Web 控制台后，在 **设置 → Web** 中设置 API Token：
+API 与 Web 控制台共用监听地址和端口，不需要单独启用。Web 控制台默认监听 `127.0.0.1:28080`。在 **设置 → Web** 中配置访问 Token：
 
-- `API Token`：用于 `Authorization: Bearer <token>` 调用；留空时使用登录会话。
-- `Web 监听地址`：API 与控制台共用，例如 `0.0.0.0:8080`。
+- `访问 Token`：用于 `/?token=...` 直接登录 Web UI，也用于 API 的 `Authorization: Bearer <token>`。
+- `监听地址`：控制台与 API 共用；需要从其他主机访问时使用 `0.0.0.0:28080`。
 
 所有接口位于 `/api/v1` 下。
 
-## 鉴权
+## 认证
 
-推荐在 **设置 → Web** 中配置 API Token，然后在请求头中携带：
+在 **设置 → Web** 中配置访问 Token，然后在请求头中携带：
 
 ```
 Authorization: Bearer <your-token>
 ```
 
-也可以使用 Web 控制台的登录 Cookie。通过 Cookie 发起的非 GET 请求还需要 `X-CSRF-Token` 请求头。
+未配置访问 Token 时，每次启动都会生成随机 Token，并作为 Web UI 直达地址的一部分打印到日志。该 Token 在当前进程内同样可用于 Bearer 认证。
+
+也可以使用 Web 控制台登录 Cookie。使用 Cookie 的非 GET 请求还需要携带 `X-CSRF-Token`。
 
 鉴权失败时返回 `401`：
 
@@ -115,7 +117,7 @@ Authorization: Bearer <your-token>
 请求：
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
+curl -X GET "http://127.0.0.1:28080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

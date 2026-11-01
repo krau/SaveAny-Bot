@@ -4,11 +4,14 @@ services:
     container_name: saveany-bot
     restart: unless-stopped
     ports:
-      - "8080:8080"
-    # 首次启动时指定管理员密码；留空则自动生成并打印到日志
-    # Set the admin password on first start; leave empty to generate one in the log
+      - "28080:28080"
+    # Web UI 默认仅监听 127.0.0.1:28080；带访问 Token 的地址会打印在日志中
+    # The Web UI binds to 127.0.0.1:28080 by default; the tokenized URL is printed in the log
+    # 如需对外开放，取消注释并设置 SAVEANY_LISTEN
+    # To expose it, uncomment SAVEANY_LISTEN
     # environment:
     #   SAVEANY_ADMIN_PASSWORD: change-me
+    #   SAVEANY_LISTEN: 0.0.0.0:28080
     volumes:
       - ./data:/app/data
       - ./downloads:/app/downloads

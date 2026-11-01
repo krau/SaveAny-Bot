@@ -222,7 +222,7 @@ export const settingsGroups: SettingsGroupDef[] = [
         path: 'listen',
         label: 'settings.web.listen',
         kind: 'text',
-        placeholder: '0.0.0.0:8080',
+        placeholder: '127.0.0.1:28080',
         hint: 'settings.web.listenHint',
       },
       {

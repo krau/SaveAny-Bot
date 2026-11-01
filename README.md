@@ -44,20 +44,21 @@ SaveAny-Bot is configured in the web console. Start it with empty data, download
 
 ```bash
 docker run -d --name saveany-bot \
-    -p 8080:8080 \
+    -p 28080:28080 \
+    -e SAVEANY_LISTEN=0.0.0.0:28080 \
     -v ./data:/app/data \
     -v ./downloads:/app/downloads \
     -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-Open `http://localhost:8080`. The admin password is printed in the startup log:
+The web UI listens on `127.0.0.1:28080` by default. The startup log prints a direct URL with an access token:
 
 ```bash
-docker logs saveany-bot | grep "admin password"
+docker logs saveany-bot | grep -E "Web UI available at|Generated web admin password"
 ```
 
-Set `SAVEANY_ADMIN_PASSWORD` to choose it instead. After signing in, the Guide page covers the required setup:
+Open the URL to sign in. On the first start, the same log also contains the generated admin password; use it to change the password from the sidebar after signing in. Unless an access token is set under **Settings → Web**, a new token is generated on every start. The Guide page covers the required setup:
 
 1. Connect your Telegram bot.
 2. Add a storage destination.
@@ -65,7 +66,7 @@ Set `SAVEANY_ADMIN_PASSWORD` to choose it instead. After signing in, the Guide p
 
 Then send files or message links to the bot and watch them in the Tasks page.
 
-To run the binary, download a release, extract it, and start it. It creates `data/` and prints the generated admin password:
+To run the binary, download a release, extract it, and start it. It creates `data/` and prints the same tokenized URL:
 
 ```bash
 ./saveany-bot

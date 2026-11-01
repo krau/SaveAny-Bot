@@ -51,7 +51,9 @@ services:
     image: ghcr.io/krau/saveany-bot:latest
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "28080:28080"
+    environment:
+      SAVEANY_LISTEN: 0.0.0.0:28080
     volumes:
       - ./data:/app/data
       - ./config.toml:/app/config.toml:ro
@@ -76,10 +78,10 @@ docker compose logs -f saveany-bot
 
 ## 4. 登录并核对
 
-首次启动如果没有设置 `SAVEANY_ADMIN_PASSWORD`，管理员密码会打印在日志中：
+启动日志会打印带访问 Token 的 Web UI 直达地址，直接打开即可登录。如果首次启动没有设置 `SAVEANY_ADMIN_PASSWORD`，备用管理员密码也会打印在日志中：
 
 ```bash
-docker compose logs saveany-bot | grep "admin password"
+docker compose logs saveany-bot | grep -E "Web UI available at|Generated web admin password"
 ```
 
 登录后打开 **指南**，确认：

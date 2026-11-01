@@ -4,18 +4,18 @@ This document describes all currently registered HTTP API endpoints in SaveAny-B
 
 ## Base URL
 
-- Default: `http://127.0.0.1:8080`
-- The API shares the Web console listener. Configure the listener and API token under **Settings → Web**.
+- Default: `http://127.0.0.1:28080`
+- The API shares the Web console listener. Configure the listener and access token under **Settings → Web**.
 
 ## Authentication
 
-When an API token is configured under **Settings → Web**, requests require:
+When an access token is configured under **Settings → Web**, requests require:
 
 ```http
-Authorization: Bearer <your-api-token>
+Authorization: Bearer <your-access-token>
 ```
 
-Without a token, use the Web console session cookie. Non-GET requests made with
+Without a token, use the Web console session cookie or the tokenized URL printed at startup. Non-GET requests made with
 a cookie also require the `X-CSRF-Token` header.
 
 Missing or invalid authentication returns `401 Unauthorized`:
@@ -77,7 +77,7 @@ Missing or invalid authentication returns `401 Unauthorized`:
 ### Example
 
 ```bash
-curl -X GET "http://localhost:8080/health" \
+curl -X GET "http://127.0.0.1:28080/health" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -93,7 +93,7 @@ curl -X GET "http://localhost:8080/health" \
 
 - Headers:
   - `Content-Type: application/json`
-  - `Authorization: Bearer <token>` (only if API token is configured)
+  - `Authorization: Bearer <token>` (only if an access token is configured)
 
 ### Request Body
 
@@ -226,7 +226,7 @@ Field details:
 ### Example
 
 ```bash
-curl -X POST "http://localhost:8080/api/v1/tasks" \
+curl -X POST "http://127.0.0.1:28080/api/v1/tasks" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -250,7 +250,7 @@ curl -X POST "http://localhost:8080/api/v1/tasks" \
 ### Request
 
 - Headers:
-  - `Authorization: Bearer <token>` (only if API token is configured)
+  - `Authorization: Bearer <token>` (only if an access token is configured)
 - Body: none
 
 ### Response
@@ -286,7 +286,7 @@ curl -X POST "http://localhost:8080/api/v1/tasks" \
 ### Example
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/tasks" \
+curl -X GET "http://127.0.0.1:28080/api/v1/tasks" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -301,7 +301,7 @@ curl -X GET "http://localhost:8080/api/v1/tasks" \
 ### Request
 
 - Headers:
-  - `Authorization: Bearer <token>` (only if API token is configured)
+  - `Authorization: Bearer <token>` (only if an access token is configured)
 - Path parameter:
   - `task_id` (required)
 - Body: none
@@ -345,7 +345,7 @@ curl -X GET "http://localhost:8080/api/v1/tasks" \
 ### Example
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
+curl -X GET "http://127.0.0.1:28080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -360,7 +360,7 @@ curl -X GET "http://localhost:8080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
 ### Request
 
 - Headers:
-  - `Authorization: Bearer <token>` (only if API token is configured)
+  - `Authorization: Bearer <token>` (only if an access token is configured)
 - Path parameter:
   - `task_id` (required)
 - Body: none
@@ -398,7 +398,7 @@ curl -X GET "http://localhost:8080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
 ### Example
 
 ```bash
-curl -X DELETE "http://localhost:8080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
+curl -X DELETE "http://127.0.0.1:28080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -413,7 +413,7 @@ curl -X DELETE "http://localhost:8080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
 ### Request
 
 - Headers:
-  - `Authorization: Bearer <token>` (only if API token is configured)
+  - `Authorization: Bearer <token>` (only if an access token is configured)
 - Body: none
 
 ### Response
@@ -438,7 +438,7 @@ curl -X DELETE "http://localhost:8080/api/v1/tasks/d4f7u1crvimcs4n4j8d0" \
 ### Example
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/storages" \
+curl -X GET "http://127.0.0.1:28080/api/v1/storages" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -453,7 +453,7 @@ curl -X GET "http://localhost:8080/api/v1/storages" \
 ### Request
 
 - Headers:
-  - `Authorization: Bearer <token>` (only if API token is configured)
+  - `Authorization: Bearer <token>` (only if an access token is configured)
 - Body: none
 
 ### Response
@@ -477,7 +477,7 @@ curl -X GET "http://localhost:8080/api/v1/storages" \
 ### Example
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/task-types" \
+curl -X GET "http://127.0.0.1:28080/api/v1/task-types" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -498,7 +498,7 @@ Supported inputs:
 ### Request
 
 - Headers:
-  - `Authorization: Bearer <token>` (only if API token is configured)
+  - `Authorization: Bearer <token>` (only if an access token is configured)
 - Query parameters:
   - `url` (required): Telegram message link, direct media URL, or media page URL supported by yt-dlp
 
@@ -542,7 +542,7 @@ expose them. `duration_seconds` is always present.
 ### Example
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ" \
+curl -X GET "http://127.0.0.1:28080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

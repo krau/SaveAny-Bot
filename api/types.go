@@ -16,6 +16,7 @@ type Deps struct {
 	Telegram TelegramController
 	DataDir  string
 	DBPath   string
+	WebToken string
 }
 
 type StorageInput struct {

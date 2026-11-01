@@ -16,21 +16,21 @@ chmod +x saveany-bot
 ./saveany-bot
 ```
 
-The default data directory is `data/` under the current working directory. On first startup, an admin password is generated and printed to the log:
+The default data directory is `data/` under the current working directory. The web UI listens on `127.0.0.1:28080` by default. At startup it prints a direct URL with an access token:
 
 ```text
-Generated web admin password; change it after login password=...
+Web UI available at http://127.0.0.1:28080/?token=...
 ```
 
-You can set the password and listen address explicitly:
+Open that URL; the token creates an authenticated session. Unless an access token is set under **Settings → Web**, a new token is generated on every start.
+
+To expose the web UI on another interface or port, set the listen address:
 
 ```bash
-SAVEANY_ADMIN_PASSWORD='your-password' \
-SAVEANY_LISTEN='0.0.0.0:8080' \
-./saveany-bot
+SAVEANY_LISTEN='0.0.0.0:28080' ./saveany-bot
 ```
 
-Open `http://localhost:8080` and follow the **Guide** page:
+The generated admin password remains available for password login; set `SAVEANY_ADMIN_PASSWORD` to choose it. It is printed only on the first start. After signing in, change it from the sidebar **Change password** dialog. Open the logged URL and follow the **Guide** page:
 
 1. Enter the bot token on the Telegram page.
 2. Add at least one storage on the Storages page.
@@ -103,25 +103,27 @@ Default mounts:
 - `./downloads:/app/downloads` — default local storage
 - `./cache:/app/cache` — download cache
 
-Set an admin password, or read the generated one from the log:
+Set an admin password, or read the generated one from the log. Set the listen address for bridge networking:
 
 ```yaml
 environment:
   SAVEANY_ADMIN_PASSWORD: change-me
+  SAVEANY_LISTEN: 0.0.0.0:28080
 ```
 
 ### Docker
 
 ```bash
 docker run -d --name saveany-bot \
-    -p 8080:8080 \
+    -p 28080:28080 \
+    -e SAVEANY_LISTEN=0.0.0.0:28080 \
     -v ./data:/app/data \
     -v ./downloads:/app/downloads \
     -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-Open `http://localhost:8080` and follow the Guide. For local storage in Docker, use `/app/downloads` as the base path.
+Read the tokenized URL from the logs and open it. For local storage in Docker, use `/app/downloads` as the base path.
 
 ## Updates
 

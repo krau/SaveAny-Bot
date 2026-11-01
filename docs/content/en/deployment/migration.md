@@ -51,7 +51,9 @@ services:
     image: ghcr.io/krau/saveany-bot:latest
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "28080:28080"
+    environment:
+      SAVEANY_LISTEN: 0.0.0.0:28080
     volumes:
       - ./data:/app/data
       - ./config.toml:/app/config.toml:ro
@@ -76,10 +78,10 @@ After the import log appears, remove the `config.toml` mount and restart. v1 wri
 
 ## 4. Sign in and verify
 
-If `SAVEANY_ADMIN_PASSWORD` was not set on the first run, the admin password is printed in the startup log:
+The startup log prints a direct Web UI URL with an access token; open it to sign in. If `SAVEANY_ADMIN_PASSWORD` was not set on the first run, the fallback admin password is printed in the log as well:
 
 ```bash
-docker compose logs saveany-bot | grep "admin password"
+docker compose logs saveany-bot | grep -E "Web UI available at|Generated web admin password"
 ```
 
 Open **Guide** after signing in and verify:

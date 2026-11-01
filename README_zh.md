@@ -42,20 +42,21 @@ SaveAny-Bot 在 Web 控制台中配置。使用空的数据、下载和缓存目
 
 ```bash
 docker run -d --name saveany-bot \
-    -p 8080:8080 \
+    -p 28080:28080 \
+    -e SAVEANY_LISTEN=0.0.0.0:28080 \
     -v ./data:/app/data \
     -v ./downloads:/app/downloads \
     -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-打开 `http://localhost:8080`。首次启动的管理员密码会打印在日志中:
+Web UI 默认监听 `127.0.0.1:28080`。启动日志会打印带访问 Token 的直达地址:
 
 ```bash
-docker logs saveany-bot | grep "admin password"
+docker logs saveany-bot | grep -E "Web UI available at|Generated web admin password"
 ```
 
-也可以通过 `SAVEANY_ADMIN_PASSWORD` 指定。登录后，指南页面会引导完成必要配置:
+打开该地址即可登录。首次启动的同一份日志还会打印自动生成的管理员密码；登录后可在侧栏用它修改密码。未在 **设置 → Web** 中配置访问 Token 时，每次启动都会重新生成。登录后，指南页面会引导完成必要配置:
 
 1. 连接 Telegram Bot。
 2. 添加存储位置。
@@ -63,7 +64,7 @@ docker logs saveany-bot | grep "admin password"
 
 完成后，向 Bot 发送文件或消息链接，即可在任务页查看转存进度。
 
-使用预编译二进制时，下载 Release、解压并直接运行。程序会创建 `data/` 目录并输出管理员密码:
+使用预编译二进制时，下载 Release、解压并直接运行。程序会创建 `data/` 目录并打印同样的带 Token 地址:
 
 ```bash
 ./saveany-bot

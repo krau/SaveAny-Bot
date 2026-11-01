@@ -9,20 +9,22 @@ SaveAny-Bot provides an HTTP API that allows you to programmatically create down
 
 ## Enabling the API
 
-The API shares the web console listener and port; there is nothing separate to enable. After signing in, set an API token under **Settings → Web**:
+The API shares the web console listener and port; there is nothing separate to enable. The web console listens on `127.0.0.1:28080` by default. Set an access token under **Settings → Web**:
 
-- `API Token`: used with `Authorization: Bearer <token>`; when empty, the signed-in session is used.
-- `Web listen address`: shared by the console and API, for example `0.0.0.0:8080`.
+- `Access token`: used for direct Web UI access through `/?token=...` and with `Authorization: Bearer <token>` for the API.
+- `Web listen address`: shared by the console and API; use `0.0.0.0:28080` when it must be reachable from other hosts.
 
 All endpoints live under `/api/v1`.
 
 ## Authentication
 
-Set an API token under **Settings → Web**, then send it in the request header:
+Set an access token under **Settings → Web**, then send it in the request header:
 
 ```
 Authorization: Bearer <your-token>
 ```
+
+If no access token is configured, a random token is generated on every start and printed in the log as part of the direct Web UI URL. That value also works as a Bearer token for the current process.
 
 You can also use the web console login cookie. Non-GET requests made with a cookie also require the `X-CSRF-Token` header.
 
@@ -115,7 +117,7 @@ Inspect a Telegram message link, direct media URL, or other yt-dlp-supported med
 Request:
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
+curl -X GET "http://127.0.0.1:28080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

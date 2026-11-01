@@ -34,6 +34,7 @@ func NewHandler(deps Deps) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", s.health)
 	mux.HandleFunc("POST /api/v1/auth/login", s.login)
+	mux.HandleFunc("GET /api/v1/auth/token", s.tokenLogin)
 	mux.HandleFunc("POST /api/v1/auth/logout", s.logout)
 	mux.HandleFunc("GET /api/v1/auth/me", s.me)
 	mux.HandleFunc("POST /api/v1/auth/password", s.changePassword)

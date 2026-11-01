@@ -79,11 +79,25 @@ func (s *server) isPublic(r *http.Request) bool {
 	if r.URL.Path == "/health" {
 		return true
 	}
+	if r.Method == http.MethodGet && r.URL.Path == "/api/v1/auth/token" {
+		return true
+	}
 	return r.Method == http.MethodPost && r.URL.Path == "/api/v1/auth/login"
 }
 
-func (s *server) bearerToken() string {
-	return s.deps.Settings.Config().Web.APIToken
+func (s *server) authToken() string {
+	if token := strings.TrimSpace(s.deps.Settings.Config().Web.APIToken); token != "" {
+		return token
+	}
+	return s.deps.WebToken
+}
+
+func (s *server) validToken(token string) bool {
+	expected := s.authToken()
+	if expected == "" || token == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(token), []byte(expected)) == 1
 }
 
 func (s *server) authMiddleware(next http.Handler) http.Handler {
@@ -93,7 +107,7 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		if token := s.bearerToken(); token != "" {
+		if token := s.authToken(); token != "" {
 			header := r.Header.Get("Authorization")
 			if len(header) > 7 && strings.EqualFold(header[:7], "Bearer ") {
 				if subtle.ConstantTimeCompare([]byte(header[7:]), []byte(token)) == 1 {
@@ -123,6 +137,19 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func (s *server) tokenLogin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	if !s.validToken(strings.TrimSpace(r.URL.Query().Get("token"))) {
+		WriteError(w, http.StatusUnauthorized, "invalid_token", "invalid access token")
+		return
+	}
+	if _, err := s.establishSession(w, r); err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", "failed to create session")
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
 func (s *server) login(w http.ResponseWriter, r *http.Request) {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -143,15 +170,22 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnauthorized, "invalid_credentials", "invalid password")
 		return
 	}
-	id, err := randomToken()
+	csrf, err := s.establishSession(w, r)
 	if err != nil {
 		WriteError(w, http.StatusInternalServerError, "internal_error", "failed to create session")
 		return
 	}
+	WriteJSON(w, http.StatusOK, map[string]string{"csrf_token": csrf})
+}
+
+func (s *server) establishSession(w http.ResponseWriter, r *http.Request) (string, error) {
+	id, err := randomToken()
+	if err != nil {
+		return "", err
+	}
 	csrf, err := randomToken()
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, "internal_error", "failed to create session")
-		return
+		return "", err
 	}
 	session := &database.WebSession{
 		ID:        id,
@@ -160,8 +194,7 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt: time.Now().Add(sessionTTL),
 	}
 	if err := database.CreateWebSession(r.Context(), session); err != nil {
-		WriteError(w, http.StatusInternalServerError, "internal_error", "failed to store session")
-		return
+		return "", err
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
@@ -172,7 +205,7 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.deps.Settings.Config().Web.SecureCookie,
 	})
-	WriteJSON(w, http.StatusOK, map[string]string{"csrf_token": csrf})
+	return csrf, nil
 }
 
 func (s *server) logout(w http.ResponseWriter, r *http.Request) {

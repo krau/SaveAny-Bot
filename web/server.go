@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -14,12 +15,13 @@ import (
 
 type Server struct {
 	listen     string
+	authToken  string
 	apiHandler http.Handler
 	httpServer *http.Server
 }
 
-func New(listen string, apiHandler http.Handler) *Server {
-	s := &Server{listen: listen, apiHandler: apiHandler}
+func New(listen, authToken string, apiHandler http.Handler) *Server {
+	s := &Server{listen: listen, authToken: authToken, apiHandler: apiHandler}
 	root := http.NewServeMux()
 	root.Handle("/api/", apiHandler)
 	root.Handle("/health", apiHandler)
@@ -48,7 +50,10 @@ func (s *Server) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", s.listen, err)
 	}
-	log.FromContext(ctx).Infof("Starting web server on %s", s.listen)
+	log.FromContext(ctx).Infof("Starting web server on %s", ln.Addr())
+	if uiURL := webURL(ln.Addr(), s.authToken); uiURL != "" {
+		log.FromContext(ctx).Infof("Web UI available at %s", uiURL)
+	}
 	go func() {
 		if err := s.httpServer.Serve(ln); err != nil && err != http.ErrServerClosed {
 			log.FromContext(ctx).Errorf("Web server error: %v", err)
@@ -69,10 +74,42 @@ func (s *Server) Stop(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
 }
 
+func webURL(addr net.Addr, token string) string {
+	if addr == nil {
+		return ""
+	}
+	host, port, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		return ""
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
+		if ip.To4() != nil {
+			host = "127.0.0.1"
+		} else {
+			host = "::1"
+		}
+	}
+	u := url.URL{Scheme: "http", Host: net.JoinHostPort(host, port), Path: "/"}
+	if token != "" {
+		query := u.Query()
+		query.Set("token", token)
+		u.RawQuery = query.Encode()
+	}
+	return u.String()
+}
+
 func (s *Server) serveUI(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
+	}
+	if r.Method == http.MethodGet {
+		if token := strings.TrimSpace(r.URL.Query().Get("token")); token != "" {
+			query := url.Values{"token": {token}}
+			w.Header().Set("Cache-Control", "no-store")
+			http.Redirect(w, r, "/api/v1/auth/token?"+query.Encode(), http.StatusSeeOther)
+			return
+		}
 	}
 	sub, err := fs.Sub(distFS, "dist")
 	if err != nil {

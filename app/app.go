@@ -16,6 +16,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers"
 	"github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/selfupdate"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/parsers"
@@ -76,12 +77,17 @@ func (a *App) Start() error {
 	})
 
 	if !a.opts.NoWeb && cfg.Web.Enable {
-		a.web = web.New(a.opts.Listen, api.NewHandler(api.Deps{
+		webToken := strings.TrimSpace(cfg.Web.APIToken)
+		if webToken == "" {
+			webToken = config.GenerateToken()
+		}
+		a.web = web.New(a.opts.Listen, webToken, api.NewHandler(api.Deps{
 			Ctx:      a.ctx,
 			Settings: a.svc,
 			Telegram: a,
 			DataDir:  a.opts.DataDir,
 			DBPath:   a.opts.DBPath,
+			WebToken: webToken,
 		}))
 		if err := a.web.Start(a.ctx); err != nil {
 			return err
