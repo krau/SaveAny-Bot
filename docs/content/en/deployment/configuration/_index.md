@@ -15,15 +15,21 @@ Settings are stored in the SQLite database under the data directory (default `da
 | Telegram | Bot token, API ID/hash, proxy, Userbot login |
 | Storages | Local disk, WebDAV, Alist, S3, MinIO, Rclone, Telegram, and more |
 | Users | Telegram user IDs, default storage, directories, rules, and access |
-| Settings | Concurrency, language, proxy, Aria2, yt-dlp, parsers, cache, logging, web, and API |
+| Settings | Task concurrency, language, proxy, Aria2, yt-dlp, parsers, cache, logging, web, and API |
 
-Some settings require a process restart, including worker count, global proxy, database session path, cache settings, plugins, hooks, and the web listen address. The page marks fields that need a restart.
+Some settings require a process restart, including task concurrency, global proxy, database session path, cache settings, plugins, hooks, and the web listen address. The page marks fields that need a restart.
 
 ### Telegram
 
 Create a bot with [@BotFather](https://t.me/BotFather). `API ID` and `API Hash` have defaults and usually need no changes; use your own [Telegram API](https://my.telegram.org/apps) credentials when enabling the Userbot.
 
 Saving bot settings starts the connection automatically. Userbot login happens on the Telegram page, with no terminal interaction inside the container.
+
+### Helper bots
+
+Helper bots are optional. Add them in the **Helper bots** section of the **Telegram** page with a BotFather token, then add each bot to the destination Telegram chat with permission to send files. Telegram storage uploads are distributed across running helpers that can access the destination; helpers without access are skipped and uploads fall back to the primary bot. Helper bots do not handle commands.
+
+To split large file downloads across helpers, set a private **Relay channel ID** on the **Telegram** page, make sure the primary bot can post there, and add at least two helper bots to that channel. The primary bot forwards incoming files to the relay channel, and each helper obtains its own file reference before downloading assigned chunks. This requires non-stream mode and files of at least 8 MB, and falls back to the single-client downloader when the relay or helper pool is unavailable. Forwarded relay messages are deleted after download by default; enable **Keep forwarded channel messages** to retain them.
 
 ### Storages
 
