@@ -119,9 +119,14 @@ func (a *App) StartUserbotLogin(ctx context.Context, phone string) (string, erro
 			user.Stop()
 			return
 		}
-		patch, _ := json.Marshal(map[string]any{
+		patch, err := json.Marshal(map[string]any{
 			"userbot": map[string]any{"enable": true, "phone": phone},
 		})
+		if err != nil {
+			flow.markFailed(err)
+			user.Stop()
+			return
+		}
 		if _, err := a.svc.UpdateGroup(a.ctx, settings.GroupTelegram, patch); err != nil {
 			flow.markFailed(err)
 			user.Stop()
@@ -129,10 +134,16 @@ func (a *App) StartUserbotLogin(ctx context.Context, phone string) (string, erro
 		}
 		if !flow.markDone() {
 			user.Stop()
-			disable, _ := json.Marshal(map[string]any{
+			disable, err := json.Marshal(map[string]any{
 				"userbot": map[string]any{"enable": false},
 			})
-			_, _ = a.svc.UpdateGroup(a.ctx, settings.GroupTelegram, disable)
+			if err != nil {
+				log.Warnf("Failed to encode userbot disable patch: %v", err)
+				return
+			}
+			if _, err := a.svc.UpdateGroup(a.ctx, settings.GroupTelegram, disable); err != nil {
+				log.Warnf("Failed to disable userbot after login flow ended: %v", err)
+			}
 			return
 		}
 		flow.cancel()
@@ -180,9 +191,12 @@ func (a *App) LogoutUserbot(ctx context.Context) error {
 	if err := user.Logout(); err != nil {
 		return err
 	}
-	patch, _ := json.Marshal(map[string]any{
+	patch, err := json.Marshal(map[string]any{
 		"userbot": map[string]any{"enable": false},
 	})
+	if err != nil {
+		return fmt.Errorf("encode userbot logout settings: %w", err)
+	}
 	if _, err := a.svc.UpdateGroup(ctx, settings.GroupTelegram, patch); err != nil {
 		return fmt.Errorf("failed to persist logout: %w", err)
 	}

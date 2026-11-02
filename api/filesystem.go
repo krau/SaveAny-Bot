@@ -123,7 +123,11 @@ func (s *server) listFilesystem(w http.ResponseWriter, r *http.Request) {
 	if volume := filepath.VolumeName(dir); volume != "" {
 		root = volume + string(filepath.Separator)
 	}
-	cwd, _ := os.Getwd()
+	cwd, err := os.Getwd()
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	WriteJSON(w, http.StatusOK, filesystemListing{
 		Path:      dir,

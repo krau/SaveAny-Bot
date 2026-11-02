@@ -28,7 +28,9 @@ func Init(ctx context.Context, opts Options) (Result, error) {
 	if err := os.MkdirAll(opts.DataDir, 0o700); err != nil {
 		return Result{}, err
 	}
-	_ = os.Chmod(opts.DataDir, 0o700)
+	if err := os.Chmod(opts.DataDir, 0o700); err != nil {
+		log.Warnf("Failed to restrict data directory permissions: %v", err)
+	}
 	database.Init(ctx, opts.DBPath)
 	if !settings.LegacyImported(ctx) {
 		if err := settings.ImportLegacy(ctx, opts.ConfigPath, opts.DataDir); err != nil {

@@ -2,6 +2,7 @@ package tdler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -32,7 +33,9 @@ func DownloadToCache(
 	if file.Size() > 0 {
 		if stat, err := os.Stat(cachePath); err == nil && stat.Size() == file.Size() {
 			logger.Info("Cache file already complete, skipping download")
-			_ = os.Remove(cachePath + ".part")
+			if err := os.Remove(cachePath + ".part"); err != nil && !errors.Is(err, os.ErrNotExist) {
+				logger.Warnf("Failed to remove stale part file: %v", err)
+			}
 			relay.CleanupResumeState(ctx, relay.ResumeStatePath(cachePath))
 			if err := RemoveResumeState(ResumeStatePath(cachePath + ".part")); err != nil {
 				logger.Warnf("Failed to remove stale resume state: %v", err)
@@ -58,7 +61,11 @@ func DownloadToCache(
 		if err != nil {
 			return fmt.Errorf("failed to create cache file: %w", err)
 		}
-		defer localFile.Close()
+		defer func() {
+			if err := localFile.Close(); err != nil {
+				logger.Warnf("Failed to close cache file: %v", err)
+			}
+		}()
 		if _, err := newDownloader(file).Parallel(ctx, wrap(localFile)); err != nil {
 			return fmt.Errorf("download failed: %w", err)
 		}
@@ -76,9 +83,8 @@ func DownloadToCache(
 		ResumeStatePath(partPath),
 	)
 	if downloadErr != nil {
-		partFile.Close()
 		// Keep the relay message and sidecar so a later run can reuse them.
-		return downloadErr
+		return errors.Join(downloadErr, partFile.Close())
 	}
 	if cleanup != nil {
 		defer cleanup(ctx)
@@ -86,8 +92,7 @@ func DownloadToCache(
 	// 落盘后再关闭并 rename: 确保位图标记的字节确实持久, 掉电后不会
 	// 出现 "位图完整但数据页丢失" 的零字节洞。
 	if err := partFile.Sync(); err != nil {
-		partFile.Close()
-		return fmt.Errorf("failed to sync cache file: %w", err)
+		return errors.Join(fmt.Errorf("failed to sync cache file: %w", err), partFile.Close())
 	}
 	closeErr := partFile.Close()
 	if closeErr != nil {

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"golang.org/x/time/rate"
 
 	"github.com/krau/SaveAny-Bot/database"
@@ -210,7 +211,9 @@ func (s *server) establishSession(w http.ResponseWriter, r *http.Request) (strin
 
 func (s *server) logout(w http.ResponseWriter, r *http.Request) {
 	if session := sessionFromContext(r.Context()); session != nil {
-		_ = database.DeleteWebSession(r.Context(), session.ID)
+		if err := database.DeleteWebSession(r.Context(), session.ID); err != nil {
+			log.FromContext(r.Context()).Warnf("Failed to delete web session: %v", err)
+		}
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
@@ -260,7 +263,9 @@ func (s *server) changePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) sessionCleanup(ctx context.Context) {
-	_ = database.DeleteExpiredWebSessions(ctx)
+	if err := database.DeleteExpiredWebSessions(ctx); err != nil {
+		log.FromContext(ctx).Warnf("Failed to delete expired web sessions: %v", err)
+	}
 	s.logins.cleanup(24 * time.Hour)
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
@@ -269,7 +274,9 @@ func (s *server) sessionCleanup(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			_ = database.DeleteExpiredWebSessions(ctx)
+			if err := database.DeleteExpiredWebSessions(ctx); err != nil {
+				log.FromContext(ctx).Warnf("Failed to delete expired web sessions: %v", err)
+			}
 			s.logins.cleanup(24 * time.Hour)
 		}
 	}

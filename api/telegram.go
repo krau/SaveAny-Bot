@@ -2,17 +2,20 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 )
 
-func decodeForce(r *http.Request) bool {
+func decodeForce(r *http.Request) (bool, error) {
 	var body struct {
 		Force bool `json:"force"`
 	}
-	_ = json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&body)
-	return body.Force
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&body); err != nil && !errors.Is(err, io.EOF) {
+		return false, err
+	}
+	return body.Force, nil
 }
 
 func (s *server) telegramStatus(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +36,12 @@ func (s *server) startBot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) stopBot(w http.ResponseWriter, r *http.Request) {
-	if err := s.deps.Telegram.StopBot(r.Context(), decodeForce(r)); err != nil {
+	force, err := decodeForce(r)
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid_request", "invalid request body")
+		return
+	}
+	if err := s.deps.Telegram.StopBot(r.Context(), force); err != nil {
 		WriteError(w, http.StatusConflict, "bot_stop_failed", err.Error())
 		return
 	}
@@ -41,7 +49,12 @@ func (s *server) stopBot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) restartBot(w http.ResponseWriter, r *http.Request) {
-	if err := s.deps.Telegram.RestartBot(r.Context(), decodeForce(r)); err != nil {
+	force, err := decodeForce(r)
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid_request", "invalid request body")
+		return
+	}
+	if err := s.deps.Telegram.RestartBot(r.Context(), force); err != nil {
 		WriteError(w, http.StatusConflict, "bot_restart_failed", err.Error())
 		return
 	}

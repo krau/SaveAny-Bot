@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -39,11 +40,15 @@ func loadResumeState(path string) (*resumeState, error) {
 	}
 	var state resumeState
 	if err := json.Unmarshal(data, &state); err != nil {
-		_ = os.Remove(path)
+		if removeErr := os.Remove(path); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+			return nil, fmt.Errorf("remove invalid relay resume state: %w", removeErr)
+		}
 		return nil, nil
 	}
 	if state.Version != resumeStateVersion || state.RelayMessageID == 0 || state.RelayChatID == 0 {
-		_ = os.Remove(path)
+		if removeErr := os.Remove(path); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+			return nil, fmt.Errorf("remove incompatible relay resume state: %w", removeErr)
+		}
 		return nil, nil
 	}
 	return &state, nil
@@ -84,7 +89,9 @@ func CleanupResumeState(ctx context.Context, statePath string) {
 	}
 	extCtx := tgutil.ExtFromContext(ctx)
 	if extCtx == nil {
-		_ = removeResumeState(statePath)
+		if err := removeResumeState(statePath); err != nil {
+			log.FromContext(ctx).Warnf("Failed to remove relay resume state: %v", err)
+		}
 		return
 	}
 	relayed := &relayFile{

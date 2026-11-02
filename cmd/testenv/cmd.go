@@ -57,7 +57,10 @@ func run(cmd *cobra.Command, _ []string) error {
 		autoDir = true
 	}
 
-	keep, _ := cmd.Flags().GetBool("keep")
+	keep, err := cmd.Flags().GetBool("keep")
+	if err != nil {
+		return err
+	}
 	if autoDir && !keep {
 		defer func() {
 			if err := os.RemoveAll(opts.DataDir); err != nil {
@@ -66,7 +69,10 @@ func run(cmd *cobra.Command, _ []string) error {
 		}()
 	}
 
-	password, _ := cmd.Flags().GetString("admin-password")
+	password, err := cmd.Flags().GetString("admin-password")
+	if err != nil {
+		return err
+	}
 	if password == "" {
 		password = strings.TrimSpace(os.Getenv("SAVEANY_ADMIN_PASSWORD"))
 	}
@@ -82,8 +88,14 @@ func run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("initialize test environment: %w", err)
 	}
 
-	storageName, _ := cmd.Flags().GetString("storage-name")
-	chatID, _ := cmd.Flags().GetInt64("user-chat-id")
+	storageName, err := cmd.Flags().GetString("storage-name")
+	if err != nil {
+		return err
+	}
+	chatID, err := cmd.Flags().GetInt64("user-chat-id")
+	if err != nil {
+		return err
+	}
 	downloadsDir := filepath.Join(opts.DataDir, "downloads")
 	if err := os.MkdirAll(downloadsDir, 0o755); err != nil {
 		return fmt.Errorf("create downloads directory: %w", err)
@@ -141,7 +153,9 @@ func run(cmd *cobra.Command, _ []string) error {
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		_ = sampleServer.Shutdown(shutdownCtx)
+		if err := sampleServer.Shutdown(shutdownCtx); err != nil {
+			log.Warnf("Failed to shut down sample server: %v", err)
+		}
 	}()
 
 	application := app.New(ctx, res.Settings, app.Options{

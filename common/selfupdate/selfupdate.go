@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 
 	"github.com/blang/semver"
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/unvgo/ghselfupdate"
 )
@@ -101,6 +102,7 @@ func Restart() error {
 func CleanLeftovers() {
 	exe, err := SelfPath()
 	if err != nil {
+		log.Warnf("Failed to resolve executable path for cleanup: %v", err)
 		return
 	}
 	cleanLeftovers(exe)
@@ -108,10 +110,18 @@ func CleanLeftovers() {
 
 func cleanLeftovers(exe string) {
 	dir, name := filepath.Split(exe)
-	_ = os.Remove(filepath.Join(dir, "."+name+".old"))
+	if err := os.Remove(filepath.Join(dir, "."+name+".old")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Warnf("Failed to remove stale update file: %v", err)
+	}
 	staged := filepath.Join(dir, "."+name+".new")
-	if same, err := sameContent(exe, staged); err == nil && same {
-		_ = os.Remove(staged)
+	if same, err := sameContent(exe, staged); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			log.Warnf("Failed to compare staged update: %v", err)
+		}
+	} else if same {
+		if err := os.Remove(staged); err != nil {
+			log.Warnf("Failed to remove staged update: %v", err)
+		}
 	}
 }
 
@@ -120,8 +130,14 @@ func writable(dir string) bool {
 	if err != nil {
 		return false
 	}
-	f.Close()
-	os.Remove(f.Name())
+	if err := f.Close(); err != nil {
+		log.Warnf("Failed to close update probe: %v", err)
+		return false
+	}
+	if err := os.Remove(f.Name()); err != nil {
+		log.Warnf("Failed to remove update probe: %v", err)
+		return false
+	}
 	return true
 }
 

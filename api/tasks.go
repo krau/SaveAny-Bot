@@ -47,8 +47,24 @@ func (s *server) createTask(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) listTasks(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
-	limit, _ := strconv.Atoi(query.Get("limit"))
-	offset, _ := strconv.Atoi(query.Get("offset"))
+	limit := 0
+	if raw := query.Get("limit"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			WriteError(w, http.StatusBadRequest, "invalid_request", "invalid limit")
+			return
+		}
+		limit = parsed
+	}
+	offset := 0
+	if raw := query.Get("offset"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			WriteError(w, http.StatusBadRequest, "invalid_request", "invalid offset")
+			return
+		}
+		offset = parsed
+	}
 	records, total, err := database.ListTaskRecords(r.Context(), database.TaskFilter{
 		Status: query.Get("status"),
 		Type:   query.Get("type"),

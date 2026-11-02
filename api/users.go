@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/storagefilter"
 )
@@ -65,7 +66,9 @@ func (s *server) createUser(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	_ = s.deps.Settings.ReloadConfig(r.Context())
+	if err := s.deps.Settings.ReloadConfig(r.Context()); err != nil {
+		log.FromContext(r.Context()).Warnf("Failed to reload settings after user creation: %v", err)
+	}
 	WriteJSON(w, http.StatusCreated, userResponse(user))
 }
 
@@ -93,7 +96,9 @@ func (s *server) updateUser(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	_ = s.deps.Settings.ReloadConfig(r.Context())
+	if err := s.deps.Settings.ReloadConfig(r.Context()); err != nil {
+		log.FromContext(r.Context()).Warnf("Failed to reload settings after user update: %v", err)
+	}
 	WriteJSON(w, http.StatusOK, userResponse(user))
 }
 
@@ -112,14 +117,18 @@ func (s *server) deleteUser(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	_ = s.deps.Settings.ReloadConfig(r.Context())
+	if err := s.deps.Settings.ReloadConfig(r.Context()); err != nil {
+		log.FromContext(r.Context()).Warnf("Failed to reload settings after user deletion: %v", err)
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func userResponse(user *database.User) UserResponse {
 	ids := make([]uint, 0)
 	if user.StorageFilterIDsJSON != "" {
-		_ = json.Unmarshal([]byte(user.StorageFilterIDsJSON), &ids)
+		if err := json.Unmarshal([]byte(user.StorageFilterIDsJSON), &ids); err != nil {
+			log.Warnf("Invalid storage filter for user %d: %v", user.ChatID, err)
+		}
 	}
 	if ids == nil {
 		ids = make([]uint, 0)

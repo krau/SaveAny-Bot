@@ -125,7 +125,9 @@ func (s *Server) serveUI(w http.ResponseWriter, r *http.Request) {
 	if path != "" {
 		if file, err := sub.Open(path); err == nil {
 			info, statErr := file.Stat()
-			_ = file.Close()
+			if closeErr := file.Close(); closeErr != nil {
+				log.Warnf("Failed to close static asset %s: %v", path, closeErr)
+			}
 			if statErr == nil && !info.IsDir() {
 				if strings.HasPrefix(path, "assets/") {
 					w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
@@ -137,5 +139,7 @@ func (s *Server) serveUI(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
-	_, _ = w.Write(index)
+	if _, err := w.Write(index); err != nil {
+		log.Warnf("Failed to write web index: %v", err)
+	}
 }

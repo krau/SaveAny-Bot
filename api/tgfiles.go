@@ -175,8 +175,12 @@ func ExtractFilesFromLinks(ctx context.Context, links []string) ([]tfile.TGFileM
 			continue
 		}
 
-		u, _ := url.Parse(link)
-		single := u != nil && u.Query().Has("single")
+		u, err := url.Parse(link)
+		if err != nil {
+			logger.Warnf("Invalid message link %s: %v", link, err)
+			continue
+		}
+		single := u.Query().Has("single")
 
 		msgCtx, err := getMessageWithContext(ctx, chatID, msgID)
 		if err != nil {

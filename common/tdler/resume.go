@@ -144,13 +144,17 @@ func loadResumeBitmap(path string) (*resumeBitmap, error) {
 	var b resumeBitmap
 	if err := json.Unmarshal(data, &b); err != nil {
 		// 无法解析的位图 (外部损坏): 删除并视为不存在, 全量重下自愈。
-		_ = os.Remove(path)
+		if removeErr := os.Remove(path); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+			return nil, fmt.Errorf("remove invalid resume bitmap: %w", removeErr)
+		}
 		return nil, nil
 	}
 	// 位图只写 PartSize=MaxPartSize; 其他值或超大 size 都是损坏数据,
 	// 在按 size 分配内存前拒绝, 防止构造的位图触发巨量分配。
 	if b.PartSize != tglimit.MaxPartSize || b.Size > maxResumableSize {
-		_ = os.Remove(path)
+		if removeErr := os.Remove(path); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+			return nil, fmt.Errorf("remove incompatible resume bitmap: %w", removeErr)
+		}
 		return nil, nil
 	}
 	b.ensureBlocks()

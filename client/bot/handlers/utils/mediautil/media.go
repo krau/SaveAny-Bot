@@ -177,7 +177,10 @@ func BuildFilenameTemplateData(message *tg.Message) map[string]string {
 		}(),
 		MsgGen: tgutil.GenFileNameFromMessage(*message),
 		OrigName: func() string {
-			f, _ := tgutil.GetMediaFileName(message.Media)
+			f, err := tgutil.GetMediaFileName(message.Media)
+			if err != nil {
+				log.FromContext(context.Background()).Debugf("Failed to derive media filename: %v", err)
+			}
 			return f
 		}(),
 		MsgDate: func() string {

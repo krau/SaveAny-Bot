@@ -85,7 +85,9 @@ func StorageReferences(ctx context.Context, storageID uint) (users, dirs, rules 
 		}
 		var ids []uint
 		if u.StorageFilterIDsJSON != "" {
-			_ = json.Unmarshal([]byte(u.StorageFilterIDsJSON), &ids)
+			if err := json.Unmarshal([]byte(u.StorageFilterIDsJSON), &ids); err != nil {
+				return 0, 0, 0, fmt.Errorf("decode storage filter for user %d: %w", u.ChatID, err)
+			}
 		}
 		if slices.Contains(ids, storageID) {
 			users++

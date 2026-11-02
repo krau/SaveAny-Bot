@@ -25,7 +25,11 @@ func (s *server) systemInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) restartSystem(w http.ResponseWriter, r *http.Request) {
-	force := decodeForce(r)
+	force, err := decodeForce(r)
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid_request", "invalid request body")
+		return
+	}
 	if !force && core.ActiveTaskCount() > 0 {
 		WriteError(w, http.StatusConflict, "tasks_running", "tasks are running; use {\"force\":true} to restart anyway")
 		return

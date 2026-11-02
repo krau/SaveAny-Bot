@@ -154,8 +154,12 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 			sb.Reset()
 			sb.WriteString(msg.GetMessage())
 			sb.WriteString(" ")
-			fn, _ := tgutil.GetMediaFileName(media)
-			sb.WriteString(fn)
+			fn, err := tgutil.GetMediaFileName(media)
+			if err != nil {
+				log.FromContext(ctx).Debugf("Failed to derive media filename for filter: %v", err)
+			} else {
+				sb.WriteString(fn)
+			}
 			if !filter.MatchString(sb.String()) {
 				continue
 			}

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 )
 
@@ -80,7 +81,9 @@ func (c *Client) InvokeRequest(ctx context.Context, method string, params url.Va
 	}
 
 	defer func() {
-		_ = resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			log.Warnf("Failed to close Telegraph response body: %v", err)
+		}
 	}()
 
 	var b Body

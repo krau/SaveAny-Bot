@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/settings"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -32,7 +33,9 @@ func maskStorageConfig(config map[string]any) map[string]any {
 func storageResponse(record *database.StorageRecord, initErr string) StorageRecord {
 	var config map[string]any
 	if record.ConfigJSON != "" {
-		_ = json.Unmarshal([]byte(record.ConfigJSON), &config)
+		if err := json.Unmarshal([]byte(record.ConfigJSON), &config); err != nil {
+			log.Warnf("Invalid storage config for %s: %v", record.Name, err)
+		}
 	}
 	if config == nil {
 		config = make(map[string]any)

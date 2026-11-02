@@ -188,7 +188,9 @@ func (a *App) Stop() {
 	}
 	if a.web != nil {
 		stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		_ = a.web.Stop(stopCtx)
+		if err := a.web.Stop(stopCtx); err != nil {
+			log.Warnf("Failed to stop web server: %v", err)
+		}
 		cancel()
 	}
 	bot.Stop()
@@ -199,5 +201,7 @@ func (a *App) Stop() {
 		log.Warn("Timed out waiting for task workers to stop")
 	}
 	storage.CloseAll()
-	_ = database.Close()
+	if err := database.Close(); err != nil {
+		log.Warnf("Failed to close database: %v", err)
+	}
 }

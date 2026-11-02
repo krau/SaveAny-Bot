@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -103,16 +104,16 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 	removeTemp := true
 	defer func() {
 		if removeTemp {
-			_ = os.Remove(tempPath)
+			if err := os.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+				l.logger.Warnf("Failed to remove temporary file %s: %v", tempPath, err)
+			}
 		}
 	}()
 	if _, err := io.Copy(tempFile, r); err != nil {
-		_ = tempFile.Close()
-		return err
+		return errors.Join(err, tempFile.Close())
 	}
 	if err := tempFile.Chmod(0o644); err != nil {
-		_ = tempFile.Close()
-		return err
+		return errors.Join(err, tempFile.Close())
 	}
 	if err := tempFile.Close(); err != nil {
 		return err

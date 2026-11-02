@@ -33,7 +33,9 @@ func Init(ctx context.Context, path string) {
 	if err != nil {
 		logger.Fatalf("Failed to open database: %v", err)
 	}
-	_ = os.Chmod(path, 0o600)
+	if err := os.Chmod(path, 0o600); err != nil {
+		logger.Warnf("Failed to restrict database permissions: %v", err)
+	}
 	logger.Debug("Database connected")
 	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}, &WatchChat{}, &Setting{}, &StorageRecord{}, &TaskRecord{}, &TaskItemRecord{}, &WebSession{}, &BotWorker{}); err != nil {
 		logger.Fatalf("Database migration failed: %v", err)

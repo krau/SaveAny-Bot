@@ -185,7 +185,10 @@ func ImportLegacy(ctx context.Context, src, dataDir string) error {
 			"api_token":     v.GetString("api.token"),
 			"secure_cookie": false,
 		}
-		raw, _ := json.Marshal(web)
+		raw, err := json.Marshal(web)
+		if err != nil {
+			return fmt.Errorf("encode legacy web settings: %w", err)
+		}
 		groups[GroupWeb] = string(raw)
 	}
 

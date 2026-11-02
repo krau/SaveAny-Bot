@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 )
 
@@ -27,11 +28,25 @@ type Options struct {
 
 func Parse(cmd *cobra.Command) Options {
 	flags := cmd.Flags()
-	configPath, _ := flags.GetString("config")
-	dataDir, _ := flags.GetString("data-dir")
-	dbPath, _ := flags.GetString("db-path")
-	listen, _ := flags.GetString("listen")
-	noWeb, _ := flags.GetBool("no-web")
+	getString := func(name string) string {
+		value, err := flags.GetString(name)
+		if err != nil {
+			log.Warnf("Failed to read --%s: %v", name, err)
+		}
+		return value
+	}
+	getBool := func(name string) bool {
+		value, err := flags.GetBool(name)
+		if err != nil {
+			log.Warnf("Failed to read --%s: %v", name, err)
+		}
+		return value
+	}
+	configPath := getString("config")
+	dataDir := getString("data-dir")
+	dbPath := getString("db-path")
+	listen := getString("listen")
+	noWeb := getBool("no-web")
 
 	if dataDir == "" {
 		dataDir = os.Getenv("SAVEANY_DATA_DIR")
