@@ -96,10 +96,10 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	case tasktype.TaskTypeDirectlinks:
 		shortcut.CreateAndAddDirectTaskWithEdit(ctx, selectedStorage, dirPath, data.DirectLinks, msgID, chatID(update))
 	case tasktype.TaskTypeAria2:
-		client := GetAria2Client()
-		if client == nil {
+		client, err := GetAria2Client()
+		if err != nil {
 			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, i18n.T(i18nk.BotMsgAria2ErrorAria2ClientInitFailed, map[string]any{
-				"Error": "aria2 client not initialized",
+				"Error": err.Error(),
 			})))
 			return dispatcher.EndGroups
 		}

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"sync/atomic"
+	"time"
 )
 
 var (
@@ -125,7 +126,14 @@ func NewClient(url, secret string) (*Client, error) {
 	return &Client{
 		url:    url,
 		secret: secret,
-		client: &http.Client{},
+		client: &http.Client{
+			Transport: &http.Transport{
+				Proxy:                 http.ProxyFromEnvironment,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ResponseHeaderTimeout: 30 * time.Second,
+				IdleConnTimeout:       90 * time.Second,
+			},
+		},
 	}, nil
 }
 

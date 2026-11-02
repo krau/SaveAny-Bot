@@ -54,12 +54,29 @@ func handleDlCmd(ctx *ext.Context, update *ext.Update) error {
 	return nil
 }
 
-var aria2ClientInitOnce sync.Once
-var aria2ClientInitErr error
-var aria2Client *aria2.Client
+var aria2ClientCache struct {
+	sync.Mutex
+	key    string
+	client *aria2.Client
+}
 
-func GetAria2Client() *aria2.Client {
-	return aria2Client
+// GetAria2Client returns a client for the current aria2 settings. The cache is
+// keyed by URL and secret so changing settings does not require a restart.
+func GetAria2Client() (*aria2.Client, error) {
+	cfg := config.C().Aria2
+	key := cfg.Url + "\x00" + cfg.Secret
+	aria2ClientCache.Lock()
+	defer aria2ClientCache.Unlock()
+	if aria2ClientCache.client != nil && aria2ClientCache.key == key {
+		return aria2ClientCache.client, nil
+	}
+	client, err := aria2.NewClient(cfg.Url, cfg.Secret)
+	if err != nil {
+		return nil, err
+	}
+	aria2ClientCache.client = client
+	aria2ClientCache.key = key
+	return client, nil
 }
 
 func handleAria2DlCmd(ctx *ext.Context, update *ext.Update) error {
@@ -84,14 +101,11 @@ func handleAria2DlCmd(ctx *ext.Context, update *ext.Update) error {
 	}
 	logger.Debug("Preparing aria2 download", "links", links)
 
-	// Initialize aria2 client to check connection
-	aria2ClientInitOnce.Do(func() {
-		aria2Client, aria2ClientInitErr = aria2.NewClient(config.C().Aria2.Url, config.C().Aria2.Secret)
-	})
-	if aria2ClientInitErr != nil {
-		logger.Error("Failed to initialize aria2 client", "error", aria2ClientInitErr)
+	// Initialize aria2 client to check connection.
+	if _, err := GetAria2Client(); err != nil {
+		logger.Error("Failed to initialize aria2 client", "error", err)
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgAria2ErrorAria2ClientInitFailed, map[string]any{
-			"Error": aria2ClientInitErr.Error(),
+			"Error": err.Error(),
 		})), nil)
 		return nil
 	}

@@ -16,10 +16,24 @@ type ProgressSender func(ctx context.Context, chatID int64, req *tg.MessagesEdit
 
 const progressEditInterval = time.Second
 
-var progressEditLimiter = rate.NewLimiter(rate.Every(progressEditInterval), 1)
+var progressEditLimiters = struct {
+	sync.Mutex
+	byChat map[int64]*rate.Limiter
+}{byChat: make(map[int64]*rate.Limiter)}
+
+func progressEditLimiter(chatID int64) *rate.Limiter {
+	progressEditLimiters.Lock()
+	defer progressEditLimiters.Unlock()
+	limiter := progressEditLimiters.byChat[chatID]
+	if limiter == nil {
+		limiter = rate.NewLimiter(rate.Every(progressEditInterval), 1)
+		progressEditLimiters.byChat[chatID] = limiter
+	}
+	return limiter
+}
 
 func SendProgressEdit(ctx context.Context, chatID int64, req *tg.MessagesEditMessageRequest) error {
-	if err := progressEditLimiter.Wait(context.Background()); err != nil {
+	if err := progressEditLimiter(chatID).Wait(ctx); err != nil {
 		return err
 	}
 	ext := ExtFromContext(ctx)
