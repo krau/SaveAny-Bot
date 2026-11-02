@@ -20,9 +20,10 @@ import (
 )
 
 var (
-	serverURL string
-	dataDir   string
-	repoRoot  string
+	serverURL  string
+	dataDir    string
+	repoRoot   string
+	testBinary string
 )
 
 func TestMain(m *testing.M) {
@@ -53,6 +54,7 @@ func runTests(m *testing.M) int {
 	if runtime.GOOS == "windows" {
 		bin += ".exe"
 	}
+	testBinary = bin
 	build := exec.Command("go", "build", "-o", bin, ".")
 	build.Dir = repoRoot
 	build.Stdout = os.Stderr
@@ -137,9 +139,13 @@ func freePort() string {
 }
 
 func waitForHealth(ctx context.Context) error {
+	return waitForHealthAt(ctx, serverURL)
+}
+
+func waitForHealthAt(ctx context.Context, base string) error {
 	client := &http.Client{Timeout: 2 * time.Second}
 	for {
-		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+"/health", nil)
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, base+"/health", nil)
 		resp, err := client.Do(req)
 		if err == nil {
 			_ = resp.Body.Close()
@@ -179,12 +185,16 @@ type apiClient struct {
 }
 
 func newClient(t *testing.T) *apiClient {
+	return newClientAt(t, serverURL)
+}
+
+func newClientAt(t *testing.T, base string) *apiClient {
 	t.Helper()
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		t.Fatalf("create cookie jar: %v", err)
 	}
-	c := &apiClient{t: t, base: serverURL, http: &http.Client{Jar: jar, Timeout: 10 * time.Second}}
+	c := &apiClient{t: t, base: base, http: &http.Client{Jar: jar, Timeout: 10 * time.Second}}
 	status, body := c.request(http.MethodPost, "/api/v1/auth/login", map[string]string{"password": "test-admin"}, false)
 	if status != http.StatusOK {
 		t.Fatalf("login status = %d, body = %s", status, body)
