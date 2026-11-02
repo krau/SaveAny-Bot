@@ -12,6 +12,7 @@ Here are some guidelines and suggestions for contributing code. You don't have t
 - **Open an issue before adding new features**, so we can discuss design and implementation details and avoid work that doesn't fit the project design.
 - **Use modern development tools**, format your code before committing, and keep the style consistent.
 - **Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)**, and avoid vague or overly simple commit messages.
+- **See [Testing](testing) for the seeded environment and end-to-end suites.**
 
 ## Contributing New Storage Backend
 
