@@ -1,55 +1,45 @@
 package telegram
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 func TestCreateSplitZip(t *testing.T) {
-	input := "tests/testfile.dat"
-	file, err := os.Open(input)
-	if err != nil {
-		t.Fatalf("failed to open test file: %v", err)
-	}
-	defer file.Close()
-	fileName := filepath.Base(input)
-	fileInfo, err := file.Stat()
-	if err != nil {
-		t.Fatalf("failed to stat test file: %v", err)
-	}
-	fileSize := fileInfo.Size()
-
+	content := bytes.Repeat([]byte("SaveAny-Bot split test\n"), 2*1024*1024/22+1)
+	content = content[:2*1024*1024+123]
 	tests := []struct {
+		name     string
 		partSize int64
-		output   string
 	}{
-		{partSize: int64(1024 * 1024 * 500), output: "tests/split_test_output_500MB"},
-		{partSize: int64(1024 * 1024 * 100), output: "tests/split_test_output_100MB"},
+		{name: "1MiB", partSize: 1024 * 1024},
+		{name: "512KiB", partSize: 512 * 1024},
 	}
 
 	for _, tt := range tests {
-		err = CreateSplitZip(t.Context(), file, fileSize, fileName, tt.output, tt.partSize)
-		if err != nil {
-			t.Fatalf("CreateSplitZip failed: %v", err)
-		}
-		matched, err := filepath.Glob(tt.output + ".z*")
-		if err != nil {
-			t.Fatalf("failed to glob split files: %v", err)
-		}
-		if len(matched) == 0 {
-			t.Fatalf("no split files found")
-		}
-		t.Logf("Created %d split files", len(matched))
-		for _, f := range matched {
-			info, err := os.Stat(f)
+		t.Run(tt.name, func(t *testing.T) {
+			output := filepath.Join(t.TempDir(), "split")
+			if err := CreateSplitZip(t.Context(), bytes.NewReader(content), int64(len(content)), "testfile.dat", output, tt.partSize); err != nil {
+				t.Fatalf("CreateSplitZip failed: %v", err)
+			}
+			matched, err := filepath.Glob(output + ".z*")
 			if err != nil {
-				t.Fatalf("failed to stat file %s: %v", f, err)
+				t.Fatalf("failed to glob split files: %v", err)
 			}
-			if info.Size() > tt.partSize {
-				t.Errorf("file %s exceeds part size: %d > %d", f, info.Size(), tt.partSize)
+			if len(matched) == 0 {
+				t.Fatal("no split files found")
 			}
-			t.Logf(" - %s (%d bytes)", f, info.Size())
-		}
+			for _, name := range matched {
+				info, err := os.Stat(name)
+				if err != nil {
+					t.Fatalf("failed to stat %s: %v", name, err)
+				}
+				if info.Size() > tt.partSize {
+					t.Errorf("file %s exceeds part size: %d > %d", name, info.Size(), tt.partSize)
+				}
+			}
+		})
 	}
 }
