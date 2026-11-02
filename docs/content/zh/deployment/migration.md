@@ -98,6 +98,7 @@ docker compose logs saveany-bot | grep -E "Web UI available at|Generated web adm
 ## 5. 迁移之后
 
 - `config.toml` 的后续修改**不会再生效**，请在 Web 控制台修改设置。
+- MinIO 存储会在启动时转换为 `s3`，请在 Web 控制台核对 Endpoint、密钥和 Bucket。
 - 更新前备份整个 `data/` 目录，并保留 Docker 数据卷。
 - Docker 更新使用 `docker compose pull && docker compose up -d`。
 - 若更换 Bot Token，建议删除 `data/bot_session.db` 后重启，避免旧会话不匹配。

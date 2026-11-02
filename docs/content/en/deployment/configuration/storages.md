@@ -48,7 +48,7 @@ base_path = "/path/to/webdav" # Base path in WebDAV, all files will be stored un
 `type=s3`
 
 ```text
-endpoint = "s3.example.com" # Endpoint for S3, defaults to AWS S3 endpoint if not set
+endpoint = "https://s3.example.com" # Endpoint for S3, defaults to AWS S3 endpoint if not set
 region = "us-east-1" # Region for S3
 access_key_id = "your_access_key_id" # Access key ID for S3
 secret_access_key = "your_secret_access_key" # Secret access key for S3

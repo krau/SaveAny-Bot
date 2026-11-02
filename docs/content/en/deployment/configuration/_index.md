@@ -13,7 +13,7 @@ Settings are stored in the SQLite database under the data directory (default `da
 |---|---|
 | Guide | First-run checklist and everyday usage |
 | Telegram | Bot token, API ID/hash, proxy, Userbot login |
-| Storages | Local disk, WebDAV, Alist, S3, MinIO, Rclone, Telegram, and more |
+| Storages | Local disk, WebDAV, Alist, S3, Rclone, Telegram, and more |
 | Users | Telegram user IDs, default storage, directories, rules, and storage access |
 | Settings | Task concurrency, language, proxy, Aria2, yt-dlp, parsers, cache, logging, web, and API |
 

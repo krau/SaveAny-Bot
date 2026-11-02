@@ -13,7 +13,7 @@ weight: 11
 |---|---|
 | 指南 | 首次配置检查清单和日常使用说明 |
 | Telegram | Bot Token、API ID/Hash、代理、Userbot 登录 |
-| 存储 | 本地磁盘、WebDAV、Alist、S3、MinIO、Rclone、Telegram 等存储端 |
+| 存储 | 本地磁盘、WebDAV、Alist、S3、Rclone、Telegram 等存储端 |
 | 用户 | Telegram 用户 ID、默认存储、目录、规则和存储访问权限 |
 | 设置 | 任务并发、语言、代理、Aria2、yt-dlp、解析器、缓存、日志、Web 和 API |
 

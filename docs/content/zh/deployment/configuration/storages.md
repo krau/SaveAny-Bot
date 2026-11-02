@@ -48,7 +48,7 @@ base_path = "/path/to/webdav" # WebDAV 中的基础路径, 所有文件将存储
 `type=s3`
 
 ```text
-endpoint = "s3.example.com" # S3 的端点, 默认为 aws S3 的端点
+endpoint = "https://s3.example.com" # S3 的端点, 默认为 aws S3 的端点
 region = "us-east-1" # S3 的区域
 access_key_id = "your_access_key_id" # S3 的访问密钥 ID
 secret_access_key = "your_secret_access_key" # S3 的秘密访问密钥

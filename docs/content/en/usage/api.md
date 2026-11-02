@@ -82,8 +82,8 @@ Returns all currently loaded storage backends.
 ```json
 {
   "storages": [
-    { "name": "local",   "type": "local" },
-    { "name": "MyMinio", "type": "s3" }
+    { "name": "local", "type": "local" },
+    { "name": "MyS3", "type": "s3" }
   ]
 }
 ```

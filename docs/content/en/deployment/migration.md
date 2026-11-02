@@ -98,6 +98,7 @@ Then send a file or Telegram message link to the bot and confirm a task complete
 ## 5. After migration
 
 - Later changes to `config.toml` are **ignored**. Use the web console.
+- MinIO storage entries are converted to `s3` on startup; review their endpoint, credentials, and bucket in the web console.
 - Back up the entire `data/` directory before updates and keep the Docker volume.
 - Update Docker with `docker compose pull && docker compose up -d`.
 - If you change the Bot token, delete `data/bot_session.db` before restarting to avoid an old session mismatch.
