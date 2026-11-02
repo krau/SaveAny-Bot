@@ -33,6 +33,7 @@ func DownloadToCache(
 		if stat, err := os.Stat(cachePath); err == nil && stat.Size() == file.Size() {
 			logger.Info("Cache file already complete, skipping download")
 			_ = os.Remove(cachePath + ".part")
+			relay.CleanupResumeState(ctx, relay.ResumeStatePath(cachePath))
 			if err := RemoveResumeState(ResumeStatePath(cachePath + ".part")); err != nil {
 				logger.Warnf("Failed to remove stale resume state: %v", err)
 			}
@@ -42,11 +43,16 @@ func DownloadToCache(
 	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
-	file, cleanup := relay.Prepare(ctx, file)
-	if cleanup != nil {
-		defer cleanup(ctx)
+	var cleanup func(context.Context)
+	if file.Size() > 0 {
+		file, cleanup = relay.PrepareResumable(ctx, file, relay.ResumeStatePath(cachePath))
+	} else {
+		file, cleanup = relay.Prepare(ctx, file)
 	}
 	if file.Size() <= 0 {
+		if cleanup != nil {
+			defer cleanup(ctx)
+		}
 		// Unknown size (e.g. photos) cannot be resumed; use the plain downloader.
 		localFile, err := os.Create(cachePath)
 		if err != nil {
@@ -71,7 +77,11 @@ func DownloadToCache(
 	)
 	if downloadErr != nil {
 		partFile.Close()
+		// Keep the relay message and sidecar so a later run can reuse them.
 		return downloadErr
+	}
+	if cleanup != nil {
+		defer cleanup(ctx)
 	}
 	// 落盘后再关闭并 rename: 确保位图标记的字节确实持久, 掉电后不会
 	// 出现 "位图完整但数据页丢失" 的零字节洞。

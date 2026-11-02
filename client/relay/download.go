@@ -21,10 +21,22 @@ import (
 
 const minRelayFileSize = 8 << 20
 
+var runningClients = worker.RunningClients
+
 // Prepare wraps a Telegram file with a relay-backed downloader when a relay
 // channel and at least two running helpers are available. Any failure leaves
 // the original single-client file in place.
 func Prepare(ctx context.Context, file tfile.TGFile) (tfile.TGFile, func(context.Context)) {
+	return prepare(ctx, file, "")
+}
+
+// PrepareResumable is Prepare with a sidecar state file. The state lets a
+// crashed download reuse its relay message instead of forwarding it again.
+func PrepareResumable(ctx context.Context, file tfile.TGFile, statePath string) (tfile.TGFile, func(context.Context)) {
+	return prepare(ctx, file, statePath)
+}
+
+func prepare(ctx context.Context, file tfile.TGFile, statePath string) (tfile.TGFile, func(context.Context)) {
 	relayChatID := config.C().Telegram.RelayChatID
 	if relayChatID == 0 {
 		return file, nil
@@ -45,7 +57,7 @@ func Prepare(ctx context.Context, file tfile.TGFile) (tfile.TGFile, func(context
 	if extCtx == nil {
 		return file, nil
 	}
-	workers := worker.RunningClients()
+	workers := runningClients()
 	if len(workers) < 2 {
 		log.FromContext(ctx).Debugf("Relay download skipped: %d running helper bot(s), need at least 2", len(workers))
 		return file, nil
@@ -64,6 +76,35 @@ func Prepare(ctx context.Context, file tfile.TGFile) (tfile.TGFile, func(context
 	if sourceChatID == 0 || message.GetID() == 0 {
 		return file, nil
 	}
+	identity := tfile.Identity(file.Location())
+	keepMessages := config.C().Telegram.RelayKeepMessages
+
+	if statePath != "" {
+		state, stateErr := loadResumeState(statePath)
+		if stateErr != nil {
+			log.FromContext(ctx).Debugf("Relay resume state unavailable: %v", stateErr)
+		} else if state != nil {
+			if state.RelayChatID == relayChatID && state.matches(identity) {
+				relayed := newRelayFile(messageFile, extCtx, relayChatID, state.RelayMessageID, workers, keepMessages, statePath)
+				accessible := relayed.accessibleWorkers(ctx)
+				if len(accessible) >= 2 {
+					relayed.workers = accessible
+					log.FromContext(ctx).Infof(
+						"Relay download reused: file=%q helpers=%s message_id=%d",
+						file.Name(), workerNames(accessible), state.RelayMessageID,
+					)
+					return relayed, relayed.cleanup
+				}
+				log.FromContext(ctx).Warnf("Relay resume message %d is no longer readable; forwarding again", state.RelayMessageID)
+				relayed.cleanup(ctx)
+			} else {
+				log.FromContext(ctx).Debug("Relay resume state belongs to another file; discarding")
+				stale := newRelayFile(messageFile, extCtx, state.RelayChatID, state.RelayMessageID, workers, keepMessages, statePath)
+				stale.cleanup(ctx)
+			}
+		}
+	}
+
 	updates, err := extCtx.ForwardMessages(sourceChatID, relayChatID, &tg.MessagesForwardMessagesRequest{
 		ID: []int{message.GetID()},
 	})
@@ -76,35 +117,68 @@ func Prepare(ctx context.Context, file tfile.TGFile) (tfile.TGFile, func(context
 		log.FromContext(ctx).Warn("Relay forward returned no channel message ID, using primary client")
 		return file, nil
 	}
-	relayed := &relayFile{
-		base:           messageFile,
-		primary:        extCtx,
-		relayChatID:    relayChatID,
-		relayMessageID: relayMessageID,
-		workers:        workers,
-		keepMessages:   config.C().Telegram.RelayKeepMessages,
-		locations:      make(map[uint]tg.InputFileLocationClass, len(workers)),
-		served:         make(map[uint]int, len(workers)),
-	}
-	accessible := make([]worker.ClientRef, 0, len(workers))
-	for _, ref := range workers {
-		if _, err := relayed.workerLocation(ctx, ref); err != nil {
-			log.FromContext(ctx).Debugf("Relay worker %s cannot read channel: %v", ref.Name, err)
-			continue
-		}
-		accessible = append(accessible, ref)
-	}
+	relayed := newRelayFile(messageFile, extCtx, relayChatID, relayMessageID, workers, keepMessages, statePath)
+	accessible := relayed.accessibleWorkers(ctx)
 	if len(accessible) < 2 {
 		log.FromContext(ctx).Warnf("Relay download skipped: only %d helper bot(s) can read the relay channel", len(accessible))
 		relayed.cleanup(ctx)
 		return file, nil
 	}
 	relayed.workers = accessible
+	if statePath != "" {
+		state := resumeState{
+			Version:          resumeStateVersion,
+			RelayChatID:      relayChatID,
+			RelayMessageID:   relayMessageID,
+			SourceKind:       identity.Kind,
+			SourceID:         identity.ID,
+			SourceAccessHash: identity.AccessHash,
+		}
+		if err := saveResumeState(statePath, state); err != nil {
+			log.FromContext(ctx).Warnf("Failed to persist relay resume state: %v", err)
+			relayed.cleanup(ctx)
+			return file, nil
+		}
+	}
 	log.FromContext(ctx).Infof(
 		"Relay download enabled: file=%q size=%d helpers=%s message_id=%d keep_messages=%t",
 		file.Name(), file.Size(), workerNames(accessible), relayMessageID, relayed.keepMessages,
 	)
 	return relayed, relayed.cleanup
+}
+
+func newRelayFile(
+	base tfile.TGFileMessage,
+	primary *ext.Context,
+	relayChatID int64,
+	relayMessageID int,
+	workers []worker.ClientRef,
+	keepMessages bool,
+	statePath string,
+) *relayFile {
+	return &relayFile{
+		base:           base,
+		primary:        primary,
+		relayChatID:    relayChatID,
+		relayMessageID: relayMessageID,
+		workers:        workers,
+		keepMessages:   keepMessages,
+		statePath:      statePath,
+		locations:      make(map[uint]tg.InputFileLocationClass, len(workers)),
+		served:         make(map[uint]int, len(workers)),
+	}
+}
+
+func (f *relayFile) accessibleWorkers(ctx context.Context) []worker.ClientRef {
+	accessible := make([]worker.ClientRef, 0, len(f.workers))
+	for _, ref := range f.workers {
+		if _, err := f.workerLocation(ctx, ref); err != nil {
+			log.FromContext(ctx).Debugf("Relay worker %s cannot read channel: %v", ref.Name, err)
+			continue
+		}
+		accessible = append(accessible, ref)
+	}
+	return accessible
 }
 
 func workerNames(workers []worker.ClientRef) string {
@@ -124,6 +198,7 @@ type relayFile struct {
 	relayMessageID int
 	workers        []worker.ClientRef
 	keepMessages   bool
+	statePath      string
 
 	mu        sync.Mutex
 	next      int
@@ -143,6 +218,9 @@ func (f *relayFile) cleanup(ctx context.Context) {
 	summary := f.servedSummary()
 	if summary != "" {
 		log.FromContext(ctx).Infof("Relay download finished: %s", summary)
+	}
+	if err := removeResumeState(f.statePath); err != nil {
+		log.FromContext(ctx).Warnf("Failed to remove relay resume state: %v", err)
 	}
 	if f.keepMessages {
 		log.FromContext(ctx).Debugf("Relay message %d kept by configuration", f.relayMessageID)

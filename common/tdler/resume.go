@@ -39,19 +39,36 @@ func partPathOf(bitmapPath string) string {
 // durably written, so an interrupted download can continue after a restart.
 // The bitmap file is rewritten atomically after every completed block.
 type resumeBitmap struct {
-	PartSize int      `json:"part_size"`
-	Size     int64    `json:"size"`
-	Blocks   []uint64 `json:"blocks"`
+	PartSize         int      `json:"part_size"`
+	Size             int64    `json:"size"`
+	Blocks           []uint64 `json:"blocks"`
+	SourceKind       string   `json:"source_kind,omitempty"`
+	SourceID         int64    `json:"source_id,omitempty"`
+	SourceAccessHash int64    `json:"source_access_hash,omitempty"`
 
 	mu       sync.Mutex
 	dirty    int
 	lastSave time.Time
 }
 
-func newResumeBitmap(size int64) *resumeBitmap {
-	b := &resumeBitmap{PartSize: tglimit.MaxPartSize, Size: size}
+func newResumeBitmap(size int64, identity tfile.FileIdentity) *resumeBitmap {
+	b := &resumeBitmap{
+		PartSize:         tglimit.MaxPartSize,
+		Size:             size,
+		SourceKind:       identity.Kind,
+		SourceID:         identity.ID,
+		SourceAccessHash: identity.AccessHash,
+	}
 	b.ensureBlocks()
 	return b
+}
+
+func (b *resumeBitmap) matches(identity tfile.FileIdentity) bool {
+	if b.SourceKind == "" && b.SourceID == 0 && b.SourceAccessHash == 0 {
+		// State written by an earlier version without identity metadata.
+		return true
+	}
+	return b.SourceKind == identity.Kind && b.SourceID == identity.ID && b.SourceAccessHash == identity.AccessHash
 }
 
 func (b *resumeBitmap) ensureBlocks() {
@@ -270,6 +287,12 @@ func DownloadResumable(
 	if err != nil {
 		return err
 	}
+	if bm != nil && !bm.matches(tfile.Identity(file.Location())) {
+		if err := os.Remove(bitmapPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("remove stale resume bitmap: %w", err)
+		}
+		bm = nil
+	}
 	// 位图描述的数据文件 (bitmapPath 去掉 .bitmap 后缀) 必须存在且非空,
 	// 且至少覆盖位图标记为完成的最大块范围: 若缺失、为空或更短,
 	// 已标记完成的块字节已丢失, 必须重置位图全量重下 (否则 WriteAt 会
@@ -287,7 +310,7 @@ func DownloadResumable(
 		if err := os.Truncate(partPathOf(bitmapPath), 0); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("truncate stale part file: %w", err)
 		}
-		bm = newResumeBitmap(file.Size())
+		bm = newResumeBitmap(file.Size(), tfile.Identity(file.Location()))
 		if err := bm.save(bitmapPath); err != nil {
 			return err
 		}
@@ -312,8 +335,12 @@ func DownloadResumable(
 			if err != nil {
 				return err
 			}
-			if len(data) == 0 {
-				return fmt.Errorf("file ended early at offset %d (expected size %d)", offset, bm.Size)
+			want := int64(bm.PartSize)
+			if offset+want > bm.Size {
+				want = bm.Size - offset
+			}
+			if int64(len(data)) != want {
+				return fmt.Errorf("chunk at offset %d has size %d, want %d", offset, len(data), want)
 			}
 			writeMu.Lock()
 			defer writeMu.Unlock()
