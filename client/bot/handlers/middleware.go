@@ -119,6 +119,7 @@ func handleSilentMode(next func(*ext.Context, *ext.Update) error, handler func(*
 			})), nil)
 			return dispatcher.EndGroups
 		}
+		base := ctx.Context
 		if user.DefaultDirID != 0 {
 			dir, err := database.GetDirByID(ctx, user.DefaultDirID)
 			if err != nil {
@@ -127,9 +128,10 @@ func handleSilentMode(next func(*ext.Context, *ext.Update) error, handler func(*
 				})), nil)
 				return next(ctx, update)
 			}
-			ctx.Context = dirutil.WithContext(ctx.Context, dir)
+			base = dirutil.WithContext(base, dir)
 		}
-		ctx.Context = storage.WithContext(ctx.Context, stor)
-		return handler(ctx, update)
+		base = storage.WithContext(base, stor)
+		child := ext.NewContext(base, ctx.Raw, ctx.PeerStorage, ctx.Self, ctx.Sender, ctx.Entities, false)
+		return handler(child, update)
 	}
 }
