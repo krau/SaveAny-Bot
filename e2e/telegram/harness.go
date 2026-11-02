@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
 	sabapp "github.com/krau/SaveAny-Bot/app"
@@ -50,11 +51,15 @@ func NewHarness() (*Harness, error) {
 	}
 	oldWD, err := os.Getwd()
 	if err != nil {
-		_ = os.RemoveAll(dir)
+		if removeErr := os.RemoveAll(dir); removeErr != nil {
+			log.Warnf("Failed to remove harness directory: %v", removeErr)
+		}
 		return nil, err
 	}
 	if err := os.Chdir(dir); err != nil {
-		_ = os.RemoveAll(dir)
+		if removeErr := os.RemoveAll(dir); removeErr != nil {
+			log.Warnf("Failed to remove harness directory: %v", removeErr)
+		}
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -63,8 +68,12 @@ func NewHarness() (*Harness, error) {
 	defer func() {
 		if cleanup {
 			cancel()
-			_ = os.Chdir(oldWD)
-			_ = os.RemoveAll(dir)
+			if err := os.Chdir(oldWD); err != nil {
+				log.Warnf("Failed to restore working directory: %v", err)
+			}
+			if err := os.RemoveAll(dir); err != nil {
+				log.Warnf("Failed to remove harness directory: %v", err)
+			}
 		}
 	}()
 
@@ -174,10 +183,14 @@ func (h *Harness) Close() {
 		h.app.Stop()
 	}
 	if h.oldWD != "" {
-		_ = os.Chdir(h.oldWD)
+		if err := os.Chdir(h.oldWD); err != nil {
+			log.Warnf("Failed to restore working directory: %v", err)
+		}
 	}
 	if h.DataDir != "" {
-		_ = os.RemoveAll(h.DataDir)
+		if err := os.RemoveAll(h.DataDir); err != nil {
+			log.Warnf("Failed to remove harness directory: %v", err)
+		}
 	}
 }
 
@@ -216,7 +229,7 @@ func (h *Harness) WaitLocalFile(timeout time.Duration) ([]byte, error) {
 	deadline := time.Now().Add(timeout)
 	for {
 		var found []byte
-		_ = filepath.WalkDir(h.LocalPath, func(path string, entry os.DirEntry, err error) error {
+		if err := filepath.WalkDir(h.LocalPath, func(path string, entry os.DirEntry, err error) error {
 			if err != nil || entry.IsDir() || found != nil {
 				return nil
 			}
@@ -225,7 +238,9 @@ func (h *Harness) WaitLocalFile(timeout time.Duration) ([]byte, error) {
 				found = data
 			}
 			return nil
-		})
+		}); err != nil {
+			return nil, fmt.Errorf("walk local files: %w", err)
+		}
 		if found != nil {
 			return found, nil
 		}

@@ -29,7 +29,9 @@ func TestDirectLinksTask(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain")
-		_, _ = w.Write(content)
+		if _, err := w.Write(content); err != nil {
+			t.Errorf("write source response: %v", err)
+		}
 	}))
 	defer source.Close()
 

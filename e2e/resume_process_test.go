@@ -124,7 +124,9 @@ func startTestEnv(t *testing.T, dir, port string) *testEnvProcess {
 	}
 	env := &testEnvProcess{dir: dir, port: port, base: "http://127.0.0.1:" + port, cmd: cmd, stopped: make(chan struct{}), log: log}
 	go func() {
-		_ = cmd.Wait()
+		if err := cmd.Wait(); err != nil {
+			fmt.Fprintln(os.Stderr, "testenv wait:", err)
+		}
 		close(env.stopped)
 	}()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -137,10 +139,14 @@ func startTestEnv(t *testing.T, dir, port string) *testEnvProcess {
 		select {
 		case <-env.stopped:
 		default:
-			_ = env.cmd.Process.Kill()
+			if err := env.cmd.Process.Kill(); err != nil {
+				t.Logf("kill testenv: %v", err)
+			}
 			<-env.stopped
 		}
-		_ = env.log.Close()
+		if err := env.log.Close(); err != nil {
+			t.Logf("close testenv log: %v", err)
+		}
 	})
 	return env
 }
@@ -153,7 +159,9 @@ func (e *testEnvProcess) signal(t *testing.T, sig os.Signal, timeout time.Durati
 	select {
 	case <-e.stopped:
 	case <-time.After(timeout):
-		_ = e.cmd.Process.Kill()
+		if err := e.cmd.Process.Kill(); err != nil {
+			t.Logf("kill testenv: %v", err)
+		}
 		<-e.stopped
 		t.Fatalf("testenv did not stop after %s", sig)
 	}

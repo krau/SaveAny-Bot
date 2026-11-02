@@ -73,9 +73,13 @@ func runTests(m *testing.M) int {
 	}
 	defer func() {
 		name := logFile.Name()
-		_ = logFile.Close()
+		if err := logFile.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, "close testenv log:", err)
+		}
 		if os.Getenv("E2E_KEEP_LOG") == "" {
-			_ = os.Remove(name)
+			if err := os.Remove(name); err != nil && !os.IsNotExist(err) {
+				fmt.Fprintln(os.Stderr, "remove testenv log:", err)
+			}
 		} else {
 			fmt.Fprintln(os.Stderr, "server log:", name)
 		}
@@ -100,7 +104,9 @@ func runTests(m *testing.M) int {
 
 	stopped := make(chan struct{})
 	go func() {
-		_ = cmd.Wait()
+		if err := cmd.Wait(); err != nil {
+			fmt.Fprintln(os.Stderr, "testenv wait:", err)
+		}
 		close(stopped)
 	}()
 	waitCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -109,20 +115,31 @@ func runTests(m *testing.M) int {
 		select {
 		case <-stopped:
 		default:
-			_ = cmd.Process.Kill()
+			if err := cmd.Process.Kill(); err != nil {
+				fmt.Fprintln(os.Stderr, "kill testenv:", err)
+			}
 		}
-		_ = logFile.Sync()
-		data, _ := os.ReadFile(logFile.Name())
+		if err := logFile.Sync(); err != nil {
+			fmt.Fprintln(os.Stderr, "sync testenv log:", err)
+		}
+		data, readErr := os.ReadFile(logFile.Name())
+		if readErr != nil {
+			fmt.Fprintln(os.Stderr, "read testenv log:", readErr)
+		}
 		fmt.Fprintf(os.Stderr, "test environment did not become ready: %v\n%s\n", err, data)
 		return 1
 	}
 
 	code := m.Run()
-	_ = cmd.Process.Signal(os.Interrupt)
+	if err := cmd.Process.Signal(os.Interrupt); err != nil {
+		fmt.Fprintln(os.Stderr, "signal testenv:", err)
+	}
 	select {
 	case <-stopped:
 	case <-time.After(20 * time.Second):
-		_ = cmd.Process.Kill()
+		if err := cmd.Process.Kill(); err != nil {
+			fmt.Fprintln(os.Stderr, "kill testenv:", err)
+		}
 		<-stopped
 	}
 	return code
@@ -133,8 +150,15 @@ func freePort() string {
 	if err != nil {
 		panic(err)
 	}
-	defer ln.Close()
-	_, port, _ := net.SplitHostPort(ln.Addr().String())
+	defer func() {
+		if err := ln.Close(); err != nil {
+			panic(fmt.Sprintf("close free port listener: %v", err))
+		}
+	}()
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	if err != nil {
+		panic(err)
+	}
 	return port
 }
 
@@ -148,7 +172,9 @@ func waitForHealthAt(ctx context.Context, base string) error {
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, base+"/health", nil)
 		resp, err := client.Do(req)
 		if err == nil {
-			_ = resp.Body.Close()
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				fmt.Fprintln(os.Stderr, "close health response:", closeErr)
+			}
 			if resp.StatusCode == http.StatusOK {
 				return nil
 			}
@@ -234,7 +260,11 @@ func (c *apiClient) request(method, path string, body any, withCSRF bool) (int, 
 	if err != nil {
 		c.t.Fatalf("%s %s: %v", method, path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.t.Errorf("close response body: %v", err)
+		}
+	}()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		c.t.Fatalf("read %s %s response: %v", method, path, err)

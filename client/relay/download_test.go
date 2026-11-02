@@ -88,10 +88,11 @@ func TestPrepareResumableReusesRelayMessage(t *testing.T) {
 	ctx := tgutil.ExtWithContext(context.Background(), primary)
 	statePath := ResumeStatePath(t.TempDir() + "/cache")
 
-	first, cleanup := PrepareResumable(ctx, file, statePath)
-	if first == nil || cleanup == nil {
+	first, firstCleanup := PrepareResumable(ctx, file, statePath)
+	if first == nil || firstCleanup == nil {
 		t.Fatal("relay was not prepared")
 	}
+	defer firstCleanup(ctx)
 	primaryInv.mu.Lock()
 	forwards := primaryInv.forwards
 	primaryInv.mu.Unlock()
@@ -122,5 +123,4 @@ func TestPrepareResumableReusesRelayMessage(t *testing.T) {
 	if deletes == 0 {
 		t.Fatal("relay message was not deleted")
 	}
-	_ = cleanup
 }
