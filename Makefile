@@ -18,3 +18,6 @@ testenv:
 
 e2e-api:
 	go test -tags=e2e ./e2e -count=1
+
+e2e-telegram:
+	go test -tags=e2e ./e2e/telegram -count=1
