@@ -15,6 +15,7 @@ import (
 	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/constant"
+	"github.com/gotd/td/telegram/message/markup"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -95,10 +96,18 @@ func GenFileNameFromMessage(message tg.Message) string {
 	return filename + ext
 }
 
-func BuildCancelButton(taskID string) tg.KeyboardButtonClass {
-	return &tg.KeyboardButtonCallback{
-		Text: i18n.T(i18nk.BotMsgCommonCancelButtonText, nil),
-		Data: fmt.Appendf(nil, "cancel %s", taskID),
+func BuildCancelButton(taskID string) tg.KeyboardInlineButton {
+	return markup.Callback(
+		i18n.T(i18nk.BotMsgCommonCancelButtonText, nil),
+		fmt.Appendf(nil, "cancel %s", taskID),
+	)
+}
+
+func BuildCancelMarkup(taskID string) *tg.ReplyInlineMarkup {
+	return &tg.ReplyInlineMarkup{
+		Rows: []tg.KeyboardInlineButtonRow{{
+			Buttons: []tg.KeyboardInlineButton{BuildCancelButton(taskID)},
+		}},
 	}
 }
 

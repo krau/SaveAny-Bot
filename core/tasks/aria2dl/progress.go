@@ -56,15 +56,7 @@ func (p *Progress) OnStart(ctx context.Context, task *Task) {
 	}
 	req.SetMessage(text)
 	req.SetEntities(entities)
-	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
-		Rows: []tg.KeyboardButtonRow{
-			{
-				Buttons: []tg.KeyboardButtonClass{
-					tgutil.BuildCancelButton(task.TaskID()),
-				},
-			},
-		}},
-	)
+	req.SetReplyMarkup(tgutil.BuildCancelMarkup(task.TaskID()))
 	ext.EditMessage(p.chatID, req)
 }
 
@@ -109,15 +101,7 @@ func (p *Progress) OnProgress(ctx context.Context, task *Task, status *aria2.Sta
 	}
 	req.SetMessage(text)
 	req.SetEntities(entities)
-	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
-		Rows: []tg.KeyboardButtonRow{
-			{
-				Buttons: []tg.KeyboardButtonClass{
-					tgutil.BuildCancelButton(task.TaskID()),
-				},
-			},
-		}},
-	)
+	req.SetReplyMarkup(tgutil.BuildCancelMarkup(task.TaskID()))
 	ext := tgutil.ExtFromContext(ctx)
 	if ext != nil {
 		ext.EditMessage(p.chatID, req)

@@ -57,15 +57,7 @@ func (p *Progress) OnStart(ctx context.Context, info TaskInfo) {
 	}
 	req.SetMessage(text)
 	req.SetEntities(entities)
-	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
-		Rows: []tg.KeyboardButtonRow{
-			{
-				Buttons: []tg.KeyboardButtonClass{
-					tgutil.BuildCancelButton(info.TaskID()),
-				},
-			},
-		}},
-	)
+	req.SetReplyMarkup(tgutil.BuildCancelMarkup(info.TaskID()))
 	ext := tgutil.ExtFromContext(ctx)
 	if ext != nil {
 		ext.EditMessage(p.ChatID, req)
@@ -116,15 +108,7 @@ func (p *Progress) OnProgress(ctx context.Context, info TaskInfo) {
 	}
 	req.SetMessage(text)
 	req.SetEntities(entities)
-	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
-		Rows: []tg.KeyboardButtonRow{
-			{
-				Buttons: []tg.KeyboardButtonClass{
-					tgutil.BuildCancelButton(info.TaskID()),
-				},
-			},
-		}},
-	)
+	req.SetReplyMarkup(tgutil.BuildCancelMarkup(info.TaskID()))
 	ext := tgutil.ExtFromContext(ctx)
 	if ext != nil {
 		ext.EditMessage(p.ChatID, req)

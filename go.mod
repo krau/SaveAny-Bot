@@ -9,7 +9,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.15
 	github.com/goccy/go-yaml v1.19.2
 	github.com/gotd/contrib v0.21.1
-	github.com/gotd/td v0.159.0
+	github.com/gotd/td v0.163.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20250916175020-ebf3e50324d3
 	github.com/krau/ffmpeg-go v0.6.0
 	github.com/lrstanley/go-ytdlp v1.3.5

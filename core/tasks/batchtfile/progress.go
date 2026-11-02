@@ -123,9 +123,7 @@ func buildBatchEditMessageRequest(messageID int, taskID string, message rendered
 		req.SetEntities(message.Entities)
 	}
 	if cancellable {
-		req.SetReplyMarkup(&tg.ReplyInlineMarkup{Rows: []tg.KeyboardButtonRow{{
-			Buttons: []tg.KeyboardButtonClass{tgutil.BuildCancelButton(taskID)},
-		}}})
+		req.SetReplyMarkup(tgutil.BuildCancelMarkup(taskID))
 	}
 	return req
 }

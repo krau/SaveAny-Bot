@@ -146,8 +146,8 @@ github.com/gotd/log/logzap v0.1.1 h1:O6l7d8HUbODe+UMcrM47eXYDwdJ6RNmpQejLjrlcEIQ
 github.com/gotd/log/logzap v0.1.1/go.mod h1:5ObZkITbfhbsBOLzBkzmMk9QxXc0eNQpimau7zRL+Y8=
 github.com/gotd/neo v0.1.5 h1:oj0iQfMbGClP8xI59x7fE/uHoTJD7NZH9oV1WNuPukQ=
 github.com/gotd/neo v0.1.5/go.mod h1:9A2a4bn9zL6FADufBdt7tZt+WMhvZoc5gWXihOPoiBQ=
-github.com/gotd/td v0.159.0 h1:kKXt2NLmfIOgebbFS34FSlZbdydaf5fsta+nP69nP+w=
-github.com/gotd/td v0.159.0/go.mod h1:rdZ2NfOMUViApJa3EvYJ94GAxENjCB0b98tJbfS9NCc=
+github.com/gotd/td v0.163.0 h1:A/QHpyMmYaQgyOY//vySoKa1wQP8NCAo3/5OcgfZVnU=
+github.com/gotd/td v0.163.0/go.mod h1:ZsGbErIos7XHF7HL0VlsjL6mmX4b1JpinHfDb7gOdvs=
 github.com/hashicorp/golang-lru/v2 v2.0.7 h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k=
 github.com/hashicorp/golang-lru/v2 v2.0.7/go.mod h1:QeFd9opnmA6QUJc5vARoKUSoFhyfM2/ZepoAG6RGpeM=
 github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf h1:WfD7VjIE6z8dIvMsI4/s+1qr5EL+zoIGev1BQj1eoJ8=

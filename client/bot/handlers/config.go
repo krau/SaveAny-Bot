@@ -5,6 +5,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/gotd/td/telegram/message/markup"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/conflictutil"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -19,22 +20,16 @@ import (
 
 func handleConfigCmd(ctx *ext.Context, update *ext.Update) error {
 	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgConfigPromptSelectOption)), &ext.ReplyOpts{
-		Markup: &tg.ReplyInlineMarkup{
-			Rows: []tg.KeyboardButtonRow{
-				{
-					Buttons: []tg.KeyboardButtonClass{
-						&tg.KeyboardButtonCallback{
-							Text: i18n.T(i18nk.BotMsgConfigButtonFilenameStrategy),
-							Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeConfig, "fnamest"),
-						},
-						&tg.KeyboardButtonCallback{
-							Text: i18n.T(i18nk.BotMsgConfigButtonConflictStrategy),
-							Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeConfig, "conflictst"),
-						},
-					},
-				},
-			},
-		},
+		Markup: markup.InlineKeyboard(markup.InlineButtonRow(
+			markup.Callback(
+				i18n.T(i18nk.BotMsgConfigButtonFilenameStrategy),
+				fmt.Appendf(nil, "%s %s", tcbdata.TypeConfig, "fnamest"),
+			),
+			markup.Callback(
+				i18n.T(i18nk.BotMsgConfigButtonConflictStrategy),
+				fmt.Appendf(nil, "%s %s", tcbdata.TypeConfig, "conflictst"),
+			),
+		)),
 	})
 	return dispatcher.EndGroups
 }
@@ -89,14 +84,14 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	opts := fnamest.FnameSTValues()
-	buttons := make([]tg.KeyboardButtonClass, 0, len(opts))
+	buttons := make([]tg.KeyboardInlineButton, 0, len(opts))
 	for _, opt := range opts {
-		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: fnamest.GetDisplay(opt, config.C().Lang),
-			Data: fmt.Appendf(nil, "%s %s %s", tcbdata.TypeConfig, "fnamest", opt),
-		})
+		buttons = append(buttons, markup.Callback(
+			fnamest.GetDisplay(opt, config.C().Lang),
+			fmt.Appendf(nil, "%s %s %s", tcbdata.TypeConfig, "fnamest", opt),
+		))
 	}
-	markup := &tg.ReplyInlineMarkup{Rows: []tg.KeyboardButtonRow{
+	inlineKeyboard := &tg.ReplyInlineMarkup{Rows: []tg.KeyboardInlineButtonRow{
 		{Buttons: buttons},
 	}}
 	currentStStr := user.FilenameStrategy
@@ -112,7 +107,7 @@ func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
 		Message: i18n.T(i18nk.BotMsgConfigPromptSelectFilenameStrategy, map[string]any{
 			"Strategy": fnamest.GetDisplay(currentSt, config.C().Lang),
 		}),
-		ReplyMarkup: markup,
+		ReplyMarkup: inlineKeyboard,
 	})
 	return dispatcher.EndGroups
 }
@@ -143,25 +138,25 @@ func handleConfigConflictSTCallback(ctx *ext.Context, update *ext.Update) error 
 	}
 
 	opts := tcbdata.ConflictStrategyValues()
-	rows := make([]tg.KeyboardButtonRow, 0, len(opts))
+	rows := make([]tg.KeyboardInlineButtonRow, 0, len(opts))
 	for _, opt := range opts {
-		rows = append(rows, tg.KeyboardButtonRow{
-			Buttons: []tg.KeyboardButtonClass{
-				&tg.KeyboardButtonCallback{
-					Text: conflictutil.Display(opt),
-					Data: fmt.Appendf(nil, "%s %s %s", tcbdata.TypeConfig, "conflictst", opt),
-				},
+		rows = append(rows, tg.KeyboardInlineButtonRow{
+			Buttons: []tg.KeyboardInlineButton{
+				markup.Callback(
+					conflictutil.Display(opt),
+					fmt.Appendf(nil, "%s %s %s", tcbdata.TypeConfig, "conflictst", opt),
+				),
 			},
 		})
 	}
-	markup := &tg.ReplyInlineMarkup{Rows: rows}
+	inlineKeyboard := &tg.ReplyInlineMarkup{Rows: rows}
 	currentSt := conflictutil.EffectiveStrategy(user)
 	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 		ID: update.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgConfigPromptSelectConflictStrategy, map[string]any{
 			"Strategy": conflictutil.Display(currentSt),
 		}),
-		ReplyMarkup: markup,
+		ReplyMarkup: inlineKeyboard,
 	})
 	return dispatcher.EndGroups
 }

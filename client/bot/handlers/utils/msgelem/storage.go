@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/message/entity"
+	msgmarkup "github.com/gotd/td/telegram/message/markup"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/cache"
@@ -33,7 +34,7 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 		}
 	}
 
-	buttons := make([]tg.KeyboardButtonClass, 0)
+	buttons := make([]tg.KeyboardInlineButton, 0)
 	for _, st := range stors {
 		data := tcbdata.Add{
 			TaskType:          taskType,
@@ -65,14 +66,14 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 		if err != nil {
 			return nil, err
 		}
-		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: st.Name(),
-			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
-		})
+		buttons = append(buttons, msgmarkup.Callback(
+			st.Name(),
+			fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
+		))
 	}
 	markup := &tg.ReplyInlineMarkup{}
 	for i := 0; i < len(buttons); i += 3 {
-		row := tg.KeyboardButtonRow{}
+		row := tg.KeyboardInlineButtonRow{}
 		row.Buttons = buttons[i:min(i+3, len(buttons))]
 		markup.Rows = append(markup.Rows, row)
 	}
@@ -121,7 +122,7 @@ func BuildConflictStrategyMarkup(adddata tcbdata.Add) (*tg.ReplyInlineMarkup, er
 		{text: i18n.T(i18nk.BotMsgCommonButtonConflictOverwrite, nil), strategy: tcbdata.ConflictStrategyOverwrite},
 		{text: i18n.T(i18nk.BotMsgCommonButtonConflictSkip, nil), strategy: tcbdata.ConflictStrategySkip},
 	}
-	buttons := make([]tg.KeyboardButtonClass, 0, len(options))
+	buttons := make([]tg.KeyboardInlineButton, 0, len(options))
 	for _, opt := range options {
 		data := adddata
 		data.ConflictStrategy = opt.strategy
@@ -129,15 +130,15 @@ func BuildConflictStrategyMarkup(adddata tcbdata.Add) (*tg.ReplyInlineMarkup, er
 		if err := cache.Set(dataid, data); err != nil {
 			return nil, err
 		}
-		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: opt.text,
-			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
-		})
+		buttons = append(buttons, msgmarkup.Callback(
+			opt.text,
+			fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dataid),
+		))
 	}
-	rows := make([]tg.KeyboardButtonRow, 0, len(buttons))
+	rows := make([]tg.KeyboardInlineButtonRow, 0, len(buttons))
 	for _, button := range buttons {
-		rows = append(rows, tg.KeyboardButtonRow{
-			Buttons: []tg.KeyboardButtonClass{button},
+		rows = append(rows, tg.KeyboardInlineButtonRow{
+			Buttons: []tg.KeyboardInlineButton{button},
 		})
 	}
 	return &tg.ReplyInlineMarkup{Rows: rows}, nil
@@ -146,7 +147,7 @@ func BuildConflictStrategyMarkup(adddata tcbdata.Add) (*tg.ReplyInlineMarkup, er
 func BuildSetDefaultStorageMarkup(
 	ctx context.Context,
 	stors []storage.Storage) (*tg.ReplyInlineMarkup, error) {
-	buttons := make([]tg.KeyboardButtonClass, 0)
+	buttons := make([]tg.KeyboardInlineButton, 0)
 	for _, st := range stors {
 		data := tcbdata.SetDefaultStorage{
 			StorageID: storage.ID(st),
@@ -156,14 +157,14 @@ func BuildSetDefaultStorageMarkup(
 		if err != nil {
 			return nil, err
 		}
-		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: st.Name(),
-			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeSetDefault, dataid),
-		})
+		buttons = append(buttons, msgmarkup.Callback(
+			st.Name(),
+			fmt.Appendf(nil, "%s %s", tcbdata.TypeSetDefault, dataid),
+		))
 	}
 	markup := &tg.ReplyInlineMarkup{}
 	for i := 0; i < len(buttons); i += 3 {
-		row := tg.KeyboardButtonRow{}
+		row := tg.KeyboardInlineButtonRow{}
 		row.Buttons = buttons[i:min(i+3, len(buttons))]
 		markup.Rows = append(markup.Rows, row)
 	}
@@ -173,7 +174,7 @@ func BuildSetDefaultStorageMarkup(
 func BuildSetDefaultDirMarkup(ctx context.Context,
 	storageID uint,
 	dirs []database.Dir) (*tg.ReplyInlineMarkup, error) {
-	buttons := make([]tg.KeyboardButtonClass, 0)
+	buttons := make([]tg.KeyboardInlineButton, 0)
 	for _, dir := range dirs {
 		dataid := xid.New().String()
 		data := tcbdata.SetDefaultStorage{
@@ -184,14 +185,14 @@ func BuildSetDefaultDirMarkup(ctx context.Context,
 		if err != nil {
 			return nil, err
 		}
-		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: dir.Path,
-			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeSetDefault, dataid),
-		})
+		buttons = append(buttons, msgmarkup.Callback(
+			dir.Path,
+			fmt.Appendf(nil, "%s %s", tcbdata.TypeSetDefault, dataid),
+		))
 	}
 	markup := &tg.ReplyInlineMarkup{}
 	for i := 0; i < len(buttons); i += 3 {
-		row := tg.KeyboardButtonRow{}
+		row := tg.KeyboardInlineButtonRow{}
 		row.Buttons = buttons[i:min(i+3, len(buttons))]
 		markup.Rows = append(markup.Rows, row)
 	}
@@ -207,7 +208,7 @@ func BuildSetDirMarkupForAdd(dirs []database.Dir, dataid string) (*tg.ReplyInlin
 		log.Warnf("Data already has a directory set: %d, %t", data.DirID, data.SettedDir)
 		return nil, fmt.Errorf("data already has a directory set")
 	}
-	buttons := make([]tg.KeyboardButtonClass, 0)
+	buttons := make([]tg.KeyboardInlineButton, 0)
 	for _, dir := range dirs {
 		dirDataId := xid.New().String()
 		dirData := data
@@ -217,10 +218,10 @@ func BuildSetDirMarkupForAdd(dirs []database.Dir, dataid string) (*tg.ReplyInlin
 		if err != nil {
 			return nil, fmt.Errorf("failed to set directory data in cache: %w", err)
 		}
-		buttons = append(buttons, &tg.KeyboardButtonCallback{
-			Text: dir.Path,
-			Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dirDataId),
-		})
+		buttons = append(buttons, msgmarkup.Callback(
+			dir.Path,
+			fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dirDataId),
+		))
 	}
 	dirDefaultDataId := xid.New().String()
 	dirDefaultData := data
@@ -230,13 +231,13 @@ func BuildSetDirMarkupForAdd(dirs []database.Dir, dataid string) (*tg.ReplyInlin
 	if err != nil {
 		return nil, fmt.Errorf("failed to set default directory data in cache: %w", err)
 	}
-	buttons = append(buttons, &tg.KeyboardButtonCallback{
-		Text: i18n.T(i18nk.BotMsgDirButtonDefault, nil),
-		Data: fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dirDefaultDataId),
-	})
+	buttons = append(buttons, msgmarkup.Callback(
+		i18n.T(i18nk.BotMsgDirButtonDefault, nil),
+		fmt.Appendf(nil, "%s %s", tcbdata.TypeAdd, dirDefaultDataId),
+	))
 	markup := &tg.ReplyInlineMarkup{}
 	for i := 0; i < len(buttons); i += 3 {
-		row := tg.KeyboardButtonRow{}
+		row := tg.KeyboardInlineButtonRow{}
 		row.Buttons = buttons[i:min(i+3, len(buttons))]
 		markup.Rows = append(markup.Rows, row)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/gotd/td/telegram/message/html"
+	"github.com/gotd/td/telegram/message/markup"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -82,18 +83,12 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 		"PublishedAt": latest.PublishedAt.Format("2006-01-02 15:04:05"),
 	})
 	ctx.Reply(u, ext.ReplyTextString(text), &ext.ReplyOpts{
-		Markup: &tg.ReplyInlineMarkup{
-			Rows: []tg.KeyboardButtonRow{
-				{
-					Buttons: []tg.KeyboardButtonClass{
-						&tg.KeyboardButtonCallback{
-							Text: i18n.T(i18nk.BotMsgUpdateButtonUpgrade, nil),
-							Data: []byte("update"),
-						},
-					},
-				},
-			},
-		},
+		Markup: markup.InlineKeyboard(markup.InlineButtonRow(
+			markup.Callback(
+				i18n.T(i18nk.BotMsgUpdateButtonUpgrade, nil),
+				[]byte("update"),
+			),
+		)),
 	})
 	return dispatcher.EndGroups
 }
