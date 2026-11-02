@@ -12,3 +12,9 @@ web:
 
 build: web
 	CGO_ENABLED=0 go build -trimpath -o saveany-bot .
+
+testenv:
+	go run . testenv
+
+e2e-api:
+	go test -tags=e2e ./e2e -count=1

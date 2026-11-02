@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/krau/SaveAny-Bot/boot"
+	"github.com/krau/SaveAny-Bot/cmd/testenv"
 	"github.com/krau/SaveAny-Bot/cmd/upload"
 	"github.com/krau/SaveAny-Bot/cmd/watch"
 	"github.com/spf13/cobra"
@@ -18,6 +19,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	boot.RegisterFlags(rootCmd)
+	testenv.Register(rootCmd)
 	upload.Register(rootCmd)
 	watch.Register(rootCmd)
 }
