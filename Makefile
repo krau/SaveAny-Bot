@@ -16,8 +16,18 @@ build: web
 testenv:
 	go run . testenv
 
+e2e: e2e-api e2e-telegram e2e-web
+
 e2e-api:
 	go test -tags=e2e ./e2e -count=1
 
 e2e-telegram:
 	go test -tags=e2e ./e2e/telegram -count=1
+
+e2e-web-setup:
+	pnpm --dir web/ui exec playwright install chromium
+
+e2e-web: web
+	mkdir -p tmp
+	go build -o tmp/saveany-bot-e2e .
+	pnpm --dir web/ui exec playwright test
