@@ -1,28 +1,28 @@
 package upload
 
 import (
-	"context"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/boot"
 	"github.com/krau/SaveAny-Bot/client/bot"
-	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
+	"github.com/krau/SaveAny-Bot/common/upload"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
-	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/config"
 	stortype "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/spf13/cobra"
 )
 
 var uploadCmd = &cobra.Command{
-	Use:   "upload",
-	Short: "upload local files to storage",
-	RunE:  Upload,
+	Use:          "upload",
+	Short:        "upload local files to storage",
+	SilenceUsage: true,
+	RunE:         Upload,
 }
 
 func Register(root *cobra.Command) {
@@ -54,7 +54,7 @@ func Upload(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	opts := boot.Parse(cmd)
 	opts.InitWeb = false
 	if _, err := boot.Init(ctx, opts); err != nil {
@@ -63,7 +63,7 @@ func Upload(cmd *cobra.Command, args []string) error {
 
 	stor, err := storage.GetStorageByName(ctx, storname)
 	if err != nil {
-		log.Fatal("Failed to get storage", "error", err)
+		return fmt.Errorf("failed to get storage %q: %w", storname, err)
 	}
 
 	switch stor.Type() {
@@ -72,54 +72,45 @@ func Upload(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to start bot: %w", err)
 		}
 		defer bot.Stop()
-	default:
-		// placeholder for other storage types that may need special initialization
 	}
 
-	file, err := os.Open(filepath.Clean(fp))
+	fileInfo, err := os.Stat(filepath.Clean(fp))
 	if err != nil {
-		log.Fatal("Failed to open file", "error", err)
+		return fmt.Errorf("failed to stat file %q: %w", fp, err)
 	}
-	defer file.Close()
-	fileInfo, err := file.Stat()
-	if err != nil {
-		log.Fatal("Failed to get file info", "error", err)
+	if fileInfo.IsDir() {
+		return fmt.Errorf("%q is a directory", fp)
 	}
-	fileName := fileInfo.Name()
-	fileSize := fileInfo.Size()
 
-	uploadPath := path.Join(dirPath, fileName)
-
-	ctx = context.WithValue(ctx, ctxkey.ContentLength, fileSize)
+	uploadPath := path.Join(dirPath, fileInfo.Name())
 	ctx = tgutil.ExtWithContext(ctx, bot.ExtContext())
 
-	var reader io.Reader
 	var progressUI *UploadProgress
-	log.Info("Uploading file...", "file", fp, "to", storname, "as", uploadPath)
-
-	if !noProgress && fileSize > 0 {
-		progressUI = NewUploadProgress(fileName, fileSize)
+	if !noProgress && fileInfo.Size() > 0 {
+		progressUI = NewUploadProgress(fileInfo.Name(), fileInfo.Size())
 		progressUI.Start()
-
-		reader = ioutil.NewProgressReader(file, fileSize, func(read int64, total int64) {
-			if total > 0 {
-				progressUI.UpdateProgress(float64(read) / float64(total))
-			}
-		})
-	} else {
-		reader = file
 	}
-
-	if err := stor.Save(ctx, reader, uploadPath); err != nil {
+	onProgress := func(uploaded, total int64) {
+		if progressUI != nil && total > 0 {
+			progressUI.UpdateProgress(float64(uploaded) / float64(total))
+		}
+	}
+	logger.Info("Uploading file...", "file", fp, "to", storname, "as", uploadPath)
+	err = upload.SaveFile(ctx, filepath.Clean(fp), uploadPath, upload.Options{
+		Storage:    stor,
+		Retries:    max(config.C().Retry, 1),
+		RetryDelay: 3 * time.Second,
+		OnProgress: onProgress,
+	})
+	if err != nil {
 		if progressUI != nil {
 			progressUI.SetError(err)
 		}
-		log.Fatal("Failed to upload file", "error", err)
+		return err
 	}
-
 	if progressUI != nil {
 		progressUI.Done()
 	}
-	log.Info("File uploaded successfully")
+	logger.Info("File uploaded successfully")
 	return nil
 }
