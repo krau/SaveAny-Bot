@@ -34,6 +34,7 @@ type TaskElement struct {
 
 type Task struct {
 	ID              string
+	Done            []string
 	ctx             context.Context
 	elems           []TaskElement
 	Progress        ProgressTracker
@@ -65,7 +66,15 @@ func NewTaskElement(
 	path string,
 	file tfile.TGFile,
 ) (*TaskElement, error) {
-	id := xid.New().String()
+	return NewTaskElementWithID(xid.New().String(), stor, path, file)
+}
+
+func NewTaskElementWithID(
+	id string,
+	stor storage.Storage,
+	path string,
+	file tfile.TGFile,
+) (*TaskElement, error) {
 	groupKey, caption, preserveCaption := sourceMetadata(file)
 	_, ok := stor.(storage.StorageCannotStream)
 	if !config.C().Stream || ok {

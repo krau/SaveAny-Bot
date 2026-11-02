@@ -93,10 +93,18 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 		status := "completed"
 		if err != nil {
 			if errors.Is(taskCtx.Err(), context.Canceled) {
-				status = "cancelled"
-				logger.Infof("Task %s was canceled", exe.TaskID())
-				if err := ExecCommandString(ctx, execHooks.TaskCancel); err != nil {
-					logger.Errorf("Failed to execute cancel hook for task %s: %v", exe.TaskID(), err)
+				current, dbErr := database.GetTaskRecord(recordCtx, exe.TaskID())
+				if dbErr == nil && current.Status == "cancelled" {
+					status = "cancelled"
+					logger.Infof("Task %s was canceled", exe.TaskID())
+					if err := ExecCommandString(ctx, execHooks.TaskCancel); err != nil {
+						logger.Errorf("Failed to execute cancel hook for task %s: %v", exe.TaskID(), err)
+					}
+				} else {
+					// Process shutdown cancels task contexts; leave the record queued
+					// so the next start can resume it from persisted cache.
+					status = "queued"
+					logger.Infof("Task %s interrupted; it will resume after restart", exe.TaskID())
 				}
 			} else {
 				status = "failed"
@@ -117,7 +125,7 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 				logger.Errorf("Failed to execute success hook for task %s: %v", exe.TaskID(), err)
 			}
 		}
-		if len(items) > 0 {
+		if len(items) > 0 && status != "queued" {
 			records := make([]database.TaskItemRecord, 0, len(items))
 			for _, item := range items {
 				records = append(records, database.TaskItemRecord{
@@ -136,9 +144,13 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 				logger.Errorf("Failed to store task items for %s: %v", exe.TaskID(), dbErr)
 			}
 		}
-		recordFields := map[string]any{
-			"status":      status,
-			"finished_at": time.Now(),
+		recordFields := map[string]any{"status": status}
+		if status == "queued" {
+			recordFields["started_at"] = nil
+			recordFields["finished_at"] = nil
+			recordFields["error"] = ""
+		} else {
+			recordFields["finished_at"] = time.Now()
 		}
 		if status == "partial" {
 			recordFields["error"] = partialError(items)
@@ -293,21 +305,21 @@ func CancelTask(ctx context.Context, id string) error {
 	q := initQueue()
 	if q.Has(id) {
 		task, _ := q.GetTask(id)
+		// Persist the cancellation before canceling the context so the worker
+		// can distinguish it from a process shutdown and does not requeue it.
+		if dbErr := database.UpdateTaskRecord(context.WithoutCancel(ctx), id, map[string]any{
+			"status":      "cancelled",
+			"finished_at": time.Now(),
+		}); dbErr != nil {
+			log.FromContext(ctx).Errorf("Failed to cancel task record for %s: %v", id, dbErr)
+		}
 		err := q.CancelTask(id)
-		if err == nil {
-			if task != nil {
-				taskevent.Emit(task.Context(), taskevent.Event{
-					TaskID:    id,
-					Phase:     taskevent.PhaseDone,
-					Cancelled: true,
-				})
-			}
-			if dbErr := database.UpdateTaskRecord(context.WithoutCancel(ctx), id, map[string]any{
-				"status":      "cancelled",
-				"finished_at": time.Now(),
-			}); dbErr != nil {
-				log.FromContext(ctx).Errorf("Failed to cancel task record for %s: %v", id, dbErr)
-			}
+		if err == nil && task != nil {
+			taskevent.Emit(task.Context(), taskevent.Event{
+				TaskID:    id,
+				Phase:     taskevent.PhaseDone,
+				Cancelled: true,
+			})
 		}
 		return err
 	}

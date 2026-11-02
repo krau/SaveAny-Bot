@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -44,8 +43,8 @@ func ListTaskRecords(ctx context.Context, filter TaskFilter) ([]TaskRecord, int6
 	return records, total, err
 }
 
-// ListQueuedTaskRecords returns every task that was queued but never started,
-// oldest first, for restart recovery.
+// ListQueuedTaskRecords returns every task that is queued for execution,
+// including tasks requeued after an interrupted run, oldest first.
 func ListQueuedTaskRecords(ctx context.Context) ([]TaskRecord, error) {
 	var records []TaskRecord
 	err := db.WithContext(ctx).
@@ -53,6 +52,15 @@ func ListQueuedTaskRecords(ctx context.Context) ([]TaskRecord, error) {
 		Order("created_at ASC").
 		Find(&records).Error
 	return records, err
+}
+
+// HasUnfinishedTasks reports whether any task is queued or running.
+func HasUnfinishedTasks(ctx context.Context) (bool, error) {
+	var count int64
+	err := db.WithContext(ctx).Model(&TaskRecord{}).
+		Where("status IN ?", []string{"queued", "running"}).
+		Count(&count).Error
+	return count > 0, err
 }
 
 func DeleteTaskRecord(ctx context.Context, taskID string) error {
@@ -144,14 +152,15 @@ SELECT * FROM (
 	return out, nil
 }
 
-// MarkInterruptedTaskRecords fails tasks that were running when the process
-// stopped. Queued tasks are left for restart recovery.
+// MarkInterruptedTaskRecords requeues tasks that were running when the
+// process stopped so they can be rebuilt from their persisted parameters.
 func MarkInterruptedTaskRecords(ctx context.Context) error {
 	return db.WithContext(ctx).Model(&TaskRecord{}).
 		Where("status = ?", "running").
 		Updates(map[string]any{
-			"status":      "failed",
-			"error":       "interrupted by restart",
-			"finished_at": time.Now(),
+			"status":      "queued",
+			"error":       "",
+			"started_at":  nil,
+			"finished_at": nil,
 		}).Error
 }

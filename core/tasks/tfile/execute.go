@@ -13,6 +13,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	tfilepkg "github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -30,28 +31,14 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 	}
 
 	logger.Info("Starting file download")
-	localFile, err := fsutil.CreateFile(t.localPath)
-	if err != nil {
-		return fmt.Errorf("failed to create local file: %w", err)
-	}
-	defer func() {
-		if err := localFile.CloseAndRemove(); err != nil {
-			logger.Errorf("Failed to close local file: %v", err)
-		}
-	}()
-	wrAt := newWriterAt(ctx, localFile, t.Progress, t)
-
 	defer func() {
 		if t.Progress != nil {
 			t.Progress.OnDone(ctx, t, err)
 		}
 	}()
-	downloader, cleanup := tdler.NewDownloader(ctx, t.File)
-	if cleanup != nil {
-		defer cleanup(ctx)
-	}
-	_, err = downloader.Parallel(ctx, wrAt)
-	if err != nil {
+	if err := tdler.DownloadToCache(ctx, t.File, t.localPath, func(w io.WriterAt) io.WriterAt {
+		return newWriterAt(ctx, w, t.Progress, t)
+	}); err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}
 	logger.Infof("File downloaded successfully")
@@ -61,8 +48,7 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 			t.Path = t.Path + ext
 		}
 	}
-	var fileStat os.FileInfo
-	fileStat, err = os.Stat(t.localPath)
+	fileStat, err := os.Stat(t.localPath)
 	if err != nil {
 		return fmt.Errorf("failed to get file stat: %w", err)
 	}
@@ -104,6 +90,12 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 	}, retry.RetryTimes(uint(config.C().Retry)), retry.Context(vctx))
 	if err != nil {
 		return fmt.Errorf("failed to save file after retries: %w", err)
+	}
+	if err := core.MarkTaskElementDone(ctx, t.ID, t.ElementID); err != nil {
+		return fmt.Errorf("failed to persist task completion: %w", err)
+	}
+	if err := os.Remove(t.localPath); err != nil {
+		logger.Errorf("Failed to remove cache file: %v", err)
 	}
 	return nil
 }

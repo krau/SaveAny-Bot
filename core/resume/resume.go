@@ -1,5 +1,5 @@
-// Package resume rebuilds tasks that were queued when the process stopped.
-// Task creation parameters are persisted with the task record, so a queued
+// Package resume rebuilds tasks that were queued or running when the process
+// stopped. Task creation parameters are persisted with the task record, so a
 // task can be re-enqueued without resubmitting the original request.
 package resume
 
@@ -44,6 +44,10 @@ const retryInterval = 15 * time.Second
 // yet. The record stays queued and is retried later.
 var ErrNeedsClient = errors.New("telegram client not available")
 
+// ErrAlreadyDone means every file in the task was uploaded before the
+// process stopped. The record only needs to be marked completed.
+var ErrAlreadyDone = errors.New("task already completed")
+
 var scanMu sync.Mutex
 
 // Run resumes queued tasks and keeps retrying while some of them are waiting
@@ -86,6 +90,17 @@ func runOnce(ctx context.Context) (pending int) {
 		case errors.Is(err, ErrNeedsClient):
 			pending++
 			logger.Debugf("Task %s waits for a telegram client", taskID)
+			continue
+		case errors.Is(err, ErrAlreadyDone):
+			if dbErr := database.UpdateTaskRecord(ctx, taskID, map[string]any{
+				"status":      "completed",
+				"error":       "",
+				"finished_at": time.Now(),
+			}); dbErr != nil {
+				logger.Errorf("Failed to mark completed task %s: %v", taskID, dbErr)
+			} else {
+				logger.Infof("Task %s was already completed before restart", taskID)
+			}
 			continue
 		case err != nil:
 			logger.Warnf("Cannot resume task %s: %v", taskID, err)
@@ -268,6 +283,19 @@ func rebuildTG(ctx context.Context, record *database.TaskRecord) (core.Executabl
 	if len(spec.Items) == 0 {
 		return nil, ctx, errors.New("missing telegram file items")
 	}
+	done := make(map[string]struct{}, len(spec.Done))
+	for _, id := range spec.Done {
+		done[id] = struct{}{}
+	}
+	remaining := 0
+	for _, item := range spec.Items {
+		if _, ok := done[item.ID]; item.ID == "" || !ok {
+			remaining++
+		}
+	}
+	if remaining == 0 {
+		return nil, ctx, ErrAlreadyDone
+	}
 	candidates := make([]*ext.Context, 0, 2)
 	for _, candidate := range []*ext.Context{bot.ExtContext(), userclient.GetCtx()} {
 		if candidate != nil {
@@ -280,6 +308,9 @@ func rebuildTG(ctx context.Context, record *database.TaskRecord) (core.Executabl
 	elems := make([]batchtfile.TaskElement, 0, len(spec.Items))
 	var taskExt *ext.Context
 	for _, item := range spec.Items {
+		if _, ok := done[item.ID]; item.ID != "" && ok {
+			continue
+		}
 		stor, err := resolveStorage(ctx, item.Storage, item.StorageID)
 		if err != nil {
 			return nil, ctx, err
@@ -299,7 +330,12 @@ func rebuildTG(ctx context.Context, record *database.TaskRecord) (core.Executabl
 			return nil, ctx, fmt.Errorf("failed to rebuild file %s: %w", item.Name, err)
 		}
 		file.SetName(item.Name)
-		elem, err := batchtfile.NewTaskElement(stor, item.Path, file)
+		var elem *batchtfile.TaskElement
+		if item.ID != "" {
+			elem, err = batchtfile.NewTaskElementWithID(item.ID, stor, item.Path, file)
+		} else {
+			elem, err = batchtfile.NewTaskElement(stor, item.Path, file)
+		}
 		if err != nil {
 			return nil, ctx, fmt.Errorf("failed to create task element for %s: %w", item.Name, err)
 		}
@@ -312,14 +348,18 @@ func rebuildTG(ctx context.Context, record *database.TaskRecord) (core.Executabl
 	if spec.Overwrite {
 		taskCtx = storage.WithOverwrite(taskCtx)
 	}
-	if len(elems) == 1 {
+	if len(spec.Items) == 1 {
 		task, err := tfile.NewTGFileTask(record.TaskID, taskCtx, elems[0].File, elems[0].Storage, elems[0].Path, nil)
 		if err != nil {
 			return nil, ctx, err
 		}
+		task.ElementID = elems[0].ID
+		task.Done = spec.Done
 		return task, taskCtx, nil
 	}
-	return batchtfile.NewBatchTGFileTask(record.TaskID, taskCtx, elems, nil, true), taskCtx, nil
+	task := batchtfile.NewBatchTGFileTask(record.TaskID, taskCtx, elems, nil, true)
+	task.Done = spec.Done
+	return task, taskCtx, nil
 }
 
 // activeClient returns the first running Telegram client.

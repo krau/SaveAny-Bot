@@ -15,6 +15,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/database"
 )
 
 func Run(cmd *cobra.Command, _ []string) {
@@ -42,6 +43,11 @@ func Run(cmd *cobra.Command, _ []string) {
 		logger.SetLevel(level)
 	}
 
+	if unfinished, err := database.HasUnfinishedTasks(ctx); err != nil {
+		logger.Errorf("Failed to inspect unfinished tasks; keeping cache: %v", err)
+	} else if !unfinished {
+		cleanCache(cfg)
+	}
 	application := app.New(ctx, res.Settings, app.Options{
 		DataDir: res.DataDir,
 		DBPath:  res.DBPath,
@@ -56,7 +62,6 @@ func Run(cmd *cobra.Command, _ []string) {
 	logger.Info("Exiting...")
 	defer logger.Info("Exit complete")
 	application.Stop()
-	cleanCache(res.Settings.Config())
 	if selfupdate.ShouldRestart() {
 		logger.Info("Restarting to run the updated version...")
 		if err := selfupdate.Restart(); err != nil {

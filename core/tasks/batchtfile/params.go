@@ -24,6 +24,7 @@ func (t *Task) TaskParams() (json.RawMessage, error) {
 		}
 		message := messageFile.Message()
 		items = append(items, taskspec.TGFileItem{
+			ID:        elem.ID,
 			ChatID:    tgutil.ChatIdFromPeer(message.GetPeerID()),
 			MessageID: message.GetID(),
 			Name:      elem.File.Name(),
@@ -36,5 +37,5 @@ func (t *Task) TaskParams() (json.RawMessage, error) {
 	if t.ctx != nil {
 		overwrite, _ = t.ctx.Value(ctxkey.OverwriteExisting).(bool)
 	}
-	return json.Marshal(taskspec.TGFile{Items: items, Overwrite: overwrite})
+	return json.Marshal(taskspec.TGFile{Items: items, Overwrite: overwrite, Done: t.Done})
 }

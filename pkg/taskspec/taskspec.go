@@ -11,6 +11,7 @@ import (
 
 // TGFileItem identifies one Telegram file and its destination.
 type TGFileItem struct {
+	ID        string `json:"id,omitempty"`
 	ChatID    int64  `json:"chat_id"`
 	MessageID int    `json:"message_id"`
 	Name      string `json:"name"`
@@ -23,6 +24,8 @@ type TGFileItem struct {
 type TGFile struct {
 	Items     []TGFileItem `json:"items"`
 	Overwrite bool         `json:"overwrite,omitempty"`
+	// Done lists task element IDs whose upload already completed.
+	Done []string `json:"done,omitempty"`
 }
 
 type DirectLinks struct {

@@ -16,6 +16,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/common/utils/ioutil"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
@@ -133,8 +134,9 @@ func (t *Task) processElements(ctx context.Context, elems []*TaskElement) error 
 }
 
 func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
+	var cleanup []*TaskElement
 	defer func() {
-		for _, elem := range group.elems {
+		for _, elem := range cleanup {
 			if err := os.Remove(elem.localPath); err != nil && !os.IsNotExist(err) {
 				log.FromContext(ctx).Warnf("Failed to cleanup batch cache file %s: %v", elem.localPath, err)
 			}
@@ -217,7 +219,16 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 	for index, item := range items {
 		t.recordDownloadComplete(successElems[index].ID, item.Size)
 	}
-	return t.saveBatchItems(ctx, successElems, items)
+	if err := t.saveBatchItems(ctx, successElems, items); err != nil {
+		return err
+	}
+	for _, elem := range successElems {
+		if err := core.MarkTaskElementDone(ctx, t.ID, elem.ID); err != nil {
+			return fmt.Errorf("failed to persist element completion: %w", err)
+		}
+	}
+	cleanup = successElems
+	return nil
 }
 
 func (t *Task) saveBatchItems(ctx context.Context, successElems []*TaskElement, items []storagetypes.BatchItem) error {
@@ -287,38 +298,22 @@ func (t *Task) unmarkProcessing(id string) {
 func (t *Task) downloadElement(ctx context.Context, elem *TaskElement) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("file[%s]", elem.File.Name()))
 	logger.Info("Starting file download")
-	localFile, err := fsutil.CreateFile(elem.localPath)
-	if err != nil {
-		t.markItemFailed(ctx, elem.ID, FailureStageCache, err)
-		t.notifyStateChange(ctx)
-		return fmt.Errorf("failed to create local file: %w", err)
-	}
-	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
-		t.recordItemDownload(elem.ID, int64(n), time.Now())
-		downloaded := t.downloaded.Add(int64(n))
-		t.notifyProgress(ctx)
-		taskevent.Emit(ctx, taskevent.Event{
-			TaskID:          t.ID,
-			Phase:           taskevent.PhaseProgress,
-			TotalBytes:      t.totalSize,
-			DownloadedBytes: downloaded,
+	if err := tdler.DownloadToCache(ctx, elem.File, elem.localPath, func(w io.WriterAt) io.WriterAt {
+		return ioutil.NewProgressWriterAt(w, func(n int) {
+			t.recordItemDownload(elem.ID, int64(n), time.Now())
+			downloaded := t.downloaded.Add(int64(n))
+			t.notifyProgress(ctx)
+			taskevent.Emit(ctx, taskevent.Event{
+				TaskID:          t.ID,
+				Phase:           taskevent.PhaseProgress,
+				TotalBytes:      t.totalSize,
+				DownloadedBytes: downloaded,
+			})
 		})
-	})
-	downloader, cleanup := tdler.NewDownloader(ctx, elem.File)
-	if cleanup != nil {
-		defer cleanup(ctx)
-	}
-	_, downloadErr := downloader.Parallel(ctx, wrAt)
-	closeErr := localFile.Close()
-	if downloadErr != nil {
-		t.markItemFailed(ctx, elem.ID, FailureStageDownload, downloadErr)
+	}); err != nil {
+		t.markItemFailed(ctx, elem.ID, FailureStageDownload, err)
 		t.notifyStateChange(ctx)
-		return fmt.Errorf("failed to download file: %w", downloadErr)
-	}
-	if closeErr != nil {
-		t.markItemFailed(ctx, elem.ID, FailureStageCache, closeErr)
-		t.notifyStateChange(ctx)
-		return fmt.Errorf("failed to close cache file: %w", closeErr)
+		return fmt.Errorf("failed to download file: %w", err)
 	}
 	logger.Info("File downloaded successfully")
 	fileStat, err := os.Stat(elem.localPath)
@@ -394,39 +389,29 @@ func (t *Task) processElement(ctx context.Context, elem *TaskElement) error {
 		})
 		t.recordDownloadComplete(elem.ID, streamedBytes)
 		t.markItemCompleted(elem.ID)
+		if err := core.MarkTaskElementDone(ctx, t.ID, elem.ID); err != nil {
+			t.markItemFailed(ctx, elem.ID, FailureStageUpload, err)
+			t.notifyStateChange(ctx)
+			return fmt.Errorf("failed to persist element completion: %w", err)
+		}
 		t.notifyStateChange(ctx)
 		logger.Info("File downloaded successfully in stream mode")
 		return nil
 	}
 	logger.Info("Starting file download")
-	localFile, err := fsutil.CreateFile(elem.localPath)
-	if err != nil {
-		t.markItemFailed(ctx, elem.ID, FailureStageCache, err)
-		t.notifyStateChange(ctx)
-		return fmt.Errorf("failed to create local file: %w", err)
-	}
-	defer func() {
-		if err := localFile.CloseAndRemove(); err != nil {
-			logger.Errorf("Failed to close local file: %v", err)
-		}
-	}()
-	wrAt := ioutil.NewProgressWriterAt(localFile, func(n int) {
-		t.recordItemDownload(elem.ID, int64(n), time.Now())
-		downloaded := t.downloaded.Add(int64(n))
-		t.notifyProgress(ctx)
-		taskevent.Emit(ctx, taskevent.Event{
-			TaskID:          t.ID,
-			Phase:           taskevent.PhaseProgress,
-			TotalBytes:      t.totalSize,
-			DownloadedBytes: downloaded,
+	if err := tdler.DownloadToCache(ctx, elem.File, elem.localPath, func(w io.WriterAt) io.WriterAt {
+		return ioutil.NewProgressWriterAt(w, func(n int) {
+			t.recordItemDownload(elem.ID, int64(n), time.Now())
+			downloaded := t.downloaded.Add(int64(n))
+			t.notifyProgress(ctx)
+			taskevent.Emit(ctx, taskevent.Event{
+				TaskID:          t.ID,
+				Phase:           taskevent.PhaseProgress,
+				TotalBytes:      t.totalSize,
+				DownloadedBytes: downloaded,
+			})
 		})
-	})
-	downloader, cleanup := tdler.NewDownloader(ctx, elem.File)
-	if cleanup != nil {
-		defer cleanup(ctx)
-	}
-	_, err = downloader.Parallel(ctx, wrAt)
-	if err != nil {
+	}); err != nil {
 		t.markItemFailed(ctx, elem.ID, FailureStageDownload, err)
 		t.notifyStateChange(ctx)
 		return fmt.Errorf("failed to download file: %w", err)
@@ -438,8 +423,7 @@ func (t *Task) processElement(ctx context.Context, elem *TaskElement) error {
 			elem.Path = elem.Path + ext
 		}
 	}
-	var fileStat os.FileInfo
-	fileStat, err = os.Stat(elem.localPath)
+	fileStat, err := os.Stat(elem.localPath)
 	if err != nil {
 		t.markItemFailed(ctx, elem.ID, FailureStageCache, err)
 		t.notifyStateChange(ctx)
@@ -487,7 +471,15 @@ func (t *Task) processElement(ctx context.Context, elem *TaskElement) error {
 	if err == nil {
 		onProgress(fileStat.Size(), fileStat.Size())
 		t.markItemCompleted(elem.ID)
+		if err := core.MarkTaskElementDone(vctx, t.ID, elem.ID); err != nil {
+			t.markItemFailed(vctx, elem.ID, FailureStageUpload, err)
+			t.notifyStateChange(vctx)
+			return fmt.Errorf("failed to persist element completion: %w", err)
+		}
 		t.notifyStateChange(vctx)
+		if err := os.Remove(elem.localPath); err != nil {
+			logger.Errorf("Failed to remove cache file: %v", err)
+		}
 	} else {
 		t.markItemFailed(vctx, elem.ID, lastFailureStage, err)
 		t.notifyStateChange(vctx)

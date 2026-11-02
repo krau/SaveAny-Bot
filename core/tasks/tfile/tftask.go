@@ -18,6 +18,8 @@ var _ core.DestinationInfo = (*Task)(nil)
 
 type Task struct {
 	ID        string
+	ElementID string
+	Done      []string
 	Ctx       context.Context
 	File      tfile.TGFile
 	Storage   storage.Storage
@@ -53,6 +55,7 @@ func NewTGFileTask(
 		}
 		tfile := &Task{
 			ID:        id,
+			ElementID: id,
 			Ctx:       ctx,
 			File:      file,
 			Storage:   stor,
@@ -63,13 +66,14 @@ func NewTGFileTask(
 		return tfile, nil
 	}
 	tfileTask := &Task{
-		ID:       id,
-		Ctx:      ctx,
-		File:     file,
-		Storage:  stor,
-		Path:     path,
-		Progress: progress,
-		stream:   true,
+		ID:        id,
+		ElementID: id,
+		Ctx:       ctx,
+		File:      file,
+		Storage:   stor,
+		Path:      path,
+		Progress:  progress,
+		stream:    true,
 	}
 	return tfileTask, nil
 }
