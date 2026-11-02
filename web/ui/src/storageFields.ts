@@ -109,24 +109,6 @@ export const storageTypeDefs: StorageTypeDef[] = [
     ],
   },
   {
-    type: 'minio',
-    label: 'storages.types.minio',
-    fields: [
-      {
-        name: 'endpoint',
-        label: 'storages.fields.endpoint',
-        kind: 'text',
-        placeholder: 'storages.fields.placeholders.minioEndpoint',
-        required: true,
-      },
-      { name: 'access_key_id', label: 'storages.fields.accessKeyId', kind: 'secret', required: true },
-      { name: 'secret_access_key', label: 'storages.fields.secretAccessKey', kind: 'secret', required: true },
-      { name: 'bucket_name', label: 'storages.fields.bucket', kind: 'text', required: true },
-      { name: 'base_path', label: 'storages.fields.basePath', kind: 'text' },
-      { name: 'use_ssl', label: 'storages.fields.useSsl', kind: 'bool' },
-    ],
-  },
-  {
     type: 'telegram',
     label: 'storages.types.telegram',
     fields: [
@@ -191,8 +173,6 @@ export function storageTypeIcon(type: string): string {
     case 'alist':
     case 's3':
       return 'cloud'
-    case 'minio':
-      return 'server'
     case 'telegram':
       return 'send'
     case 'rclone':
@@ -223,7 +203,7 @@ export function storageDefaults(type: string): Record<string, unknown> {
         config[field.name] = ''
     }
   }
-  if (type === 's3' || type === 'minio') {
+  if (type === 's3') {
     config.use_ssl = true
   }
   return config

@@ -35,6 +35,9 @@ func Init(ctx context.Context, opts Options) (Result, error) {
 			log.Errorf("Failed to import legacy configuration: %v", err)
 		}
 	}
+	if err := database.MigrateMinioStorageType(ctx); err != nil {
+		log.Errorf("Failed to migrate MinIO storages to S3: %v", err)
+	}
 	if err := settings.MigrateLegacySessionPaths(ctx, opts.DataDir); err != nil {
 		log.Errorf("Failed to migrate legacy session paths: %v", err)
 	}

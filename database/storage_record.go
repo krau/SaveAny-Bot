@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"slices"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -33,6 +35,41 @@ func UpdateStorageRecord(ctx context.Context, record *StorageRecord) error {
 
 func DeleteStorageRecord(ctx context.Context, id uint) error {
 	return db.WithContext(ctx).Unscoped().Delete(&StorageRecord{}, id).Error
+}
+
+// MigrateMinioStorageType converts legacy MinIO storage records to S3 and
+// normalizes their endpoint to the scheme-based form used by the S3 backend.
+func MigrateMinioStorageType(ctx context.Context) error {
+	var records []StorageRecord
+	if err := db.WithContext(ctx).Where("type = ?", "minio").Find(&records).Error; err != nil {
+		return err
+	}
+	for _, record := range records {
+		config := make(map[string]any)
+		if record.ConfigJSON != "" {
+			if err := json.Unmarshal([]byte(record.ConfigJSON), &config); err != nil {
+				return fmt.Errorf("decode legacy MinIO storage %s: %w", record.Name, err)
+			}
+		}
+		if endpoint, ok := config["endpoint"].(string); ok && endpoint != "" && !strings.Contains(endpoint, "://") {
+			scheme := "http"
+			if useSSL, _ := config["use_ssl"].(bool); useSSL {
+				scheme = "https"
+			}
+			config["endpoint"] = scheme + "://" + endpoint
+		}
+		delete(config, "use_ssl")
+		raw, err := json.Marshal(config)
+		if err != nil {
+			return fmt.Errorf("encode S3 storage %s: %w", record.Name, err)
+		}
+		if err := db.WithContext(ctx).Model(&StorageRecord{}).
+			Where("id = ?", record.ID).
+			Updates(map[string]any{"type": "s3", "config": string(raw)}).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // StorageReferences returns how many entities still reference the storage ID.

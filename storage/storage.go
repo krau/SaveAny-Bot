@@ -10,7 +10,6 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/krau/SaveAny-Bot/storage/alist"
 	"github.com/krau/SaveAny-Bot/storage/local"
-	"github.com/krau/SaveAny-Bot/storage/minio"
 	"github.com/krau/SaveAny-Bot/storage/rclone"
 	"github.com/krau/SaveAny-Bot/storage/s3"
 	"github.com/krau/SaveAny-Bot/storage/telegram"
@@ -96,7 +95,6 @@ var storageConstructors = map[storenum.StorageType]StorageConstructor{
 	storenum.Alist:    func() Storage { return new(alist.Alist) },
 	storenum.Local:    func() Storage { return new(local.Local) },
 	storenum.Webdav:   func() Storage { return new(webdav.Webdav) },
-	storenum.Minio:    func() Storage { return new(minio.Minio) },
 	storenum.S3:       func() Storage { return new(s3.S3) },
 	storenum.Telegram: func() Storage { return new(telegram.Telegram) },
 	storenum.Rclone:   func() Storage { return new(rclone.Rclone) },
