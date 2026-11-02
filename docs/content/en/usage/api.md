@@ -452,7 +452,7 @@ Task responses include per-file outcomes: list responses carry the total in `fai
 | `failed` | Task encountered an error |
 | `cancelled` | Task was cancelled via the DELETE endpoint |
 
-Queued tasks keep their creation parameters and are re-enqueued after a restart. Tasks that were running when the process stopped are marked `failed` with `interrupted by restart`.
+Queued tasks and tasks interrupted while running keep their creation parameters and are re-enqueued after a restart. Telegram downloads resume from the partial cache; files whose upload already completed are skipped.
 
 ---
 

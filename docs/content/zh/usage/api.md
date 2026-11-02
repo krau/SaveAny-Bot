@@ -452,7 +452,7 @@ Authorization: Bearer <token>
 | `failed` | 执行失败 |
 | `cancelled` | 已通过 DELETE 接口取消 |
 
-排队中的任务会保存创建参数，重启后自动重新入队。进程停止时正在运行的任务会被标记为 `failed`，原因为 `interrupted by restart`。
+排队中的任务和进程停止时正在运行的任务都会保存创建参数，重启后自动重新入队。Telegram 下载会从部分缓存继续，已完成上传的文件会被跳过。
 
 ---
 
