@@ -9,12 +9,14 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
 type TwitterParser struct {
+	mu        sync.RWMutex
 	client    http.Client
 	apiDomain string
 }
@@ -42,12 +44,19 @@ func (p *TwitterParser) Parse(ctx context.Context, u string) (*parser.Item, erro
 	if id == "" {
 		return nil, errors.New("invalid Twitter URL")
 	}
-	apiUrl := fmt.Sprintf("https://%s/_/status/%s", p.apiDomain, id)
+	p.mu.RLock()
+	client := p.client
+	apiDomain := p.apiDomain
+	p.mu.RUnlock()
+	if apiDomain == "" {
+		apiDomain = fxTwitterApi
+	}
+	apiUrl := fmt.Sprintf("https://%s/_/status/%s", apiDomain, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiUrl, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request to Twitter API: %w", err)
 	}
-	resp, err := p.client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch Twitter API: %w", err)
 	}
@@ -68,7 +77,7 @@ func (p *TwitterParser) Parse(ctx context.Context, u string) (*parser.Item, erro
 	resources := make([]parser.Resource, 0, len(fxResp.Tweet.Media.All))
 	for _, media := range fxResp.Tweet.Media.All {
 		var size int64
-		resp, err := p.client.Head(media.URL)
+		resp, err := client.Head(media.URL)
 		if err == nil {
 			size = resp.ContentLength
 			resp.Body.Close()
@@ -101,22 +110,23 @@ func (p *TwitterParser) Name() string {
 }
 
 func (p *TwitterParser) Configure(config map[string]any) error {
-	if config == nil {
-		p.apiDomain = fxTwitterApi
-		p.client = *netutil.DefaultParserHTTPClient()
-		return nil
-	}
-	if domain, ok := config["api_domain"].(string); ok && domain != "" {
-		p.apiDomain = domain
-	} else {
-		p.apiDomain = fxTwitterApi
-	}
-	if proxyUrl, ok := config["proxy"].(string); ok && proxyUrl != "" {
-		proxyClient, err := netutil.NewProxyHTTPClient(proxyUrl)
-		if err != nil {
-			return fmt.Errorf("failed to create proxy client: %w", err)
+	domain := fxTwitterApi
+	client := *netutil.DefaultParserHTTPClient()
+	if config != nil {
+		if configured, ok := config["api_domain"].(string); ok && configured != "" {
+			domain = configured
 		}
-		p.client = *proxyClient
+		if proxyURL, ok := config["proxy"].(string); ok && proxyURL != "" {
+			proxyClient, err := netutil.NewProxyHTTPClient(proxyURL)
+			if err != nil {
+				return fmt.Errorf("failed to create proxy client: %w", err)
+			}
+			client = *proxyClient
+		}
 	}
+	p.mu.Lock()
+	p.apiDomain = domain
+	p.client = client
+	p.mu.Unlock()
 	return nil
 }

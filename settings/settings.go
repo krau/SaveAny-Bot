@@ -19,6 +19,7 @@ import (
 	"github.com/krau/SaveAny-Bot/config"
 	storcfg "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/parsers"
 	storages "github.com/krau/SaveAny-Bot/storage"
 )
 
@@ -274,6 +275,7 @@ func (s *Service) ReloadConfig(ctx context.Context) error {
 	if level, err := log.ParseLevel(strings.TrimSpace(cfg.Log.Level)); err == nil {
 		log.SetLevel(level)
 	}
+	parsers.Configure()
 	return nil
 }
 
@@ -462,6 +464,7 @@ func (s *Service) reloadConfigLocked(ctx context.Context) error {
 	if level, err := log.ParseLevel(strings.TrimSpace(cfg.Log.Level)); err == nil {
 		log.SetLevel(level)
 	}
+	parsers.Configure()
 	return nil
 }
 

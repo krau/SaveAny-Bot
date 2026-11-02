@@ -12,6 +12,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/parsers"
 	"github.com/krau/SaveAny-Bot/settings"
 )
 
@@ -69,6 +70,7 @@ func Init(ctx context.Context, opts Options) (Result, error) {
 		log.Warn("Invalid log level, using info", "level", cfg.Log.Level)
 	}
 	i18n.Init(cfg.Lang)
+	parsers.Configure()
 	cache.Init()
 	if cfg.Proxy != "" {
 		transport, err := config.ProxyTransport(cfg.Proxy)

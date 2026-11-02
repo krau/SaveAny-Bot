@@ -59,6 +59,11 @@ func CanHandle(url string) (bool, parser.Parser) {
 	return false, nil
 }
 
+// Configure reapplies parser settings after a settings or plugin reload.
+func Configure() {
+	parsers.Configure()
+}
+
 func LoadPlugins(ctx context.Context, dir string) error {
 	return js.LoadPlugins(ctx, dir)
 }
