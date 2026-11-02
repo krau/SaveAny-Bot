@@ -15,14 +15,21 @@ import (
 
 func NewDownloader(ctx context.Context, file tfile.TGFile) (*downloader.Builder, func(context.Context)) {
 	file, cleanup := relay.Prepare(ctx, file)
+	return newDownloader(file), cleanup
+}
+
+func newDownloader(file tfile.TGFile) *downloader.Builder {
+	return downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).
+		Download(eofAwareClient{Client: rpclimit.WrapDownloader(file.Dler()), size: file.Size()}, file.Location()).
+		WithThreads(downloadThreads(file))
+}
+
+func downloadThreads(file tfile.TGFile) int {
 	threads := dlutil.BestThreads(file.Size(), config.C().Threads)
 	if scalable, ok := file.(interface{ WorkerCount() int }); ok {
 		threads = max(threads, min(scalable.WorkerCount()*2, 16))
 	}
-	builder := downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).
-		Download(eofAwareClient{Client: rpclimit.WrapDownloader(file.Dler()), size: file.Size()}, file.Location()).
-		WithThreads(threads)
-	return builder, cleanup
+	return threads
 }
 
 // eofAwareClient answers upload.getFile requests at or past the end of the
