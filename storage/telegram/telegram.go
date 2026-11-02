@@ -91,8 +91,8 @@ func (t *Telegram) Name() string {
 // Exists always reports false: Telegram offers no reliable way to query
 // whether a file already exists in a chat, so conflict policies do not apply
 // to this backend.
-func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
-	return false
+func (t *Telegram) Exists(ctx context.Context, storagePath string) (bool, error) {
+	return false, nil
 }
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {

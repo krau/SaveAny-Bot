@@ -35,7 +35,13 @@ func (w *Webdav) Init(ctx context.Context, cfg config.StorageConfig) error {
 	w.config = *webdavConfig
 	w.logger = log.FromContext(ctx).WithPrefix(fmt.Sprintf("webdav[%s]", w.config.Name))
 	w.client = NewClient(w.config.URL, w.config.Username, w.config.Password, &http.Client{
-		Timeout: time.Hour * 12,
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 30 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConns:          100,
+		},
 	})
 	return nil
 }
@@ -48,47 +54,61 @@ func (w *Webdav) Name() string {
 	return w.config.Name
 }
 
-func (w *Webdav) JoinStoragePath(p string) string {
-	return path.Join(w.config.BasePath, p)
+func (w *Webdav) JoinStoragePath(p string) (string, error) {
+	return storagetypes.SecureJoin(w.config.BasePath, p)
 }
 
 func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	w.logger.Infof("Saving file to %s", storagePath)
-	candidate := w.JoinStoragePath(storagePath)
-	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		candidate = fsutil.UniquePath(w.config.BasePath, storagePath, func(c string) bool {
+	candidate, err := w.JoinStoragePath(storagePath)
+	if err != nil {
+		return err
+	}
+	overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool)
+	if !overwrite {
+		candidate, err = fsutil.UniquePath(w.config.BasePath, storagePath, func(c string) (bool, error) {
 			return w.existsPath(ctx, c)
 		}, 1000)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := w.client.MkDir(ctx, path.Dir(candidate)); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
-	if err := w.client.WriteFile(ctx, candidate, r); err != nil {
+	if overwrite {
+		err = w.client.WriteFile(ctx, candidate, r)
+	} else {
+		err = w.client.WriteFileIfAbsent(ctx, candidate, r)
+	}
+	if err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil
 }
 
-func (w *Webdav) Exists(ctx context.Context, storagePath string) bool {
+func (w *Webdav) Exists(ctx context.Context, storagePath string) (bool, error) {
 	w.logger.Debugf("Checking if file exists at %s", storagePath)
-	return w.existsPath(ctx, w.JoinStoragePath(storagePath))
+	fullPath, err := w.JoinStoragePath(storagePath)
+	if err != nil {
+		return false, err
+	}
+	return w.existsPath(ctx, fullPath)
 }
 
-func (w *Webdav) existsPath(ctx context.Context, storagePath string) bool {
-	exists, err := w.client.Exists(ctx, storagePath)
-	if err != nil {
-		w.logger.Errorf("Failed to check if file exists at %s: %v", storagePath, err)
-		return false
-	}
-	return exists
+func (w *Webdav) existsPath(ctx context.Context, storagePath string) (bool, error) {
+	return w.client.Exists(ctx, storagePath)
 }
 
 // ListFiles implements storage.StorageListable
 func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error) {
 	w.logger.Infof("Listing files in %s", dirPath)
 
-	fullPath := path.Join(w.config.BasePath, dirPath)
+	fullPath, err := w.JoinStoragePath(dirPath)
+	if err != nil {
+		return nil, err
+	}
 
 	responses, err := w.client.ListDir(ctx, fullPath)
 	if err != nil {
@@ -141,7 +161,10 @@ func (w *Webdav) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 func (w *Webdav) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
 	w.logger.Infof("Opening file %s", filePath)
 
-	fullPath := path.Join(w.config.BasePath, filePath)
+	fullPath, err := w.JoinStoragePath(filePath)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	reader, size, err := w.client.ReadFile(ctx, fullPath)
 	if err != nil {

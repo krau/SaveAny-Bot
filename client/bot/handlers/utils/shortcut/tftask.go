@@ -1,6 +1,7 @@
 package shortcut
 
 import (
+	"fmt"
 	"path"
 	"strings"
 
@@ -67,7 +68,10 @@ func CreateAndAddTGFileTaskWithEdit(ctx *ext.Context, userID, chatID int64, stor
 startCreateTask:
 	storagePath := path.Join(dirPath, file.Name())
 	if strategy == tcbdata.ConflictStrategyAsk || strategy == tcbdata.ConflictStrategySkip {
-		exists := stor.Exists(ctx, storagePath)
+		exists, err := stor.Exists(ctx, storagePath)
+		if err != nil {
+			return fmt.Errorf("failed to check storage path %s: %w", storagePath, err)
+		}
 		if exists && strategy == tcbdata.ConflictStrategyAsk {
 			return promptTGFileConflictStrategy(ctx, chatID, stor.Name(), dirPath, []tfile.TGFileMessage{file}, false, []string{conflictutil.FormatPath(stor.Name(), storagePath)}, trackMsgID)
 		}
@@ -183,7 +187,10 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID, chatID int64,
 		if !matchedDirPath.NeedNewForAlbum() {
 			storPath := path.Join(matchedDirPath.String(), file.Name())
 			if strategy == tcbdata.ConflictStrategyAsk || strategy == tcbdata.ConflictStrategySkip {
-				exists := fileStor.Exists(ctx, storPath)
+				exists, err := fileStor.Exists(ctx, storPath)
+				if err != nil {
+					return fmt.Errorf("failed to check storage path %s: %w", storPath, err)
+				}
 				if exists && strategy == tcbdata.ConflictStrategyAsk {
 					conflicts = append(conflicts, conflictutil.FormatPath(fileStor.Name(), storPath))
 					continue
@@ -230,7 +237,10 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID, chatID int64,
 			af := afiles[0]
 			storPath := path.Join(af.dirPath, af.file.Name())
 			if strategy == tcbdata.ConflictStrategyAsk || strategy == tcbdata.ConflictStrategySkip {
-				exists := af.storage.Exists(ctx, storPath)
+				exists, err := af.storage.Exists(ctx, storPath)
+				if err != nil {
+					return fmt.Errorf("failed to check storage path %s: %w", storPath, err)
+				}
 				if exists && strategy == tcbdata.ConflictStrategyAsk {
 					conflicts = append(conflicts, conflictutil.FormatPath(af.storage.Name(), storPath))
 					continue
@@ -261,7 +271,10 @@ func CreateAndAddBatchTGFileTaskWithEdit(ctx *ext.Context, userID, chatID int64,
 		for _, af := range afiles {
 			afstorPath := path.Join(af.dirPath, albumDir, af.file.Name())
 			if strategy == tcbdata.ConflictStrategyAsk || strategy == tcbdata.ConflictStrategySkip {
-				exists := albumStor.Exists(ctx, afstorPath)
+				exists, err := albumStor.Exists(ctx, afstorPath)
+				if err != nil {
+					return fmt.Errorf("failed to check storage path %s: %w", afstorPath, err)
+				}
 				if exists && strategy == tcbdata.ConflictStrategyAsk {
 					conflicts = append(conflicts, conflictutil.FormatPath(albumStor.Name(), afstorPath))
 					continue

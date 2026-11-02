@@ -22,7 +22,9 @@ type Storage interface {
 	Type() storenum.StorageType
 	Name() string
 	Save(ctx context.Context, reader io.Reader, storagePath string) error
-	Exists(ctx context.Context, storagePath string) bool
+	// Exists reports whether storagePath exists. Backend/query failures must be
+	// returned as an error rather than treated as "not found".
+	Exists(ctx context.Context, storagePath string) (bool, error)
 }
 
 type StorageCannotStream interface {

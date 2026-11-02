@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 )
 
 type Client struct {
@@ -148,13 +149,37 @@ func (c *Client) MkDir(ctx context.Context, dirPath string) error {
 }
 
 func (c *Client) WriteFile(ctx context.Context, remotePath string, content io.Reader) error {
+	return c.writeFile(ctx, remotePath, content, false)
+}
+
+// WriteFileIfAbsent creates a file without replacing an existing one.
+func (c *Client) WriteFileIfAbsent(ctx context.Context, remotePath string, content io.Reader) error {
+	return c.writeFile(ctx, remotePath, content, true)
+}
+
+func (c *Client) writeFile(ctx context.Context, remotePath string, content io.Reader, ifAbsent bool) error {
 	u, err := url.Parse(c.BaseURL)
 	if err != nil {
 		return err
 	}
 	parts := strings.Split(strings.Trim(remotePath, "/"), "/")
 	u.Path = path.Join(u.Path, strings.Join(parts, "/"))
-	resp, err := c.doRequest(ctx, WebdavMethodPut, u.String(), content)
+	req, err := http.NewRequestWithContext(ctx, string(WebdavMethodPut), u.String(), content)
+	if err != nil {
+		return err
+	}
+	if c.Username != "" && c.Password != "" {
+		req.SetBasicAuth(c.Username, c.Password)
+	}
+	if length := ctx.Value(ctxkey.ContentLength); length != nil {
+		if l, ok := length.(int64); ok {
+			req.ContentLength = l
+		}
+	}
+	if ifAbsent {
+		req.Header.Set("If-None-Match", "*")
+	}
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -162,6 +187,9 @@ func (c *Client) WriteFile(ctx context.Context, remotePath string, content io.Re
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
+	}
+	if ifAbsent && (resp.StatusCode == http.StatusPreconditionFailed || resp.StatusCode == http.StatusConflict) {
+		return storagetypes.ErrAlreadyExists
 	}
 	return fmt.Errorf("PUT: %s", resp.Status)
 }

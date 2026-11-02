@@ -68,20 +68,20 @@ func TestS3(t *testing.T) {
 		t.Fatalf("Save failed: %v", err)
 	}
 
-	if !s.Exists(ctx, key) {
-		t.Fatalf("Exists should return true for saved key")
+	if exists, err := s.Exists(ctx, key); err != nil || !exists {
+		t.Fatalf("Exists(key) = %v, %v, want true, nil", exists, err)
 	}
 
-	if s.Exists(ctx, "nonexistent.txt") {
-		t.Fatalf("Exists should return false for nonexistent key")
+	if exists, err := s.Exists(ctx, "nonexistent.txt"); err != nil || exists {
+		t.Fatalf("Exists(nonexistent) = %v, %v, want false, nil", exists, err)
 	}
 
 	if err := s.Save(ctx, bytes.NewReader(content), key); err != nil {
 		t.Fatalf("Save with existing key failed: %v", err)
 	}
 
-	if !s.Exists(ctx, "foo/bar_1.txt") {
-		t.Fatalf("Exists should return true for unique renamed key")
+	if exists, err := s.Exists(ctx, "foo/bar_1.txt"); err != nil || !exists {
+		t.Fatalf("Exists(renamed) = %v, %v, want true, nil", exists, err)
 	}
 
 	var length int64 = int64(len(content))
@@ -90,7 +90,23 @@ func TestS3(t *testing.T) {
 		t.Fatalf("Save with content length failed: %v", err)
 	}
 
-	if !s.Exists(ctx, "size_test.txt") {
-		t.Fatalf("Exists should return true for size_test.txt")
+	if exists, err := s.Exists(ctx, "size_test.txt"); err != nil || !exists {
+		t.Fatalf("Exists(size_test) = %v, %v, want true, nil", exists, err)
+	}
+}
+
+func TestS3MultipartSave(t *testing.T) {
+	s, _ := newFakeS3(t)
+	ctx := t.Context()
+	content := make([]byte, 65<<20)
+	for i := range content {
+		content[i] = byte(i)
+	}
+	if err := s.Save(ctx, bytes.NewReader(content), "multipart.bin"); err != nil {
+		t.Fatalf("multipart Save failed: %v", err)
+	}
+	exists, err := s.Exists(ctx, "multipart.bin")
+	if err != nil || !exists {
+		t.Fatalf("multipart object exists = %v, %v, want true, nil", exists, err)
 	}
 }

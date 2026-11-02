@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"path"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -13,6 +12,7 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/s3"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 )
 
 type S3 struct {
@@ -58,18 +58,25 @@ func (m *S3) Name() string {
 	return m.config.Name
 }
 
-func (m *S3) JoinStoragePath(p string) string {
-	return strings.TrimPrefix(path.Join(m.config.BasePath, p), "/")
+func (m *S3) JoinStoragePath(p string) (string, error) {
+	return storagetypes.SecureJoin(m.config.BasePath, p)
 }
 
 func (m *S3) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	m.logger.Infof("Saving file from reader to %s", storagePath)
-	candidate := m.JoinStoragePath(storagePath)
+	candidate, err := m.JoinStoragePath(storagePath)
+	if err != nil {
+		return err
+	}
 
-	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		candidate = fsutil.UniquePath(strings.TrimPrefix(m.config.BasePath, "/"), storagePath, func(c string) bool {
+	overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool)
+	if !overwrite {
+		candidate, err = fsutil.UniquePath(strings.TrimPrefix(m.config.BasePath, "/"), storagePath, func(c string) (bool, error) {
 			return m.existsKey(ctx, c)
 		}, 10)
+		if err != nil {
+			return err
+		}
 	}
 
 	size := int64(-1)
@@ -79,7 +86,11 @@ func (m *S3) Save(ctx context.Context, r io.Reader, storagePath string) error {
 		}
 	}
 
-	err := m.client.Put(ctx, candidate, r, size)
+	if overwrite {
+		err = m.client.Put(ctx, candidate, r, size)
+	} else {
+		err = m.client.PutIfAbsent(ctx, candidate, r, size)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to upload file to S3: %w", err)
 	}
@@ -87,12 +98,16 @@ func (m *S3) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	return nil
 }
 
-func (m *S3) Exists(ctx context.Context, storagePath string) bool {
+func (m *S3) Exists(ctx context.Context, storagePath string) (bool, error) {
 	m.logger.Debugf("Checking if file exists at %s", storagePath)
 
-	return m.existsKey(ctx, m.JoinStoragePath(storagePath))
+	key, err := m.JoinStoragePath(storagePath)
+	if err != nil {
+		return false, err
+	}
+	return m.existsKey(ctx, key)
 }
 
-func (m *S3) existsKey(ctx context.Context, key string) bool {
+func (m *S3) existsKey(ctx context.Context, key string) (bool, error) {
 	return m.client.Exists(ctx, key)
 }

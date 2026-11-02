@@ -82,7 +82,7 @@ func (s *recordingStorage) Save(_ context.Context, r io.Reader, path string) err
 	s.mu.Unlock()
 	return nil
 }
-func (s *recordingStorage) Exists(context.Context, string) bool { return false }
+func (s *recordingStorage) Exists(context.Context, string) (bool, error) { return false, nil }
 
 func (s *recordingStorage) saved(path string) []byte {
 	s.mu.Lock()

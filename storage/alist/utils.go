@@ -7,9 +7,12 @@ import (
 
 func getHttpClient() *http.Client {
 	return &http.Client{
-		Timeout: 12 * time.Hour,
 		Transport: &http.Transport{
-			TLSHandshakeTimeout: 10 * time.Second,
+			Proxy:                 http.ProxyFromEnvironment,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 30 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConns:          100,
 		},
 	}
 }

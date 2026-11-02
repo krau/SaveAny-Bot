@@ -723,7 +723,11 @@ func (s *Service) TestStorage(ctx context.Context, id uint) error {
 		_, err = listable.ListFiles(ctx, "")
 		return err
 	}
-	if !st.Exists(ctx, "") {
+	exists, err := st.Exists(ctx, "")
+	if err != nil {
+		return err
+	}
+	if !exists {
 		return errors.New("storage did not accept the test request")
 	}
 	return nil

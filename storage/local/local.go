@@ -88,8 +88,12 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 	if err != nil {
 		return err
 	}
-	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		absPath = fsutil.UniquePath(l.config.BasePath, clean, l.existsPath, 1000)
+	overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool)
+	if !overwrite {
+		absPath, err = fsutil.UniquePath(l.config.BasePath, clean, l.existsPathE, 1000)
+		if err != nil {
+			return err
+		}
 	}
 	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
@@ -118,6 +122,21 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 	if err := tempFile.Close(); err != nil {
 		return err
 	}
+	if !overwrite {
+		// Link refuses to replace an existing file, closing the check-then-write
+		// race in UniquePath.
+		if err := os.Link(tempPath, absPath); err != nil {
+			if errors.Is(err, os.ErrExist) {
+				return storagetypes.ErrAlreadyExists
+			}
+			return err
+		}
+		if err := os.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		removeTemp = false
+		return nil
+	}
 	if err := os.Rename(tempPath, absPath); err != nil {
 		return err
 	}
@@ -125,20 +144,27 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 	return nil
 }
 
-func (l *Local) Exists(ctx context.Context, storagePath string) bool {
+func (l *Local) Exists(ctx context.Context, storagePath string) (bool, error) {
 	absPath, err := l.resolve(storagePath)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return l.existsPath(absPath)
+	return l.existsPathE(absPath)
 }
 
-func (l *Local) existsPath(storagePath string) bool {
+func (l *Local) existsPathE(storagePath string) (bool, error) {
 	absPath, err := filepath.Abs(storagePath)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return fileutil.IsExist(absPath)
+	_, err = os.Stat(absPath)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return false, err
 }
 
 // ListFiles implements StorageListable interface
