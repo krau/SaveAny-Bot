@@ -24,7 +24,13 @@ Web UI available at http://127.0.0.1:28080/?token=...
 
 Open that URL; the token creates an authenticated session. Unless an access token is set under **Settings → Web**, a new token is generated on every start.
 
-To expose the web UI on another interface or port, set the listen address:
+To expose the web UI on another interface or port, pass the listen address on the command line:
+
+```bash
+./saveany-bot --listen 0.0.0.0:28080
+```
+
+The equivalent environment variable is `SAVEANY_LISTEN`:
 
 ```bash
 SAVEANY_LISTEN='0.0.0.0:28080' ./saveany-bot

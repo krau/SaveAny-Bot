@@ -58,6 +58,12 @@ The web UI listens on `127.0.0.1:28080` by default. The startup log prints a dir
 docker logs saveany-bot | grep -E "Web UI available at|Generated web admin password"
 ```
 
+For a binary deployment, pass the address directly:
+
+```bash
+./saveany-bot --listen 0.0.0.0:28080
+```
+
 Open the URL to sign in. On the first start, the same log also contains the generated admin password; use it to change the password from the sidebar after signing in. Unless an access token is set under **Settings → Web**, a new token is generated on every start. The Guide page covers the required setup:
 
 1. Connect your Telegram bot.

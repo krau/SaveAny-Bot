@@ -24,7 +24,13 @@ Web UI available at http://127.0.0.1:28080/?token=...
 
 打开该地址即可登录。未在 **设置 → Web** 中配置访问 Token 时，每次启动都会重新生成。
 
-如需在其他网卡或端口访问，设置监听地址：
+如需在其他网卡或端口访问，通过命令行指定监听地址：
+
+```bash
+./saveany-bot --listen 0.0.0.0:28080
+```
+
+对应的环境变量为 `SAVEANY_LISTEN`：
 
 ```bash
 SAVEANY_LISTEN='0.0.0.0:28080' ./saveany-bot

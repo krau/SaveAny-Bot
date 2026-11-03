@@ -56,6 +56,12 @@ Web UI 默认监听 `127.0.0.1:28080`。启动日志会打印带访问 Token 的
 docker logs saveany-bot | grep -E "Web UI available at|Generated web admin password"
 ```
 
+直接运行二进制时，可以通过命令行指定监听地址:
+
+```bash
+./saveany-bot --listen 0.0.0.0:28080
+```
+
 打开该地址即可登录。首次启动的同一份日志还会打印自动生成的管理员密码；登录后可在侧栏用它修改密码。未在 **设置 → Web** 中配置访问 Token 时，每次启动都会重新生成。登录后，指南页面会引导完成必要配置:
 
 1. 连接 Telegram Bot。

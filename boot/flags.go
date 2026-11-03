@@ -13,7 +13,7 @@ func RegisterFlags(cmd *cobra.Command) {
 	flags.StringP("config", "c", "", "legacy config file path or URL (imported once)")
 	flags.String("data-dir", "", "data directory (default ./data)")
 	flags.String("db-path", "", "database file path (default <data-dir>/saveany.db)")
-	flags.String("listen", "", "override the web listen address")
+	flags.String("listen", "", "web listen address as host:port (default 127.0.0.1:28080)")
 	flags.Bool("no-web", false, "do not start the web server")
 }
 
