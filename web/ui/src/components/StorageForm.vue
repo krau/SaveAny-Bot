@@ -132,9 +132,20 @@ function changeType(next: string) {
   void nextTick(() => emit('resize-end'))
 }
 
+function fieldValue(name: string): string {
+  const raw = values[name]
+  return raw === undefined || raw === null ? '' : String(raw)
+}
+
+function setFieldValue(name: string, event: Event) {
+  const target = event.target as HTMLInputElement | HTMLTextAreaElement | null
+  values[name] = target?.value ?? ''
+  clear(`storage-field-${name}`)
+}
+
 function validateFields(): boolean {
   for (const field of fields.value) {
-    const raw = (values[field.name] ?? '').trim()
+    const raw = fieldValue(field.name).trim()
     if (field.required && raw === '') {
       fail(t('validation.required', { field: t(field.label) }), `storage-field-${field.name}`)
       return false
@@ -160,7 +171,7 @@ function submit() {
   if (!validateFields()) return
   const config: JsonObject = {}
   for (const field of fields.value) {
-    const raw = values[field.name] ?? ''
+    const raw = fieldValue(field.name)
     switch (field.kind) {
       case 'bool':
         config[field.name] = bools[field.name] ?? false
@@ -238,19 +249,19 @@ function submit() {
           <textarea
             v-if="field.kind === 'list'"
             :id="`storage-field-${field.name}`"
-            v-model="values[field.name]"
+            :value="values[field.name]"
             :placeholder="field.placeholder ? t(field.placeholder) : undefined"
-            @input="clear(`storage-field-${field.name}`)"
+            @input="setFieldValue(field.name, $event)"
           ></textarea>
           <div v-else class="path-input-row">
             <input
               :id="`storage-field-${field.name}`"
-              v-model="values[field.name]"
+              :value="values[field.name]"
               :type="field.kind === 'number' ? 'number' : field.kind === 'secret' ? 'password' : 'text'"
               :placeholder="field.placeholder ? t(field.placeholder) : undefined"
               :aria-invalid="invalidField === `storage-field-${field.name}` ? 'true' : undefined"
               autocomplete="off"
-              @input="clear(`storage-field-${field.name}`)"
+              @input="setFieldValue(field.name, $event)"
             />
             <button
               v-if="field.pathKind"
