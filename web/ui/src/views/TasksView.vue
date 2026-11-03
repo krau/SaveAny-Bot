@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import AppSelect from '../components/AppSelect.vue'
 import PageHeader from '../components/PageHeader.vue'
+import PageLoading from '../components/PageLoading.vue'
 import TaskForm from '../components/TaskForm.vue'
 import TaskTable from '../components/TaskTable.vue'
 import { useModalHeightTransition } from '../composables/useModalHeightTransition'
@@ -24,6 +25,7 @@ const total = ref(0)
 const statusFilter = ref('')
 const typeFilter = ref('')
 const busyId = ref('')
+const loaded = ref(false)
 const createOpen = ref(false)
 const creating = ref(false)
 const taskModal = ref<HTMLElement | null>(null)
@@ -58,6 +60,8 @@ async function load() {
     total.value = data.total ?? 0
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
+  } finally {
+    loaded.value = true
   }
 }
 
@@ -192,10 +196,11 @@ async function remove(taskId: string) {
         <AppSelect id="task-type-filter" v-model="typeFilter" :options="typeOptions" @change="load" />
       </div>
       <div class="filter-spacer"></div>
-      <span class="count">{{ t('tasks.count', { total }) }}</span>
+      <span v-if="loaded" class="count">{{ t('tasks.count', { total }) }}</span>
     </div>
 
-    <TaskTable :tasks="tasks" :busy-id="busyId" @cancel="cancel" @remove="remove" @retry="retry" />
+    <PageLoading v-if="!loaded" :rows="4" />
+    <TaskTable v-else :tasks="tasks" :busy-id="busyId" @cancel="cancel" @remove="remove" @retry="retry" />
 
     <Teleport to="body">
       <Transition name="modal">

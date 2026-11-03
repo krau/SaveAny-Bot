@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { errorMessage, workersApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
+import PageLoading from '../components/PageLoading.vue'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
@@ -13,6 +14,7 @@ const { t } = useI18n()
 const toast = useToastStore()
 const confirm = useConfirmStore()
 const workers = ref<BotWorker[]>([])
+const loaded = ref(false)
 const formOpen = ref(false)
 const editing = ref<BotWorker | null>(null)
 const busy = ref(false)
@@ -34,6 +36,8 @@ async function load() {
   } catch (err) {
     if (seq !== loadSeq) return
     toast.push(errorMessage(err), 'error', 6000)
+  } finally {
+    if (seq === loadSeq) loaded.value = true
   }
 }
 
@@ -155,7 +159,7 @@ function stateTone(state: string): string {
     <div class="panel-head">
       <h2 class="panel-title">{{ t('workers.title') }}</h2>
       <div class="actions">
-        <span class="badge muted">{{ t('workers.count', { count: workers.length }) }}</span>
+        <span v-if="loaded" class="badge muted">{{ t('workers.count', { count: workers.length }) }}</span>
         <button class="btn small" type="button" @click="load">
           <AppIcon name="refresh" :size="15" />
           {{ t('common.actions.refresh') }}
@@ -169,6 +173,9 @@ function stateTone(state: string): string {
     <p class="hint">{{ t('workers.intro') }}</p>
     <p class="hint">{{ t('workers.note') }}</p>
 
+    <PageLoading v-if="!loaded" :rows="3" />
+
+    <template v-else>
     <div class="table-wrap helper-bots-table-wrap">
         <table class="users-table">
           <thead>
@@ -299,6 +306,7 @@ function stateTone(state: string): string {
         <div class="hint">{{ t('workers.emptyHint') }}</div>
       </div>
     </div>
+    </template>
 
     <Teleport to="body">
       <Transition name="modal">

@@ -5,6 +5,7 @@ import { RouterLink } from 'vue-router'
 import { errorMessage, onboardingApi, storagesApi, tasksApi, telegramApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import PageHeader from '../components/PageHeader.vue'
+import PageLoading from '../components/PageLoading.vue'
 import { useToastStore } from '../stores/toasts'
 import { storageTypeIcon, storageTypeLabel } from '../storageFields'
 import type { OnboardingStatus, StorageRecord, TaskItem, TelegramStatus } from '../types'
@@ -22,6 +23,7 @@ const toast = useToastStore()
 const { t } = useI18n()
 const status = ref<TelegramStatus | null>(null)
 const onboarding = ref<OnboardingStatus | null>(null)
+const initialLoaded = ref(false)
 const setupTotal = 3
 const tasks = ref<TaskItem[]>([])
 const storages = ref<StorageRecord[]>([])
@@ -105,6 +107,14 @@ const statusLine = computed(() => {
   })
 })
 async function load() {
+  const onboardingRequest = onboardingApi
+    .status()
+    .then((data) => {
+      onboarding.value = data
+    })
+    .catch(() => {
+      // The setup card is supplemental; dashboard data remains usable without it.
+    })
   try {
     const [statusData, taskData, storageData] = await Promise.all([
       telegramApi.status(),
@@ -117,13 +127,11 @@ async function load() {
     for (const message of [statusData.bot.error, statusData.userbot.error]) {
       if (message) toast.push(message, 'error', 6000)
     }
-    try {
-      onboarding.value = await onboardingApi.status()
-    } catch {
-      // The setup card is supplemental; dashboard data remains usable without it.
-    }
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
+  } finally {
+    await onboardingRequest
+    initialLoaded.value = true
   }
 }
 
@@ -151,7 +159,10 @@ onUnmounted(() => {
       </template>
     </PageHeader>
 
-    <section v-if="setupVisible" class="setup-callout">
+    <PageLoading v-if="!initialLoaded" :rows="3" />
+
+    <template v-else>
+      <section v-if="setupVisible" class="setup-callout">
       <div class="setup-callout-main">
         <span class="setup-eyebrow">
           {{ t(onboarding?.legacy.imported ? 'dashboard.setup.legacyEyebrow' : 'dashboard.setup.eyebrow') }}
@@ -331,5 +342,6 @@ onUnmounted(() => {
         <strong>{{ t('dashboard.tasks.empty') }}</strong>
       </div>
     </section>
+    </template>
   </div>
 </template>

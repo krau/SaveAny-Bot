@@ -6,6 +6,7 @@ import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import AppSelect from '../components/AppSelect.vue'
 import PageHeader from '../components/PageHeader.vue'
+import PageLoading from '../components/PageLoading.vue'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
@@ -17,6 +18,7 @@ const confirm = useConfirmStore()
 const { invalidField, fail, clear, success } = useFormFeedback()
 const users = ref<UserItem[]>([])
 const storages = ref<StorageRecord[]>([])
+const loaded = ref(false)
 const busy = ref(false)
 const formOpen = ref(false)
 const editing = ref<UserItem | null>(null)
@@ -72,6 +74,8 @@ async function load() {
     storages.value = storageList
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
+  } finally {
+    loaded.value = true
   }
 }
 
@@ -187,12 +191,14 @@ async function remove(user: UserItem) {
       </template>
     </PageHeader>
 
-    <div class="filter-bar">
+    <PageLoading v-if="!loaded" :rows="4" />
+
+    <div v-else class="filter-bar">
       <span class="count">{{ t('users.count', { count: users.length, enabled: enabledUsers }) }}</span>
       <div class="filter-spacer"></div>
     </div>
 
-    <div class="users-table">
+    <div v-if="loaded" class="users-table">
       <div class="table-wrap users-table-wrap">
         <table>
         <thead><tr><th>{{ t('users.columns.chatId') }}</th><th>{{ t('users.columns.status') }}</th><th>{{ t('users.columns.defaultStorage') }}</th><th>{{ t('users.columns.storageFilter') }}</th><th>{{ t('users.columns.actions') }}</th></tr></thead>

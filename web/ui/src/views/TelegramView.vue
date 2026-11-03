@@ -6,6 +6,7 @@ import AppIcon from '../components/AppIcon.vue'
 import HelperBotsSection from '../components/HelperBotsSection.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
+import PageLoading from '../components/PageLoading.vue'
 import ServerPathPicker from '../components/ServerPathPicker.vue'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { useConfirmStore } from '../stores/confirm'
@@ -18,6 +19,7 @@ const toast = useToastStore()
 const confirm = useConfirmStore()
 const { invalidField, fail, clear } = useFormFeedback()
 const status = ref<TelegramStatus | null>(null)
+const statusLoaded = ref(false)
 const botBusy = ref(false)
 const userbotBusy = ref(false)
 const loginBusy = ref(false)
@@ -125,6 +127,8 @@ async function loadStatus() {
     }
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
+  } finally {
+    statusLoaded.value = true
   }
 }
 
@@ -427,6 +431,9 @@ async function logoutUserbot() {
       </template>
     </PageHeader>
 
+    <PageLoading v-if="!statusLoaded" :rows="3" />
+
+    <template v-else>
     <div class="connection-grid">
       <section class="connection-card">
         <div class="connection-head">
@@ -730,6 +737,7 @@ async function logoutUserbot() {
     </section>
 
     <HelperBotsSection />
+    </template>
 
     <ServerPathPicker
       :open="sessionPickerOpen"

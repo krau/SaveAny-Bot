@@ -5,6 +5,7 @@ import { errorMessage, storagesApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import PageHeader from '../components/PageHeader.vue'
+import PageLoading from '../components/PageLoading.vue'
 import StorageForm from '../components/StorageForm.vue'
 import { useModalHeightTransition } from '../composables/useModalHeightTransition'
 import { storageTypeIcon, storageTypeLabel } from '../storageFields'
@@ -17,6 +18,7 @@ const { t } = useI18n()
 const toast = useToastStore()
 const confirm = useConfirmStore()
 const storages = ref<StorageRecord[]>([])
+const loaded = ref(false)
 const busy = ref(false)
 const testingId = ref(0)
 const removingId = ref(0)
@@ -30,6 +32,8 @@ async function load() {
     storages.value = await storagesApi.list()
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
+  } finally {
+    loaded.value = true
   }
 }
 
@@ -120,7 +124,9 @@ async function test(storage: StorageRecord) {
       </template>
     </PageHeader>
 
-    <div class="storage-grid">
+    <PageLoading v-if="!loaded" variant="cards" :rows="3" />
+
+    <div v-else class="storage-grid">
       <article v-for="storage in storages" :key="storage.id" class="storage-card">
         <div class="storage-card-head">
           <div class="storage-identity">
