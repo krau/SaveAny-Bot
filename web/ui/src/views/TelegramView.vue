@@ -72,7 +72,9 @@ const hasUserbotSession = computed(() => {
   return Boolean(userbot.username) || (userbot.enabled && userbot.state !== 'login_required')
 })
 
-const loginCompleted = computed(() => flowState.value === 'done' || isUserbotLoggedIn.value)
+const loginCompleted = computed(
+  () => !flowActive.value && (flowState.value === 'done' || isUserbotLoggedIn.value),
+)
 const showFlowBadge = computed(() => Boolean(loginFlow.value) && flowState.value !== 'done')
 
 const userbotIdentity = computed(() => {
