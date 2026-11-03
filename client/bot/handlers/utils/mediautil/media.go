@@ -79,6 +79,9 @@ func FilenameFor(ctx context.Context, user *database.User, message *tg.Message) 
 		}
 		return sb.String()
 	default:
+		if name := tgutil.GetOriginalFileName(message.Media); name != "" {
+			return name
+		}
 		return tgutil.GenFileNameFromMessage(*message)
 	}
 }
