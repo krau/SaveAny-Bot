@@ -47,13 +47,18 @@ var (
 )
 
 type coreGroup struct {
-	Lang         string `json:"lang"`
-	Workers      int    `json:"workers"`
-	Retry        int    `json:"retry"`
-	Threads      int    `json:"threads"`
-	Stream       bool   `json:"stream"`
-	NoCleanCache bool   `json:"no_clean_cache"`
-	Proxy        string `json:"proxy"`
+	Lang               string `json:"lang"`
+	Workers            int    `json:"workers"`
+	Retry              int    `json:"retry"`
+	Threads            int    `json:"threads"`
+	DownloadThreads    int    `json:"download_threads"`
+	MaxDownloadThreads int    `json:"max_download_threads"`
+	TransferBudget     int    `json:"transfer_budget"`
+	RelayMinSizeMB     int    `json:"relay_min_size_mb"`
+	ChunkRetries       int    `json:"chunk_retries"`
+	Stream             bool   `json:"stream"`
+	NoCleanCache       bool   `json:"no_clean_cache"`
+	Proxy              string `json:"proxy"`
 }
 
 type authGroup struct {
@@ -71,13 +76,18 @@ func groupValue(cfg config.Config, group string) (any, error) {
 	switch group {
 	case GroupCore:
 		return coreGroup{
-			Lang:         cfg.Lang,
-			Workers:      cfg.Workers,
-			Retry:        cfg.Retry,
-			Threads:      cfg.Threads,
-			Stream:       cfg.Stream,
-			NoCleanCache: cfg.NoCleanCache,
-			Proxy:        cfg.Proxy,
+			Lang:               cfg.Lang,
+			Workers:            cfg.Workers,
+			Retry:              cfg.Retry,
+			Threads:            cfg.Threads,
+			DownloadThreads:    cfg.DownloadThreads,
+			MaxDownloadThreads: cfg.MaxDownloadThreads,
+			TransferBudget:     cfg.TransferBudget,
+			RelayMinSizeMB:     cfg.RelayMinSizeMB,
+			ChunkRetries:       cfg.ChunkRetries,
+			Stream:             cfg.Stream,
+			NoCleanCache:       cfg.NoCleanCache,
+			Proxy:              cfg.Proxy,
 		}, nil
 	case GroupLog:
 		return cfg.Log, nil
@@ -115,6 +125,11 @@ func applyGroup(cfg *config.Config, group string, raw []byte) error {
 		cfg.Workers = g.Workers
 		cfg.Retry = g.Retry
 		cfg.Threads = g.Threads
+		cfg.DownloadThreads = g.DownloadThreads
+		cfg.MaxDownloadThreads = g.MaxDownloadThreads
+		cfg.TransferBudget = g.TransferBudget
+		cfg.RelayMinSizeMB = g.RelayMinSizeMB
+		cfg.ChunkRetries = g.ChunkRetries
 		cfg.Stream = g.Stream
 		cfg.NoCleanCache = g.NoCleanCache
 		cfg.Proxy = g.Proxy
@@ -222,6 +237,21 @@ func Load(ctx context.Context, dataDir string) (config.Config, error) {
 	}
 	if cfg.Retry < 1 {
 		cfg.Retry = 1
+	}
+	if cfg.DownloadThreads < 0 {
+		cfg.DownloadThreads = 0
+	}
+	if cfg.MaxDownloadThreads < 1 {
+		cfg.MaxDownloadThreads = 16
+	}
+	if cfg.TransferBudget < 0 {
+		cfg.TransferBudget = 0
+	}
+	if cfg.RelayMinSizeMB < 1 {
+		cfg.RelayMinSizeMB = 8
+	}
+	if cfg.ChunkRetries < 1 {
+		cfg.ChunkRetries = 20
 	}
 	return cfg, nil
 }
@@ -426,6 +456,10 @@ func validateGroup(cfg *config.Config, group string) error {
 	case GroupCore:
 		if cfg.Workers < 1 || cfg.Retry < 1 || cfg.Threads < 1 {
 			return errors.New("workers, retry and threads must be at least 1")
+		}
+		if cfg.DownloadThreads < 0 || cfg.MaxDownloadThreads < 0 || cfg.TransferBudget < 0 ||
+			cfg.RelayMinSizeMB < 0 || cfg.ChunkRetries < 0 {
+			return errors.New("transfer limits must be non-negative")
 		}
 		if cfg.Proxy != "" {
 			if _, err := config.ProxyTransport(cfg.Proxy); err != nil {

@@ -29,7 +29,18 @@ Saving bot settings starts the connection automatically. Userbot login happens o
 
 Helper bots are optional. Add them in the **Helper bots** section of the **Telegram** page with a BotFather token, then add each bot to the destination Telegram chat with permission to send files. Telegram storage uploads are distributed across running helpers that can access the destination; helpers without access are skipped and uploads fall back to the primary bot. Helper bots do not handle commands.
 
-To split large file downloads across helpers, set a private **Relay channel ID** on the **Telegram** page, make sure the primary bot can post there, and add at least two helper bots to that channel. The primary bot forwards incoming files to the relay channel, and each helper obtains its own file reference before downloading assigned chunks. This requires non-stream mode and files of at least 8 MB, and falls back to the single-client downloader when the relay or helper pool is unavailable. Forwarded relay messages are kept by default; disable **Keep forwarded channel messages** to delete them after download.
+To split large file downloads across helpers, set a private **Relay channel ID** on the **Telegram** page, make sure the primary bot can post there, and add at least two helper bots to that channel. The primary bot forwards incoming files to the relay channel, and each helper obtains its own file reference before downloading assigned chunks. This requires non-stream mode and files at or above the configurable **Relay minimum file size** (8 MB by default), and falls back to the single-client downloader when the relay or helper pool is unavailable. Forwarded relay messages are kept by default; disable **Keep forwarded channel messages** to delete them after download.
+
+Transfer concurrency can be tuned under **Settings → Core**:
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `Download threads per file` | 4 | Base threads used by automatic scheduling |
+| `Download thread override` | 0 | 0 uses automatic sizing; a positive value is the exact total thread count |
+| `Automatic thread cap` | 16 | Maximum threads when automatic sizing is used |
+| `Global transfer budget` | 0 | 0 uses `workers × threads`; downloads and uploads share this cap |
+| `Relay minimum file size (MB)` | 8 | Smaller files skip helper relays |
+| `Chunk retry count` | 20 | Timeout retries for one chunk |
 
 ### Storages
 

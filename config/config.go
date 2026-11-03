@@ -17,11 +17,21 @@ import (
 )
 
 type Config struct {
-	Lang         string                  `toml:"lang" mapstructure:"lang" json:"lang"`
-	Workers      int                     `toml:"workers" mapstructure:"workers" json:"workers"`
-	Retry        int                     `toml:"retry" mapstructure:"retry" json:"retry"`
-	NoCleanCache bool                    `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
-	Threads      int                     `toml:"threads" mapstructure:"threads" json:"threads"`
+	Lang         string `toml:"lang" mapstructure:"lang" json:"lang"`
+	Workers      int    `toml:"workers" mapstructure:"workers" json:"workers"`
+	Retry        int    `toml:"retry" mapstructure:"retry" json:"retry"`
+	NoCleanCache bool   `toml:"no_clean_cache" mapstructure:"no_clean_cache" json:"no_clean_cache"`
+	Threads      int    `toml:"threads" mapstructure:"threads" json:"threads"`
+	// DownloadThreads overrides automatic per-file chunk concurrency when > 0.
+	DownloadThreads int `toml:"download_threads" mapstructure:"download_threads" json:"download_threads"`
+	// MaxDownloadThreads caps automatic per-file chunk concurrency.
+	MaxDownloadThreads int `toml:"max_download_threads" mapstructure:"max_download_threads" json:"max_download_threads"`
+	// TransferBudget caps concurrent Telegram part RPCs; 0 derives workers * threads.
+	TransferBudget int `toml:"transfer_budget" mapstructure:"transfer_budget" json:"transfer_budget"`
+	// RelayMinSizeMB controls the smallest file eligible for helper downloads.
+	RelayMinSizeMB int `toml:"relay_min_size_mb" mapstructure:"relay_min_size_mb" json:"relay_min_size_mb"`
+	// ChunkRetries is the timeout retry count for one file chunk.
+	ChunkRetries int                     `toml:"chunk_retries" mapstructure:"chunk_retries" json:"chunk_retries"`
 	Stream       bool                    `toml:"stream" mapstructure:"stream" json:"stream"`
 	Proxy        string                  `toml:"proxy" mapstructure:"proxy" json:"proxy"`
 	Log          logConfig               `toml:"log" mapstructure:"log" json:"log"`
@@ -78,6 +88,9 @@ func C() Config {
 // multiplying with task and element concurrency.
 func TransferBudget() int {
 	cfg := current.Load()
+	if cfg.TransferBudget > 0 {
+		return cfg.TransferBudget
+	}
 	return max(cfg.Workers, 1) * max(cfg.Threads, 1)
 }
 
@@ -88,12 +101,17 @@ func Set(cfg Config) {
 
 func DefaultsMap(dataDir string) map[string]any {
 	return map[string]any{
-		"lang":           "zh-Hans",
-		"workers":        3,
-		"retry":          3,
-		"no_clean_cache": false,
-		"threads":        4,
-		"log.level":      "debug",
+		"lang":                 "zh-Hans",
+		"workers":              3,
+		"retry":                3,
+		"no_clean_cache":       false,
+		"threads":              4,
+		"download_threads":     0,
+		"max_download_threads": 16,
+		"transfer_budget":      0,
+		"relay_min_size_mb":    8,
+		"chunk_retries":        20,
+		"log.level":            "debug",
 
 		"cache.ttl":          86400,
 		"cache.num_counters": 1e5,
@@ -126,11 +144,16 @@ func DefaultsMap(dataDir string) map[string]any {
 
 func Default(dataDir string) Config {
 	return Config{
-		Lang:    "zh-Hans",
-		Workers: 3,
-		Retry:   3,
-		Threads: 4,
-		Log:     logConfig{Level: "debug"},
+		Lang:               "zh-Hans",
+		Workers:            3,
+		Retry:              3,
+		Threads:            4,
+		DownloadThreads:    0,
+		MaxDownloadThreads: 16,
+		TransferBudget:     0,
+		RelayMinSizeMB:     8,
+		ChunkRetries:       20,
+		Log:                logConfig{Level: "debug"},
 		Cache: cacheConfig{
 			TTL:         86400,
 			NumCounters: 1e5,

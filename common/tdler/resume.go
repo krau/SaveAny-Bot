@@ -20,11 +20,21 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/krau/SaveAny-Bot/common/utils/rpclimit"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/consts/tglimit"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
 
 const maxChunkRetries = 20
+
+// chunkRetryLimit returns the configured timeout retry limit for one chunk.
+func chunkRetryLimit() int {
+	limit := config.C().ChunkRetries
+	if limit < 1 {
+		return maxChunkRetries
+	}
+	return limit
+}
 
 // errCDNRedirect reports a chunk served from a CDN. Raw upload.getFile
 // requests cannot follow CDN redirects (they need gotd's re-hash dance), so
@@ -238,6 +248,7 @@ func fetchChunk(
 		Limit:    limit,
 	}
 	timeoutRetries := 0
+	retryLimit := chunkRetryLimit()
 	for {
 		res, err := client.UploadGetFile(ctx, req)
 		if err == nil {
@@ -260,7 +271,7 @@ func fetchChunk(
 			}
 			if isRetryableTimeout(ctx, ferr) {
 				timeoutRetries++
-				if timeoutRetries >= maxChunkRetries {
+				if timeoutRetries >= retryLimit {
 					return nil, fmt.Errorf("get chunk at %d: retry limit reached: %w", offset, ferr)
 				}
 				continue

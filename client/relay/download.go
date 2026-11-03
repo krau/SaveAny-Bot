@@ -19,8 +19,6 @@ import (
 	"github.com/krau/mygotg/ext"
 )
 
-const minRelayFileSize = 8 << 20
-
 var runningClients = worker.RunningClients
 
 // Prepare wraps a Telegram file with a relay-backed downloader when a relay
@@ -45,7 +43,8 @@ func prepare(ctx context.Context, file tfile.TGFile, statePath string) (tfile.TG
 		log.FromContext(ctx).Debug("Relay download skipped: stream mode is enabled")
 		return file, nil
 	}
-	if file == nil || file.Size() < minRelayFileSize {
+	minSize := int64(config.C().RelayMinSizeMB) << 20
+	if file == nil || file.Size() < minSize {
 		return file, nil
 	}
 	messageFile, ok := file.(tfile.TGFileMessage)

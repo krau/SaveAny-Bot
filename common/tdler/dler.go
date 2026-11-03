@@ -25,11 +25,21 @@ func newDownloader(file tfile.TGFile) *downloader.Builder {
 }
 
 func downloadThreads(file tfile.TGFile) int {
-	threads := dlutil.BestThreads(file.Size(), config.C().Threads)
-	if scalable, ok := file.(interface{ WorkerCount() int }); ok {
-		threads = max(threads, min(scalable.WorkerCount()*2, 16))
+	cfg := config.C()
+	if cfg.DownloadThreads > 0 {
+		return cfg.DownloadThreads
 	}
-	return threads
+	threads := dlutil.BestThreads(file.Size(), cfg.Threads)
+	if scalable, ok := file.(interface{ WorkerCount() int }); ok {
+		// A relay file distributes chunks across helpers. Give each helper the
+		// same per-worker concurrency; the global transfer budget still caps the
+		// real number of in-flight RPCs in rpclimit.
+		threads *= max(scalable.WorkerCount(), 1)
+	}
+	if cfg.MaxDownloadThreads > 0 {
+		threads = min(threads, cfg.MaxDownloadThreads)
+	}
+	return max(threads, 1)
 }
 
 // eofAwareClient answers upload.getFile requests at or past the end of the
