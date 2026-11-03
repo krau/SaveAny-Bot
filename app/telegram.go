@@ -178,6 +178,11 @@ func (a *App) CancelUserbotLogin(ctx context.Context, flowID string) error {
 	flow.cancel()
 	flow.setState("cancelled", "")
 	user.Stop()
+	a.flowMu.Lock()
+	if a.flow == flow {
+		a.flow = nil
+	}
+	a.flowMu.Unlock()
 	return nil
 }
 

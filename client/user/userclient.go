@@ -3,7 +3,9 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -97,9 +99,19 @@ func Start(ctx context.Context, conv gotgproto.AuthConversator, phone string) er
 	}
 	res := make(chan result, 1)
 	go func() {
+		sent := false
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Errorf("Userbot client initialization panicked: %v\n%s", r, debug.Stack())
+				if !sent {
+					res <- result{nil, fmt.Errorf("userbot client initialization panicked: %v", r)}
+				}
+			}
+		}()
 		resolver, err := tgutil.NewConfigProxyResolver()
 		if err != nil {
 			res <- result{nil, err}
+			sent = true
 			return
 		}
 		tclient, err := gotgproto.NewClient(
@@ -124,6 +136,7 @@ func Start(ctx context.Context, conv gotgproto.AuthConversator, phone string) er
 			},
 		)
 		res <- result{tclient, err}
+		sent = true
 	}()
 
 	var r result
