@@ -30,7 +30,7 @@ type Config struct {
 	TransferBudget int `toml:"transfer_budget" mapstructure:"transfer_budget" json:"transfer_budget"`
 	// RelayMinSizeMB controls the smallest file eligible for helper downloads.
 	RelayMinSizeMB int `toml:"relay_min_size_mb" mapstructure:"relay_min_size_mb" json:"relay_min_size_mb"`
-	// ChunkRetries is the timeout retry count for one file chunk.
+	// ChunkRetries is the retry count for transient errors on one file chunk.
 	ChunkRetries int                     `toml:"chunk_retries" mapstructure:"chunk_retries" json:"chunk_retries"`
 	Stream       bool                    `toml:"stream" mapstructure:"stream" json:"stream"`
 	Proxy        string                  `toml:"proxy" mapstructure:"proxy" json:"proxy"`

@@ -40,7 +40,7 @@ Transfer concurrency can be tuned under **Settings → Core**:
 | `Automatic thread cap` | 16 | Maximum threads when automatic sizing is used |
 | `Global transfer budget` | 0 | 0 uses `workers × threads`; downloads and uploads share this cap |
 | `Relay minimum file size (MB)` | 8 | Smaller files skip helper relays |
-| `Chunk retry count` | 20 | Timeout retries for one chunk |
+| `Chunk retry count` | 20 | Retries for timeouts or connection failures on one chunk |
 
 ### Storages
 

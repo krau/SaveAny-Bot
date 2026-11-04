@@ -222,19 +222,58 @@ func (b *resumeBitmap) flush(path string) error {
 	return nil
 }
 
-func isRetryableTimeout(ctx context.Context, err error) bool {
+func isRetryableChunkError(ctx context.Context, err error) bool {
 	if err == nil || ctx.Err() != nil {
 		return false
 	}
-	if tgerr.Is(err, tg.ErrTimeout) || errors.Is(err, context.DeadlineExceeded) {
+	if tgerr.Is(err, tg.ErrTimeout) ||
+		errors.Is(err, context.DeadlineExceeded) ||
+		errors.Is(err, context.Canceled) {
 		return true
 	}
 	var netErr net.Error
-	return errors.As(err, &netErr) && netErr.Timeout()
+	if errors.As(err, &netErr) && (netErr.Timeout() || netErr.Temporary()) {
+		return true
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, net.ErrClosed) {
+		return true
+	}
+	// gotd's RPC engine closes in-flight requests when it reconnects. The
+	// wrapped engine error has no exported type, so match its stable text.
+	message := strings.ToLower(err.Error())
+	for _, fragment := range []string{
+		"engine forcibly closed",
+		"connection reset by peer",
+		"connection closed",
+		"broken pipe",
+		"retryuntilack",
+		"retry limit reached",
+		"use of closed network connection",
+	} {
+		if strings.Contains(message, fragment) {
+			return true
+		}
+	}
+	return false
+}
+
+func waitChunkRetry(ctx context.Context, attempt int) error {
+	delay := 100 * time.Millisecond
+	if attempt > 1 {
+		delay = min(100*time.Millisecond<<min(attempt-1, 5), 5*time.Second)
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }
 
 // fetchChunk downloads one partSize-aligned chunk, retrying flood waits and
-// transient timeouts like gotd's downloader does.
+// transient transport errors like gotd's downloader does.
 func fetchChunk(
 	ctx context.Context,
 	client downloader.Client,
@@ -247,7 +286,7 @@ func fetchChunk(
 		Offset:   offset,
 		Limit:    limit,
 	}
-	timeoutRetries := 0
+	retries := 0
 	retryLimit := chunkRetryLimit()
 	for {
 		res, err := client.UploadGetFile(ctx, req)
@@ -269,10 +308,17 @@ func fetchChunk(
 				// FloodWait already slept; retry.
 				continue
 			}
-			if isRetryableTimeout(ctx, ferr) {
-				timeoutRetries++
-				if timeoutRetries >= retryLimit {
+			if isRetryableChunkError(ctx, ferr) {
+				retries++
+				if retries >= retryLimit {
 					return nil, fmt.Errorf("get chunk at %d: retry limit reached: %w", offset, ferr)
+				}
+				log.FromContext(ctx).Debugf(
+					"Retrying chunk at %d after transient error (%d/%d): %v",
+					offset, retries, retryLimit, ferr,
+				)
+				if werr := waitChunkRetry(ctx, retries); werr != nil {
+					return nil, fmt.Errorf("get chunk at %d: %w", offset, werr)
 				}
 				continue
 			}
