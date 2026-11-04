@@ -2,12 +2,10 @@ package handlers
 
 import (
 	"context"
-	"strings"
 	"sync"
 
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
-	"github.com/krau/mygotg/dispatcher"
 	"github.com/krau/mygotg/ext"
 
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -16,39 +14,6 @@ import (
 	tftask "github.com/krau/SaveAny-Bot/core/tasks/tfile"
 	"github.com/krau/SaveAny-Bot/database"
 )
-
-// handleWatchNotifyCmd toggles the task notifications for watched chats and
-// reports the current state, which is disabled by default.
-func handleWatchNotifyCmd(ctx *ext.Context, update *ext.Update, user *database.User, args []string) error {
-	if len(args) > 0 {
-		enabled, ok := parseWatchNotifyArg(args[0])
-		if !ok {
-			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorNotifyArgInvalid)), nil)
-			return dispatcher.EndGroups
-		}
-		user.WatchNotify = enabled
-		if err := database.UpdateUser(ctx, user); err != nil {
-			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorUpdateUserInfoFailed, map[string]any{
-				"Error": err.Error(),
-			})), nil)
-			return dispatcher.EndGroups
-		}
-	}
-	ctx.Reply(update, ext.ReplyTextString(i18n.T(watchNotifyStateKey(user.WatchNotify))), nil)
-	return dispatcher.EndGroups
-}
-
-// parseWatchNotifyArg parses the argument of /watch notify.
-func parseWatchNotifyArg(arg string) (enabled bool, ok bool) {
-	switch strings.ToLower(arg) {
-	case "on":
-		return true, true
-	case "off":
-		return false, true
-	default:
-		return false, false
-	}
-}
 
 func watchNotifyStateKey(enabled bool) i18nk.Key {
 	if enabled {

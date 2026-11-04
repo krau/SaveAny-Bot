@@ -23,7 +23,7 @@ func CreateAndAddYtdlpTaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 		logger.Error("URLs list is empty")
 		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
-			Message: i18n.T(i18nk.BotMsgYtdlpErrorNoValidUrls, nil),
+			Message: i18n.T(i18nk.BotMsgDownloadErrorNoValidLinks, nil),
 		})
 		return dispatcher.EndGroups
 	}

@@ -8,30 +8,47 @@ import (
 	"github.com/gotd/td/telegram/message/markup"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/conflictutil"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/fnamest"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
+	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/krau/mygotg/dispatcher"
 	"github.com/krau/mygotg/ext"
 )
 
 func handleConfigCmd(ctx *ext.Context, update *ext.Update) error {
-	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgConfigPromptSelectOption)), &ext.ReplyOpts{
-		Markup: markup.InlineKeyboard(markup.InlineButtonRow(
-			markup.Callback(
-				i18n.T(i18nk.BotMsgConfigButtonFilenameStrategy),
-				fmt.Appendf(nil, "%s %s", tcbdata.TypeConfig, "fnamest"),
-			),
-			markup.Callback(
-				i18n.T(i18nk.BotMsgConfigButtonConflictStrategy),
-				fmt.Appendf(nil, "%s %s", tcbdata.TypeConfig, "conflictst"),
-			),
-		)),
+	ctx.Reply(update, ext.ReplyTextString(configMenuText("")), &ext.ReplyOpts{
+		Markup: configMenuMarkup(),
 	})
 	return dispatcher.EndGroups
+}
+
+func configMenuText(extra string) string {
+	text := i18n.T(i18nk.BotMsgConfigMenuTitle) + "\n\n" + i18n.T(i18nk.BotMsgConfigMenuHint)
+	if extra != "" {
+		text += "\n\n" + extra
+	}
+	return text
+}
+
+func configMenuMarkup() *tg.ReplyInlineMarkup {
+	return &tg.ReplyInlineMarkup{Rows: []tg.KeyboardInlineButtonRow{
+		{Buttons: []tg.KeyboardInlineButton{
+			markup.Callback(i18n.T(i18nk.BotMsgConfigButtonFilenameStrategy), fmt.Appendf(nil, "%s fnamest", tcbdata.TypeConfig)),
+			markup.Callback(i18n.T(i18nk.BotMsgConfigButtonConflictStrategy), fmt.Appendf(nil, "%s conflictst", tcbdata.TypeConfig)),
+		}},
+		{Buttons: []tg.KeyboardInlineButton{
+			markup.Callback(i18n.T(i18nk.BotMsgConfigButtonSilent), fmt.Appendf(nil, "%s silent", tcbdata.TypeConfig)),
+			markup.Callback(i18n.T(i18nk.BotMsgConfigButtonDefaultStorage), fmt.Appendf(nil, "%s storage", tcbdata.TypeConfig)),
+		}},
+		{Buttons: []tg.KeyboardInlineButton{
+			markup.Callback(i18n.T(i18nk.BotMsgConfigButtonTemplate), fmt.Appendf(nil, "%s template", tcbdata.TypeConfig)),
+		}},
+	}}
 }
 
 func handleConfigCallback(ctx *ext.Context, update *ext.Update) error {
@@ -49,13 +66,99 @@ func handleConfigCallback(ctx *ext.Context, update *ext.Update) error {
 		return invaildDataAnswer()
 	}
 	switch args[1] {
+	case "menu":
+		return handleConfigMenuCallback(ctx, update)
 	case "fnamest":
 		return handleConfigFnameSTCallback(ctx, update)
 	case "conflictst":
 		return handleConfigConflictSTCallback(ctx, update)
+	case "silent":
+		return handleConfigSilentCallback(ctx, update)
+	case "storage":
+		return handleConfigStorageCallback(ctx, update)
+	case "template":
+		return handleConfigTemplateCallback(ctx, update)
 	default:
 		return invaildDataAnswer()
 	}
+}
+
+func handleConfigMenuCallback(ctx *ext.Context, update *ext.Update) error {
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+		ID:          update.CallbackQuery.GetMsgID(),
+		Message:     configMenuText(""),
+		ReplyMarkup: configMenuMarkup(),
+	})
+	return dispatcher.EndGroups
+}
+
+func handleConfigSilentCallback(ctx *ext.Context, update *ext.Update) error {
+	userID := update.CallbackQuery.GetUserID()
+	user, err := database.GetUserByChatID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if !user.Silent && user.DefaultStorageID == 0 {
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(update.CallbackQuery.GetQueryID(), i18n.T(i18nk.BotMsgCommonErrorDefaultStorageNotSet)))
+		return dispatcher.EndGroups
+	}
+	user.Silent = !user.Silent
+	if err := database.UpdateUser(ctx, user); err != nil {
+		return err
+	}
+	state := i18n.T(i18nk.BotMsgCommonInfoSilentModeOff)
+	if user.Silent {
+		state = i18n.T(i18nk.BotMsgCommonInfoSilentModeOn)
+	}
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+		ID:          update.CallbackQuery.GetMsgID(),
+		Message:     configMenuText(state),
+		ReplyMarkup: configMenuMarkup(),
+	})
+	return dispatcher.EndGroups
+}
+
+func handleConfigStorageCallback(ctx *ext.Context, update *ext.Update) error {
+	userID := update.CallbackQuery.GetUserID()
+	storages := storage.GetUserStorages(ctx, userID)
+	if len(storages) == 0 {
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(update.CallbackQuery.GetQueryID(), i18n.T(i18nk.BotMsgCommonErrorNoAvailableStorage)))
+		return dispatcher.EndGroups
+	}
+	markup, err := msgelem.BuildSetDefaultStorageMarkup(ctx, storages)
+	if err != nil {
+		return err
+	}
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+		ID:          update.CallbackQuery.GetMsgID(),
+		Message:     i18n.T(i18nk.BotMsgCommonPromptSelectDefaultStorage),
+		ReplyMarkup: markup,
+	})
+	return dispatcher.EndGroups
+}
+
+func handleConfigTemplateCallback(ctx *ext.Context, update *ext.Update) error {
+	userID := update.CallbackQuery.GetUserID()
+	user, err := database.GetUserByChatID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	text := i18n.T(i18nk.BotMsgConfigTemplateHelp)
+	if user.FilenameTemplate != "" {
+		text += "\n\n" + i18n.T(i18nk.BotMsgConfigInfoCurrentTemplatePrefix, map[string]any{
+			"Template": user.FilenameTemplate,
+		})
+	}
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+		ID:      update.CallbackQuery.GetMsgID(),
+		Message: text,
+		ReplyMarkup: &tg.ReplyInlineMarkup{Rows: []tg.KeyboardInlineButtonRow{{
+			Buttons: []tg.KeyboardInlineButton{
+				markup.Callback(i18n.T(i18nk.BotMsgConfigButtonBack), fmt.Appendf(nil, "%s menu", tcbdata.TypeConfig)),
+			},
+		}}},
+	})
+	return dispatcher.EndGroups
 }
 
 func handleConfigFnameSTCallback(ctx *ext.Context, update *ext.Update) error {
@@ -161,7 +264,7 @@ func handleConfigConflictSTCallback(ctx *ext.Context, update *ext.Update) error 
 	return dispatcher.EndGroups
 }
 
-func handleConfigFnameTmpl(ctx *ext.Context, update *ext.Update) error {
+func handleTemplateCmd(ctx *ext.Context, update *ext.Update) error {
 	userID := responsibleUserID(update)
 	user, err := database.GetUserByChatID(ctx, userID)
 	if err != nil {
@@ -169,7 +272,7 @@ func handleConfigFnameTmpl(ctx *ext.Context, update *ext.Update) error {
 	}
 	args := strings.Fields(string(update.EffectiveMessage.Text))
 	if len(args) <= 1 {
-		text := i18n.T(i18nk.BotMsgConfigFnametmplHelp, nil)
+		text := i18n.T(i18nk.BotMsgConfigTemplateHelp, nil)
 		if user.FilenameTemplate != "" {
 			text += "\n\n" + i18n.T(i18nk.BotMsgConfigInfoCurrentTemplatePrefix, map[string]any{
 				"Template": user.FilenameTemplate,

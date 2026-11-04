@@ -7,27 +7,24 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/query/dialogs"
 	"github.com/krau/SaveAny-Bot/client/user"
-	"github.com/krau/SaveAny-Bot/common/i18n"
-	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/mygotg/dispatcher"
 	"github.com/krau/mygotg/ext"
 	"github.com/krau/mygotg/storage"
 )
 
-var syncpeerMu sync.Mutex
+var syncPeerMu sync.Mutex
 
-func handleSyncpeersCmd(ctx *ext.Context, u *ext.Update) error {
+// syncPeers imports the userbot's dialogs into the shared peer cache.
+func syncPeers(ctx *ext.Context) (int, error) {
 	if !config.C().Telegram.Userbot.Enable {
-		return dispatcher.EndGroups
+		return 0, nil
 	}
-	syncpeerMu.Lock()
-	defer syncpeerMu.Unlock()
+	syncPeerMu.Lock()
+	defer syncPeerMu.Unlock()
 	uctx := user.GetCtx()
 	if uctx == nil {
-		return dispatcher.EndGroups
+		return 0, nil
 	}
-	ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgSyncpeersStart)), nil)
 	tapi := uctx.Raw
 	peerStorage := uctx.PeerStorage
 	log.FromContext(ctx).Info("Starting to sync peers...")
@@ -37,8 +34,8 @@ func handleSyncpeersCmd(ctx *ext.Context, u *ext.Update) error {
 			peerStorage.AddPeer(cid, channel.AccessHash, storage.TypeChannel, channel.Username)
 			count++
 		}
-		for uid, user := range e.Entities.Users() {
-			peerStorage.AddPeer(uid, user.AccessHash, storage.TypeUser, user.Username)
+		for uid, usr := range e.Entities.Users() {
+			peerStorage.AddPeer(uid, usr.AccessHash, storage.TypeUser, usr.Username)
 			count++
 		}
 		for gid := range e.Entities.Chats() {
@@ -49,14 +46,8 @@ func handleSyncpeersCmd(ctx *ext.Context, u *ext.Update) error {
 	})
 	if err != nil {
 		log.FromContext(ctx).Error("Failed to sync peers", "error", err)
-		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgSyncpeersFailed, map[string]any{
-			"Error": err.Error(),
-		})), nil)
-		return dispatcher.EndGroups
+		return count, err
 	}
 	log.FromContext(ctx).Info("Finished syncing peers")
-	ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgSyncpeersSuccess, map[string]any{
-		"Count": count,
-	})), nil)
-	return dispatcher.EndGroups
+	return count, nil
 }

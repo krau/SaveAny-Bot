@@ -16,30 +16,6 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 )
 
-func TestParseWatchNotifyArg(t *testing.T) {
-	tests := []struct {
-		arg         string
-		wantEnabled bool
-		wantOK      bool
-	}{
-		{"on", true, true},
-		{"ON", true, true},
-		{"off", false, true},
-		{"Off", false, true},
-		{"", false, false},
-		{"yes", false, false},
-		{"-1002229835658", false, false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.arg, func(t *testing.T) {
-			enabled, ok := parseWatchNotifyArg(tt.arg)
-			if enabled != tt.wantEnabled || ok != tt.wantOK {
-				t.Errorf("parseWatchNotifyArg(%q) = (%v, %v), want (%v, %v)", tt.arg, enabled, ok, tt.wantEnabled, tt.wantOK)
-			}
-		})
-	}
-}
-
 type notifyCtxKey struct{}
 
 type notifyTestInfo struct{}

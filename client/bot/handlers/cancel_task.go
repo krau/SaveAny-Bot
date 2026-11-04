@@ -35,24 +35,3 @@ func handleCancelCallback(ctx *ext.Context, update *ext.Update) error {
 
 	return dispatcher.EndGroups
 }
-
-func handleCancelCmd(ctx *ext.Context, update *ext.Update) error {
-	logger := log.FromContext(ctx)
-	args := strings.Fields(update.EffectiveMessage.Text)
-	if len(args) < 2 {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCancelUsage, nil)), nil)
-		return dispatcher.EndGroups
-	}
-	taskID := args[1]
-	if err := core.CancelTask(ctx, taskID); err != nil {
-		logger.Errorf("failed to cancel task %s: %v", taskID, err)
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCancelErrorCancelFailed, map[string]any{
-			"Error": err.Error(),
-		})), nil)
-		return dispatcher.EndGroups
-	}
-	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCancelInfoCancelRequested, map[string]any{
-		"TaskID": taskID,
-	})), nil)
-	return dispatcher.EndGroups
-}

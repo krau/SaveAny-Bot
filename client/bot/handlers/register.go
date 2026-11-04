@@ -22,26 +22,16 @@ type DescCommandHandler struct {
 
 var CommandHandlers = []DescCommandHandler{
 	{"start", i18nk.BotMsgCmdStart, handleHelpCmd},
-	{"silent", i18nk.BotMsgCmdSilent, handleSilentCmd},
-	{"storage", i18nk.BotMsgCmdStorage, handleStorageCmd},
-	{"dir", i18nk.BotMsgCmdDir, handleDirCmd},
-	{"rule", i18nk.BotMsgCmdRule, handleRuleCmd},
 	{"save", i18nk.BotMsgCmdSave, handleSilentMode(handleSaveCmd, handleSilentSaveReplied)},
-	{"dl", i18nk.BotMsgCmdDl, handleDlCmd},
-	{"aria2dl", i18nk.BotMsgCmdAria2dl, handleAria2DlCmd},
-	{"ytdlp", i18nk.BotMsgCmdYtdlp, handleYtdlpCmd},
+	{"download", i18nk.BotMsgCmdDownload, handleDownloadCmd},
 	{"transfer", i18nk.BotMsgCmdTransfer, handleTransferCmd},
-	{"task", i18nk.BotMsgCmdTask, handleTaskCmd},
-	{"cancel", i18nk.BotMsgCmdCancel, handleCancelCmd},
-	{"retry", i18nk.BotMsgCmdRetry, handleRetryCmd},
+	{"tasks", i18nk.BotMsgCmdTasks, handleTasksCmd},
 	{"config", i18nk.BotMsgCmdConfig, handleConfigCmd},
-	{"fnametmpl", i18nk.BotMsgCmdFnametmpl, handleConfigFnameTmpl},
-	{"help", i18nk.BotMsgCmdHelp, handleHelpCmd},
-	{"parser", i18nk.BotMsgCmdParser, handleParserCmd},
+	{"template", i18nk.BotMsgCmdTemplate, handleTemplateCmd},
+	{"dirs", i18nk.BotMsgCmdDirs, handleDirCmd},
+	{"rules", i18nk.BotMsgCmdRules, handleRuleCmd},
 	{"watch", i18nk.BotMsgCmdWatch, handleWatchCmd},
-	{"unwatch", i18nk.BotMsgCmdUnwatch, handleUnwatchCmd},
-	{"lswatch", i18nk.BotMsgCmdLswatch, handleLswatchCmd},
-	{"syncpeers", i18nk.BotMsgCmdSyncpeers, handleSyncpeersCmd},
+	{"parser", i18nk.BotMsgCmdParser, handleParserCmd},
 	{"update", i18nk.BotMsgCmdUpdate, handleUpdateCmd},
 }
 
@@ -87,6 +77,12 @@ func Register(disp dispatcher.Dispatcher) {
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeSetDefault), withPermission(handleSetDefaultCallback)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeCancel), withPermission(handleCancelCallback)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeConfig), withPermission(handleConfigCallback)))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeEngine), withPermission(handleEngineCallback)))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeTask), withPermission(handleTaskCallback)))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeRetry), withPermission(handleRetryCallback)))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeWatch), withPermission(handleWatchCallback)))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeDir), withPermission(handleDirCallback)))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeRule), withPermission(handleRuleCallback)))
 	disp.AddHandler(handlers.NewMessage(sabotfilters.RegexUrl(regexp.MustCompile(re.TgMessageLinkRegexString)), skipLinkForMedia(handleSilentMode(handleMessageLink, handleSilentSaveLink))))
 	disp.AddHandler(handlers.NewMessage(sabotfilters.RegexUrl(regexp.MustCompile(re.TelegraphUrlRegexString)), skipLinkForMedia(handleSilentMode(handleTelegraphUrlMessage, handleSilentSaveTelegraph))))
 	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleSilentMode(handleMediaMessage, handleSilentSaveMedia)))

@@ -14,6 +14,12 @@ const (
 	TypeSetDefault = "setdefault"
 	TypeConfig     = "config"
 	TypeCancel     = "cancel"
+	TypeEngine     = "engine"
+	TypeTask       = "task"
+	TypeRetry      = "retry"
+	TypeWatch      = "watch"
+	TypeDir        = "dir"
+	TypeRule       = "rule"
 )
 
 const (

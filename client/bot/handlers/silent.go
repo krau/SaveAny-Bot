@@ -16,33 +16,6 @@ import (
 	"github.com/krau/mygotg/ext"
 )
 
-func handleSilentCmd(ctx *ext.Context, update *ext.Update) error {
-	user, err := database.GetUserByChatID(ctx, responsibleUserID(update))
-	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserInfoFailed, map[string]any{
-			"Error": err.Error(),
-		})), nil)
-		return nil
-	}
-	if !user.Silent && user.DefaultStorageID == 0 {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorDefaultStorageNotSet, nil)), nil)
-		return nil
-	}
-	user.Silent = !user.Silent
-	if err := database.UpdateUser(ctx, user); err != nil {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorUpdateUserInfoFailed, map[string]any{
-			"Error": err.Error(),
-		})), nil)
-		return nil
-	}
-	if user.Silent {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoSilentModeOn, nil)), nil)
-	} else {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoSilentModeOff, nil)), nil)
-	}
-	return dispatcher.EndGroups
-}
-
 func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 	dataParts := strings.Split(string(update.CallbackQuery.Data), " ")
 	if len(dataParts) < 2 {
@@ -127,26 +100,6 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 		ID:      update.CallbackQuery.GetMsgID(),
 		Message: msg,
-	})
-	return dispatcher.EndGroups
-}
-
-func handleStorageCmd(ctx *ext.Context, update *ext.Update) error {
-	userID := responsibleUserID(update)
-	storages := storage.GetUserStorages(ctx, userID)
-	if len(storages) == 0 {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorNoAvailableStorage, nil)), nil)
-		return nil
-	}
-	markup, err := msgelem.BuildSetDefaultStorageMarkup(ctx, storages)
-	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
-			"Error": err.Error(),
-		})), nil)
-		return nil
-	}
-	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonPromptSelectDefaultStorage, nil)), &ext.ReplyOpts{
-		Markup: markup,
 	})
 	return dispatcher.EndGroups
 }

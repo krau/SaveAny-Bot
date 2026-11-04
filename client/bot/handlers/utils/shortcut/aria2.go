@@ -26,7 +26,7 @@ func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 		logger.Error("URIs list is empty")
 		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
-			Message: i18n.T(i18nk.BotMsgDlErrorNoValidLinks, nil),
+			Message: i18n.T(i18nk.BotMsgDownloadErrorNoValidLinks, nil),
 		})
 		return dispatcher.EndGroups
 	}
