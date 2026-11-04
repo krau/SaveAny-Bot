@@ -9,6 +9,8 @@ import GuideView from './views/GuideView.vue'
 import TasksView from './views/TasksView.vue'
 import StoragesView from './views/StoragesView.vue'
 import UsersView from './views/UsersView.vue'
+import AutomationView from './views/AutomationView.vue'
+import ParsersView from './views/ParsersView.vue'
 import TelegramView from './views/TelegramView.vue'
 import SettingsView from './views/SettingsView.vue'
 import SystemView from './views/SystemView.vue'
@@ -57,6 +59,12 @@ const router = createRouter({
           meta: { title: 'nav.users' },
         },
         {
+          path: 'automation',
+          name: 'automation',
+          component: AutomationView,
+          meta: { title: 'nav.automation' },
+        },
+        {
           path: 'telegram',
           name: 'telegram',
           component: TelegramView,
@@ -67,6 +75,12 @@ const router = createRouter({
           name: 'settings',
           component: SettingsView,
           meta: { title: 'nav.settings' },
+        },
+        {
+          path: 'parsers',
+          name: 'parsers',
+          component: ParsersView,
+          meta: { title: 'nav.parsers' },
         },
         {
           path: 'system',

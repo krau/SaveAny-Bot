@@ -132,6 +132,52 @@ export interface CreateUserInput extends UserPatch {
   chat_id: number
 }
 
+export interface UserDir {
+  id: number
+  storage_id: number
+  path: string
+}
+
+export interface UserRule {
+  id: number
+  type: string
+  content: string
+  storage_id: number
+  dir_path: string
+}
+
+export interface UserWatch {
+  id: number
+  chat_id: number
+  message_filter?: string
+}
+
+export interface ParserFile {
+  name: string
+  directory: string
+  size: number
+  modified: string
+}
+
+export interface ParserList {
+  enabled: boolean
+  dirs: string[]
+  files: ParserFile[]
+}
+
+export interface UpdateInfo {
+  current: string
+  latest?: string
+  available: boolean
+  updatable: boolean
+  docker: boolean
+  release_notes?: string
+  url?: string
+  published_at?: string
+  size?: number
+  reason?: string
+}
+
 export interface BotStatus {
   state: string
   id?: number

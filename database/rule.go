@@ -16,6 +16,12 @@ func UpdateUserApplyRule(ctx context.Context, chatID int64, applyRule bool) erro
 	return db.WithContext(ctx).Model(&User{}).Where("chat_id = ?", chatID).Update("apply_rule", applyRule).Error
 }
 
+func GetRulesByUserID(ctx context.Context, userID uint) ([]Rule, error) {
+	var rules []Rule
+	err := db.WithContext(ctx).Where("user_id = ?", userID).Find(&rules).Error
+	return rules, err
+}
+
 func GetRulesByUserChatID(ctx context.Context, chatID int64) ([]Rule, error) {
 	var rules []Rule
 	err := db.WithContext(ctx).Where("user_id = (SELECT id FROM users WHERE chat_id = ?)", chatID).Find(&rules).Error

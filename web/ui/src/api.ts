@@ -20,8 +20,13 @@ import type {
   TaskListResponse,
   TaskTypeInfo,
   TelegramStatus,
+  UpdateInfo,
+  UserDir,
   UserItem,
   UserPatch,
+  ParserList,
+  UserRule,
+  UserWatch,
 } from './types'
 
 export interface ApiErrorBody {
@@ -229,6 +234,57 @@ export const usersApi = {
   },
 }
 
+export const dirsApi = {
+  async list(userId: number): Promise<UserDir[]> {
+    const data = await request<{ dirs: UserDir[] }>(`/users/${userId}/dirs`)
+    return data.dirs ?? []
+  },
+  create(userId: number, input: { storage_id: number; path: string }) {
+    return request<UserDir>(`/users/${userId}/dirs`, { method: 'POST', body: input })
+  },
+  remove(userId: number, dirId: number) {
+    return request<void>(`/users/${userId}/dirs/${dirId}`, { method: 'DELETE' })
+  },
+}
+
+export const rulesApi = {
+  async list(userId: number): Promise<UserRule[]> {
+    const data = await request<{ rules: UserRule[] }>(`/users/${userId}/rules`)
+    return data.rules ?? []
+  },
+  create(userId: number, input: { type: string; content: string; storage_id: number; dir_path: string }) {
+    return request<UserRule>(`/users/${userId}/rules`, { method: 'POST', body: input })
+  },
+  remove(userId: number, ruleId: number) {
+    return request<void>(`/users/${userId}/rules/${ruleId}`, { method: 'DELETE' })
+  },
+  importPresets(userId: number, input: { storage_id: number; base_path: string }) {
+    return request<{ created: number }>(`/users/${userId}/rules/presets`, { method: 'POST', body: input })
+  },
+}
+
+export const watchesApi = {
+  async list(userId: number): Promise<UserWatch[]> {
+    const data = await request<{ watches: UserWatch[] }>(`/users/${userId}/watches`)
+    return data.watches ?? []
+  },
+  create(userId: number, input: { chat?: string; chat_id?: number; filter: string }) {
+    return request<UserWatch[]>(`/users/${userId}/watches`, { method: 'POST', body: input })
+  },
+  remove(userId: number, chatId: number) {
+    return request<void>(`/users/${userId}/watches/${chatId}`, { method: 'DELETE' })
+  },
+}
+
+export const parsersApi = {
+  list() {
+    return request<ParserList>('/parsers')
+  },
+  create(input: { filename: string; content: string }) {
+    return request<{ name: string }>('/parsers', { method: 'POST', body: input })
+  },
+}
+
 export const telegramApi = {
   status() {
     return request<TelegramStatus>('/telegram/status')
@@ -265,6 +321,9 @@ export const telegramApi = {
   },
   logout() {
     return request<void>('/telegram/userbot/logout', { method: 'POST', body: {} })
+  },
+  syncPeers() {
+    return request<{ synced: number }>('/telegram/userbot/sync-peers', { method: 'POST', body: {} })
   },
 }
 
@@ -332,6 +391,15 @@ export const systemApi = {
     return request<{ restarting: boolean }>('/system/restart', {
       method: 'POST',
       body: { force },
+    })
+  },
+  checkUpdate() {
+    return request<UpdateInfo>('/system/update')
+  },
+  applyUpdate() {
+    return request<{ version: string; restarting: boolean }>('/system/update', {
+      method: 'POST',
+      body: {},
     })
   },
 }

@@ -15,9 +15,20 @@ Settings are stored in the SQLite database under the data directory (default `da
 | Telegram | Bot token, API ID/hash, proxy, Userbot login |
 | Storages | Local disk, WebDAV, Alist, S3, Rclone, Telegram, and more |
 | Users | Telegram user IDs, default storage, directories, rules, and storage access |
+| Automation | Per-user directories, rules, watched chats, and peer sync |
 | Settings | Task concurrency, language, proxy, Aria2, yt-dlp, parsers, cache, logging, web, and API |
+| Parsers | Install JavaScript parser plugins |
+| System | Runtime information, restart, version checks, and updates |
 
 Some settings require a process restart, including task concurrency, global proxy, database session path, cache settings, plugins, hooks, and the web listen address. The page marks fields that need a restart.
+
+### Automation
+
+The Automation page manages a selected user's directories, rules, watched chats, and Userbot peer sync. Directories can be marked as the default destination; rules can be enabled, disabled, added, deleted, or imported from presets.
+
+### Parsers
+
+The Parsers page installs JavaScript parser plugins when parser plugins are enabled in Settings. Upload a `.js` plugin file or paste its code; it becomes available without a restart.
 
 ### Telegram
 

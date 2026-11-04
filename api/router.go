@@ -53,6 +53,16 @@ func NewHandler(deps Deps) http.Handler {
 	mux.HandleFunc("POST /api/v1/users", s.createUser)
 	mux.HandleFunc("PUT /api/v1/users/{id}", s.updateUser)
 	mux.HandleFunc("DELETE /api/v1/users/{id}", s.deleteUser)
+	mux.HandleFunc("GET /api/v1/users/{id}/dirs", s.listUserDirs)
+	mux.HandleFunc("POST /api/v1/users/{id}/dirs", s.createUserDir)
+	mux.HandleFunc("DELETE /api/v1/users/{id}/dirs/{dirID}", s.deleteUserDir)
+	mux.HandleFunc("GET /api/v1/users/{id}/rules", s.listUserRules)
+	mux.HandleFunc("POST /api/v1/users/{id}/rules", s.createUserRule)
+	mux.HandleFunc("POST /api/v1/users/{id}/rules/presets", s.importUserRulePresets)
+	mux.HandleFunc("DELETE /api/v1/users/{id}/rules/{ruleID}", s.deleteUserRule)
+	mux.HandleFunc("GET /api/v1/users/{id}/watches", s.listUserWatches)
+	mux.HandleFunc("POST /api/v1/users/{id}/watches", s.createUserWatch)
+	mux.HandleFunc("DELETE /api/v1/users/{id}/watches/{chatID}", s.deleteUserWatch)
 
 	mux.HandleFunc("GET /api/v1/telegram/status", s.telegramStatus)
 	mux.HandleFunc("GET /api/v1/telegram/workers", s.listBotWorkers)
@@ -70,6 +80,7 @@ func NewHandler(deps Deps) http.Handler {
 	mux.HandleFunc("POST /api/v1/telegram/userbot/login/{flow}/password", s.submitUserbotPassword)
 	mux.HandleFunc("DELETE /api/v1/telegram/userbot/login/{flow}", s.cancelUserbotLogin)
 	mux.HandleFunc("POST /api/v1/telegram/userbot/logout", s.logoutUserbot)
+	mux.HandleFunc("POST /api/v1/telegram/userbot/sync-peers", s.syncUserbotPeers)
 
 	mux.HandleFunc("GET /api/v1/tasks", s.listTasks)
 	mux.HandleFunc("POST /api/v1/tasks", s.createTask)
@@ -82,6 +93,10 @@ func NewHandler(deps Deps) http.Handler {
 
 	mux.HandleFunc("GET /api/v1/system/info", s.systemInfo)
 	mux.HandleFunc("POST /api/v1/system/restart", s.restartSystem)
+	mux.HandleFunc("GET /api/v1/system/update", s.getUpdateInfo)
+	mux.HandleFunc("POST /api/v1/system/update", s.applyUpdate)
+	mux.HandleFunc("GET /api/v1/parsers", s.listParsers)
+	mux.HandleFunc("POST /api/v1/parsers", s.createParser)
 	mux.HandleFunc("GET /api/v1/filesystem", s.listFilesystem)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -30,6 +30,8 @@ export const zhHans = {
     form: {
       chatId: 'Telegram Chat ID',
       defaultStorage: '默认存储',
+      defaultDir: '默认目录',
+      defaultDirHint: '目录来自当前用户的目录列表。',
       enabled: '启用用户',
       silent: '静默模式',
       applyRule: '应用规则',
@@ -99,6 +101,8 @@ export const en = {
     form: {
       chatId: 'Telegram Chat ID',
       defaultStorage: 'Default storage',
+      defaultDir: 'Default directory',
+      defaultDirHint: 'Directories from this user’s directory list.',
       enabled: 'Enable user',
       silent: 'Silent mode',
       applyRule: 'Apply rules',

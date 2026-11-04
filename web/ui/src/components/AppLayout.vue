@@ -30,6 +30,7 @@ const navigation = [
     items: [
       { path: '/storages', labelKey: 'nav.storages', icon: 'database' },
       { path: '/users', labelKey: 'nav.users', icon: 'users' },
+      { path: '/automation', labelKey: 'nav.automation', icon: 'sliders' },
     ],
   },
   {
@@ -40,6 +41,7 @@ const navigation = [
     labelKey: 'nav.administration',
     items: [
       { path: '/settings', labelKey: 'nav.settings', icon: 'sliders' },
+      { path: '/parsers', labelKey: 'nav.parsers', icon: 'plug' },
       { path: '/system', labelKey: 'nav.system', icon: 'server' },
     ],
   },

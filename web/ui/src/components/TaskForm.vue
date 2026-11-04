@@ -204,6 +204,15 @@ function submit() {
   clear()
   try {
     const params = buildParams()
+    if (type.value === 'tgfiles') {
+      const links = (values.message_links ?? '').trim()
+      const chatID = (values.chat_id ?? '').trim()
+      const messageRange = (values.message_range ?? '').trim()
+      if (!links && (!chatID || !messageRange)) {
+        invalidField.value = 'task-field-message_links'
+        throw new Error(t('tasks.form.tgfilesSourceRequired'))
+      }
+    }
     let targetStorage = storage.value
     let targetPath = path.value.trim()
     if (isTransfer.value) {

@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	userclient "github.com/krau/SaveAny-Bot/client/user"
 )
 
 func decodeForce(r *http.Request) (bool, error) {
@@ -121,4 +123,13 @@ func (s *server) logoutUserbot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *server) syncUserbotPeers(w http.ResponseWriter, r *http.Request) {
+	count, err := userclient.SyncPeers(r.Context())
+	if err != nil {
+		WriteError(w, http.StatusConflict, "sync_failed", err.Error())
+		return
+	}
+	WriteJSON(w, http.StatusOK, map[string]any{"synced": count})
 }

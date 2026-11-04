@@ -257,6 +257,9 @@ type TransferParams struct {
 
 type TGFilesParams struct {
 	MessageLinks []string `json:"message_links"`
+	ChatID       string   `json:"chat_id,omitempty"`
+	MessageRange string   `json:"message_range,omitempty"`
+	Filter       string   `json:"filter,omitempty"`
 }
 
 type TPHPicsParams struct {

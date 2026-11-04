@@ -8,7 +8,7 @@ import PageHeader from '../components/PageHeader.vue'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
 import { formatUptime } from '../utils'
-import type { SystemInfo } from '../types'
+import type { SystemInfo, UpdateInfo } from '../types'
 
 const toast = useToastStore()
 const { t } = useI18n()
@@ -16,6 +16,9 @@ const confirm = useConfirmStore()
 const info = ref<SystemInfo | null>(null)
 const error = ref('')
 const busy = ref(false)
+const updateInfo = ref<UpdateInfo | null>(null)
+const checking = ref(false)
+const updating = ref(false)
 const host = window.location.host
 
 async function load() {
@@ -29,6 +32,37 @@ async function load() {
 }
 
 onMounted(load)
+
+async function checkUpdate() {
+  checking.value = true
+  try {
+    updateInfo.value = await systemApi.checkUpdate()
+  } catch (err) {
+    toast.push(errorMessage(err), 'error', 6000)
+  } finally {
+    checking.value = false
+  }
+}
+
+async function installUpdate() {
+  if (!updateInfo.value?.latest) return
+  const confirmed = await confirm.ask({
+    title: t('system.update.installTitle'),
+    message: t('system.update.installMessage', { version: updateInfo.value.latest }),
+    confirmText: t('system.update.install'),
+    danger: true,
+  })
+  if (!confirmed) return
+  updating.value = true
+  try {
+    await systemApi.applyUpdate()
+    toast.push(t('system.update.updated'), 'info')
+  } catch (err) {
+    toast.push(t('system.update.failed') + ': ' + errorMessage(err), 'error', 6000)
+  } finally {
+    updating.value = false
+  }
+}
 
 async function restart(force = false) {
   if (
@@ -135,6 +169,36 @@ async function restart(force = false) {
         <dt>{{ t('system.info.database') }}</dt><dd class="mono">{{ info.db_path }}</dd>
         <dt>{{ t('system.info.listenAddress') }}</dt><dd class="mono">{{ host }}</dd>
       </dl>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">{{ t('system.update.title') }}</h2>
+        <button class="btn small" type="button" :disabled="checking" @click="checkUpdate">
+          <AppIcon name="refresh" :size="15" />
+          {{ checking ? t('system.update.checking') : t('system.update.check') }}
+        </button>
+      </div>
+      <p class="muted">{{ t('system.update.hint') }}</p>
+      <div v-if="!updateInfo" class="muted">{{ t('system.update.noRelease') }}</div>
+      <template v-else>
+        <dl class="kv">
+          <dt>{{ t('system.update.current') }}</dt><dd class="mono">{{ updateInfo.current }}</dd>
+          <dt v-if="updateInfo.latest">{{ t('system.update.latest') }}</dt><dd v-if="updateInfo.latest" class="mono">{{ updateInfo.latest }}</dd>
+          <dt v-if="updateInfo.published_at">{{ t('system.update.published') }}</dt><dd v-if="updateInfo.published_at">{{ new Date(updateInfo.published_at).toLocaleString() }}</dd>
+          <dt v-if="updateInfo.size">{{ t('system.update.size') }}</dt><dd v-if="updateInfo.size">{{ updateInfo.size }} B</dd>
+        </dl>
+        <p v-if="!updateInfo.updatable" class="muted">{{ t('system.update.notUpdatable') }}<span v-if="updateInfo.reason">: {{ updateInfo.reason }}</span></p>
+        <p v-else-if="updateInfo.reason === 'major upgrade required'" class="muted">{{ t('system.update.major') }}</p>
+        <p v-else-if="updateInfo.available" class="badge info">{{ t('system.update.available') }}</p>
+        <p v-else class="badge success">{{ t('system.update.upToDate') }}</p>
+        <button v-if="updateInfo.available" class="btn primary small" type="button" :disabled="updating" @click="installUpdate">
+          {{ updating ? t('system.update.updating') : t('system.update.install') }}
+        </button>
+        <details v-if="updateInfo.release_notes" style="margin-top: 16px">
+          <summary>{{ t('system.update.releaseNotes') }}</summary>
+          <pre class="mono" style="white-space: pre-wrap">{{ updateInfo.release_notes }}</pre>
+        </details>
+      </template>
     </div>
   </div>
 </template>

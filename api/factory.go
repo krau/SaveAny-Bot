@@ -29,6 +29,7 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
+	tfilepkg "github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/rs/xid"
 )
@@ -238,20 +239,22 @@ func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req 
 		return nil, fmt.Errorf("invalid params: %w", err)
 	}
 
-	if len(params.MessageLinks) == 0 {
-		return nil, fmt.Errorf("no message links provided")
-	}
 	if bot.ExtContext() == nil && userclient.GetCtx() == nil {
 		return nil, ErrClientUnavailable
 	}
 
-	files, err := ExtractFilesFromLinks(f.ctx, params.MessageLinks)
+	var files []tfilepkg.TGFileMessage
+	var err error
+	if len(params.MessageLinks) > 0 {
+		files, err = ExtractFilesFromLinks(f.ctx, params.MessageLinks)
+	} else {
+		files, err = ExtractFilesFromRange(f.ctx, params.ChatID, params.MessageRange, params.Filter)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract files: %w", err)
 	}
-
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no files found in provided links")
+		return nil, fmt.Errorf("no files found")
 	}
 
 	var task core.Executable

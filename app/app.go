@@ -67,7 +67,11 @@ func (a *App) Start() error {
 
 	cfg := a.svc.Config()
 	if cfg.Parser.PluginEnable {
-		for _, dir := range cfg.Parser.PluginDirs {
+		dirs := cfg.Parser.PluginDirs
+		if len(dirs) == 0 {
+			dirs = []string{"plugins"}
+		}
+		for _, dir := range dirs {
 			if err := parsers.LoadPlugins(a.ctx, dir); err != nil {
 				log.Error("Failed to load parser plugins", "dir", dir, "error", err)
 			}

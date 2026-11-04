@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { errorMessage, storagesApi, usersApi } from '../api'
+import { dirsApi, errorMessage, storagesApi, usersApi } from '../api'
 import AppIcon from '../components/AppIcon.vue'
 import LoadingButton from '../components/LoadingButton.vue'
 import AppSelect from '../components/AppSelect.vue'
@@ -10,7 +10,7 @@ import PageLoading from '../components/PageLoading.vue'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
-import type { StorageRecord, UserItem, UserPatch, UserStorageFilter } from '../types'
+import type { StorageRecord, UserDir, UserItem, UserPatch, UserStorageFilter } from '../types'
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -18,6 +18,7 @@ const confirm = useConfirmStore()
 const { invalidField, fail, clear, success } = useFormFeedback()
 const users = ref<UserItem[]>([])
 const storages = ref<StorageRecord[]>([])
+const userDirs = ref<UserDir[]>([])
 const loaded = ref(false)
 const busy = ref(false)
 const formOpen = ref(false)
@@ -27,6 +28,12 @@ const enabledUsers = computed(() => users.value.filter((user) => user.enabled).l
 const defaultStorageOptions = computed(() => [
   { value: '', label: t('users.unset') },
   ...enabledStorages.value.map((storage) => ({ value: String(storage.id), label: storage.name })),
+])
+const defaultDirOptions = computed(() => [
+  { value: '', label: t('users.unset') },
+  ...userDirs.value
+    .filter((dir) => String(dir.storage_id) === form.default_storage_id)
+    .map((dir) => ({ value: String(dir.id), label: dir.path })),
 ])
 function storageName(id: number | string | undefined): string {
   if (!id) return ''
@@ -58,6 +65,7 @@ const form = reactive({
   enabled: true,
   silent: false,
   default_storage_id: '',
+  default_dir_id: '',
   apply_rule: false,
   watch_notify: false,
   filename_strategy: '',
@@ -81,18 +89,22 @@ async function load() {
 
 onMounted(load)
 
+function clearDefaultDir() {
+  form.default_dir_id = ''
+}
+
 function openCreate() {
   clear()
   editing.value = null
   Object.assign(form, {
-    chat_id: '', enabled: true, silent: false, default_storage_id: '', apply_rule: false,
+    chat_id: '', enabled: true, silent: false, default_storage_id: '', default_dir_id: '', apply_rule: false,
     watch_notify: false, filename_strategy: '', filename_template: '', conflict_strategy: '',
     mode: 'blacklist', storage_ids: [],
   })
   formOpen.value = true
 }
 
-function openEdit(user: UserItem) {
+async function openEdit(user: UserItem) {
   clear()
   editing.value = user
   Object.assign(form, {
@@ -100,6 +112,7 @@ function openEdit(user: UserItem) {
     enabled: user.enabled,
     silent: user.silent,
     default_storage_id: user.default_storage_id ? String(user.default_storage_id) : '',
+    default_dir_id: user.default_dir_id ? String(user.default_dir_id) : '',
     apply_rule: user.apply_rule,
     watch_notify: user.watch_notify,
     filename_strategy: user.filename_strategy,
@@ -109,6 +122,12 @@ function openEdit(user: UserItem) {
     storage_ids: [...(user.storage_filter.storage_ids ?? [])],
   })
   formOpen.value = true
+  userDirs.value = []
+  try {
+    userDirs.value = await dirsApi.list(user.id)
+  } catch (err) {
+    toast.push(errorMessage(err), 'error', 6000)
+  }
 }
 
 function toggleStorage(id: number) {
@@ -129,6 +148,7 @@ async function save() {
     enabled: form.enabled,
     silent: form.silent,
     default_storage_id: form.default_storage_id ? Number(form.default_storage_id) : 0,
+    default_dir_id: form.default_dir_id ? Number(form.default_dir_id) : 0,
     apply_rule: form.apply_rule,
     watch_notify: form.watch_notify,
     filename_strategy: form.filename_strategy,
@@ -206,10 +226,12 @@ async function remove(user: UserItem) {
           <tr v-for="user in users" :key="user.id">
             <td class="mono">{{ user.chat_id }}</td>
             <td>
-              <span class="badge status" :class="user.enabled ? 'success' : 'muted'">
-                {{ user.enabled ? t('users.status.enabled') : t('users.status.disabled') }}
-              </span>
-              <span v-if="user.silent" class="badge info" style="margin-left: 6px">{{ t('users.status.silent') }}</span>
+              <div class="badge-list">
+                <span class="badge status" :class="user.enabled ? 'success' : 'muted'">
+                  {{ user.enabled ? t('users.status.enabled') : t('users.status.disabled') }}
+                </span>
+                <span v-if="user.silent" class="badge info">{{ t('users.status.silent') }}</span>
+              </div>
             </td>
             <td>{{ storageName(user.default_storage_id) || '—' }}</td>
             <td class="muted">
@@ -237,7 +259,7 @@ async function remove(user: UserItem) {
         <article v-for="user in users" :key="user.id" class="user-mobile-card">
           <div class="user-mobile-head">
             <span class="user-chat mono">{{ user.chat_id }}</span>
-            <div class="actions">
+            <div class="badge-list">
               <span class="badge status" :class="user.enabled ? 'success' : 'muted'">
                 {{ user.enabled ? t('users.status.enabled') : t('users.status.disabled') }}
               </span>
@@ -304,7 +326,18 @@ async function remove(user: UserItem) {
                   id="user-default-storage"
                   v-model="form.default_storage_id"
                   :options="defaultStorageOptions"
+                  @update:model-value="clearDefaultDir"
                 />
+              </div>
+              <div class="field">
+                <label for="user-default-dir">{{ t('users.form.defaultDir') }}</label>
+                <AppSelect
+                  id="user-default-dir"
+                  v-model="form.default_dir_id"
+                  :options="defaultDirOptions"
+                  :disabled="!userDirs.length && !form.default_dir_id"
+                />
+                <span class="hint">{{ t('users.form.defaultDirHint') }}</span>
               </div>
             </div>
             <div class="row">
@@ -371,3 +404,12 @@ async function remove(user: UserItem) {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.badge-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+</style>

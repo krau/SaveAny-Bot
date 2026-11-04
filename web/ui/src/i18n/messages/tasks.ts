@@ -61,6 +61,7 @@ export const zhHans = {
       notNumber: '{field} 必须是数字',
       storageRequired: '请选择存储',
       pathOutsideStorage: '所选目录不在该存储中',
+      tgfilesSourceRequired: '请填写消息链接，或填写聊天 ID 和消息范围',
     },
     types: {
       directlinks: '直链下载',
@@ -106,7 +107,19 @@ export const zhHans = {
       tgfiles: {
         message_links: {
           label: '消息链接',
-          hint: '每行一个消息链接',
+          hint: '每行一个消息链接；也可以改用下方的聊天 ID + 消息范围',
+        },
+        chat_id: {
+          label: '聊天 ID / 用户名',
+          hint: '使用消息范围时填写',
+        },
+        message_range: {
+          label: '消息范围',
+          hint: '例如 100-120',
+        },
+        filter: {
+          label: '过滤器',
+          hint: '可选的正则表达式，匹配消息文本或文件名',
         },
       },
       tphpics: {
@@ -195,6 +208,7 @@ export const en = {
       notNumber: '{field} must be a number',
       storageRequired: 'Select storage',
       pathOutsideStorage: 'The selected folder is outside this storage.',
+      tgfilesSourceRequired: 'Enter message links, or a chat ID and message range',
     },
     types: {
       directlinks: 'Direct link',
@@ -240,7 +254,19 @@ export const en = {
       tgfiles: {
         message_links: {
           label: 'Message links',
-          hint: 'One message link per line',
+          hint: 'One message link per line; alternatively use a chat ID and message range',
+        },
+        chat_id: {
+          label: 'Chat ID / username',
+          hint: 'Required when using a message range',
+        },
+        message_range: {
+          label: 'Message range',
+          hint: 'For example 100-120',
+        },
+        filter: {
+          label: 'Filter',
+          hint: 'Optional regular expression matching message text or filename',
         },
       },
       tphpics: {
