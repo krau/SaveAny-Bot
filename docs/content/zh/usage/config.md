@@ -5,14 +5,17 @@ weight: 11
 
 # 文件命名与重名策略
 
-SaveAny-Bot 支持在 Telegram 中通过 `/config` 和 `/fnametmpl` 命令自定义保存文件的命名方式, 以及处理与已存在文件重名时的冲突策略.
+SaveAny-Bot 支持在 Telegram 中通过 `/config` 和 `/template` 自定义保存文件的命名方式, 以及处理与已存在文件重名时的冲突策略.
 
 ## `/config` — 用户配置
 
-`/config` 命令会弹出一个内联菜单, 你可以在其中修改以下两项用户级设置:
+`/config` 命令包含以下用户级设置:
 
 - **文件名策略** — 保存文件的命名方式
 - **重名文件保存策略** — 目标存储中已存在同名文件时的处理方式
+- **静默模式** — 直接保存到默认位置, 不再每次选择
+- **默认存储** — 选择静默模式和无规则匹配时使用的存储 (及目录)
+- **文件名模板** — 查看当前模板和 `/template` 用法
 
 设置按用户分别保存, 对该用户后续所有的保存/转存任务生效.
 
@@ -22,7 +25,7 @@ SaveAny-Bot 支持在 Telegram 中通过 `/config` 和 `/fnametmpl` 命令自定
 |---|---|
 | `默认` | 使用媒体原始文件名, 没有原始文件名时使用生成名 |
 | `优先从消息生成` | 优先根据消息内容 (如 caption、文本) 生成文件名, 而非原始文件名 |
-| `自定义模板` | 使用 `/fnametmpl` 设置的自定义模板渲染文件名 |
+| `自定义模板` | 使用 `/template` 设置的自定义模板渲染文件名 |
 
 ### 重名文件保存策略
 
@@ -37,15 +40,15 @@ SaveAny-Bot 支持在 Telegram 中通过 `/config` 和 `/fnametmpl` 命令自定
 重名策略仅在能够检测文件是否已存在的存储后端生效. 不支持检测文件是否存在的存储后端会退化为覆盖行为.
 {{< /hint >}}
 
-## `/fnametmpl` — 自定义文件名模板
+## `/template` — 自定义文件名模板
 
-当文件名策略设置为 `自定义模板` 时, SaveAny-Bot 会用 `/fnametmpl` 配置的模板来渲染所保存文件的文件名.
+当文件名策略设置为 `自定义模板` 时, SaveAny-Bot 会用 `/template` 配置的模板来渲染所保存文件的文件名.
 
 ```
-/fnametmpl [模板]
+/template [模板]
 ```
 
-- 不带参数运行 `/fnametmpl` 会显示当前模板以及帮助说明
+- 不带参数运行 `/template` 会显示当前模板以及帮助说明
 - 带模板字符串运行则会把它设为你的文件名模板
 
 模板使用 Go [`text/template`](https://pkg.go.dev/text/template) 语法. 可用变量如下:
@@ -64,10 +67,10 @@ SaveAny-Bot 支持在 Telegram 中通过 `/config` 和 `/fnametmpl` 命令自定
 
 ```
 # 固定前缀 + 消息 ID + 日期
-/fnametmpl 图片_{{.msgid}}_{{.msgdate}}.jpg
+/template 图片_{{.msgid}}_{{.msgdate}}.jpg
 
 # 优先使用原始文件名, 没有则用生成名
-/fnametmpl {{.origname}}
+/template {{.origname}}
 ```
 
 {{< hint info >}}

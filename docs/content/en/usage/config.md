@@ -5,14 +5,17 @@ weight: 11
 
 # File Naming & Conflict Strategies
 
-SaveAny-Bot lets you customize how saved files are named and how collisions with existing files are resolved, directly in Telegram via the `/config` and `/fnametmpl` commands.
+SaveAny-Bot lets you customize how saved files are named and how collisions with existing files are resolved, directly in Telegram with `/config` and `/template`.
 
-## `/config` — User Configuration
+## `/config` — User Settings
 
-The `/config` command opens an inline menu where you can change two per-user settings:
+The `/config` command contains the following per-user settings:
 
 - **Filename strategy** — how the saved file is named
 - **Duplicate file strategy** — what happens when a file with the same name already exists in the target storage
+- **Silent mode** — save incoming files directly to the default location
+- **Default storage** — choose the storage (and directory) used by silent mode and unmatched rules
+- **Filename template** — view the current template and the `/template` usage
 
 Settings are stored per user and apply to all of that user's subsequent save/transfer tasks.
 
@@ -22,7 +25,7 @@ Settings are stored per user and apply to all of that user's subsequent save/tra
 |---|---|
 | `Default` | Use the original media filename, or a generated name when no original filename is available |
 | `Gen From Msg First` | Generate the filename from the message content (e.g. caption, text) and prefer that over the original filename |
-| `Template` | Render the filename from a custom template you define with `/fnametmpl` |
+| `Template` | Render the filename from a custom template you define with `/template` |
 
 ### Duplicate file strategy
 
@@ -37,15 +40,15 @@ Settings are stored per user and apply to all of that user's subsequent save/tra
 The conflict strategy only kicks in for storage backends that can detect the existence of a file. Backends that do not support existence checks will fall back to overwriting.
 {{< /hint >}}
 
-## `/fnametmpl` — Custom Filename Template
+## `/template` — Custom Filename Template
 
-When the filename strategy is set to `Template`, SaveAny-Bot renders each saved file's name using the template configured via `/fnametmpl`.
+When the filename strategy is set to `Template`, SaveAny-Bot renders each saved file's name using the template configured via `/template`.
 
 ```
-/fnametmpl [template]
+/template [template]
 ```
 
-- Running `/fnametmpl` without arguments shows your current template and the help text.
+- Running `/template` without arguments shows your current template and the help text.
 - Running it with a template string sets that template as your filename template.
 
 The template uses Go [`text/template`](https://pkg.go.dev/text/template) syntax. The available variables are:
@@ -64,10 +67,10 @@ Examples:
 
 ```
 # Fixed prefix + message id + date
-/fnametmpl Image_{{.msgid}}_{{.msgdate}}.jpg
+/template Image_{{.msgid}}_{{.msgdate}}.jpg
 
 # Use original name if available, otherwise a generated name
-/fnametmpl {{.origname}}
+/template {{.origname}}
 ```
 
 {{< hint info >}}

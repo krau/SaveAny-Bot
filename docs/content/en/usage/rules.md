@@ -9,6 +9,8 @@ Storage rules allow you to define redirection rules when the bot uploads files t
 
 See: <a href="https://github.com/krau/SaveAny-Bot/issues/28" target="_blank">#28</a>
 
+Send `/rules` to view the current mode and rules, enable or disable rule matching, and delete rules. Add rules and import presets with the commands below.
+
 Currently supported rule types:
 
 1. FILENAME-REGEX
@@ -22,20 +24,20 @@ Basic syntax for adding rules:
 A numeric storage argument is treated as a storage ID (shown on the Storages page of the web console); anything else is treated as a storage name. Use an ID when the name contains spaces, or quote the name. Below is an example of a valid rule command:
 
 ```
-/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ 3 /videos
-/rule add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ "My Alist" /videos
+/rules add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ 3 /videos
+/rules add FILENAME-REGEX (?i)\.(mp4|mkv|ts|avi|flv)$ "My Alist" /videos
 ```
 
 In addition, if `CHOSEN` is used as the storage in the rule, it means files will be stored under the path of the storage you selected by clicking the inline button.
 
-You can also toggle whether rules are applied with `/rule switch`. When rule mode is off, all files go to the default storage.
+You can also toggle whether rules are applied with `/rules switch`. When rule mode is off, all files go to the default storage.
 
 ## Preset Rules
 
 Manually writing regex rules for common file types is tedious, so the bot ships a built-in set of preset categories (video, image, audio, document, archive) that you can import in one command:
 
 ```
-/rule preset <storage_id|storage_name> [base_path]
+/rules preset <storage_id|storage_name> [base_path]
 ```
 
 Parameters:
@@ -47,10 +49,10 @@ Examples:
 
 ```
 # Import preset rules into "MyAlist" with the default directory layout
-/rule preset MyAlist
+/rules preset MyAlist
 
 # Import preset rules with a custom base path "downloads/sorted"
-/rule preset MyAlist downloads/sorted
+/rules preset MyAlist downloads/sorted
 ```
 
 This will create `FILENAME-REGEX` rules for each category, routing matched files to the corresponding subdirectory under `base_path`:
@@ -64,7 +66,7 @@ This will create `FILENAME-REGEX` rules for each category, routing matched files
 | archive | zip, rar, 7z, tar, gz, bz2, xz, ... | `压缩包` |
 
 {{< hint info >}}
-Preset rules are regular `FILENAME-REGEX` rules once imported. You can view, edit, or delete them individually with `/rule` and `/rule del <id>` like any other rule.
+Preset rules are regular `FILENAME-REGEX` rules once imported. You can view or delete them individually from `/rules` like any other rule.
 {{< /hint >}}
 
 Rule types:

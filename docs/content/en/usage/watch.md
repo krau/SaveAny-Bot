@@ -11,17 +11,20 @@ This feature requires enabling UserBot integration.
 
 You can watch messages in a specific chat and automatically save them to the default storage, following storage rules. You can also add filters so that only matching messages are saved.
 
-Watch a chat:
+Send `/watch` to manage watched chats:
+
+- **Add watch** — shows the syntax for adding a chat
+- **Watched chats** — lists watched chats and lets you stop each one
+- **Notifications** — toggles task notifications for all watched chats
+- **Sync peers** — imports the Userbot dialog list into the peer cache
+
+To start watching a chat, send:
 
 ```
 /watch <chat_id/username> [filter]
 ```
 
-Stop watching:
-
-```
-/unwatch <chat_id/username>
-```
+To stop watching, open **Watched chats** from `/watch` and select the chat.
 
 Filter types:
 
@@ -37,12 +40,6 @@ This will watch the chat with ID `12345678`, and only save messages whose text c
 
 ## Task notifications
 
-Task notifications are disabled by default for every user. Enable them to get a message for every message the bot picks up from a watched chat, updated with the download progress and the final result:
+Task notifications are disabled by default for every user. Enable them with `/watch` → **Notifications** to get a message for every message the bot picks up from a watched chat, updated with the download progress and the final result. Disable them the same way.
 
-```
-/watch notify on
-```
-
-Turn them off again with `/watch notify off`, and query the current state with `/watch notify`.
-
-Notifications are sent by the bot to your private chat with it. The toggle is per user, not per watched chat: `/watch notify off` stops notifications for every chat that user watches.
+Notifications are sent by the bot to your private chat with it. The toggle is per user, not per watched chat.
