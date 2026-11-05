@@ -5,7 +5,7 @@ weight: 20
 
 # HTTP API
 
-SaveAny-Bot 提供了一套 HTTP API，允许你通过程序化方式创建下载/转存任务、查询任务状态、取消任务等，无需通过 Telegram 操作。
+SaveAny-Bot 提供 HTTP API，支持通过脚本或第三方程序创建下载/转存任务、查询状态及取消任务。
 
 ## 启用 API
 
@@ -136,7 +136,7 @@ Authorization: Bearer <your-token>
 
 ### GET /api/v1/media-metadata — 媒体元数据查询
 
-对 Telegram 消息链接、直链音视频地址或其他 yt-dlp 支持的媒体链接进行探测，在不完整下载文件的情况下返回标题、缩略图、上传者和音视频时长等可用元数据。
+探测 Telegram 消息链接、直链音视频或 yt-dlp 支持的媒体链接，无需完整下载即可提取标题、缩略图、上传者和时长等元数据。
 
 请求：
 
@@ -233,7 +233,7 @@ Authorization: Bearer <token>
 需要在系统中安装 yt-dlp。
 {{< /hint >}}
 
-通过 yt-dlp 下载视频/音频，支持 YouTube、Bilibili 等 1000+ 网站。
+通过 yt-dlp 下载音视频，支持主流视频网站。
 
 ```json
 {
@@ -556,7 +556,7 @@ Authorization: Bearer <token>
 创建任务时可设置 `webhook` 字段。当任务进入 `completed`、`partial` 或 `failed` 状态时，Bot 会向该地址发送一个 `POST` 请求。
 
 {{< hint info >}}
-被取消的任务**不会**触发 Webhook——取消操作的发起方已经知晓结果。每个任务最多只会发送一次回调。
+已取消的任务不会触发 Webhook，每个任务最多发送一次回调。
 {{< /hint >}}
 
 回调为异步发送，不会因为回调地址响应缓慢或不可达而阻塞任务。

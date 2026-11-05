@@ -3,7 +3,7 @@ export const zhHans = {
     add: '添加用户',
     edit: '编辑用户',
     count: '{count} 个用户，{enabled} 个启用',
-    empty: '还没有用户',
+    empty: '暂无用户',
     unset: '未设置',
     storageSeparator: '、',
     columns: {
@@ -62,7 +62,7 @@ export const zhHans = {
     },
     confirm: {
       deleteTitle: '删除用户',
-      deleteMessage: '删除用户 {chatId} 及其目录、规则？此操作不可撤销。',
+      deleteMessage: '确定删除用户 {chatId} 及其关联目录与规则？此操作不可撤销。',
     },
   },
 }

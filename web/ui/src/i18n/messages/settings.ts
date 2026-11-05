@@ -125,8 +125,8 @@ export const zhHans = {
     },
     errors: {
       invalidJson: '{field} 不是合法的 JSON',
-      numberRequired: '{field}必须是数字',
-      minValue: '{field}不能小于 {min}',
+      numberRequired: '{field} 必须为数字',
+      minValue: '{field} 不能小于 {min}',
     },
     toast: {
       saved: '{group}设置已保存',

@@ -9,7 +9,7 @@ weight: 7
 需要系统安装 yt-dlp 命令行工具。
 {{< /hint >}}
 
-视频解析可通过 `/download` 使用。发送支持的视频链接后，选择 **视频（yt-dlp）**。支持 YouTube、Bilibili、Twitter 等 1000+ 个网站。
+视频解析可通过 `/download` 使用。发送支持的视频链接后，选择 **视频（yt-dlp）**。支持 YouTube、Bilibili、Twitter 等主流音视频站点。
 
 ```bash
 /download <链接1> [链接2] [参数...]

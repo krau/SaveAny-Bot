@@ -9,7 +9,7 @@ weight: 6
 需要在 **设置 → Aria2** 中启用 Aria2 并配置 RPC 连接。
 {{< /hint >}}
 
-Aria2 可通过 `/download` 使用。发送链接后，选择 **Aria2**。它支持 HTTP/HTTPS、FTP、BitTorrent 和磁力链接。
+可通过 `/download` 使用 Aria2 下载，支持 HTTP/HTTPS、FTP、BitTorrent 种子与磁力链接。发送链接后选择 **Aria2** 即可。
 
 ```bash
 /download <链接1> [链接2] [链接3] ...
@@ -28,7 +28,7 @@ Aria2 可通过 `/download` 使用。发送链接后，选择 **Aria2**。它支
 /download https://example.com/file.torrent
 ```
 
-选择 **Aria2**，然后选择目标存储位置。若只有 Aria2 支持这些链接，则只会提供 Aria2 方式。
+选择 **Aria2** 后指定目标存储位置。若链接仅 Aria2 支持，将直接进入 Aria2 下载流程。
 
 在 Web 控制台的 **设置 → Aria2** 中配置：
 

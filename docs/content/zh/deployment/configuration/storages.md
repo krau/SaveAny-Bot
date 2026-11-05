@@ -6,13 +6,13 @@ title: "存储端配置"
 
 在 Web 控制台的 **存储** 页面添加存储时填写以下字段。
 
-存储名称可以包含空格、中文和符号（最多 64 个字符，不能包含控制字符）。在 `/dirs`、`/transfer` 等 Bot 命令中使用含空格的名称时请加引号。之后可以直接在同一页面重命名；用户默认存储、目录、规则和存储过滤使用稳定的存储 ID，不受名称变化影响。
+存储名称支持空格、中文与常用符号（最多 64 字符，不可含控制字符）。在 `/dirs`、`/transfer` 等命令中引用含空格的名称时需加双引号。名称可在 Web 控制台随时更改，用户默认存储、目录及规则均基于内部存储 ID 关联，不受重命名影响。
 
 ## Alist
 
 `type=alist`
 
-不支持 Stream 模式.
+不支持流式下载（Stream 模式）。
 
 ```text
 url = "https://alist.example.com" # Alist 的 URL
@@ -69,13 +69,13 @@ https://your_bucket_name.s3.example.com/path/to/s3/your_file
 https://s3.example.com/your_bucket_name/path/to/s3/your_file
 ```
 
-如果你使用的是第三方的兼容 S3 的服务, 一般使用的是路径风格的 URL. 而 AWS S3 则通常使用虚拟主机风格的 URL. 详情请参考你所使用的 S3 兼容服务的文档.
+第三方 S3 兼容服务通常采用路径风格 URL，AWS S3 则默认使用虚拟主机风格。具体请参考对应服务文档。
 
 ## Telegram
 
 `type=telegram`
 
-不支持 Stream 模式.
+不支持流式下载（Stream 模式）。
 
 ```text
 # Telegram 聊天 ID, Bot 将把文件发送到这个聊天
@@ -84,7 +84,7 @@ chat_id = "-1001234567890" # Bot API 聊天 ID（用户为正数，普通群为�
 force_file = false
 # 是否跳过大文件, 默认为 false. 如果启用, 超过 Telegram 限制的文件将不会上传.
 skip_large = false
-# 超限视频是否使用 FFmpeg 无损分割成一个媒体组（最多 10 个）内可独立播放的小视频；失败或需要超过 10 段时回退到 ZIP 分卷.
+# 超限视频是否使用 FFmpeg 分割为单组（最多 10 个）独立播放的小视频；失败或超过 10 段时回退为 ZIP 分卷.
 split_large_video = false
 # 分卷大小, 单位 MB. 设为 0 时使用实际上传账号的限制：Bot/普通用户为 2000 MB，Premium 用户为 4000 MB.
 # 超过该大小的文件将被分割成多个部分上传；非视频使用 ZIP 格式.
@@ -117,16 +117,9 @@ flags = ["--transfers", "4", "--checkers", "8"]
 
 ### 配置 rclone 远程
 
-首先需要配置 rclone 远程, 运行 `rclone config` 命令进行交互式配置, 或直接编辑 `rclone.conf` 文件.
+首先需要配置 rclone 远程，运行 `rclone config` 进行交互式配置，或直接编辑 `rclone.conf` 文件。
 
-rclone 支持多种云存储服务, 包括但不限于:
-- Google Drive
-- Dropbox
-- OneDrive
-- Amazon S3 及兼容服务
-- SFTP
-- FTP
-- 更多服务请参考 [rclone 官方文档](https://rclone.org/overview/)
+支持 Google Drive、Dropbox、OneDrive、S3 兼容存储、SFTP/FTP 等服务，详见 [rclone 官方文档](https://rclone.org/overview/)。
 
 ### 使用示例
 

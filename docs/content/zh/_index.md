@@ -9,21 +9,21 @@ title: 介绍
 ![](https://img.shields.io/github/v/release/krau/SaveAny-Bot?color=cyan&style=flat-square)
 ![](https://img.shields.io/github/downloads/krau/SaveAny-Bot/total?style=flat-square)
 
-把 Telegram 上的文件转存到多种存储端.
+把 Telegram 上的文件转存到多种存储端。
 
-## 🎯 特性
+## 特性
 
-- 支持文档/视频/图片/贴纸…甚至还有 [Telegraph](https://telegra.ph/)
-- 破解禁止保存的文件
+- 支持文档、视频、图片、贴纸及 [Telegraph](https://telegra.ph/) 图集
+- 支持转存受限频道中禁止转发与保存的内容
 - 批量下载
 - 流式传输
-- 多用户使用
-- 基于存储规则的自动整理
-- 监听并自动转存指定聊天的消息, 支持过滤
-- 在不同存储端之间转存文件
-- 集成 yt-dlp, 从所支持的网站下载并转存媒体文件
-- 集成 Aria2, 支持直链/磁力下载和转存
-- 使用 js 编写解析器插件以转存任意网站的文件
+- 多用户支持
+- 基于规则自动分类整理
+- 监听指定聊天并按过滤器自动转存
+- 存储端之间互相传输文件
+- 集成 yt-dlp，下载视频并转存
+- 集成 Aria2，支持直链与磁力链接转存
+- 支持编写 JavaScript 解析器插件扩展站点
 - 存储端支持:
   - Alist
   - S3

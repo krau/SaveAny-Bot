@@ -5,9 +5,9 @@ weight: 9
 
 # 转存 Telegram 之外的文件
 
-除了 Telegram 上的文件, Bot 还可通过 JavaScript 插件或内置解析器来支持转存其他网站的文件.
+除 Telegram 文件外，Bot 还可通过内置解析器或 JavaScript 插件转存第三方网站内容。
 
-> 查看[贡献解析器](../contribute)文档了解详情
+> 编写与贡献解析器请参阅[相关文档](../contribute)。
 
 向 Bot 发送符合解析器要求的链接。内置解析器：
 

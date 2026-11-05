@@ -54,11 +54,11 @@ bot:
     save_help_text: |
       使用方法:
 
-      1. 使用该命令回复要保存的文件, 可选文件名参数.
+      1. 回复要保存的文件消息，可选指定文件名。
       示例:
       /save custom_file_name.mp4
 
-      2. 设置默认存储后, 发送 /save <频道ID/用户名> <消息ID范围> 来批量保存文件. 遵从存储规则, 若未匹配到任何规则则使用默认存储.
+      2. 设置默认存储后，发送 /save <频道ID/用户名> <消息ID范围> 批量保存文件。优先匹配存储规则，未命中时使用默认存储。
       示例:
       /save @acherkrau 114-514
     common:
@@ -68,8 +68,8 @@ bot:
       error_invalid_id_or_username: "无效的ID或用户名: {{.Error}}"
       error_get_messages_failed: "获取消息失败: {{.Error}}"
       info_fetching_messages: "正在获取消息..."
-      error_no_messages_in_range: "没有找到指定范围内的消息"
-      error_no_savable_messages_in_range: "没有找到指定范围内的可保存消息"
+      error_no_messages_in_range: "未找到指定范围内的消息"
+      error_no_savable_messages_in_range: "指定范围内未找到可保存的消息"
       error_build_storage_select_message_failed: "构建存储选择消息失败: {{.Error}}"
       error_build_storage_select_keyboard_failed: "构建存储选择键盘失败: {{.Error}}"
       info_found_files_select_storage: "找到 {{.Count}} 个文件, 请选择存储位置"
@@ -103,15 +103,15 @@ bot:
       info_silent_mode_off: "已关闭静默模式"
       error_get_file_failed: "获取文件失败: {{.Error}}"
       info_fetching_file_info: "正在获取文件信息..."
-      error_no_savable_files_found: "没有找到可保存的文件"
+      error_no_savable_files_found: "未找到可保存的文件"
       error_parse_telegraph_path_failed: "解析 telegraph 路径失败: {{.Error}}"
       info_fetching_telegraph_page: "正在获取 telegraph 页面..."
       error_get_telegraph_page_failed: "获取 telegraph 页面失败: {{.Error}}"
-      error_no_images_in_telegraph_page: "在 telegraph 页面中未找到图片"
+      error_no_images_in_telegraph_page: "Telegraph 页面中未找到图片"
       error_build_dir_select_keyboard_failed: "构建目录选择键盘失败: {{.Error}}"
       error_no_permission: |
-        您不在白名单中, 无法使用此 Bot.
-        您可以部署自己的实例: https://github.com/krau/SaveAny-Bot
+        当前账号未在白名单中，无法使用此 Bot。
+        可自行部署实例: https://github.com/krau/SaveAny-Bot
     save:
       error_invalid_id_or_username: "无效的ID或用户名: {{.Error}}"
     watch:
@@ -132,14 +132,14 @@ bot:
       error_watch_chat_failed: "监听聊天失败: {{.Error}}"
       info_watch_chat_started: "已开始监听聊天: {{.Chat}}"
       info_already_watching_chat: "已经在监听此聊天"
-      info_watch_list_empty: "当前没有监听任何聊天"
+      info_watch_list_empty: "当前未监听任何聊天"
       info_watch_list_header: "当前监听的聊天:\n"
       info_watch_list_filter_prefix: " (过滤器: "
       error_unwatch_chat_failed: "取消监听聊天失败: {{.Error}}"
       info_watch_chat_stopped: "已取消监听聊天: {{.Chat}}"
-      info_notify_enabled: "已为你监听的所有聊天开启任务通知: 监听到的消息及其保存结果会在此处反馈."
-      info_notify_disabled: "已为你监听的所有聊天关闭任务通知."
-      notify_detected: "<b>🔔 监听到新消息</b>\n<code>{{.Name}}</code>\n进度将在此处更新"
+      info_notify_enabled: "已开启任务通知，监听到的消息及保存结果将在此反馈。"
+      info_notify_disabled: "已关闭任务通知。"
+      notify_detected: "<b>🔔 监听到新消息</b>\n<code>{{.Name}}</code>"
     tasks:
       menu_title: "任务管理"
       menu_hint: "查看运行中、排队中和失败任务。"
@@ -153,7 +153,7 @@ bot:
       cancel_button: "取消"
       cancel_failed: "取消任务失败: {{.Error}}"
       cancel_requested_prefix: "已请求取消任务: "
-      running_empty: "当前没有正在运行的任务"
+      running_empty: "暂无运行中的任务"
       running_title: "当前正在运行的任务:"
       total_prefix: "总数: {{.Count}}\n"
       field_id: "ID: "
@@ -163,7 +163,7 @@ bot:
       status_running: "运行中"
       status_queued: "排队中"
       status_cancel_requested: "已请求取消"
-      queued_empty: "当前没有排队中的任务"
+      queued_empty: "暂无排队中的任务"
       queued_title: "当前排队中的任务:"
       truncated_note: "...\n只显示前 10 个任务, 共 {{.Count}} 个任务"
       info_added_to_queue_full: "已添加到任务队列\n文件名: {{.Filename}}\n当前排队任务数: {{.QueueLength}}"
@@ -257,14 +257,14 @@ bot:
     update:
       error_version_var_invalid: "当前处于开发版本或版本信息注入失败: {{.Error}}"
       error_check_latest_failed: "检测最新版本失败: {{.Error}}"
-      error_no_release_found: "没有找到版本信息"
-      info_major_upgrade_required: "检测到大版本更新: {{.Current}} -> {{.Latest}} , 请前往 GitHub 手动下载最新版本并查看迁移指南"
-      info_already_latest: "当前已经是最新版本: {{.Version}}"
+      error_no_release_found: "未找到版本信息"
+      info_major_upgrade_required: "检测到大版本更新: {{.Current}} -> {{.Latest}}，请前往 GitHub 查看迁移指南并手动升级"
+      info_already_latest: "当前已是最新版本: {{.Version}}"
       info_new_version_in_docker: |-
         发现新版本: {{.Latest}}
         当前版本: {{.Current}}
         发布时间: {{.PublishedAt}}
-        由于您正在使用 Docker 部署, 请自行在部署平台上执行更新命令
+        当前为 Docker 部署，请拉取新镜像完成更新
       info_new_version_prompt_upgrade: |-
         发现新版本: {{.Latest}}
         当前版本: {{.Current}}
@@ -273,10 +273,10 @@ bot:
         下载链接: {{.URL}}
         发布时间: {{.PublishedAt}}
 
-        升级将重启 Bot , 是否升级?
+        升级将重启 Bot，是否继续？
       info_upgrading_with_version: "正在升级中, 当前版本: {{.Current}}"
       error_upgrade_failed: "升级失败: {{.Error}}"
-      info_upgrade_success: "已升级至版本 {{.Version}}\n若 Bot 未自动重启请手动启动"
+      info_upgrade_success: "已升级至版本 {{.Version}}\n若未自动重启，请手动启动"
       button_upgrade: "升级"
     config:
       menu_title: "用户设置"
@@ -311,8 +311,8 @@ bot:
         - {{"{{.origname}}"}}: 媒体的原始文件名 (如果有)
         - {{"{{.chatid}}"}}: 消息的聊天ID
 
-        模板仅在文件名策略设置为 '自定义模板' 时生效,
-        且模板解析错误时会回退到默认文件名
+        模板仅在文件名策略为“自定义模板”时生效；
+        解析错误时将回退到默认文件名
       info_template_updated: "已更新文件名模板"
       info_current_template_prefix: "当前模板: {{.Template}}"
     download:
@@ -328,25 +328,25 @@ bot:
       button_aria2: "Aria2"
       button_video: "视频（yt-dlp）"
       info_select_storage: "请为 {{.Count}} 个链接选择存储位置"
-      error_no_valid_links: "没有可下载的有效链接"
-      error_no_engine: "这些链接没有可用的下载方式"
+      error_no_valid_links: "未找到有效的下载链接"
+      error_no_engine: "无可用的下载方式"
     transfer:
       usage: |
         用法: /transfer <source_storage>:/<source_path> [filter]
         示例:
         /transfer local1:/downloads
         /transfer alist1:/media/photos
-        /transfer webdav1:/files ".*\.mp4$"
+        /transfer webdav1:/videos ".*\.mp4$"
       error_invalid_source: "源路径格式无效，应为: storage_name:/path"
       error_invalid_target: "目标路径格式无效，应为: storage_name:/path"
-      error_storage_not_found: "存储端 '{{.StorageName}}' 不存在或您无权访问: {{.Error}}"
-      error_storage_not_listable: "存储端 '{{.StorageName}}' 不支持列举文件功能"
-      error_storage_not_readable: "存储端 '{{.StorageName}}' 不支持读取文件功能"
-      error_target_not_found: "目标存储端 '{{.StorageName}}' 不存在或您无权访问: {{.Error}}"
+      error_storage_not_found: "存储端“{{.StorageName}}”不存在或无权访问: {{.Error}}"
+      error_storage_not_listable: "存储端“{{.StorageName}}”不支持列举文件"
+      error_storage_not_readable: "存储端“{{.StorageName}}”不支持读取文件"
+      error_target_not_found: "目标存储端“{{.StorageName}}”不存在或无权访问: {{.Error}}"
       info_fetching_files: "正在获取文件列表..."
       error_list_files_failed: "获取文件列表失败: {{.Error}}"
       error_invalid_regex: "正则表达式无效: {{.Error}}"
-      error_no_files_to_transfer: "目录中没有可传输的文件"
+      error_no_files_to_transfer: "目录中无待传输文件"
       error_add_task_failed: "添加任务失败: {{.Error}}"
       info_task_added: "已添加 {{.Count}} 个文件到传输队列\n总大小: {{.SizeMB}} MB\n任务 ID: {{.TaskID}}"
       start_stats: "总文件数: {{.Count}}\n总大小: {{.SizeMB}} MB"
@@ -373,7 +373,7 @@ bot:
       batch_item_transferring_unknown: "<blockquote><b>↕️ {{.Index}}/{{.Total}} 传输中</b>\n<code>{{.Name}}</code>\n速度：<code>{{.Speed}}</code>\n大小：<code>{{.Current}}</code> / 未知</blockquote>"
       batch_item_uploading: "<blockquote><b>⬆️ {{.Index}}/{{.Total}} 上传中</b>\n<code>{{.Name}}</code>\n{{.Bar}} <code>{{.Progress}}%</code>\n速度：<code>{{.Speed}}</code>\n大小：<code>{{.Current}}</code> / <code>{{.Size}}</code></blockquote>"
       batch_item_retrying: "<blockquote><b>🔁 {{.Index}}/{{.Total}} 上传重试</b>\n<code>{{.Name}}</code>\n{{.Bar}} <code>{{.Progress}}%</code>\n重试次数：<code>{{.Attempt}}/{{.Limit}}</code>\n失败前速度：<code>{{.Speed}}</code>\n大小：<code>{{.Current}}</code> / <code>{{.Size}}</code>\n原因：<code>{{.Reason}}</code></blockquote>"
-      batch_item_confirming: "<blockquote><b>⏳ {{.Index}}/{{.Total}} 等待中</b>\n<code>{{.Name}}</code>\n{{.Bar}} <code>{{.Progress}}%</code>\n<i>文件已上传，正在等待远端确认</i></blockquote>"
+      batch_item_confirming: "<blockquote><b>⏳ {{.Index}}/{{.Total}} 等待中</b>\n<code>{{.Name}}</code>\n{{.Bar}} <code>{{.Progress}}%</code>\n<i>已上传，等待远端确认</i></blockquote>"
       batch_summary_hidden_active: "🔄 另有 <code>{{.Count}}</code> 个文件正在处理"
       batch_summary_confirming: "☁️ 已上传，等待整组发送：<code>{{.Count}}</code>"
       batch_summary_failed: "❌ 失败：<code>{{.Count}}</code>"
@@ -450,4 +450,4 @@ bot:
       info_adding_aria2_download: "正在添加 Aria2 下载任务..."
       error_adding_aria2_download: "添加 Aria2 下载任务失败: {{.Error}}"
       info_aria2_download_added: "Aria2 下载任务已添加, GID: {{.GID}}"
-      info_select_storage: "请选择存储位置, 选择后将添加到 Aria2 下载队列"
+      info_select_storage: "请选择存储位置，确认后将加入 Aria2 下载队列"

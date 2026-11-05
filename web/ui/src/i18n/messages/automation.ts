@@ -57,7 +57,7 @@ export const zhHans = {
       syncPeers: '同步对话',
       syncing: '同步中…',
       syncConfirmTitle: '同步对话',
-      syncConfirmMessage: '该操作会遍历账号中的全部对话并写入本地会话缓存，可能耗时较久，期间请保持页面打开。',
+      syncConfirmMessage: '将遍历账号中的全部对话并写入本地会话缓存。耗时较长，请保持页面开启。',
       syncConfirmText: '开始同步',
       syncStarted: '正在同步对话，请稍候…',
       synced: '已同步 {count} 个对话',
