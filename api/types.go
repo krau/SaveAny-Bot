@@ -119,36 +119,50 @@ type TaskProgress struct {
 }
 
 type TaskInfoResponse struct {
-	TaskID      string             `json:"task_id"`
-	Type        tasktype.TaskType  `json:"type"`
-	Status      TaskStatus         `json:"status"`
-	Title       string             `json:"title"`
-	Progress    *TaskProgress      `json:"progress,omitempty"`
-	StorageID   uint               `json:"storage_id"`
-	StorageName string             `json:"storage_name"`
-	Path        string             `json:"path"`
-	Source      string             `json:"source,omitempty"`
-	Error       string             `json:"error,omitempty"`
-	CreatedAt   time.Time          `json:"created_at"`
-	StartedAt   *time.Time         `json:"started_at,omitempty"`
-	FinishedAt  *time.Time         `json:"finished_at,omitempty"`
-	UpdatedAt   time.Time          `json:"updated_at"`
-	Items       []TaskItemResponse `json:"items,omitempty"`
-	FailedItems []TaskItemResponse `json:"failed_items,omitempty"`
-	FailedCount int                `json:"failed_count,omitempty"`
+	TaskID            string             `json:"task_id"`
+	Type              tasktype.TaskType  `json:"type"`
+	Status            TaskStatus         `json:"status"`
+	Title             string             `json:"title"`
+	Progress          *TaskProgress      `json:"progress,omitempty"`
+	StorageID         uint               `json:"storage_id"`
+	StorageName       string             `json:"storage_name"`
+	Path              string             `json:"path"`
+	Source            string             `json:"source,omitempty"`
+	Error             string             `json:"error,omitempty"`
+	CreatedAt         time.Time          `json:"created_at"`
+	StartedAt         *time.Time         `json:"started_at,omitempty"`
+	FinishedAt        *time.Time         `json:"finished_at,omitempty"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	Items             []TaskItemResponse `json:"items,omitempty"`
+	FailedItems       []TaskItemResponse `json:"failed_items,omitempty"`
+	FailedCount       int                `json:"failed_count,omitempty"`
+	MetadataAvailable bool               `json:"metadata_available,omitempty"`
 }
 
 type TaskItemResponse struct {
-	Index           int    `json:"index"`
-	Name            string `json:"name"`
-	Path            string `json:"path,omitempty"`
-	StorageID       uint   `json:"storage_id,omitempty"`
-	StorageName     string `json:"storage_name,omitempty"`
-	Status          string `json:"status"`
-	Error           string `json:"error,omitempty"`
-	Size            int64  `json:"size,omitempty"`
-	SourceChatID    int64  `json:"source_chat_id,omitempty"`
-	SourceMessageID int    `json:"source_message_id,omitempty"`
+	Index             int    `json:"index"`
+	Name              string `json:"name"`
+	Path              string `json:"path,omitempty"`
+	StorageID         uint   `json:"storage_id,omitempty"`
+	StorageName       string `json:"storage_name,omitempty"`
+	Status            string `json:"status"`
+	Error             string `json:"error,omitempty"`
+	Size              int64  `json:"size,omitempty"`
+	SourceChatID      int64  `json:"source_chat_id,omitempty"`
+	SourceMessageID   int    `json:"source_message_id,omitempty"`
+	MetadataAvailable bool   `json:"metadata_available,omitempty"`
+}
+
+type TaskMetadataResponse struct {
+	TaskID string             `json:"task_id"`
+	Items  []TaskMetadataItem `json:"items"`
+}
+
+type TaskMetadataItem struct {
+	Index    int             `json:"index"`
+	Name     string          `json:"name,omitempty"`
+	Path     string          `json:"path,omitempty"`
+	Metadata json.RawMessage `json:"metadata"`
 }
 
 type TasksListResponse struct {

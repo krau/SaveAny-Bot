@@ -33,6 +33,8 @@ func (t *Task) ItemResults() []core.ItemResult {
 		msg := messageFile.Message()
 		result.SourceChatID = tgutil.ChatIdFromPeer(msg.GetPeerID())
 		result.SourceMessageID = msg.GetID()
+		result.MetadataJSON = t.metadataJSON
+		result.MetadataVersion = t.metadataVersion
 	}
 	return []core.ItemResult{result}
 }

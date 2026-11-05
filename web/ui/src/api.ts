@@ -18,6 +18,7 @@ import type {
   TaskCreated,
   TaskItem,
   TaskListResponse,
+  TaskMetadataResponse,
   TaskTypeInfo,
   TelegramStatus,
   UpdateInfo,
@@ -358,6 +359,9 @@ export const tasksApi = {
   },
   get(taskId: string) {
     return request<TaskItem>(`/tasks/${encodeURIComponent(taskId)}`)
+  },
+  metadata(taskId: string) {
+    return request<TaskMetadataResponse>(`/tasks/${encodeURIComponent(taskId)}/metadata`)
   },
   create(input: CreateTaskRequest) {
     return request<TaskCreated>('/tasks', { method: 'POST', body: input })

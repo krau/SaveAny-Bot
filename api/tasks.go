@@ -90,10 +90,16 @@ func (s *server) listTasks(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
+	metadataCounts, err := database.CountTaskMetadata(r.Context(), taskIDs)
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
 	for i := range records {
 		resp := taskResponse(&records[i])
-		resp.FailedItems = taskItemResponses(failedItems[records[i].TaskID])
+		resp.FailedItems = taskItemResponses(failedItems[records[i].TaskID], nil)
 		resp.FailedCount = failedCounts[records[i].TaskID]
+		resp.MetadataAvailable = metadataCounts[records[i].TaskID] > 0
 		tasks = append(tasks, resp)
 	}
 	WriteJSON(w, http.StatusOK, TasksListResponse{Tasks: tasks, Total: total})
@@ -111,7 +117,17 @@ func (s *server) getTask(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	resp.Items = taskItemResponses(items)
+	metadataRecords, err := database.ListTaskItemMetadata(r.Context(), record.TaskID)
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	metadataAvailable := make(map[int]bool, len(metadataRecords))
+	for _, item := range metadataRecords {
+		metadataAvailable[item.ItemIndex] = true
+	}
+	resp.MetadataAvailable = len(metadataRecords) > 0
+	resp.Items = taskItemResponses(items, metadataAvailable)
 	for _, item := range items {
 		if item.Status == string(core.ItemStatusFailed) {
 			resp.FailedCount++
@@ -120,26 +136,64 @@ func (s *server) getTask(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, resp)
 }
 
-func taskItemResponses(items []database.TaskItemRecord) []TaskItemResponse {
+func taskItemResponses(items []database.TaskItemRecord, metadataAvailable map[int]bool) []TaskItemResponse {
 	if len(items) == 0 {
 		return nil
 	}
 	out := make([]TaskItemResponse, 0, len(items))
 	for _, item := range items {
 		out = append(out, TaskItemResponse{
-			Index:           item.Index,
-			Name:            item.Name,
-			Path:            item.Path,
-			StorageID:       item.StorageID,
-			StorageName:     item.StorageName,
-			Status:          item.Status,
-			Error:           item.Error,
-			Size:            item.Size,
-			SourceChatID:    item.SourceChatID,
-			SourceMessageID: item.SourceMsgID,
+			Index:             item.Index,
+			Name:              item.Name,
+			Path:              item.Path,
+			StorageID:         item.StorageID,
+			StorageName:       item.StorageName,
+			Status:            item.Status,
+			Error:             item.Error,
+			Size:              item.Size,
+			SourceChatID:      item.SourceChatID,
+			SourceMessageID:   item.SourceMsgID,
+			MetadataAvailable: metadataAvailable[item.Index],
 		})
 	}
 	return out
+}
+
+func (s *server) getTaskMetadata(w http.ResponseWriter, r *http.Request) {
+	record, err := database.GetTaskRecord(r.Context(), r.PathValue("id"))
+	if err != nil {
+		WriteError(w, http.StatusNotFound, "task_not_found", "task not found")
+		return
+	}
+	records, err := database.ListTaskItemMetadata(r.Context(), record.TaskID)
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	if len(records) == 0 {
+		WriteError(w, http.StatusNotFound, "metadata_not_found", "no metadata recorded for this task")
+		return
+	}
+	taskItems, err := database.ListTaskItems(r.Context(), record.TaskID)
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	byIndex := make(map[int]database.TaskItemRecord, len(taskItems))
+	for _, item := range taskItems {
+		byIndex[item.Index] = item
+	}
+	items := make([]TaskMetadataItem, 0, len(records))
+	for _, item := range records {
+		taskItem := byIndex[item.ItemIndex]
+		items = append(items, TaskMetadataItem{
+			Index:    item.ItemIndex,
+			Name:     taskItem.Name,
+			Path:     taskItem.Path,
+			Metadata: json.RawMessage(item.JSON),
+		})
+	}
+	WriteJSON(w, http.StatusOK, TaskMetadataResponse{TaskID: record.TaskID, Items: items})
 }
 
 func (s *server) retryTask(w http.ResponseWriter, r *http.Request) {

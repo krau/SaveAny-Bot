@@ -30,6 +30,7 @@ export interface TaskFileItem {
   size?: number
   source_chat_id?: number
   source_message_id?: number
+  metadata_available?: boolean
 }
 
 export interface TaskItem {
@@ -50,6 +51,7 @@ export interface TaskItem {
   items?: TaskFileItem[]
   failed_items?: TaskFileItem[]
   failed_count?: number
+  metadata_available?: boolean
 }
 
 export interface TaskListResponse {
@@ -313,4 +315,16 @@ export interface OnboardingStatus {
   steps: OnboardingSteps
   bot_state: string
   legacy: OnboardingLegacy
+}
+
+export interface TaskMetadataItem {
+  index: number
+  name?: string
+  path?: string
+  metadata: JsonObject
+}
+
+export interface TaskMetadataResponse {
+  task_id: string
+  items: TaskMetadataItem[]
 }

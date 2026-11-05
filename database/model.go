@@ -130,3 +130,21 @@ type TaskFilter struct {
 	Limit  int
 	Offset int
 }
+
+// TaskItemMetadata stores the normalized Telegram message metadata for one
+// saved file. It is separate from TaskItemRecord so task lists do not load
+// potentially large JSON payloads.
+type TaskItemMetadata struct {
+	ID              uint   `gorm:"primaryKey"`
+	TaskID          string `gorm:"uniqueIndex:idx_task_metadata_item;size:64;not null"`
+	ItemIndex       int    `gorm:"uniqueIndex:idx_task_metadata_item;not null"`
+	Version         int    `gorm:"not null;default:1"`
+	SourceChatID    int64  `gorm:"index"`
+	SourceMessageID int    `gorm:"index"`
+	JSON            string `gorm:"column:metadata;type:text;not null"`
+	CreatedAt       time.Time
+}
+
+func (TaskItemMetadata) TableName() string {
+	return "task_item_metadata"
+}

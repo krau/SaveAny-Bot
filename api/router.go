@@ -86,6 +86,7 @@ func NewHandler(deps Deps) http.Handler {
 	mux.HandleFunc("GET /api/v1/tasks", s.listTasks)
 	mux.HandleFunc("POST /api/v1/tasks", s.createTask)
 	mux.HandleFunc("GET /api/v1/tasks/{id}", s.getTask)
+	mux.HandleFunc("GET /api/v1/tasks/{id}/metadata", s.getTaskMetadata)
 	mux.HandleFunc("POST /api/v1/tasks/{id}/cancel", s.cancelTask)
 	mux.HandleFunc("POST /api/v1/tasks/{id}/retry", s.retryTask)
 	mux.HandleFunc("DELETE /api/v1/tasks/{id}", s.deleteTask)

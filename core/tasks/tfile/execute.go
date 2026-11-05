@@ -56,9 +56,11 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 		return fmt.Errorf("downloaded file is empty (expected %d bytes)", t.File.Size())
 	}
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
+	vctx = storagetypes.WithMessageMetadata(vctx, t.metadataJSON)
 	if caption, ok := sourceCaption(t.File); ok {
 		vctx = storagetypes.WithSourceCaption(vctx, caption)
 	}
+	savedPath := t.Path
 	err = retry.Retry(func() error {
 		file, err := os.Open(t.localPath)
 		if err != nil {
@@ -67,7 +69,7 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 		defer file.Close()
 		uploadProgress, tracksUpload := t.Progress.(UploadProgressTracker)
 		if !tracksUpload {
-			if err = t.Storage.Save(vctx, file, t.Path); err != nil {
+			if savedPath, err = storage.SaveWithPath(vctx, t.Storage, file, t.Path); err != nil {
 				return fmt.Errorf("failed to save file: %w", err)
 			}
 			return nil
@@ -79,9 +81,10 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 		}
 		if progressSaver, ok := t.Storage.(storage.StorageProgressSaver); ok {
 			err = progressSaver.SaveWithProgress(vctx, file, t.Path, onProgress)
+			savedPath = t.Path
 		} else {
 			var reader io.Reader = ioutil.NewProgressReader(file, fileStat.Size(), onProgress)
-			err = t.Storage.Save(vctx, reader, t.Path)
+			savedPath, err = storage.SaveWithPath(vctx, t.Storage, reader, t.Path)
 		}
 		if err != nil {
 			return fmt.Errorf("failed to save file: %w", err)
@@ -94,6 +97,7 @@ func (t *Task) Execute(ctx context.Context) (err error) {
 	if err := core.MarkTaskElementDone(ctx, t.ID, t.ElementID); err != nil {
 		return fmt.Errorf("failed to persist task completion: %w", err)
 	}
+	t.saveMetadataSidecar(ctx, savedPath)
 	if err := os.Remove(t.localPath); err != nil {
 		logger.Errorf("Failed to remove cache file: %v", err)
 	}

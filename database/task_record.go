@@ -67,6 +67,9 @@ func HasUnfinishedTasks(ctx context.Context) (bool, error) {
 
 func DeleteTaskRecord(ctx context.Context, taskID string) error {
 	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Unscoped().Where("task_id = ?", taskID).Delete(&TaskItemMetadata{}).Error; err != nil {
+			return err
+		}
 		if err := tx.Unscoped().Where("task_id = ?", taskID).Delete(&TaskItemRecord{}).Error; err != nil {
 			return err
 		}

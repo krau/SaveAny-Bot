@@ -50,6 +50,8 @@ func (t *Task) ItemResults() []core.ItemResult {
 			msg := messageFile.Message()
 			result.SourceChatID = tgutil.ChatIdFromPeer(msg.GetPeerID())
 			result.SourceMessageID = msg.GetID()
+			result.MetadataJSON = elem.metadataJSON
+			result.MetadataVersion = elem.metadataVersion
 		}
 		results = append(results, result)
 	}

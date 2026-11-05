@@ -101,6 +101,30 @@ export const settingsGroups: SettingsGroupDef[] = [
     ],
   },
   {
+    key: 'metadata',
+    title: 'settings.groups.metadata',
+    fields: [
+      {
+        path: 'enabled',
+        label: 'settings.metadata.enabled',
+        kind: 'bool',
+        hint: 'settings.metadata.enabledHint',
+      },
+      {
+        path: 'include_text',
+        label: 'settings.metadata.includeText',
+        kind: 'bool',
+        hint: 'settings.metadata.includeTextHint',
+      },
+      {
+        path: 'sidecar',
+        label: 'settings.metadata.sidecar',
+        kind: 'bool',
+        hint: 'settings.metadata.sidecarHint',
+      },
+    ],
+  },
+  {
     key: 'log',
     title: 'settings.groups.log',
     fields: [

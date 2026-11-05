@@ -34,8 +34,10 @@ export const zhHans = {
     toast: {
       created: '任务已创建',
       retried: '已创建重试任务，仅包含失败的文件',
+      metadataDownloaded: '元数据已下载',
     },
     failedFiles: '失败文件',
+    metadata: '元数据',
     confirm: {
       cancelTitle: '取消任务',
       cancelMessage: '取消该任务？正在下载的内容会被中断。',
@@ -174,8 +176,10 @@ export const en = {
     toast: {
       created: 'Task created',
       retried: 'Retry task created for the failed files',
+      metadataDownloaded: 'Metadata downloaded',
     },
     failedFiles: 'Failed files',
+    metadata: 'Metadata',
     confirm: {
       cancelTitle: 'Cancel task',
       cancelMessage: 'Cancel this task? The current download will be interrupted.',

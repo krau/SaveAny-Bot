@@ -88,7 +88,8 @@ func (t *Task) executionGroups() []executionGroup {
 	for i := 0; i < len(t.elems); {
 		elem := &t.elems[i]
 		batchSaver, batchCapable := elem.Storage.(storage.StorageBatchSaver)
-		if !batchCapable || elem.sourceGroupKey == "" {
+		key := elem.executionGroupKey()
+		if !batchCapable || key == "" {
 			groups = append(groups, executionGroup{elems: []*TaskElement{elem}})
 			i++
 			continue
@@ -97,7 +98,7 @@ func (t *Task) executionGroups() []executionGroup {
 		end := i + 1
 		for end < len(t.elems) {
 			next := &t.elems[end]
-			if next.Storage != elem.Storage || next.sourceGroupKey != elem.sourceGroupKey {
+			if next.Storage != elem.Storage || next.executionGroupKey() != key {
 				break
 			}
 			end++
@@ -208,12 +209,14 @@ func (t *Task) processBatch(ctx context.Context, group executionGroup) error {
 		}
 		openFiles = append(openFiles, file)
 		items = append(items, storagetypes.BatchItem{
-			Reader:          file,
-			StoragePath:     elem.Path,
-			Size:            stat.Size(),
-			SourceGroupKey:  elem.sourceGroupKey,
-			Caption:         elem.sourceCaption,
-			PreserveCaption: elem.preserveCaption,
+			Reader:           file,
+			StoragePath:      elem.Path,
+			Size:             stat.Size(),
+			SourceGroupKey:   elem.sourceGroupKey,
+			Caption:          elem.sourceCaption,
+			PreserveCaption:  elem.preserveCaption,
+			MetadataJSON:     elem.metadataJSON,
+			MetadataGroupKey: elem.metadataGroupKey,
 		})
 	}
 	for index, item := range items {
@@ -344,8 +347,14 @@ func (t *Task) processElement(ctx context.Context, elem *TaskElement) error {
 		pr, pw := io.Pipe()
 		defer pr.Close()
 		errg, uploadCtx := errgroup.WithContext(ctx)
+		uploadCtx = storagetypes.WithMessageMetadata(uploadCtx, elem.metadataJSON)
+		if elem.preserveCaption {
+			uploadCtx = storagetypes.WithSourceCaption(uploadCtx, elem.sourceCaption)
+		}
+		savedPath := elem.Path
 		errg.Go(func() error {
-			err := elem.Storage.Save(uploadCtx, pr, elem.Path)
+			var err error
+			savedPath, err = storage.SaveWithPath(uploadCtx, elem.Storage, pr, elem.Path)
 			if err != nil {
 				t.markItemFailed(uploadCtx, elem.ID, FailureStageUpload, err)
 				t.notifyStateChange(ctx)
@@ -394,6 +403,7 @@ func (t *Task) processElement(ctx context.Context, elem *TaskElement) error {
 			t.notifyStateChange(ctx)
 			return fmt.Errorf("failed to persist element completion: %w", err)
 		}
+		elem.saveMetadataSidecar(ctx, savedPath)
 		t.notifyStateChange(ctx)
 		logger.Info("File downloaded successfully in stream mode")
 		return nil
@@ -437,11 +447,16 @@ func (t *Task) processElement(ctx context.Context, elem *TaskElement) error {
 	}
 	t.recordDownloadComplete(elem.ID, fileStat.Size())
 	vctx := context.WithValue(ctx, ctxkey.ContentLength, fileStat.Size())
+	vctx = storagetypes.WithMessageMetadata(vctx, elem.metadataJSON)
+	if elem.preserveCaption {
+		vctx = storagetypes.WithSourceCaption(vctx, elem.sourceCaption)
+	}
 	t.startUpload(vctx)
 	onProgress := t.uploadCallback(vctx, elem.ID)
 	attempt := 0
 	retryLimit := int(config.C().Retry)
 	lastFailureStage := FailureStageUpload
+	savedPath := elem.Path
 	err = retry.Retry(func() error {
 		attempt++
 		var file *os.File
@@ -456,8 +471,9 @@ func (t *Task) processElement(ctx context.Context, elem *TaskElement) error {
 		onProgress(0, fileStat.Size())
 		if progressSaver, ok := elem.Storage.(storage.StorageProgressSaver); ok {
 			err = progressSaver.SaveWithProgress(vctx, file, elem.Path, onProgress)
+			savedPath = elem.Path
 		} else {
-			err = elem.Storage.Save(vctx, ioutil.NewProgressReader(file, fileStat.Size(), onProgress), elem.Path)
+			savedPath, err = storage.SaveWithPath(vctx, elem.Storage, ioutil.NewProgressReader(file, fileStat.Size(), onProgress), elem.Path)
 		}
 		if err != nil {
 			logger.Errorf("Failed to save file: %s, retrying...", err)
@@ -476,6 +492,7 @@ func (t *Task) processElement(ctx context.Context, elem *TaskElement) error {
 			t.notifyStateChange(vctx)
 			return fmt.Errorf("failed to persist element completion: %w", err)
 		}
+		elem.saveMetadataSidecar(vctx, savedPath)
 		t.notifyStateChange(vctx)
 		if err := os.Remove(elem.localPath); err != nil {
 			logger.Errorf("Failed to remove cache file: %v", err)

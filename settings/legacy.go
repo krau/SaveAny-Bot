@@ -95,7 +95,7 @@ func ImportLegacy(ctx context.Context, src, dataDir string) error {
 		return err
 	}
 	groups := make(map[string]string)
-	for _, group := range []string{GroupCore, GroupLog, GroupDB, GroupTelegram, GroupAria2, GroupCache, GroupTemp, GroupYtdlp, GroupParser, GroupHook} {
+	for _, group := range []string{GroupCore, GroupLog, GroupDB, GroupTelegram, GroupAria2, GroupCache, GroupTemp, GroupYtdlp, GroupParser, GroupHook, GroupMetadata} {
 		if _, ok := existing[group]; ok {
 			continue
 		}

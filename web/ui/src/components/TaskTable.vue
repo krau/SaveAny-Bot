@@ -20,6 +20,7 @@ withDefaults(
 
 const emit = defineEmits<{
   cancel: [taskId: string]
+  metadata: [taskId: string]
   remove: [taskId: string]
   retry: [taskId: string]
 }>()
@@ -130,6 +131,16 @@ function progressText(task: TaskItem): string {
                 {{ t('common.actions.retry') }}
               </button>
               <button
+                v-if="task.metadata_available"
+                class="btn small"
+                type="button"
+                :disabled="busyId === task.task_id"
+                @click="emit('metadata', task.task_id)"
+              >
+                <AppIcon name="file" :size="14" />
+                {{ t('tasks.metadata') }}
+              </button>
+              <button
                 v-if="!isActive(task.status)"
                 class="btn small danger"
                 type="button"
@@ -206,6 +217,16 @@ function progressText(task: TaskItem): string {
           >
             <AppIcon name="refresh" :size="14" />
             {{ t('common.actions.retry') }}
+          </button>
+          <button
+            v-if="task.metadata_available"
+            class="btn small"
+            type="button"
+            :disabled="busyId === task.task_id"
+            @click="emit('metadata', task.task_id)"
+          >
+            <AppIcon name="file" :size="14" />
+            {{ t('tasks.metadata') }}
           </button>
           <button
             v-if="!isActive(task.status)"

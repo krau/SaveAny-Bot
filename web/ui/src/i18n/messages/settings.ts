@@ -6,6 +6,7 @@ export const zhHans = {
     warningSeparator: '；',
     groups: {
       core: '核心',
+      metadata: '消息元数据',
       log: '日志',
       aria2: 'Aria2',
       ytdlp: 'yt-dlp',
@@ -42,6 +43,14 @@ export const zhHans = {
       noCleanCache: '保留缓存',
       proxy: '全局代理',
       proxyHint: '重启后生效',
+    },
+    metadata: {
+      enabled: '保存消息元数据',
+      enabledHint: '保存消息来源、发送者、文本和媒体属性；仅影响新任务',
+      includeText: '保存消息文本',
+      includeTextHint: '关闭后不保存消息正文和标签',
+      sidecar: '写入旁车 JSON',
+      sidecarHint: '在文件旁写入 .meta.json；Telegram 存储不写入旁车',
     },
     log: {
       level: '日志级别',
@@ -134,6 +143,7 @@ export const en = {
     warningSeparator: '; ',
     groups: {
       core: 'Core',
+      metadata: 'Message metadata',
       log: 'Logs',
       aria2: 'Aria2',
       ytdlp: 'yt-dlp',
@@ -170,6 +180,14 @@ export const en = {
       noCleanCache: 'Keep cache',
       proxy: 'Global proxy',
       proxyHint: 'Takes effect after restart',
+    },
+    metadata: {
+      enabled: 'Save message metadata',
+      enabledHint: 'Store source, sender, text, and media attributes; applies to new tasks only',
+      includeText: 'Store message text',
+      includeTextHint: 'Disables message text and tags when off',
+      sidecar: 'Write sidecar JSON',
+      sidecarHint: 'Writes .meta.json beside each file; Telegram storage is excluded',
     },
     log: {
       level: 'Log level',

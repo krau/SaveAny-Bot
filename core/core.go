@@ -146,6 +146,22 @@ func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan
 			if dbErr := database.ReplaceTaskItems(recordCtx, exe.TaskID(), records); dbErr != nil {
 				logger.Errorf("Failed to store task items for %s: %v", exe.TaskID(), dbErr)
 			}
+			metadataRecords := make([]database.TaskItemMetadata, 0, len(items))
+			for _, item := range items {
+				if item.MetadataJSON == "" {
+					continue
+				}
+				metadataRecords = append(metadataRecords, database.TaskItemMetadata{
+					ItemIndex:       item.Index,
+					Version:         item.MetadataVersion,
+					SourceChatID:    item.SourceChatID,
+					SourceMessageID: item.SourceMessageID,
+					JSON:            item.MetadataJSON,
+				})
+			}
+			if dbErr := database.ReplaceTaskItemMetadata(recordCtx, exe.TaskID(), metadataRecords); dbErr != nil {
+				logger.Errorf("Failed to store task metadata for %s: %v", exe.TaskID(), dbErr)
+			}
 		}
 		recordFields := map[string]any{"status": status}
 		if status == taskstatus.Queued.String() {

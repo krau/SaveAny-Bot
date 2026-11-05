@@ -26,6 +26,8 @@ type ItemResult struct {
 	Size            int64
 	SourceChatID    int64
 	SourceMessageID int
+	MetadataJSON    string
+	MetadataVersion int
 }
 
 // ResultReporter exposes per-file outcomes after execution.

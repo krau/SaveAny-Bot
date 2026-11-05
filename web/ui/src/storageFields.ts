@@ -131,6 +131,18 @@ export const storageTypeDefs: StorageTypeDef[] = [
       { name: 'skip_large', label: 'storages.fields.skipLarge', kind: 'bool', hint: 'storages.fields.skipLargeHint' },
       { name: 'split_large_video', label: 'storages.fields.splitVideo', kind: 'bool' },
       { name: 'split_size_mb', label: 'storages.fields.splitSize', kind: 'number' },
+      {
+        name: 'use_metadata_caption',
+        label: 'storages.fields.useMetadataCaption',
+        kind: 'bool',
+        hint: 'storages.fields.useMetadataCaptionHint',
+      },
+      {
+        name: 'use_metadata_album',
+        label: 'storages.fields.useMetadataAlbum',
+        kind: 'bool',
+        hint: 'storages.fields.useMetadataAlbumHint',
+      },
     ],
   },
   {

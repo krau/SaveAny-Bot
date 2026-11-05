@@ -867,6 +867,10 @@ code {
   gap: 8px;
 }
 
+.task-table .actions .btn {
+  min-width: 112px;
+}
+
 /* Status and labels */
 
 .badge {

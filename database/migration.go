@@ -33,6 +33,7 @@ func baselineSchema(tx *gorm.DB) error {
 		&TaskItemRecord{},
 		&WebSession{},
 		&BotWorker{},
+		&TaskItemMetadata{},
 	)
 }
 

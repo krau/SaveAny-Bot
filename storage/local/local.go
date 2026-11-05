@@ -79,6 +79,13 @@ func (l *Local) resolve(storagePath string) (string, error) {
 }
 
 func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error {
+	_, err := l.SaveWithPath(ctx, r, storagePath)
+	return err
+}
+
+// SaveWithPath saves a file and returns its actual storage-relative path after
+// conflict resolution.
+func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath string) (string, error) {
 	l.logger.Infof("Saving file to %s", storagePath)
 	clean := filepath.Clean(storagePath)
 	if clean == "." {
@@ -86,23 +93,23 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 	}
 	absPath, err := l.resolve(clean)
 	if err != nil {
-		return err
+		return "", err
 	}
 	overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool)
 	if !overwrite {
 		absPath, err = fsutil.UniquePath(l.config.BasePath, clean, l.existsPathE, 1000)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 	// Write beside the target and rename, so a failed copy never leaves a
 	// truncated file under the final name.
 	tempFile, err := os.CreateTemp(filepath.Dir(absPath), "."+filepath.Base(absPath)+".part-*")
 	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
+		return "", fmt.Errorf("failed to create file: %w", err)
 	}
 	tempPath := tempFile.Name()
 	removeTemp := true
@@ -114,34 +121,46 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 		}
 	}()
 	if _, err := io.Copy(tempFile, r); err != nil {
-		return errors.Join(err, tempFile.Close())
+		return "", errors.Join(err, tempFile.Close())
 	}
 	if err := tempFile.Chmod(0o644); err != nil {
-		return errors.Join(err, tempFile.Close())
+		return "", errors.Join(err, tempFile.Close())
 	}
 	if err := tempFile.Close(); err != nil {
-		return err
+		return "", err
 	}
 	if !overwrite {
 		// Link refuses to replace an existing file, closing the check-then-write
 		// race in UniquePath.
 		if err := os.Link(tempPath, absPath); err != nil {
 			if errors.Is(err, os.ErrExist) {
-				return storagetypes.ErrAlreadyExists
+				return "", storagetypes.ErrAlreadyExists
 			}
-			return err
+			return "", err
 		}
 		if err := os.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return err
+			return "", err
 		}
 		removeTemp = false
-		return nil
+		return l.relativePath(absPath)
 	}
 	if err := os.Rename(tempPath, absPath); err != nil {
-		return err
+		return "", err
 	}
 	removeTemp = false
-	return nil
+	return l.relativePath(absPath)
+}
+
+func (l *Local) relativePath(absPath string) (string, error) {
+	base, err := filepath.Abs(l.config.BasePath)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(base, absPath)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Clean(rel), nil
 }
 
 func (l *Local) Exists(ctx context.Context, storagePath string) (bool, error) {

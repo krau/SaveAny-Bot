@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -129,6 +130,12 @@ func (t *Telegram) Test(ctx context.Context) error {
 	return nil
 }
 
+// WriteMetadataSidecar intentionally does nothing: Telegram storage consumes
+// metadata during upload instead of sending a separate sidecar message.
+func (t *Telegram) WriteMetadataSidecar(context.Context, string, []byte) error {
+	return nil
+}
+
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	return t.save(ctx, r, storagePath, nil)
 }
@@ -179,7 +186,7 @@ func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, pr
 
 func (t *Telegram) saveWithContext(ctx context.Context, tctx *ext.Context, r io.Reader, storagePath string, progress *uploadProgress) error {
 	storagePath = path.Clean(storagePath)
-	captionOverride := sourceCaptionOverride(ctx)
+	captionOverride := t.captionOverride(ctx)
 	size := contentLength(ctx)
 	maxUploadSize := maxUploadFileSize(tctx)
 	if t.config.SkipLarge && size > maxUploadSize {
@@ -251,7 +258,7 @@ func (t *Telegram) saveWithContext(ctx context.Context, tctx *ext.Context, r io.
 	if err := t.limiter.Wait(ctx); err != nil {
 		return fmt.Errorf("rate limit failed: %w", err)
 	}
-	prepared, err := t.prepareMedia(ctx, tctx, r, storagePath, size, nil, progress)
+	prepared, err := t.prepareMedia(ctx, tctx, r, storagePath, size, captionOverride, progress)
 	if err != nil {
 		return err
 	}
@@ -311,12 +318,45 @@ func contentLength(ctx context.Context) int64 {
 	return -1
 }
 
-func sourceCaptionOverride(ctx context.Context) *string {
-	caption, ok := storagetypes.SourceCaptionFromContext(ctx)
-	if !ok {
-		return nil
+func (t *Telegram) captionOverride(ctx context.Context) *string {
+	if t.config.UseMetadataCaption {
+		if caption, ok := metadataCaption(storagetypes.MessageMetadataFromContext(ctx)); ok {
+			return &caption
+		}
 	}
-	return &caption
+	if caption, ok := storagetypes.SourceCaptionFromContext(ctx); ok {
+		caption = truncateCaption(caption)
+		return &caption
+	}
+	return nil
+}
+
+func (t *Telegram) albumCaption(item storagetypes.BatchItem) *string {
+	if t.config.UseMetadataCaption {
+		if text, ok := metadataCaption(item.MetadataJSON); ok {
+			return &text
+		}
+	}
+	if item.PreserveCaption {
+		caption := truncateCaption(item.Caption)
+		return &caption
+	}
+	return nil
+}
+
+func metadataCaption(raw string) (string, bool) {
+	if raw == "" {
+		return "", false
+	}
+	var meta struct {
+		Message struct {
+			Text string `json:"text"`
+		} `json:"message"`
+	}
+	if err := json.Unmarshal([]byte(raw), &meta); err != nil || meta.Message.Text == "" {
+		return "", false
+	}
+	return truncateCaption(meta.Message.Text), true
 }
 
 func maxUploadFileSize(tctx *ext.Context) int64 {
@@ -388,10 +428,19 @@ func mediaCaption(filename string, override *string) []message.StyledTextOption 
 	if override == nil {
 		return []message.StyledTextOption{styling.Plain(filename)}
 	}
-	if *override == "" {
+	caption := truncateCaption(*override)
+	if caption == "" {
 		return nil
 	}
-	return []message.StyledTextOption{styling.Plain(*override)}
+	return []message.StyledTextOption{styling.Plain(caption)}
+}
+
+func truncateCaption(value string) string {
+	runes := []rune(value)
+	if len(runes) > 1024 {
+		runes = runes[:1024]
+	}
+	return string(runes)
 }
 
 func (t *Telegram) prepareMedia(
@@ -540,7 +589,7 @@ func (t *Telegram) saveBatch(
 		mediaItem.index = index
 		inspected = append(inspected, mediaItem)
 	}
-	for _, group := range planMediaGroups(inspected) {
+	for _, group := range t.planMediaGroups(inspected) {
 		if err := t.saveMediaGroup(ctx, tctx, group, onProgress); err != nil {
 			if tctx == primary || ctx.Err() != nil {
 				return err
@@ -587,11 +636,26 @@ func (t *Telegram) inspectBatchItem(tctx *ext.Context, item storagetypes.BatchIt
 	return result, nil
 }
 
+func batchGroupKey(item storagetypes.BatchItem, useMetadata bool) string {
+	if useMetadata && item.MetadataGroupKey != "" {
+		return item.MetadataGroupKey
+	}
+	return item.SourceGroupKey
+}
+
 func planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
+	return planMediaGroupsWithMetadata(items, false)
+}
+
+func (t *Telegram) planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
+	return planMediaGroupsWithMetadata(items, t.config.UseMetadataAlbum)
+}
+
+func planMediaGroupsWithMetadata(items []batchMediaItem, useMetadata bool) [][]batchMediaItem {
 	groups := make([][]batchMediaItem, 0, len(items))
 	for i := 0; i < len(items); {
 		item := items[i]
-		if item.useSingleSave || !item.albumEligible || item.item.SourceGroupKey == "" {
+		if item.useSingleSave || !item.albumEligible || batchGroupKey(item.item, useMetadata) == "" {
 			groups = append(groups, items[i:i+1])
 			i++
 			continue
@@ -599,7 +663,7 @@ func planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
 		end := i + 1
 		for end < len(items) && end-i < tglimit.MaxAlbumItems {
 			next := items[end]
-			if next.useSingleSave || !next.albumEligible || next.chatID != item.chatID || next.item.SourceGroupKey != item.item.SourceGroupKey {
+			if next.useSingleSave || !next.albumEligible || next.chatID != item.chatID || batchGroupKey(next.item, useMetadata) != batchGroupKey(item.item, useMetadata) {
 				break
 			}
 			end++
@@ -636,6 +700,7 @@ func (t *Telegram) saveMediaGroup(
 				return fmt.Errorf("failed to seek batch item: %w", err)
 			}
 			itemCtx := context.WithValue(ctx, ctxkey.ContentLength, item.Size)
+			itemCtx = storagetypes.WithMessageMetadata(itemCtx, item.MetadataJSON)
 			if item.PreserveCaption {
 				itemCtx = storagetypes.WithSourceCaption(itemCtx, item.Caption)
 			}
@@ -651,14 +716,15 @@ func (t *Telegram) saveMediaGroup(
 		}
 
 		prepared := make([]preparedMedia, 0, len(group))
-		for _, mediaItem := range group {
+		emptyCaption := ""
+		for index, mediaItem := range group {
 			item := mediaItem.item
 			if _, err := item.Reader.Seek(0, io.SeekStart); err != nil {
 				return fmt.Errorf("failed to seek batch item: %w", err)
 			}
-			var captionOverride *string
-			if item.PreserveCaption {
-				captionOverride = &item.Caption
+			captionOverride := &emptyCaption
+			if index == 0 {
+				captionOverride = t.albumCaption(item)
 			}
 			progress := batchItemUploadProgress(mediaItem, onProgress)
 			media, err := t.prepareMedia(ctx, tctx, item.Reader, item.StoragePath, item.Size, captionOverride, progress)

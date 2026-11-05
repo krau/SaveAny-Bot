@@ -46,6 +46,13 @@ type Config struct {
 	Hook         hookConfig              `toml:"hook" mapstructure:"hook" json:"hook"`
 	Ytdlp        YtdlpConfig             `toml:"ytdlp" mapstructure:"ytdlp" json:"ytdlp"`
 	Web          webConfig               `toml:"web" mapstructure:"web" json:"web"`
+	Metadata     metadataConfig          `toml:"metadata" mapstructure:"metadata" json:"metadata"`
+}
+
+type metadataConfig struct {
+	Enabled     bool `toml:"enabled" mapstructure:"enabled" json:"enabled"`
+	IncludeText bool `toml:"include_text" mapstructure:"include_text" json:"include_text"`
+	Sidecar     bool `toml:"sidecar" mapstructure:"sidecar" json:"sidecar"`
 }
 
 type webConfig struct {
@@ -139,6 +146,10 @@ func DefaultsMap(dataDir string) map[string]any {
 		"ytdlp.max_height":         0,
 		"ytdlp.format":             "",
 		"ytdlp.restrict_filenames": false,
+
+		"metadata.enabled":      false,
+		"metadata.include_text": true,
+		"metadata.sidecar":      false,
 	}
 }
 
@@ -176,6 +187,7 @@ func Default(dataDir string) Config {
 			Enable: true,
 			Listen: defaultWebListen,
 		},
+		Metadata: metadataConfig{IncludeText: true},
 	}
 }
 

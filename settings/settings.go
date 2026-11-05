@@ -37,6 +37,7 @@ const (
 	GroupParser   = "parser"
 	GroupHook     = "hook"
 	GroupWeb      = "web"
+	GroupMetadata = "metadata"
 )
 
 const maskedValue = "__MASKED__"
@@ -111,6 +112,8 @@ func groupValue(cfg config.Config, group string) (any, error) {
 		return cfg.Hook, nil
 	case GroupWeb:
 		return cfg.Web, nil
+	case GroupMetadata:
+		return cfg.Metadata, nil
 	default:
 		return nil, ErrUnknownGroup
 	}
@@ -172,6 +175,8 @@ func applyGroup(cfg *config.Config, group string, raw []byte) error {
 		return json.Unmarshal(raw, &cfg.Hook)
 	case GroupWeb:
 		return json.Unmarshal(raw, &cfg.Web)
+	case GroupMetadata:
+		return json.Unmarshal(raw, &cfg.Metadata)
 	default:
 		return ErrUnknownGroup
 	}
@@ -338,7 +343,7 @@ func (s *Service) Reload(ctx context.Context) error {
 func (s *Service) PublicSettings() (map[string]any, error) {
 	cfg := s.Config()
 	out := make(map[string]any)
-	for _, group := range []string{GroupCore, GroupLog, GroupDB, GroupTelegram, GroupAria2, GroupCache, GroupTemp, GroupYtdlp, GroupParser, GroupHook, GroupWeb} {
+	for _, group := range []string{GroupCore, GroupLog, GroupDB, GroupTelegram, GroupAria2, GroupCache, GroupTemp, GroupYtdlp, GroupParser, GroupHook, GroupWeb, GroupMetadata} {
 		value, err := groupValue(cfg, group)
 		if err != nil {
 			return nil, err

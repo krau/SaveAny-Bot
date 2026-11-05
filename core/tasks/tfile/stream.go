@@ -7,6 +7,8 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/common/tdler"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
+	"github.com/krau/SaveAny-Bot/storage"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -16,8 +18,15 @@ func executeStream(ctx context.Context, task *Task) error {
 	pr, pw := io.Pipe()
 	defer pr.Close()
 	errg, uploadCtx := errgroup.WithContext(ctx)
+	uploadCtx = storagetypes.WithMessageMetadata(uploadCtx, task.metadataJSON)
+	if caption, ok := sourceCaption(task.File); ok {
+		uploadCtx = storagetypes.WithSourceCaption(uploadCtx, caption)
+	}
+	savedPath := task.Path
 	errg.Go(func() error {
-		return task.Storage.Save(uploadCtx, pr, task.Path)
+		var err error
+		savedPath, err = storage.SaveWithPath(uploadCtx, task.Storage, pr, task.Path)
+		return err
 	})
 	wr := newWriter(ctx, pw, task.Progress, task)
 	errg.Go(func() error {
@@ -44,5 +53,6 @@ func executeStream(ctx context.Context, task *Task) error {
 		return err
 	}
 	logger.Info("File downloaded successfully in stream mode")
+	task.saveMetadataSidecar(ctx, savedPath)
 	return nil
 }

@@ -151,6 +151,25 @@ async function retry(taskId: string) {
   }
 }
 
+async function downloadMetadata(taskId: string) {
+  busyId.value = taskId
+  try {
+    const data = await tasksApi.metadata(taskId)
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${taskId}-metadata.json`
+    link.click()
+    URL.revokeObjectURL(url)
+    toast.push(t('tasks.toast.metadataDownloaded'), 'success')
+  } catch (err) {
+    toast.push(errorMessage(err), 'error', 6000)
+  } finally {
+    busyId.value = ''
+  }
+}
+
 async function remove(taskId: string) {
   const confirmed = await confirm.ask({
     title: t('tasks.confirm.removeTitle'),
@@ -200,7 +219,15 @@ async function remove(taskId: string) {
     </div>
 
     <PageLoading v-if="!loaded" :rows="4" />
-    <TaskTable v-else :tasks="tasks" :busy-id="busyId" @cancel="cancel" @remove="remove" @retry="retry" />
+    <TaskTable
+      v-else
+      :tasks="tasks"
+      :busy-id="busyId"
+      @cancel="cancel"
+      @metadata="downloadMetadata"
+      @remove="remove"
+      @retry="retry"
+    />
 
     <Teleport to="body">
       <Transition name="modal">
