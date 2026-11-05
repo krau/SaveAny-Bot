@@ -9,7 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/dop251/goja"
-	"github.com/playwright-community/playwright-go"
+	"github.com/mxschmitt/playwright-go"
 )
 
 var jsPlaywright = func(vm *goja.Runtime, logger *log.Logger) *goja.Object {
