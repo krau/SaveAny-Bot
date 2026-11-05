@@ -18,38 +18,47 @@ import (
 
 func jsRegisterParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value {
 	return func(call goja.FunctionCall) goja.Value {
+		throw := func(err error) {
+			panic(vm.NewGoError(err))
+		}
 		jsObj := call.Argument(0)
 		if jsObj == nil || goja.IsUndefined(jsObj) || goja.IsNull(jsObj) {
-			return vm.NewGoError(errors.New("registerParser expects an object { canHandle, parse }"))
+			throw(errors.New("registerParser expects an object { canHandle, parse }"))
 		}
 
 		obj := jsObj.ToObject(vm)
 		if obj == nil {
-			return vm.NewGoError(errors.New("registerParser expects an object { canHandle, parse }"))
+			throw(errors.New("registerParser expects an object { canHandle, parse }"))
 		}
 		metaValue := obj.Get("metadata")
 		if metaValue == nil || goja.IsUndefined(metaValue) {
-			return vm.NewGoError(errors.New("parser must provide metadata"))
+			throw(errors.New("parser must provide metadata"))
 		}
 		var metadata PluginMeta
 		if exported := metaValue.Export(); exported != nil {
 			data, err := json.Marshal(exported)
 			if err != nil {
-				return vm.NewGoError(fmt.Errorf("failed to marshal metadata to JSON: %w", err))
+				throw(fmt.Errorf("failed to marshal metadata to JSON: %w", err))
 			}
 			if err := json.Unmarshal(data, &metadata); err != nil {
-				return vm.NewGoError(fmt.Errorf("failed to unmarshal JSON to PluginMeta: %w", err))
+				throw(fmt.Errorf("failed to unmarshal JSON to PluginMeta: %w", err))
 			}
 		} else {
-			return vm.NewGoError(errors.New("metadata cannot be null or undefined"))
+			throw(errors.New("metadata cannot be null or undefined"))
 		}
 
+		if metadata.APIVersion == "" {
+			metadata.APIVersion = SupportedAPIVersion
+		}
+		if metadata.APIVersion != SupportedAPIVersion {
+			throw(fmt.Errorf("parser apiVersion %s is not supported, expected %s", metadata.APIVersion, SupportedAPIVersion))
+		}
 		pluginV, err := semver.Parse(metadata.Version)
 		if err != nil {
-			return vm.NewGoError(fmt.Errorf("invalid parser version %q: %w", metadata.Version, err))
+			throw(fmt.Errorf("invalid parser version %q: %w", metadata.Version, err))
 		}
 		if pluginV.LT(MinimumParserVersion) {
-			return vm.NewGoError(fmt.Errorf("parser version %s is not supported, must be at least %s", metadata.Version, MinimumParserVersion))
+			throw(fmt.Errorf("parser version %s is not supported, must be at least %s", metadata.Version, MinimumParserVersion))
 		}
 		if pluginV.Major > LatestParserVersion.Major {
 			log.Printf("warning: parser major version %d is newer than latest supported major version %d", pluginV.Major, LatestParserVersion.Major)
@@ -58,10 +67,10 @@ func jsRegisterParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value 
 		handleFn := obj.Get("canHandle")
 		parseFn := obj.Get("parse")
 		if parseFn == nil || goja.IsUndefined(parseFn) {
-			return vm.NewGoError(errors.New("parser must provide a parse function"))
+			throw(errors.New("parser must provide a parse function"))
 		}
 		if handleFn == nil || goja.IsUndefined(handleFn) {
-			return vm.NewGoError(errors.New("parser must provide a canHandle function"))
+			throw(errors.New("parser must provide a canHandle function"))
 		}
 		parsers.Add(newJSParser(vm, handleFn, parseFn, metadata))
 		return goja.Undefined()
