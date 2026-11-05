@@ -25,6 +25,8 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v3
+        with:
+          prerelease: ${{ contains(github.ref_name, '-') }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
