@@ -4,8 +4,15 @@ on:
   push:
     branches:
       - main
-      - v1-dev
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'LICENSE'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'LICENSE'
   workflow_dispatch:
   workflow_call:
 
@@ -28,6 +35,7 @@ jobs:
         with:
           go-version: "1.27.x"
           cache: true
+          cache-dependency-path: go.sum
 
       - name: Test
         run: go test ./...
@@ -52,6 +60,12 @@ jobs:
         with:
           version: 12.14.0
 
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.x"
+          cache: true
+          cache-dependency-path: go.sum
+
       - uses: actions/setup-node@v7
         with:
           node-version: 26
@@ -67,6 +81,19 @@ jobs:
       - name: Build
         run: pnpm --dir web/ui run build
 
+      - name: Build E2E binary
+        run: |
+          mkdir -p tmp
+          go build -o tmp/saveany-bot-e2e .
+
+      - name: Upload E2E binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: saveany-e2e-binary
+          path: tmp/saveany-bot-e2e
+          if-no-files-found: error
+          retention-days: 1
+
   web-e2e:
     name: Browser end-to-end tests
     needs: web
@@ -74,11 +101,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/setup-go@v7
-        with:
-          go-version: "1.27.x"
-          cache: true
 
       - uses: pnpm/action-setup@v6
         with:
@@ -93,8 +115,24 @@ jobs:
       - name: Install
         run: pnpm --dir web/ui install --frozen-lockfile
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('web/ui/pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
       - name: Install Chromium
         run: pnpm --dir web/ui exec playwright install --with-deps chromium
 
+      - name: Download E2E binary
+        uses: actions/download-artifact@v8
+        with:
+          name: saveany-e2e-binary
+          path: tmp
+
       - name: Browser tests
-        run: make e2e-web
+        run: |
+          chmod +x tmp/saveany-bot-e2e
+          pnpm --dir web/ui exec playwright test
