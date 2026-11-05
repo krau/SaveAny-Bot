@@ -4251,3 +4251,228 @@ html[data-theme='dark'] .btn.primary:disabled:not(.is-loading) {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Task metadata dialog */
+
+.metadata-modal {
+  max-width: 900px;
+}
+
+.metadata-heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metadata-subtitle {
+  overflow-wrap: anywhere;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.metadata-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+  margin-right: -6px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.metadata-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+.metadata-body::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+}
+
+.metadata-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 36px 16px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.metadata-spinner {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border: 1.5px solid var(--line-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: metadata-spin 700ms linear infinite;
+}
+
+@keyframes metadata-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.metadata-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.metadata-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.metadata-file-title {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.metadata-file-path {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.metadata-item-label {
+  margin-top: 4px;
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.metadata-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metadata-section-title {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.25fr) minmax(0, 1fr);
+  gap: 7px 14px;
+  margin: 0;
+}
+
+.metadata-grid dt {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.metadata-grid dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.metadata-grid dd a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.metadata-field-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.metadata-text-block,
+.metadata-tags-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.metadata-text {
+  max-height: 220px;
+  overflow: auto;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.metadata-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.metadata-tag {
+  padding: 3px 7px;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.metadata-raw {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .metadata-modal {
+    padding: 18px;
+  }
+
+  .metadata-grid {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .metadata-grid dt:not(:first-child) {
+    margin-top: 7px;
+  }
+
+  .metadata-card {
+    padding: 13px;
+  }
+}

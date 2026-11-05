@@ -8,11 +8,12 @@ import AppSelect from '../components/AppSelect.vue'
 import PageHeader from '../components/PageHeader.vue'
 import PageLoading from '../components/PageLoading.vue'
 import TaskForm from '../components/TaskForm.vue'
+import TaskMetadataModal from '../components/TaskMetadataModal.vue'
 import TaskTable from '../components/TaskTable.vue'
 import { useModalHeightTransition } from '../composables/useModalHeightTransition'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
-import type { CreateTaskRequest, StorageRecord, TaskItem } from '../types'
+import type { CreateTaskRequest, StorageRecord, TaskItem, TaskMetadataResponse } from '../types'
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -28,6 +29,11 @@ const busyId = ref('')
 const loaded = ref(false)
 const createOpen = ref(false)
 const creating = ref(false)
+const metadataOpen = ref(false)
+const metadataTaskId = ref('')
+const metadataData = ref<TaskMetadataResponse | null>(null)
+const metadataLoading = ref(false)
+let metadataRequest = 0
 const taskModal = ref<HTMLElement | null>(null)
 const { startResize: startTaskModalResize, endResize: endTaskModalResize } =
   useModalHeightTransition(taskModal)
@@ -151,23 +157,51 @@ async function retry(taskId: string) {
   }
 }
 
-async function downloadMetadata(taskId: string) {
+async function openMetadata(taskId: string) {
+  const request = ++metadataRequest
+  metadataTaskId.value = taskId
+  metadataData.value = null
+  metadataOpen.value = true
+  metadataLoading.value = true
   busyId.value = taskId
   try {
     const data = await tasksApi.metadata(taskId)
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${taskId}-metadata.json`
-    link.click()
-    URL.revokeObjectURL(url)
-    toast.push(t('tasks.toast.metadataDownloaded'), 'success')
+    if (request === metadataRequest) {
+      metadataData.value = data
+    }
   } catch (err) {
-    toast.push(errorMessage(err), 'error', 6000)
+    if (request === metadataRequest) {
+      metadataOpen.value = false
+      toast.push(errorMessage(err), 'error', 6000)
+    }
   } finally {
-    busyId.value = ''
+    if (request === metadataRequest) {
+      metadataLoading.value = false
+      busyId.value = ''
+    }
   }
+}
+
+function closeMetadata() {
+  metadataRequest++
+  metadataOpen.value = false
+  metadataTaskId.value = ''
+  metadataData.value = null
+  metadataLoading.value = false
+  busyId.value = ''
+}
+
+function downloadMetadata() {
+  const data = metadataData.value
+  if (!data) return
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${data.task_id}-metadata.json`
+  link.click()
+  URL.revokeObjectURL(url)
+  toast.push(t('tasks.toast.metadataDownloaded'), 'success')
 }
 
 async function remove(taskId: string) {
@@ -224,7 +258,7 @@ async function remove(taskId: string) {
       :tasks="tasks"
       :busy-id="busyId"
       @cancel="cancel"
-      @metadata="downloadMetadata"
+      @metadata="openMetadata"
       @remove="remove"
       @retry="retry"
     />
@@ -257,5 +291,14 @@ async function remove(taskId: string) {
         </div>
       </Transition>
     </Teleport>
+
+    <TaskMetadataModal
+      :open="metadataOpen"
+      :task-id="metadataTaskId"
+      :data="metadataData"
+      :loading="metadataLoading"
+      @close="closeMetadata"
+      @download="downloadMetadata"
+    />
   </div>
 </template>
