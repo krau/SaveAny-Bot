@@ -70,9 +70,12 @@ func checkUpdate() (*updateInfoResponse, error) {
 	info.Size = int64(latest.AssetByteSize)
 	info.PublishedAt = latest.PublishedAt
 	info.Available = latest.Version.Major == current.Major && latest.Version.GT(current)
-	if latest.Version.Major != current.Major {
+	if latest.Version.Major > current.Major {
 		info.Reason = "major upgrade required"
 		info.ReasonCode = "major_upgrade_required"
+	} else if !latest.Version.GT(current) {
+		info.Reason = "already on the latest version"
+		info.ReasonCode = "already_latest"
 	}
 	return info, nil
 }
@@ -108,7 +111,7 @@ func (s *server) applyUpdate(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusNotFound, "no_release", "no release found")
 		return
 	}
-	if latest.Version.Major != current.Major {
+	if latest.Version.Major > current.Major {
 		WriteError(w, http.StatusConflict, "major_upgrade_required", "major upgrade required")
 		return
 	}
