@@ -14,7 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
   prepare:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -133,12 +137,21 @@ jobs:
           SRC_AMD64="${REPO}@${DIGEST_AMD64}"
           SRC_ARM64="${REPO}@${DIGEST_ARM64}"
 
-          TAGS=(
-            "$REPO:latest"
-            "$REPO:$VERSION"
-            "$REPO:$MAJOR_MINOR"
-            "$REPO:sha-$SHA"
-          )
+          if [[ "$VERSION" == *-* ]]; then
+            # Prereleases must not move stable channels such as latest or 1.0.
+            echo "Prerelease $VERSION: publishing exact and commit tags only"
+            TAGS=(
+              "$REPO:$VERSION"
+              "$REPO:sha-$SHA"
+            )
+          else
+            TAGS=(
+              "$REPO:latest"
+              "$REPO:$VERSION"
+              "$REPO:$MAJOR_MINOR"
+              "$REPO:sha-$SHA"
+            )
+          fi
 
           for TAG in "${TAGS[@]}"; do
             echo "Pushing tag: $TAG"
