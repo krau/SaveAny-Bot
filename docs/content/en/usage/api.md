@@ -429,6 +429,57 @@ The `progress` field is included when either `total_bytes` or `total_files` is g
 - `400 invalid_request` — no task ID in path
 - `404 task_not_found` — task does not exist
 
+Task objects include `metadata_available` when at least one item has stored message metadata.
+
+---
+
+### GET /api/v1/tasks/{task_id}/metadata — Get Message Metadata
+
+Returns the normalized Telegram message metadata recorded for every saved file in a Telegram file task. Enable **Settings → Message metadata** before creating the task. Metadata is always stored in the local database. The optional **Write sidecar JSON** setting also writes `<actual-file-path>.meta.json` beside the saved file; Telegram storage skips sidecars.
+
+**Path parameter:** `task_id` — the task whose metadata should be returned.
+
+**Response `200 OK`:**
+
+```json
+{
+  "task_id": "abc123xyz",
+  "items": [
+    {
+      "index": 1,
+      "name": "saved-video.mp4",
+      "path": "downloads/saved-video.mp4",
+      "metadata": {
+        "version": 1,
+        "message": {
+          "id": 123,
+          "chat": { "id": -1001234567890, "title": "Channel" },
+          "sender": { "id": 123456789, "name": "Alice" },
+          "text": "caption",
+          "grouped_id": 999
+        },
+        "file": {
+          "name": "saved-video.mp4",
+          "media_type": "document",
+          "mime_type": "video/mp4",
+          "size": 12345678,
+          "width": 1920,
+          "height": 1080,
+          "duration": 123.4
+        }
+      }
+    }
+  ]
+}
+```
+
+Message text is omitted when **Store message text** is disabled. Access hashes, tokens, and raw Telegram objects are never stored.
+
+**Error responses:**
+- `400 invalid_request` — no task ID in path
+- `404 task_not_found` — task does not exist
+- `404 metadata_not_found` — the task has no recorded metadata
+
 ---
 
 ### POST /api/v1/tasks/{task_id}/retry — Retry Failed Files

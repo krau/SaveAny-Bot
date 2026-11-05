@@ -90,7 +90,13 @@ split_large_video = false
 # 超过该大小的文件将被分割成多个部分上传；非视频使用 ZIP 格式.
 # 当 skip_large 启用时, 该选项无效.
 split_size_mb = 0
+# 没有实时 caption 时，用元数据中的消息文本作为发送 caption
+use_metadata_caption = false
+# 没有实时分组信息时，用元数据 grouped_id 将文件作为媒体组发送
+use_metadata_album = false
 ```
+
+启用消息元数据后，Telegram 存储会直接消费元数据，不会把 `.meta.json` 作为文件上传。`use_metadata_caption` 在没有实时 caption 时用原消息文本还原 caption；`use_metadata_album` 在没有实时分组信息时用元数据 `grouped_id` 将文件作为媒体组发送。两项默认关闭。媒体组只会在第一个文件上添加 caption，以符合 Telegram 客户端行为。
 
 ## Rclone
 

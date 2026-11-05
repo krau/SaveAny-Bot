@@ -83,7 +83,11 @@ force_file = false # Force sending as file, default is false
 skip_large = false # Skip large files, default is false. If enabled, files exceeding Telegram's limit will not be uploaded.
 split_large_video = false # Losslessly split oversized videos into one album of up to 10 independently playable parts. Falls back to ZIP parts on failure or when more than 10 parts are required.
 split_size_mb = 0 # Split size in MB. 0 uses the uploader account limit: 2000 MB for bots/regular users and 4000 MB for Premium users. Oversized non-video files use ZIP parts. Ignored when skip_large is true.
+use_metadata_caption = false # Use metadata text as caption when the live source caption is absent
+use_metadata_album = false # Use metadata grouped_id to preserve source media groups when live grouping is absent
 ```
+
+When message metadata is enabled, Telegram storage consumes it directly instead of uploading a `.meta.json` file. `use_metadata_caption` restores the original message text as the caption when the live source caption is unavailable; `use_metadata_album` uses metadata `grouped_id` to send the files as a media group when live grouping is unavailable. Both options are off by default. For albums, the caption is attached only to the first item, matching Telegram client behavior.
 
 ## Rclone
 

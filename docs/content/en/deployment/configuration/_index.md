@@ -53,6 +53,14 @@ Transfer concurrency can be tuned under **Settings → Core**:
 | `Relay minimum file size (MB)` | 8 | Smaller files skip helper relays |
 | `Chunk retry count` | 20 | Retries for timeouts or connection failures on one chunk |
 
+### Message metadata
+
+Enable **Settings → Message metadata** to store normalized Telegram message data for new Telegram file tasks. The local database keeps source chat, message ID, date, sender, text or caption, reply/forward references, album grouping, and media attributes. The task details API and Web console can export the stored JSON.
+
+**Store message text** controls whether the message body and extracted tags are kept. Access hashes, tokens, raw Telegram objects, and old task data are not stored. Metadata applies only to files saved after the setting is enabled.
+
+**Write sidecar JSON** writes `<actual-file-path>.meta.json` next to each saved file. It is off by default. Telegram storage does not upload the sidecar; it can instead consume the metadata to restore captions or media groups using the Telegram storage options.
+
 ### Storages
 
 Add and enable storages on the **Storages** page. Local disk needs only a base path:

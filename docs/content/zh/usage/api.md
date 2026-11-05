@@ -429,6 +429,57 @@ Authorization: Bearer <token>
 - `400 invalid_request` — 路径中未提供 task_id
 - `404 task_not_found` — 任务不存在
 
+任务对象在至少一个文件保存了消息元数据时会返回 `metadata_available`。
+
+---
+
+### GET /api/v1/tasks/{task_id}/metadata — 查询消息元数据
+
+返回 Telegram 文件任务中每个已保存文件的消息元数据。需要先在 **设置 → 消息元数据** 中启用；元数据始终保存在本地数据库。启用“写入旁车 JSON”时还会在实际文件旁写入 `<文件路径>.meta.json`，Telegram 存储会跳过旁车。
+
+**路径参数：** `task_id` — 要查询的任务。
+
+**响应 `200 OK`：**
+
+```json
+{
+  "task_id": "abc123xyz",
+  "items": [
+    {
+      "index": 1,
+      "name": "saved-video.mp4",
+      "path": "downloads/saved-video.mp4",
+      "metadata": {
+        "version": 1,
+        "message": {
+          "id": 123,
+          "chat": { "id": -1001234567890, "title": "Channel" },
+          "sender": { "id": 123456789, "name": "Alice" },
+          "text": "caption",
+          "grouped_id": 999
+        },
+        "file": {
+          "name": "saved-video.mp4",
+          "media_type": "document",
+          "mime_type": "video/mp4",
+          "size": 12345678,
+          "width": 1920,
+          "height": 1080,
+          "duration": 123.4
+        }
+      }
+    }
+  ]
+}
+```
+
+关闭“保存消息文本”时不会保存消息正文。不会保存 access hash、Token 或原始 Telegram 对象。
+
+**错误响应：**
+- `400 invalid_request` — 路径中未提供 task_id
+- `404 task_not_found` — 任务不存在
+- `404 metadata_not_found` — 该任务没有已记录的元数据
+
 ---
 
 ### POST /api/v1/tasks/{task_id}/retry — 重试失败文件
