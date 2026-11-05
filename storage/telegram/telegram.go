@@ -15,6 +15,7 @@ import (
 	"github.com/duke-git/lancet/v2/retry"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/gotd/td/constant"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/telegram/uploader"
@@ -93,6 +94,39 @@ func (t *Telegram) Name() string {
 // to this backend.
 func (t *Telegram) Exists(ctx context.Context, storagePath string) (bool, error) {
 	return false, nil
+}
+
+// Test verifies that a Telegram client is available and can access the
+// configured chat.
+func (t *Telegram) Test(ctx context.Context) error {
+	tctx := tgutil.ExtFromContext(ctx)
+	if tctx == nil {
+		return fmt.Errorf("telegram client is not available")
+	}
+	chatID := t.config.ChatID
+	if chatID == 0 {
+		return fmt.Errorf("telegram chat_id is required")
+	}
+	peer := ensureInputPeer(tctx, chatID)
+	if peer == nil || peer.Zero() {
+		return fmt.Errorf("telegram chat %d is not accessible", chatID)
+	}
+	plainID := constant.TDLibPeerID(chatID).ToPlain()
+	switch peer.(type) {
+	case *tg.InputPeerChannel:
+		if _, err := tctx.GetChat(chatID); err != nil {
+			return fmt.Errorf("telegram chat %d is not accessible: %w", chatID, err)
+		}
+	case *tg.InputPeerChat:
+		if _, err := tctx.GetChat(plainID); err != nil {
+			return fmt.Errorf("telegram chat %d is not accessible: %w", chatID, err)
+		}
+	case *tg.InputPeerUser:
+		if _, err := tctx.GetUser(plainID); err != nil {
+			return fmt.Errorf("telegram user %d is not accessible: %w", chatID, err)
+		}
+	}
+	return nil
 }
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {

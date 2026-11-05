@@ -69,6 +69,14 @@ type StorageListable interface {
 	ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error)
 }
 
+// StorageTester verifies that the backend can reach its configured target.
+// It is used by storage connection tests before falling back to ListFiles or
+// Exists.
+type StorageTester interface {
+	Storage
+	Test(ctx context.Context) error
+}
+
 type StorageReadable interface {
 	Storage
 	OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error)
@@ -76,6 +84,7 @@ type StorageReadable interface {
 
 var _ StorageProgressSaver = (*telegram.Telegram)(nil)
 var _ StorageBatchProgressSaver = (*telegram.Telegram)(nil)
+var _ StorageTester = (*telegram.Telegram)(nil)
 
 var _ StorageListable = (*alist.Alist)(nil)
 var _ StorageReadable = (*alist.Alist)(nil)

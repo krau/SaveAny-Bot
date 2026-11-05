@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/settings"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -129,7 +130,11 @@ func (s *server) testStorage(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "invalid_request", "invalid storage id")
 		return
 	}
-	if err := s.deps.Settings.TestStorage(r.Context(), uint(id64)); err != nil {
+	testCtx := r.Context()
+	if clientCtx, err := getClientContext(); err == nil {
+		testCtx = tgutil.ExtWithContext(testCtx, clientCtx)
+	}
+	if err := s.deps.Settings.TestStorage(testCtx, uint(id64)); err != nil {
 		WriteJSON(w, http.StatusOK, map[string]any{"ok": false, "error": err.Error()})
 		return
 	}

@@ -789,6 +789,9 @@ func (s *Service) TestStorage(ctx context.Context, id uint) error {
 	if closer, ok := st.(storages.StorageCloser); ok {
 		defer closer.Close()
 	}
+	if tester, ok := st.(storages.StorageTester); ok {
+		return tester.Test(ctx)
+	}
 	if listable, ok := st.(storages.StorageListable); ok {
 		_, err = listable.ListFiles(ctx, "")
 		return err
