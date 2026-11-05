@@ -70,17 +70,40 @@ func TestCSRFAndSettingsRoundTrip(t *testing.T) {
 	}
 }
 
+type storageSummary struct {
+	StorageID uint           `json:"storage_id"`
+	Name      string         `json:"name"`
+	Type      string         `json:"type"`
+	Enable    bool           `json:"enable"`
+	Config    map[string]any `json:"config"`
+}
+
+func storageIDByName(t *testing.T, client *apiClient, name string) uint {
+	t.Helper()
+	var storages struct {
+		Storages []storageSummary `json:"storages"`
+	}
+	if status := client.do(http.MethodGet, "/api/v1/storages", nil, false, &storages); status != http.StatusOK {
+		t.Fatalf("list storages = %d", status)
+	}
+	for _, storage := range storages.Storages {
+		if storage.Name != name {
+			continue
+		}
+		if storage.StorageID == 0 {
+			t.Fatalf("storage %q has no storage_id", name)
+		}
+		return storage.StorageID
+	}
+	t.Fatalf("storage %q not found in %+v", name, storages.Storages)
+	return 0
+}
+
 func TestSeededEnvironment(t *testing.T) {
 	client := sharedClient(t)
 
 	var storages struct {
-		Storages []struct {
-			ID     uint           `json:"id"`
-			Name   string         `json:"name"`
-			Type   string         `json:"type"`
-			Enable bool           `json:"enable"`
-			Config map[string]any `json:"config"`
-		} `json:"storages"`
+		Storages []storageSummary `json:"storages"`
 	}
 	if status := client.do(http.MethodGet, "/api/v1/storages", nil, false, &storages); status != http.StatusOK {
 		t.Fatalf("list storages = %d", status)
@@ -88,7 +111,7 @@ func TestSeededEnvironment(t *testing.T) {
 	if len(storages.Storages) != 1 || storages.Storages[0].Name != "e2e-local" {
 		t.Fatalf("seeded storages = %+v", storages.Storages)
 	}
-	storageID := storages.Storages[0].ID
+	storageID := storages.Storages[0].StorageID
 
 	var testResult struct {
 		OK    bool   `json:"ok"`
@@ -132,29 +155,29 @@ func TestStorageLifecycle(t *testing.T) {
 	basePath := t.TempDir()
 
 	var created struct {
-		ID uint `json:"id"`
+		StorageID uint `json:"storage_id"`
 	}
 	status := client.do(http.MethodPost, "/api/v1/storages", map[string]any{
 		"name": "e2e-temp", "type": "local", "enable": true, "config": map[string]any{"base_path": basePath},
 	}, true, &created)
-	if status != http.StatusCreated || created.ID == 0 {
+	if status != http.StatusCreated || created.StorageID == 0 {
 		t.Fatalf("create storage = %d %+v", status, created)
 	}
 
 	var testResult struct {
 		OK bool `json:"ok"`
 	}
-	if status := client.do(http.MethodPost, "/api/v1/storages/"+strconv.FormatUint(uint64(created.ID), 10)+"/test", nil, true, &testResult); status != http.StatusOK || !testResult.OK {
+	if status := client.do(http.MethodPost, "/api/v1/storages/"+strconv.FormatUint(uint64(created.StorageID), 10)+"/test", nil, true, &testResult); status != http.StatusOK || !testResult.OK {
 		t.Fatalf("test storage = %d %+v", status, testResult)
 	}
 
-	if status := client.do(http.MethodPut, "/api/v1/storages/"+strconv.FormatUint(uint64(created.ID), 10), map[string]any{
+	if status := client.do(http.MethodPut, "/api/v1/storages/"+strconv.FormatUint(uint64(created.StorageID), 10), map[string]any{
 		"name": "e2e-temp", "type": "local", "enable": false, "config": map[string]any{"base_path": basePath},
 	}, true, nil); status != http.StatusOK {
 		t.Fatalf("update storage = %d", status)
 	}
 
-	if status := client.do(http.MethodDelete, "/api/v1/storages/"+strconv.FormatUint(uint64(created.ID), 10), nil, true, nil); status != http.StatusNoContent {
+	if status := client.do(http.MethodDelete, "/api/v1/storages/"+strconv.FormatUint(uint64(created.StorageID), 10), nil, true, nil); status != http.StatusNoContent {
 		t.Fatalf("delete storage = %d", status)
 	}
 }

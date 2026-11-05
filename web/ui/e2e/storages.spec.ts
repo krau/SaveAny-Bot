@@ -8,7 +8,7 @@ test('tests the seeded storage', async ({ page }) => {
   const card = page.locator('.storage-card', { hasText: 'test-local' })
   await expect(card).toBeVisible()
   await card.getByRole('button', { name: 'Test' }).click()
-  await expect(page.locator('body')).toContainText('test-local is reachable')
+  await expect(page.locator('body')).toContainText('test-local test passed')
 })
 
 test('creates a local storage', async ({ page }) => {

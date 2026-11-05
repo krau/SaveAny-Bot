@@ -58,14 +58,15 @@ func restartResume(t *testing.T, sig os.Signal) {
 
 	env := startTestEnv(t, dir, port)
 	client := newClientAt(t, base)
+	storageID := storageIDByName(t, client, "test-local")
 	var created struct {
 		TaskID string `json:"task_id"`
 	}
 	if status := client.do(http.MethodPost, "/api/v1/tasks", map[string]any{
-		"type":    "directlinks",
-		"storage": "test-local",
-		"path":    "resume",
-		"params":  map[string]any{"urls": []string{source.URL + "/slow.bin"}},
+		"type":       "directlinks",
+		"storage_id": storageID,
+		"path":       "resume",
+		"params":     map[string]any{"urls": []string{source.URL + "/slow.bin"}},
 	}, true, &created); status != http.StatusCreated || created.TaskID == "" {
 		t.Fatalf("create task = %d %+v", status, created)
 	}

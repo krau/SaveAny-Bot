@@ -36,15 +36,16 @@ func TestDirectLinksTask(t *testing.T) {
 	defer source.Close()
 
 	client := sharedClient(t)
+	storageID := storageIDByName(t, client, "e2e-local")
 	var created struct {
 		TaskID string `json:"task_id"`
 		Status string `json:"status"`
 	}
 	status := client.do(http.MethodPost, "/api/v1/tasks", map[string]any{
-		"type":    "directlinks",
-		"storage": "e2e-local",
-		"path":    "e2e",
-		"params":  map[string]any{"urls": []string{source.URL + "/sample.txt"}},
+		"type":       "directlinks",
+		"storage_id": storageID,
+		"path":       "e2e",
+		"params":     map[string]any{"urls": []string{source.URL + "/sample.txt"}},
 	}, true, &created)
 	if status != http.StatusCreated || created.TaskID == "" {
 		t.Fatalf("create task = %d %+v", status, created)
@@ -82,21 +83,22 @@ func TestDirectLinksTask(t *testing.T) {
 
 func TestTaskValidation(t *testing.T) {
 	client := sharedClient(t)
+	storageID := storageIDByName(t, client, "e2e-local")
 
 	if status := client.do(http.MethodPost, "/api/v1/tasks", map[string]any{
-		"type": "directlinks", "storage": "missing", "params": map[string]any{"urls": []string{"http://example.com/a"}},
+		"type": "directlinks", "storage_id": 999999, "params": map[string]any{"urls": []string{"http://example.com/a"}},
 	}, true, nil); status != http.StatusBadRequest {
 		t.Fatalf("unknown storage status = %d, want 400", status)
 	}
 
 	if status := client.do(http.MethodPost, "/api/v1/tasks", map[string]any{
-		"type": "tgfiles", "storage": "e2e-local", "params": map[string]any{"message_links": []string{"https://t.me/example/1"}},
+		"type": "tgfiles", "storage_id": storageID, "params": map[string]any{"message_links": []string{"https://t.me/example/1"}},
 	}, true, nil); status != http.StatusServiceUnavailable {
 		t.Fatalf("tgfiles without client status = %d, want 503", status)
 	}
 
 	if status := client.do(http.MethodPost, "/api/v1/tasks", map[string]any{
-		"type": "bogus", "storage": "e2e-local", "params": map[string]any{},
+		"type": "bogus", "storage_id": storageID, "params": map[string]any{},
 	}, true, nil); status != http.StatusBadRequest {
 		t.Fatalf("unsupported type status = %d, want 400", status)
 	}
