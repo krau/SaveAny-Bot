@@ -1,6 +1,6 @@
 module github.com/krau/SaveAny-Bot
 
-go 1.26.0
+go 1.27.0
 
 require (
 	github.com/blang/semver v3.5.1+incompatible

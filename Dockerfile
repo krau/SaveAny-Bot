@@ -6,7 +6,7 @@ RUN pnpm install --frozen-lockfile
 COPY web/ui ./
 RUN pnpm run build
 
-FROM golang:alpine AS builder
+FROM golang:1.27-alpine AS builder
 
 ARG VERSION="dev"
 ARG GitCommit="Unknown"
