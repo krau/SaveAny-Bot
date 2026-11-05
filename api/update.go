@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -24,19 +25,33 @@ type updateInfoResponse struct {
 	PublishedAt *time.Time `json:"published_at,omitempty"`
 	Size        int64      `json:"size,omitempty"`
 	Reason      string     `json:"reason,omitempty"`
+	ReasonCode  string     `json:"reason_code,omitempty"`
 }
 
 func checkUpdate() (*updateInfoResponse, error) {
-	current, err := semver.Parse(config.Version)
-	if err != nil {
-		return nil, err
-	}
 	info := &updateInfoResponse{
-		Current: current.String(),
+		Current: config.Version,
 		Docker:  config.Docker == "true",
 	}
+	current, err := semver.Parse(config.Version)
+	if err != nil {
+		info.Reason = err.Error()
+		info.ReasonCode = "invalid_version"
+		return info, nil
+	}
+	info.Current = current.String()
 	if err := selfupdate.Updatable(); err != nil {
 		info.Reason = err.Error()
+		switch {
+		case errors.Is(err, selfupdate.ErrDocker):
+			info.ReasonCode = "docker"
+		case errors.Is(err, selfupdate.ErrDevBuild):
+			info.ReasonCode = "dev_build"
+		case errors.Is(err, selfupdate.ErrNotWritable):
+			info.ReasonCode = "not_writable"
+		default:
+			info.ReasonCode = "not_updatable"
+		}
 		return info, nil
 	}
 	info.Updatable = true
@@ -45,6 +60,8 @@ func checkUpdate() (*updateInfoResponse, error) {
 		return nil, err
 	}
 	if !ok {
+		info.ReasonCode = "no_release"
+		info.Reason = "no release found"
 		return info, nil
 	}
 	info.Latest = latest.Version.String()
@@ -55,6 +72,7 @@ func checkUpdate() (*updateInfoResponse, error) {
 	info.Available = latest.Version.Major == current.Major && latest.Version.GT(current)
 	if latest.Version.Major != current.Major {
 		info.Reason = "major upgrade required"
+		info.ReasonCode = "major_upgrade_required"
 	}
 	return info, nil
 }
