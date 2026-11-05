@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 
+	"github.com/gotd/td/constant"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 )
 
@@ -24,6 +25,10 @@ type TelegramStorageConfig struct {
 func (m *TelegramStorageConfig) Validate() error {
 	if m.ChatID == 0 {
 		return fmt.Errorf("chat_id is required for telegram storage")
+	}
+	peerID := constant.TDLibPeerID(m.ChatID)
+	if !peerID.IsUser() && !peerID.IsChat() && !peerID.IsChannel() {
+		return fmt.Errorf("chat_id must be a Bot API style user or chat ID")
 	}
 	if m.RateLimit < 0 || m.RateBurst < 0 {
 		return fmt.Errorf("rate_limit and rate_burst must be greater than 0 for telegram storage")

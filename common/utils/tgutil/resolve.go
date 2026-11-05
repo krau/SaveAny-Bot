@@ -13,18 +13,35 @@ import (
 )
 
 func ParseChatID(ctx *ext.Context, idOrUsername string) (int64, error) {
-	idOrUsername = strings.TrimPrefix(idOrUsername, "@")
+	idOrUsername = strings.TrimPrefix(strings.TrimSpace(idOrUsername), "@")
+	if idOrUsername == "" {
+		return 0, fmt.Errorf("chat ID is empty")
+	}
 	if validator.IsIntStr(idOrUsername) {
-		chatID, err := strconv.Atoi(idOrUsername)
+		chatID, err := strconv.ParseInt(idOrUsername, 10, 64)
 		if err != nil {
 			return 0, err
 		}
-		return constant.TDLibPeerID(chatID).ToPlain(), nil
+		if chatID == 0 {
+			return 0, fmt.Errorf("chat ID must not be zero")
+		}
+		if chatID < 0 {
+			peerID := constant.TDLibPeerID(chatID)
+			if !peerID.IsChannel() && !peerID.IsChat() {
+				return 0, fmt.Errorf("invalid negative chat ID: %d", chatID)
+			}
+			return chatID, nil
+		}
+		// A plain ID is a user ID unless the peer cache already knows that
+		// this plain ID belongs to a channel or basic group.
+		if peer := ctx.PeerStorage.GetPeerById(chatID); peer != nil && peer.ID != 0 {
+			return MarkedPeerID(peer.ID, peer.Type), nil
+		}
+		return chatID, nil
 	}
 	username := idOrUsername
-	peer := ctx.PeerStorage.GetPeerByUsername(username)
-	if peer != nil && peer.ID != 0 {
-		return constant.TDLibPeerID(peer.ID).ToPlain(), nil
+	if peer := ctx.PeerStorage.GetPeerByUsername(username); peer != nil && peer.ID != 0 {
+		return MarkedPeerID(peer.ID, peer.Type), nil
 	}
 	chat, err := ctx.ResolveUsername(username)
 	if err != nil {
@@ -37,7 +54,29 @@ func ParseChatID(ctx *ext.Context, idOrUsername string) (int64, error) {
 	if chatID == 0 {
 		return 0, fmt.Errorf("chat ID is zero for username: %s", idOrUsername)
 	}
-	return chatID, nil
+	switch {
+	case chat.IsAChannel():
+		return MarkedChannelID(chatID), nil
+	case chat.IsAChat():
+		return MarkedChatID(chatID), nil
+	default:
+		return chatID, nil
+	}
+}
+
+// ParseChannelID parses a t.me/c/<id> channel reference as a Bot API style ID.
+func ParseChannelID(_ *ext.Context, value string) (int64, error) {
+	value = strings.TrimSpace(value)
+	if id, err := strconv.ParseInt(value, 10, 64); err == nil {
+		if id == 0 {
+			return 0, fmt.Errorf("channel ID must not be zero")
+		}
+		if id < 0 {
+			return id, nil
+		}
+		return MarkedChannelID(id), nil
+	}
+	return 0, fmt.Errorf("invalid channel ID: %s", value)
 }
 
 // return: ChatID, MessageID, error
@@ -92,7 +131,13 @@ func ParseMessageLink(ctx *ext.Context, link string) (int64, int, error) {
 		if paths[0] != "c" {
 			chatPart = paths[0]
 		}
-		chatID, err := ParseChatID(ctx, chatPart)
+		var chatID int64
+		var err error
+		if paths[0] == "c" {
+			chatID, err = ParseChannelID(ctx, chatPart)
+		} else {
+			chatID, err = ParseChatID(ctx, chatPart)
+		}
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to parse chat ID: %w", err)
 		}
@@ -106,7 +151,7 @@ func ParseMessageLink(ctx *ext.Context, link string) (int64, int, error) {
 		if paths[0] != "c" {
 			return 0, 0, fmt.Errorf("invalid message link format: %s", link)
 		}
-		chatID, err := ParseChatID(ctx, paths[1])
+		chatID, err := ParseChannelID(ctx, paths[1])
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to parse chat ID: %w", err)
 		}

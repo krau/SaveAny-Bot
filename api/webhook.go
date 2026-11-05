@@ -87,13 +87,14 @@ func SendWebhook(ctx context.Context, payload *WebhookPayload) {
 	}()
 }
 
-func CreateWebhookPayload(taskID string, taskType string, status TaskStatus, storage, path string, err error) *WebhookPayload {
+func CreateWebhookPayload(taskID string, taskType string, status TaskStatus, storageID uint, storage, path string, err error) *WebhookPayload {
 	payload := &WebhookPayload{
-		TaskID:  taskID,
-		Type:    taskType,
-		Status:  status,
-		Storage: storage,
-		Path:    path,
+		TaskID:      taskID,
+		Type:        taskType,
+		Status:      status,
+		StorageID:   storageID,
+		StorageName: storage,
+		Path:        path,
 	}
 
 	if status.IsTerminal() && status != TaskStatusCancelled {

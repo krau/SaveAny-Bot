@@ -29,6 +29,7 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/aria2"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+	"github.com/krau/SaveAny-Bot/pkg/enums/taskstatus"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/krau/SaveAny-Bot/pkg/taskspec"
@@ -82,7 +83,7 @@ func runOnce(ctx context.Context) (pending int) {
 			continue
 		}
 		record, err := database.GetTaskRecord(ctx, taskID)
-		if err != nil || record.Status != "queued" {
+		if err != nil || record.Status != taskstatus.Queued.String() {
 			continue
 		}
 		task, taskCtx, err := rebuild(ctx, record)
@@ -93,7 +94,7 @@ func runOnce(ctx context.Context) (pending int) {
 			continue
 		case errors.Is(err, ErrAlreadyDone):
 			if dbErr := database.UpdateTaskRecord(ctx, taskID, map[string]any{
-				"status":      "completed",
+				"status":      taskstatus.Completed.String(),
 				"error":       "",
 				"finished_at": time.Now(),
 			}); dbErr != nil {
@@ -105,7 +106,7 @@ func runOnce(ctx context.Context) (pending int) {
 		case err != nil:
 			logger.Warnf("Cannot resume task %s: %v", taskID, err)
 			if dbErr := database.UpdateTaskRecord(ctx, taskID, map[string]any{
-				"status":      "failed",
+				"status":      taskstatus.Failed.String(),
 				"error":       "cannot resume: " + err.Error(),
 				"finished_at": time.Now(),
 			}); dbErr != nil {
@@ -119,7 +120,7 @@ func runOnce(ctx context.Context) (pending int) {
 			continue
 		}
 		// The task may have been cancelled while it was being rebuilt.
-		if current, err := database.GetTaskRecord(ctx, taskID); err == nil && current.Status == "cancelled" {
+		if current, err := database.GetTaskRecord(ctx, taskID); err == nil && current.Status == taskstatus.Cancelled.String() {
 			if err := core.CancelTask(ctx, taskID); err != nil {
 				logger.Errorf("Failed to cancel resumed task %s: %v", taskID, err)
 			}
@@ -133,6 +134,9 @@ func runOnce(ctx context.Context) (pending int) {
 func rebuild(ctx context.Context, record *database.TaskRecord) (core.Executable, context.Context, error) {
 	if record.Params == "" {
 		return nil, ctx, errors.New("missing task parameters")
+	}
+	if record.ParamsVersion > taskspec.Version {
+		return nil, ctx, fmt.Errorf("unsupported task parameter version %d", record.ParamsVersion)
 	}
 	switch tasktype.TaskType(record.Type) {
 	case tasktype.TaskTypeDirectlinks:

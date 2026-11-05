@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/krau/SaveAny-Bot/pkg/enums/storagefilter"
+	"github.com/krau/SaveAny-Bot/pkg/enums/taskstatus"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/settings"
 )
@@ -28,12 +29,13 @@ type StorageInput struct {
 }
 
 type StorageRecord struct {
-	ID     uint           `json:"id"`
-	Name   string         `json:"name"`
-	Type   string         `json:"type"`
-	Enable bool           `json:"enable"`
-	Config map[string]any `json:"config"`
-	Error  string         `json:"error,omitempty"`
+	StorageID     uint           `json:"storage_id"`
+	Name          string         `json:"name"`
+	Type          string         `json:"type"`
+	Enable        bool           `json:"enable"`
+	Config        map[string]any `json:"config"`
+	ConfigVersion int            `json:"config_version,omitempty"`
+	Error         string         `json:"error,omitempty"`
 }
 
 type BotStatus struct {
@@ -79,40 +81,32 @@ type TelegramController interface {
 	RestartProcess()
 }
 
-type TaskStatus string
+type TaskStatus = taskstatus.Status
 
 const (
-	TaskStatusQueued    TaskStatus = "queued"
-	TaskStatusRunning   TaskStatus = "running"
-	TaskStatusCompleted TaskStatus = "completed"
-	TaskStatusPartial   TaskStatus = "partial"
-	TaskStatusFailed    TaskStatus = "failed"
-	TaskStatusCancelled TaskStatus = "cancelled"
+	TaskStatusQueued    = taskstatus.Queued
+	TaskStatusRunning   = taskstatus.Running
+	TaskStatusCompleted = taskstatus.Completed
+	TaskStatusPartial   = taskstatus.Partial
+	TaskStatusFailed    = taskstatus.Failed
+	TaskStatusCancelled = taskstatus.Cancelled
 )
 
-// IsTerminal reports whether the status is a final state.
-func (s TaskStatus) IsTerminal() bool {
-	switch s {
-	case TaskStatusCompleted, TaskStatusPartial, TaskStatusFailed, TaskStatusCancelled:
-		return true
-	default:
-		return false
-	}
-}
-
 type CreateTaskRequest struct {
-	Type    tasktype.TaskType `json:"type"`
-	Storage string            `json:"storage"`
-	Path    string            `json:"path"`
-	Webhook string            `json:"webhook,omitempty"`
-	Params  json.RawMessage   `json:"params"`
+	Type      tasktype.TaskType `json:"type"`
+	StorageID uint              `json:"storage_id"`
+	Path      string            `json:"path"`
+	Webhook   string            `json:"webhook,omitempty"`
+	Params    json.RawMessage   `json:"params"`
 }
 
 type CreateTaskResponse struct {
-	TaskID    string            `json:"task_id"`
-	Type      tasktype.TaskType `json:"type"`
-	Status    TaskStatus        `json:"status"`
-	CreatedAt time.Time         `json:"created_at"`
+	TaskID      string            `json:"task_id"`
+	Type        tasktype.TaskType `json:"type"`
+	Status      TaskStatus        `json:"status"`
+	StorageID   uint              `json:"storage_id"`
+	StorageName string            `json:"storage_name"`
+	CreatedAt   time.Time         `json:"created_at"`
 }
 
 type TaskProgress struct {
@@ -130,7 +124,8 @@ type TaskInfoResponse struct {
 	Status      TaskStatus         `json:"status"`
 	Title       string             `json:"title"`
 	Progress    *TaskProgress      `json:"progress,omitempty"`
-	Storage     string             `json:"storage"`
+	StorageID   uint               `json:"storage_id"`
+	StorageName string             `json:"storage_name"`
 	Path        string             `json:"path"`
 	Source      string             `json:"source,omitempty"`
 	Error       string             `json:"error,omitempty"`
@@ -147,6 +142,8 @@ type TaskItemResponse struct {
 	Index           int    `json:"index"`
 	Name            string `json:"name"`
 	Path            string `json:"path,omitempty"`
+	StorageID       uint   `json:"storage_id,omitempty"`
+	StorageName     string `json:"storage_name,omitempty"`
 	Status          string `json:"status"`
 	Error           string `json:"error,omitempty"`
 	Size            int64  `json:"size,omitempty"`
@@ -160,23 +157,25 @@ type TasksListResponse struct {
 }
 
 type UserStorageFilter struct {
-	StorageIDs []uint             `json:"storage_ids"`
-	Mode       storagefilter.Mode `json:"mode"`
+	StorageIDs   []uint             `json:"storage_ids"`
+	StorageNames []string           `json:"storage_names,omitempty"`
+	Mode         storagefilter.Mode `json:"mode"`
 }
 
 type UserResponse struct {
-	ID               uint              `json:"id"`
-	ChatID           int64             `json:"chat_id"`
-	Enabled          bool              `json:"enabled"`
-	Silent           bool              `json:"silent"`
-	DefaultStorageID uint              `json:"default_storage_id"`
-	DefaultDirID     uint              `json:"default_dir_id"`
-	ApplyRule        bool              `json:"apply_rule"`
-	FilenameStrategy string            `json:"filename_strategy"`
-	FilenameTemplate string            `json:"filename_template"`
-	ConflictStrategy string            `json:"conflict_strategy"`
-	WatchNotify      bool              `json:"watch_notify"`
-	StorageFilter    UserStorageFilter `json:"storage_filter"`
+	ID                 uint              `json:"id"`
+	ChatID             int64             `json:"chat_id"`
+	Enabled            bool              `json:"enabled"`
+	Silent             bool              `json:"silent"`
+	DefaultStorageID   uint              `json:"default_storage_id"`
+	DefaultStorageName string            `json:"default_storage_name,omitempty"`
+	DefaultDirID       uint              `json:"default_dir_id"`
+	ApplyRule          bool              `json:"apply_rule"`
+	FilenameStrategy   string            `json:"filename_strategy"`
+	FilenameTemplate   string            `json:"filename_template"`
+	ConflictStrategy   string            `json:"conflict_strategy"`
+	WatchNotify        bool              `json:"watch_notify"`
+	StorageFilter      UserStorageFilter `json:"storage_filter"`
 }
 
 type UserPatch struct {
@@ -196,7 +195,8 @@ type WebhookPayload struct {
 	TaskID      string     `json:"task_id"`
 	Type        string     `json:"type"`
 	Status      TaskStatus `json:"status"`
-	Storage     string     `json:"storage"`
+	StorageID   uint       `json:"storage_id"`
+	StorageName string     `json:"storage_name"`
 	Path        string     `json:"path"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 	Error       string     `json:"error,omitempty"`
@@ -249,10 +249,10 @@ type ParsedParams struct {
 }
 
 type TransferParams struct {
-	SourceStorage string `json:"source_storage"`
-	SourcePath    string `json:"source_path"`
-	TargetStorage string `json:"target_storage"`
-	TargetPath    string `json:"target_path"`
+	SourceStorageID uint   `json:"source_storage_id"`
+	SourcePath      string `json:"source_path"`
+	TargetStorageID uint   `json:"target_storage_id"`
+	TargetPath      string `json:"target_path"`
 }
 
 type TGFilesParams struct {

@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+
+	"github.com/krau/SaveAny-Bot/config"
 	"sync"
 	"time"
 
@@ -22,6 +24,7 @@ type TaskProgressInfo struct {
 	DownloadedBytes int64
 	TotalFiles      int
 	DownloadedFiles int
+	StorageID       uint
 	Storage         string
 	Path            string
 	Error           string
@@ -64,6 +67,7 @@ func RegisterTask(taskID, taskType, storage, path, title, webhook string) *TaskP
 		Type:      taskType,
 		Status:    TaskStatusQueued,
 		Title:     title,
+		StorageID: config.C().GetStorageIDByName(storage),
 		Storage:   storage,
 		Path:      path,
 		CreatedAt: time.Now(),
@@ -216,7 +220,7 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 	t.mu.Unlock()
 
 	if notify {
-		payload := CreateWebhookPayload(t.TaskID, t.Type, status, t.Storage, t.Path, e.Err)
+		payload := CreateWebhookPayload(t.TaskID, t.Type, status, t.StorageID, t.Storage, t.Path, e.Err)
 		SendWebhook(context.Background(), payload)
 	}
 }

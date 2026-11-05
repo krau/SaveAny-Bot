@@ -29,8 +29,8 @@ func (s *server) createTask(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "invalid_request", "task type is required")
 		return
 	}
-	if req.Storage == "" {
-		WriteError(w, http.StatusBadRequest, "invalid_request", "storage is required")
+	if req.StorageID == 0 {
+		WriteError(w, http.StatusBadRequest, "invalid_request", "storage_id is required")
 		return
 	}
 	resp, err := s.factory.CreateTask(&req)
@@ -130,6 +130,8 @@ func taskItemResponses(items []database.TaskItemRecord) []TaskItemResponse {
 			Index:           item.Index,
 			Name:            item.Name,
 			Path:            item.Path,
+			StorageID:       item.StorageID,
+			StorageName:     item.StorageName,
 			Status:          item.Status,
 			Error:           item.Error,
 			Size:            item.Size,
@@ -248,18 +250,19 @@ func isTerminal(status string) bool {
 
 func taskResponse(record *database.TaskRecord) TaskInfoResponse {
 	resp := TaskInfoResponse{
-		TaskID:     record.TaskID,
-		Type:       tasktype.TaskType(record.Type),
-		Status:     TaskStatus(record.Status),
-		Title:      record.Title,
-		Storage:    record.StorageName,
-		Path:       record.Path,
-		Source:     record.Source,
-		Error:      record.Error,
-		CreatedAt:  record.CreatedAt,
-		StartedAt:  record.StartedAt,
-		FinishedAt: record.FinishedAt,
-		UpdatedAt:  record.UpdatedAt,
+		TaskID:      record.TaskID,
+		Type:        tasktype.TaskType(record.Type),
+		Status:      TaskStatus(record.Status),
+		Title:       record.Title,
+		StorageID:   record.StorageID,
+		StorageName: record.StorageName,
+		Path:        record.Path,
+		Source:      record.Source,
+		Error:       record.Error,
+		CreatedAt:   record.CreatedAt,
+		StartedAt:   record.StartedAt,
+		FinishedAt:  record.FinishedAt,
+		UpdatedAt:   record.UpdatedAt,
 	}
 	if info, ok := GetTask(record.TaskID); ok {
 		status, total, downloaded, totalFiles, downloadedFiles, startedAt, errMsg, updatedAt := info.snapshot()

@@ -54,9 +54,6 @@ func Parse(cmd *cobra.Command) Options {
 	if dataDir == "" {
 		dataDir = "./data"
 	}
-	if configPath == "" {
-		configPath = os.Getenv("SAVEANY_CONFIG")
-	}
 	if dbPath == "" {
 		dbPath = os.Getenv("SAVEANY_DB_PATH")
 	}

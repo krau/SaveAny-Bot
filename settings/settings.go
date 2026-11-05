@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/charmbracelet/log"
+	"github.com/gotd/td/constant"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -20,6 +21,7 @@ import (
 	storcfg "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/parsers"
+	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	storages "github.com/krau/SaveAny-Bot/storage"
 )
 
@@ -117,7 +119,20 @@ func groupValue(cfg config.Config, group string) (any, error) {
 func applyGroup(cfg *config.Config, group string, raw []byte) error {
 	switch group {
 	case GroupCore:
-		var g coreGroup
+		g := coreGroup{
+			Lang:               cfg.Lang,
+			Workers:            cfg.Workers,
+			Retry:              cfg.Retry,
+			Threads:            cfg.Threads,
+			DownloadThreads:    cfg.DownloadThreads,
+			MaxDownloadThreads: cfg.MaxDownloadThreads,
+			TransferBudget:     cfg.TransferBudget,
+			RelayMinSizeMB:     cfg.RelayMinSizeMB,
+			ChunkRetries:       cfg.ChunkRetries,
+			Stream:             cfg.Stream,
+			NoCleanCache:       cfg.NoCleanCache,
+			Proxy:              cfg.Proxy,
+		}
 		if err := json.Unmarshal(raw, &g); err != nil {
 			return err
 		}
@@ -478,8 +493,8 @@ func validateGroup(cfg *config.Config, group string) error {
 		if cfg.Telegram.AppID < 0 {
 			return errors.New("app_id must be non-negative")
 		}
-		if id := cfg.Telegram.RelayChatID; id != 0 && (id > 0 || !strings.HasPrefix(fmt.Sprint(id), "-100")) {
-			return errors.New("relay_chat_id must be 0 or a channel ID starting with -100")
+		if id := cfg.Telegram.RelayChatID; id != 0 && !constant.TDLibPeerID(id).IsChannel() {
+			return errors.New("relay_chat_id must be 0 or a Bot API channel ID such as -1001234567890")
 		}
 	}
 	return nil
@@ -628,9 +643,11 @@ func (s *Service) CreateStorage(ctx context.Context, in StorageInput) (*database
 	if err != nil {
 		return nil, err
 	}
-	if strings.TrimSpace(in.Type) == "" {
-		return nil, errors.New("type is required")
+	storageType, err := storenum.ParseStorageType(in.Type)
+	if err != nil {
+		return nil, err
 	}
+	typeName := storageType.String()
 	records, err := database.ListStorageRecords(ctx)
 	if err != nil {
 		return nil, err
@@ -644,10 +661,13 @@ func (s *Service) CreateStorage(ctx context.Context, in StorageInput) (*database
 	if err != nil {
 		return nil, err
 	}
-	if err := validateStorage(ctx, in.Name, in.Type, in.Enable, raw); err != nil {
+	if err := storcfg.ValidateJSON(typeName, raw); err != nil {
 		return nil, err
 	}
-	record := &database.StorageRecord{Name: name, Type: in.Type, Enable: in.Enable, ConfigJSON: string(raw)}
+	if err := validateStorage(ctx, in.Name, typeName, in.Enable, raw); err != nil {
+		return nil, err
+	}
+	record := &database.StorageRecord{Name: name, Type: typeName, Enable: in.Enable, ConfigJSON: string(raw), ConfigVersion: 1}
 	if err := database.CreateStorageRecord(ctx, record); err != nil {
 		return nil, err
 	}
@@ -663,6 +683,15 @@ func (s *Service) UpdateStorage(ctx context.Context, id uint, in StorageInput) (
 	record, err := database.GetStorageRecord(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+	if strings.TrimSpace(in.Type) != "" {
+		storageType, err := storenum.ParseStorageType(in.Type)
+		if err != nil {
+			return nil, err
+		}
+		if storageType.String() != record.Type {
+			return nil, fmt.Errorf("storage type cannot be changed from %s to %s", record.Type, storageType)
+		}
 	}
 	oldName := record.Name
 	name := oldName
@@ -702,11 +731,15 @@ func (s *Service) UpdateStorage(ctx context.Context, id uint, in StorageInput) (
 	if err != nil {
 		return nil, err
 	}
+	if err := storcfg.ValidateJSON(record.Type, raw); err != nil {
+		return nil, err
+	}
 	if err := validateStorage(ctx, name, record.Type, in.Enable, raw); err != nil {
 		return nil, err
 	}
 	record.Name = name
 	record.ConfigJSON = string(raw)
+	record.ConfigVersion = 1
 	record.Enable = in.Enable
 	if err := database.UpdateStorageRecord(ctx, record); err != nil {
 		return nil, err

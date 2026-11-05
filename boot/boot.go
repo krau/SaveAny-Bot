@@ -41,9 +41,6 @@ func Init(ctx context.Context, opts Options) (Result, error) {
 	if err := database.MigrateMinioStorageType(ctx); err != nil {
 		log.Errorf("Failed to migrate MinIO storages to S3: %v", err)
 	}
-	if err := settings.MigrateLegacySessionPaths(ctx, opts.DataDir); err != nil {
-		log.Errorf("Failed to migrate legacy session paths: %v", err)
-	}
 	svc, err := settings.NewService(ctx, opts.DataDir)
 	if err != nil {
 		return Result{}, err

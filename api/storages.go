@@ -41,12 +41,13 @@ func storageResponse(record *database.StorageRecord, initErr string) StorageReco
 		config = make(map[string]any)
 	}
 	return StorageRecord{
-		ID:     record.ID,
-		Name:   record.Name,
-		Type:   record.Type,
-		Enable: record.Enable,
-		Config: maskStorageConfig(config),
-		Error:  initErr,
+		StorageID:     record.ID,
+		Name:          record.Name,
+		Type:          record.Type,
+		Enable:        record.Enable,
+		Config:        maskStorageConfig(config),
+		ConfigVersion: record.ConfigVersion,
+		Error:         initErr,
 	}
 }
 
@@ -85,7 +86,7 @@ func (s *server) createStorage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) updateStorage(w http.ResponseWriter, r *http.Request) {
-	id64, err := strconv.ParseUint(r.PathValue("id"), 10, 64)
+	id64, err := strconv.ParseUint(r.PathValue("storage_id"), 10, 64)
 	if err != nil {
 		WriteError(w, http.StatusBadRequest, "invalid_request", "invalid storage id")
 		return
@@ -106,7 +107,7 @@ func (s *server) updateStorage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) deleteStorage(w http.ResponseWriter, r *http.Request) {
-	id64, err := strconv.ParseUint(r.PathValue("id"), 10, 64)
+	id64, err := strconv.ParseUint(r.PathValue("storage_id"), 10, 64)
 	if err != nil {
 		WriteError(w, http.StatusBadRequest, "invalid_request", "invalid storage id")
 		return
@@ -123,7 +124,7 @@ func (s *server) deleteStorage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) testStorage(w http.ResponseWriter, r *http.Request) {
-	id64, err := strconv.ParseUint(r.PathValue("id"), 10, 64)
+	id64, err := strconv.ParseUint(r.PathValue("storage_id"), 10, 64)
 	if err != nil {
 		WriteError(w, http.StatusBadRequest, "invalid_request", "invalid storage id")
 		return

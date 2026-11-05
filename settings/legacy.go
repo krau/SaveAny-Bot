@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -33,73 +32,6 @@ func LegacyImported(ctx context.Context) bool {
 		return false
 	}
 	return ok
-}
-
-// MigrateLegacySessionPaths replaces v0 gotgproto session files with the new
-// v1 session paths. Previous v1 snapshots may still point at the old files.
-func MigrateLegacySessionPaths(ctx context.Context, dataDir string) error {
-	updates := make(map[string]string)
-	botSession := config.DefaultBotSessionPath(dataDir)
-	userbotSession := config.DefaultUserbotSessionPath(dataDir)
-
-	if raw, ok, err := database.GetSetting(ctx, GroupDB); err != nil {
-		return err
-	} else if ok {
-		var group map[string]any
-		if err := json.Unmarshal([]byte(raw), &group); err != nil {
-			return fmt.Errorf("failed to parse db settings: %w", err)
-		}
-		if group == nil {
-			group = make(map[string]any)
-		}
-		if path, _ := group["session"].(string); isLegacySessionPath(path, legacyBotSessionFile) {
-			group["session"] = botSession
-			encoded, err := json.Marshal(group)
-			if err != nil {
-				return err
-			}
-			updates[GroupDB] = string(encoded)
-		}
-	}
-
-	if raw, ok, err := database.GetSetting(ctx, GroupTelegram); err != nil {
-		return err
-	} else if ok {
-		var group map[string]any
-		if err := json.Unmarshal([]byte(raw), &group); err != nil {
-			return fmt.Errorf("failed to parse telegram settings: %w", err)
-		}
-		if group == nil {
-			group = make(map[string]any)
-		}
-		userbot, _ := group["userbot"].(map[string]any)
-		if userbot == nil {
-			userbot = make(map[string]any)
-		}
-		if path, _ := userbot["session"].(string); isLegacySessionPath(path, legacyUserbotSessionFile) {
-			userbot["session"] = userbotSession
-			group["userbot"] = userbot
-			encoded, err := json.Marshal(group)
-			if err != nil {
-				return err
-			}
-			updates[GroupTelegram] = string(encoded)
-		}
-	}
-
-	if len(updates) == 0 {
-		return nil
-	}
-	if err := database.SetSettingsTx(ctx, updates); err != nil {
-		return err
-	}
-	log.Info("Migrated Telegram session paths to the v1 session format", "bot_session", botSession, "userbot_session", userbotSession)
-	return nil
-}
-
-func isLegacySessionPath(path, legacyName string) bool {
-	path = strings.TrimSpace(path)
-	return path == "" || filepath.Base(filepath.Clean(path)) == legacyName
 }
 
 // LegacyImportTime returns the time at which a v0 configuration was imported.

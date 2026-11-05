@@ -7,6 +7,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/core"
 	tfilepkg "github.com/krau/SaveAny-Bot/pkg/tfile"
+	"github.com/krau/SaveAny-Bot/storage"
 )
 
 var _ core.ResultReporter = (*Task)(nil)
@@ -17,6 +18,7 @@ func (t *Task) ItemResults() []core.ItemResult {
 		Name:        t.File.Name(),
 		Path:        t.Path,
 		StorageName: t.Storage.Name(),
+		StorageID:   storage.ID(t.Storage),
 		Size:        t.File.Size(),
 		Status:      core.ItemStatusCompleted,
 	}

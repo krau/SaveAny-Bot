@@ -14,6 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/core/tasks/batchtfile"
 	"github.com/krau/SaveAny-Bot/core/tasks/tfile"
 	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/pkg/enums/taskstatus"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	tfilepkg "github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
@@ -123,6 +124,15 @@ func FailedTask(ctx context.Context, extCtxs []*ext.Context, taskID string) (str
 }
 
 func itemStorage(ctx context.Context, item database.TaskItemRecord, record *database.TaskRecord) (storage.Storage, error) {
+	id := item.StorageID
+	if id == 0 {
+		id = record.StorageID
+	}
+	if id != 0 {
+		if stor, err := storage.GetStorageByID(ctx, id); err == nil {
+			return stor, nil
+		}
+	}
 	name := item.StorageName
 	if name == "" {
 		name = record.StorageName
@@ -158,10 +168,5 @@ func retryableItems(items []database.TaskItemRecord) []database.TaskItemRecord {
 }
 
 func isTerminalStatus(status string) bool {
-	switch status {
-	case "completed", "partial", "failed", "cancelled":
-		return true
-	default:
-		return false
-	}
+	return taskstatus.Status(status).IsTerminal()
 }

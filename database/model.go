@@ -29,16 +29,16 @@ type User struct {
 
 type WatchChat struct {
 	gorm.Model
-	UserID        uint // User's database ID (not chat ID)
-	ChatID        int64
+	UserID        uint   `gorm:"uniqueIndex:idx_watch_user_chat"`
+	ChatID        int64  `gorm:"uniqueIndex:idx_watch_user_chat"`
 	MessageFilter string // filter type and expression, for example msgre:foo
 }
 
 type Dir struct {
 	gorm.Model
-	UserID    uint
-	StorageID uint // StorageRecord.ID
-	Path      string
+	UserID    uint   `gorm:"uniqueIndex:idx_dir_user_storage_path"`
+	StorageID uint   `gorm:"uniqueIndex:idx_dir_user_storage_path"` // StorageRecord.ID
+	Path      string `gorm:"uniqueIndex:idx_dir_user_storage_path"`
 }
 
 type Rule struct {
@@ -58,10 +58,11 @@ type Setting struct {
 
 type StorageRecord struct {
 	gorm.Model
-	Name       string `gorm:"uniqueIndex;size:64;not null"`
-	Type       string `gorm:"size:32;not null"`
-	Enable     bool   `gorm:"not null"`
-	ConfigJSON string `gorm:"column:config;type:text;not null"` // JSON storage configuration
+	Name          string `gorm:"uniqueIndex;size:64;not null"`
+	Type          string `gorm:"size:32;not null"`
+	Enable        bool   `gorm:"not null"`
+	ConfigJSON    string `gorm:"column:config;type:text;not null"` // JSON storage configuration
+	ConfigVersion int    `gorm:"not null;default:1"`
 }
 
 func (StorageRecord) TableName() string { return "storages" }
@@ -76,21 +77,22 @@ type BotWorker struct {
 }
 
 type TaskRecord struct {
-	ID          uint   `gorm:"primaryKey"`
-	TaskID      string `gorm:"uniqueIndex;size:32;not null"`
-	Type        string `gorm:"size:32;not null"`
-	Title       string
-	Status      string `gorm:"size:16;index;not null"`
-	StorageName string
-	StorageID   uint
-	Path        string
-	Source      string `gorm:"size:16;not null"`
-	Error       string `gorm:"type:text"`
-	Params      string `gorm:"type:text"`
-	CreatedAt   time.Time
-	StartedAt   *time.Time
-	FinishedAt  *time.Time
-	UpdatedAt   time.Time
+	ID            uint   `gorm:"primaryKey"`
+	TaskID        string `gorm:"uniqueIndex;size:64;not null"`
+	Type          string `gorm:"size:32;not null"`
+	Title         string
+	Status        string `gorm:"size:16;index;not null"`
+	StorageName   string
+	StorageID     uint
+	Path          string
+	Source        string `gorm:"size:16;not null"`
+	Error         string `gorm:"type:text"`
+	Params        string `gorm:"type:text"`
+	ParamsVersion int    `gorm:"not null;default:1"`
+	CreatedAt     time.Time
+	StartedAt     *time.Time
+	FinishedAt    *time.Time
+	UpdatedAt     time.Time
 }
 
 // TaskItemRecord is the persisted outcome of one file inside a task. It keeps
@@ -98,11 +100,12 @@ type TaskRecord struct {
 // reported and retried.
 type TaskItemRecord struct {
 	ID           uint   `gorm:"primaryKey"`
-	TaskID       string `gorm:"index;size:32;not null"`
-	Index        int    `gorm:"not null"`
+	TaskID       string `gorm:"index:idx_task_item_task_index,unique;size:64;not null"`
+	Index        int    `gorm:"index:idx_task_item_task_index,unique;not null"`
 	Name         string
 	Path         string
 	StorageName  string
+	StorageID    uint
 	Status       string `gorm:"size:16;index;not null"`
 	Error        string `gorm:"type:text"`
 	Size         int64

@@ -185,7 +185,7 @@ func Start(ctx context.Context, conv gotgproto.AuthConversator, phone string) er
 		case *tg.UpdateEditChannelMessage, *tg.UpdateEditMessage, *tg.UpdateDeleteChannelMessages, *tg.UpdateDeleteMessages:
 			return dispatcher.EndGroups
 		}
-		chatID := u.EffectiveChat().GetID()
+		chatID := tgutil.ChatIdFromPeer(u.EffectiveMessage.GetPeerID())
 		watchChats, err := database.GetWatchChatsByChatID(ctx, chatID)
 		if err != nil || len(watchChats) == 0 {
 			return dispatcher.EndGroups

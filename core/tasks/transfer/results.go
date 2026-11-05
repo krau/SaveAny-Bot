@@ -4,6 +4,7 @@ import (
 	"path"
 
 	"github.com/krau/SaveAny-Bot/core"
+	"github.com/krau/SaveAny-Bot/storage"
 )
 
 var _ core.ResultReporter = (*Task)(nil)
@@ -21,6 +22,7 @@ func (t *Task) ItemResults() []core.ItemResult {
 			Name:        elem.FileInfo.Name,
 			Path:        path.Join(elem.TargetPath, elem.FileInfo.Name),
 			StorageName: elem.TargetStorage.Name(),
+			StorageID:   storage.ID(elem.TargetStorage),
 			Size:        elem.FileInfo.Size,
 			Status:      core.ItemStatusCompleted,
 		}

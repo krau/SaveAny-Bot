@@ -18,22 +18,9 @@ func NewStorageConfigFromJSON(id uint, name, typ string, enable bool, raw []byte
 	}
 
 	base := BaseConfig{ID: id, Name: name, Type: typ, Enable: enable}
-	var cfg StorageConfig
-	switch st {
-	case storenum.Local:
-		cfg = &LocalStorageConfig{BaseConfig: base}
-	case storenum.Alist:
-		cfg = &AlistStorageConfig{BaseConfig: base}
-	case storenum.Webdav:
-		cfg = &WebdavStorageConfig{BaseConfig: base}
-	case storenum.S3:
-		cfg = &S3StorageConfig{BaseConfig: base}
-	case storenum.Telegram:
-		cfg = &TelegramStorageConfig{BaseConfig: base}
-	case storenum.Rclone:
-		cfg = &RcloneStorageConfig{BaseConfig: base}
-	default:
-		return nil, fmt.Errorf("unsupported storage type: %s", typ)
+	cfg, err := newStorageConfig(st, base)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(raw) > 0 {
@@ -45,6 +32,25 @@ func NewStorageConfigFromJSON(id uint, name, typ string, enable bool, raw []byte
 	// override them.
 	setBaseConfig(cfg, base)
 	return cfg, nil
+}
+
+func newStorageConfig(st storenum.StorageType, base BaseConfig) (StorageConfig, error) {
+	switch st {
+	case storenum.Local:
+		return &LocalStorageConfig{BaseConfig: base}, nil
+	case storenum.Alist:
+		return &AlistStorageConfig{BaseConfig: base}, nil
+	case storenum.Webdav:
+		return &WebdavStorageConfig{BaseConfig: base}, nil
+	case storenum.S3:
+		return &S3StorageConfig{BaseConfig: base}, nil
+	case storenum.Telegram:
+		return &TelegramStorageConfig{BaseConfig: base}, nil
+	case storenum.Rclone:
+		return &RcloneStorageConfig{BaseConfig: base}, nil
+	default:
+		return nil, fmt.Errorf("unsupported storage type: %s", st)
+	}
 }
 
 func setBaseConfig(cfg StorageConfig, base BaseConfig) {

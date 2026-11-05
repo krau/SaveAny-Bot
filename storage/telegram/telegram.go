@@ -7,13 +7,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/retry"
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/styling"
@@ -311,7 +311,7 @@ func (t *Telegram) target(tctx *ext.Context, storagePath string) (string, int64)
 	if len(parts) >= 1 {
 		filename = parts[len(parts)-1]
 	}
-	if len(parts) >= 2 && validator.IsAlphaNumeric(parts[0]) {
+	if len(parts) >= 2 && isChatRef(parts[0]) {
 		cid, err := tgutil.ParseChatID(tctx, parts[0])
 		if err != nil {
 			log.FromContext(tctx).Warnf("Failed to parse chat ID from path, using configured chat_id: %s", err)
@@ -320,6 +320,24 @@ func (t *Telegram) target(tctx *ext.Context, storagePath string) (string, int64)
 		chatID = cid
 	}
 	return filename, chatID
+}
+
+func isChatRef(value string) bool {
+	if strings.HasPrefix(value, "@") {
+		return len(value) > 1
+	}
+	if value == "" {
+		return false
+	}
+	if _, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return true
+	}
+	for _, r := range value {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9') && r != '_' {
+			return false
+		}
+	}
+	return true
 }
 
 func (t *Telegram) newUploader(tctx *ext.Context, size int64, progress *uploadProgress) *uploader.Uploader {

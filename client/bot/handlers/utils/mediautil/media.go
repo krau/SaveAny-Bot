@@ -196,26 +196,17 @@ func BuildFilenameTemplateData(message *tg.Message) map[string]string {
 		}(),
 		MsgRaw: message.GetMessage(),
 		ChatID: func() string {
-			// 如果消息是频道的(从消息链接中fetch的) 直接使用其chat id,
-			// 无论它是否是从其他来源转发的
-			if message.GetPost() {
-				peer := message.GetPeerID()
-				switch p := peer.(type) {
-				case *tg.PeerChannel:
-					return intToStringOmitZero(p.ChannelID)
-				default: // impossible case
-					return intToStringOmitZero(tgutil.ChatIdFromPeer(peer))
+			// For channel posts use the channel itself, regardless of the
+			// original forward source. Otherwise prefer the forward source.
+			peer := message.GetPeerID()
+			if !message.GetPost() {
+				if fwdHeader, ok := message.GetFwdFrom(); ok {
+					if fwdFrom, ok := fwdHeader.GetFromID(); ok {
+						peer = fwdFrom
+					}
 				}
 			}
-			fwdHeader, ok := message.GetFwdFrom()
-			if !ok {
-				return intToStringOmitZero(tgutil.ChatIdFromPeer(message.GetPeerID()))
-			}
-			fwdFrom, ok := fwdHeader.GetFromID()
-			if !ok {
-				return intToStringOmitZero(tgutil.ChatIdFromPeer(message.GetPeerID()))
-			}
-			return intToStringOmitZero(tgutil.ChatIdFromPeer(fwdFrom))
+			return intToStringOmitZero(tgutil.ChatIdFromPeer(peer))
 		}(),
 	}.ToMap()
 	return data

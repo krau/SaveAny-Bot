@@ -45,9 +45,12 @@ func NewTaskFactory(ctx context.Context) *TaskFactory {
 }
 
 func (f *TaskFactory) CreateTask(req *CreateTaskRequest) (*CreateTaskResponse, error) {
-	stor, ok := storage.GetStorage(req.Storage)
-	if !ok {
-		return nil, fmt.Errorf("storage not found: %s", req.Storage)
+	if req.StorageID == 0 {
+		return nil, errors.New("storage_id is required")
+	}
+	stor, err := storage.GetStorageByID(f.ctx, req.StorageID)
+	if err != nil {
+		return nil, fmt.Errorf("storage_id %d not found: %w", req.StorageID, err)
 	}
 	if req.Type != tasktype.TaskTypeTransfer && stor.Type() == storenum.Telegram && bot.ExtContext() == nil && userclient.GetCtx() == nil {
 		return nil, ErrClientUnavailable
@@ -56,24 +59,33 @@ func (f *TaskFactory) CreateTask(req *CreateTaskRequest) (*CreateTaskResponse, e
 	taskID := xid.New().String()
 	createdAt := time.Now()
 
+	var resp *CreateTaskResponse
 	switch req.Type {
 	case tasktype.TaskTypeDirectlinks:
-		return f.createDirectLinksTask(taskID, createdAt, req, stor)
+		resp, err = f.createDirectLinksTask(taskID, createdAt, req, stor)
 	case tasktype.TaskTypeYtdlp:
-		return f.createYTDLPTask(taskID, createdAt, req, stor)
+		resp, err = f.createYTDLPTask(taskID, createdAt, req, stor)
 	case tasktype.TaskTypeAria2:
-		return f.createAria2Task(taskID, createdAt, req, stor)
+		resp, err = f.createAria2Task(taskID, createdAt, req, stor)
 	case tasktype.TaskTypeParseditem:
-		return f.createParsedTask(taskID, createdAt, req, stor)
+		resp, err = f.createParsedTask(taskID, createdAt, req, stor)
 	case tasktype.TaskTypeTgfiles:
-		return f.createTGFilesTask(taskID, createdAt, req, stor)
+		resp, err = f.createTGFilesTask(taskID, createdAt, req, stor)
 	case tasktype.TaskTypeTphpics:
-		return f.createTPHPicsTask(taskID, createdAt, req, stor)
+		resp, err = f.createTPHPicsTask(taskID, createdAt, req, stor)
 	case tasktype.TaskTypeTransfer:
-		return f.createTransferTask(taskID, createdAt, req)
+		resp, err = f.createTransferTask(taskID, createdAt, req)
 	default:
 		return nil, fmt.Errorf("unsupported task type: %s", req.Type)
 	}
+	if err != nil {
+		return nil, err
+	}
+	if req.Type != tasktype.TaskTypeTransfer {
+		resp.StorageID = storage.ID(stor)
+		resp.StorageName = stor.Name()
+	}
+	return resp, nil
 }
 
 func (f *TaskFactory) registerAndEnqueueTask(task core.Executable, taskType tasktype.TaskType, storageName, path, webhook string) error {
@@ -113,16 +125,18 @@ func (f *TaskFactory) createDirectLinksTask(taskID string, createdAt time.Time, 
 
 	task := directlinks.NewTask(taskID, f.ctx, params.URLs, stor, req.Path, nil)
 
-	err := f.registerAndEnqueueTask(task, tasktype.TaskTypeDirectlinks, req.Storage, req.Path, req.Webhook)
+	err := f.registerAndEnqueueTask(task, tasktype.TaskTypeDirectlinks, stor.Name(), req.Path, req.Webhook)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CreateTaskResponse{
-		TaskID:    taskID,
-		Type:      tasktype.TaskTypeDirectlinks,
-		Status:    TaskStatusQueued,
-		CreatedAt: createdAt,
+		TaskID:      taskID,
+		Type:        tasktype.TaskTypeDirectlinks,
+		Status:      TaskStatusQueued,
+		StorageID:   storage.ID(stor),
+		StorageName: stor.Name(),
+		CreatedAt:   createdAt,
 	}, nil
 }
 
@@ -138,16 +152,18 @@ func (f *TaskFactory) createYTDLPTask(taskID string, createdAt time.Time, req *C
 
 	task := ytdlp.NewTask(taskID, f.ctx, params.URLs, params.Flags, stor, req.Path, nil)
 
-	err := f.registerAndEnqueueTask(task, tasktype.TaskTypeYtdlp, req.Storage, req.Path, req.Webhook)
+	err := f.registerAndEnqueueTask(task, tasktype.TaskTypeYtdlp, stor.Name(), req.Path, req.Webhook)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CreateTaskResponse{
-		TaskID:    taskID,
-		Type:      tasktype.TaskTypeYtdlp,
-		Status:    TaskStatusQueued,
-		CreatedAt: createdAt,
+		TaskID:      taskID,
+		Type:        tasktype.TaskTypeYtdlp,
+		Status:      TaskStatusQueued,
+		StorageID:   storage.ID(stor),
+		StorageName: stor.Name(),
+		CreatedAt:   createdAt,
 	}, nil
 }
 
@@ -178,16 +194,18 @@ func (f *TaskFactory) createAria2Task(taskID string, createdAt time.Time, req *C
 
 	task := aria2dl.NewTask(taskID, f.ctx, gid, params.URLs, aria2Client, stor, req.Path, nil)
 
-	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeAria2, req.Storage, req.Path, req.Webhook)
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeAria2, stor.Name(), req.Path, req.Webhook)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CreateTaskResponse{
-		TaskID:    taskID,
-		Type:      tasktype.TaskTypeAria2,
-		Status:    TaskStatusQueued,
-		CreatedAt: createdAt,
+		TaskID:      taskID,
+		Type:        tasktype.TaskTypeAria2,
+		Status:      TaskStatusQueued,
+		StorageID:   storage.ID(stor),
+		StorageName: stor.Name(),
+		CreatedAt:   createdAt,
 	}, nil
 }
 
@@ -220,16 +238,18 @@ func (f *TaskFactory) createParsedTask(taskID string, createdAt time.Time, req *
 
 	task := parsed.NewTask(taskID, f.ctx, stor, req.Path, item, nil)
 
-	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeParseditem, req.Storage, req.Path, req.Webhook)
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeParseditem, stor.Name(), req.Path, req.Webhook)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CreateTaskResponse{
-		TaskID:    taskID,
-		Type:      tasktype.TaskTypeParseditem,
-		Status:    TaskStatusQueued,
-		CreatedAt: createdAt,
+		TaskID:      taskID,
+		Type:        tasktype.TaskTypeParseditem,
+		Status:      TaskStatusQueued,
+		StorageID:   storage.ID(stor),
+		StorageName: stor.Name(),
+		CreatedAt:   createdAt,
 	}, nil
 }
 
@@ -278,16 +298,18 @@ func (f *TaskFactory) createTGFilesTask(taskID string, createdAt time.Time, req 
 		task = batchtfile.NewBatchTGFileTask(taskID, f.ctx, elems, nil, true)
 	}
 
-	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeTgfiles, req.Storage, req.Path, req.Webhook)
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeTgfiles, stor.Name(), req.Path, req.Webhook)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CreateTaskResponse{
-		TaskID:    taskID,
-		Type:      tasktype.TaskTypeTgfiles,
-		Status:    TaskStatusQueued,
-		CreatedAt: createdAt,
+		TaskID:      taskID,
+		Type:        tasktype.TaskTypeTgfiles,
+		Status:      TaskStatusQueued,
+		StorageID:   storage.ID(stor),
+		StorageName: stor.Name(),
+		CreatedAt:   createdAt,
 	}, nil
 }
 
@@ -313,16 +335,18 @@ func (f *TaskFactory) createTPHPicsTask(taskID string, createdAt time.Time, req 
 	client := telegraph.NewClient()
 	task := tphtask.NewTask(taskID, f.ctx, phPath, pics, stor, req.Path, client, nil)
 
-	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeTphpics, req.Storage, req.Path, req.Webhook)
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeTphpics, stor.Name(), req.Path, req.Webhook)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CreateTaskResponse{
-		TaskID:    taskID,
-		Type:      tasktype.TaskTypeTphpics,
-		Status:    TaskStatusQueued,
-		CreatedAt: createdAt,
+		TaskID:      taskID,
+		Type:        tasktype.TaskTypeTphpics,
+		Status:      TaskStatusQueued,
+		StorageID:   storage.ID(stor),
+		StorageName: stor.Name(),
+		CreatedAt:   createdAt,
 	}, nil
 }
 
@@ -332,14 +356,17 @@ func (f *TaskFactory) createTransferTask(taskID string, createdAt time.Time, req
 		return nil, fmt.Errorf("invalid params: %w", err)
 	}
 
-	sourceStor, ok := storage.GetStorage(params.SourceStorage)
-	if !ok {
-		return nil, fmt.Errorf("source storage not found: %s", params.SourceStorage)
+	if params.SourceStorageID == 0 || params.TargetStorageID == 0 {
+		return nil, errors.New("source_storage_id and target_storage_id are required")
+	}
+	sourceStor, err := storage.GetStorageByID(f.ctx, params.SourceStorageID)
+	if err != nil {
+		return nil, fmt.Errorf("source_storage_id %d not found: %w", params.SourceStorageID, err)
 	}
 
-	targetStor, ok := storage.GetStorage(params.TargetStorage)
-	if !ok {
-		return nil, fmt.Errorf("target storage not found: %s", params.TargetStorage)
+	targetStor, err := storage.GetStorageByID(f.ctx, params.TargetStorageID)
+	if err != nil {
+		return nil, fmt.Errorf("target_storage_id %d not found: %w", params.TargetStorageID, err)
 	}
 	if targetStor.Type() == storenum.Telegram && bot.ExtContext() == nil && userclient.GetCtx() == nil {
 		return nil, ErrClientUnavailable
@@ -347,12 +374,12 @@ func (f *TaskFactory) createTransferTask(taskID string, createdAt time.Time, req
 
 	sourceReadable, ok := sourceStor.(storage.StorageReadable)
 	if !ok {
-		return nil, fmt.Errorf("source storage does not support reading: %s", params.SourceStorage)
+		return nil, fmt.Errorf("source storage does not support reading: %s", sourceStor.Name())
 	}
 
 	sourceListable, ok := sourceStor.(storage.StorageListable)
 	if !ok {
-		return nil, fmt.Errorf("source storage does not support listing: %s", params.SourceStorage)
+		return nil, fmt.Errorf("source storage does not support listing: %s", sourceStor.Name())
 	}
 
 	files, err := sourceListable.ListFiles(f.ctx, params.SourcePath)
@@ -372,15 +399,17 @@ func (f *TaskFactory) createTransferTask(taskID string, createdAt time.Time, req
 
 	task := transfer.NewTransferTask(taskID, f.ctx, elems, nil, true)
 
-	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeTransfer, params.TargetStorage, params.TargetPath, req.Webhook)
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeTransfer, targetStor.Name(), params.TargetPath, req.Webhook)
 	if err != nil {
 		return nil, err
 	}
 
 	return &CreateTaskResponse{
-		TaskID:    taskID,
-		Type:      tasktype.TaskTypeTransfer,
-		Status:    TaskStatusQueued,
-		CreatedAt: createdAt,
+		TaskID:      taskID,
+		Type:        tasktype.TaskTypeTransfer,
+		Status:      TaskStatusQueued,
+		StorageID:   params.TargetStorageID,
+		StorageName: targetStor.Name(),
+		CreatedAt:   createdAt,
 	}, nil
 }

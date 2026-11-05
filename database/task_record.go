@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+
+	"github.com/krau/SaveAny-Bot/pkg/enums/taskstatus"
 )
 
 func CreateTaskRecord(ctx context.Context, record *TaskRecord) error {
@@ -48,7 +50,7 @@ func ListTaskRecords(ctx context.Context, filter TaskFilter) ([]TaskRecord, int6
 func ListQueuedTaskRecords(ctx context.Context) ([]TaskRecord, error) {
 	var records []TaskRecord
 	err := db.WithContext(ctx).
-		Where("status = ?", "queued").
+		Where("status = ?", taskstatus.Queued.String()).
 		Order("created_at ASC").
 		Find(&records).Error
 	return records, err
@@ -58,7 +60,7 @@ func ListQueuedTaskRecords(ctx context.Context) ([]TaskRecord, error) {
 func HasUnfinishedTasks(ctx context.Context) (bool, error) {
 	var count int64
 	err := db.WithContext(ctx).Model(&TaskRecord{}).
-		Where("status IN ?", []string{"queued", "running"}).
+		Where("status IN ?", []string{taskstatus.Queued.String(), taskstatus.Running.String()}).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -100,7 +102,7 @@ func CountFailedTaskItems(ctx context.Context, taskIDs []string) (map[string]int
 	}
 	err := db.WithContext(ctx).Model(&TaskItemRecord{}).
 		Select("task_id, COUNT(*) AS count").
-		Where("task_id IN ? AND status = ?", taskIDs, "failed").
+		Where("task_id IN ? AND status = ?", taskIDs, taskstatus.Failed.String()).
 		Group("task_id").
 		Scan(&rows).Error
 	if err != nil {
@@ -139,7 +141,7 @@ SELECT * FROM (
 	WHERE task_id IN ? AND status = ?
 ) WHERE row_num <= ?`
 	var items []TaskItemRecord
-	if err := db.WithContext(ctx).Raw(query, taskIDs, "failed", perTask).Scan(&items).Error; err != nil {
+	if err := db.WithContext(ctx).Raw(query, taskIDs, taskstatus.Failed.String(), perTask).Scan(&items).Error; err != nil {
 		return nil, err
 	}
 	for _, item := range items {
@@ -156,9 +158,9 @@ SELECT * FROM (
 // process stopped so they can be rebuilt from their persisted parameters.
 func MarkInterruptedTaskRecords(ctx context.Context) error {
 	return db.WithContext(ctx).Model(&TaskRecord{}).
-		Where("status = ?", "running").
+		Where("status = ?", taskstatus.Running.String()).
 		Updates(map[string]any{
-			"status":      "queued",
+			"status":      taskstatus.Queued.String(),
 			"error":       "",
 			"started_at":  nil,
 			"finished_at": nil,

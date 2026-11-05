@@ -37,11 +37,8 @@ func Init(ctx context.Context, path string) {
 		logger.Warnf("Failed to restrict database permissions: %v", err)
 	}
 	logger.Debug("Database connected")
-	if err := db.AutoMigrate(&User{}, &Dir{}, &Rule{}, &WatchChat{}, &Setting{}, &StorageRecord{}, &TaskRecord{}, &TaskItemRecord{}, &WebSession{}, &BotWorker{}); err != nil {
+	if err := migrate(ctx); err != nil {
 		logger.Fatalf("Database migration failed: %v", err)
-	}
-	if err := MigrateLegacyPeerIDs(ctx); err != nil {
-		logger.Errorf("Failed to migrate legacy peer IDs: %v", err)
 	}
 	logger.Info("Database initialized")
 }

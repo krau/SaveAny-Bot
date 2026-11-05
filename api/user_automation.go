@@ -14,17 +14,19 @@ import (
 )
 
 type userDirResponse struct {
-	ID        uint   `json:"id"`
-	StorageID uint   `json:"storage_id"`
-	Path      string `json:"path"`
+	ID          uint   `json:"id"`
+	StorageID   uint   `json:"storage_id"`
+	StorageName string `json:"storage_name,omitempty"`
+	Path        string `json:"path"`
 }
 
 type userRuleResponse struct {
-	ID        uint   `json:"id"`
-	Type      string `json:"type"`
-	Content   string `json:"content"`
-	StorageID uint   `json:"storage_id"`
-	DirPath   string `json:"dir_path"`
+	ID          uint   `json:"id"`
+	Type        string `json:"type"`
+	Content     string `json:"content"`
+	StorageID   uint   `json:"storage_id"`
+	StorageName string `json:"storage_name,omitempty"`
+	DirPath     string `json:"dir_path"`
 }
 
 type userWatchResponse struct {
@@ -47,10 +49,15 @@ func (s *server) requireUser(w http.ResponseWriter, r *http.Request) (*database.
 	return user, true
 }
 
-func userDirsResponse(dirs []database.Dir) []userDirResponse {
+func userDirsResponse(dirs []database.Dir, namesByID map[uint]string) []userDirResponse {
 	out := make([]userDirResponse, 0, len(dirs))
 	for _, dir := range dirs {
-		out = append(out, userDirResponse{ID: dir.ID, StorageID: dir.StorageID, Path: dir.Path})
+		out = append(out, userDirResponse{
+			ID:          dir.ID,
+			StorageID:   dir.StorageID,
+			StorageName: namesByID[dir.StorageID],
+			Path:        dir.Path,
+		})
 	}
 	return out
 }
@@ -65,7 +72,12 @@ func (s *server) listUserDirs(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]any{"dirs": userDirsResponse(dirs)})
+	names, err := storageNamesByID(r.Context())
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	WriteJSON(w, http.StatusOK, map[string]any{"dirs": userDirsResponse(dirs, names)})
 }
 
 func (s *server) createUserDir(w http.ResponseWriter, r *http.Request) {
@@ -113,9 +125,19 @@ func (s *server) createUserDir(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
+	names, err := storageNamesByID(r.Context())
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
 	for _, dir := range dirs {
 		if dir.StorageID == body.StorageID && dir.Path == body.Path {
-			WriteJSON(w, http.StatusCreated, userDirResponse{ID: dir.ID, StorageID: dir.StorageID, Path: dir.Path})
+			WriteJSON(w, http.StatusCreated, userDirResponse{
+				ID:          dir.ID,
+				StorageID:   dir.StorageID,
+				StorageName: names[dir.StorageID],
+				Path:        dir.Path,
+			})
 			return
 		}
 	}
@@ -146,15 +168,16 @@ func (s *server) deleteUserDir(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func userRulesResponse(rules []database.Rule) []userRuleResponse {
+func userRulesResponse(rules []database.Rule, namesByID map[uint]string) []userRuleResponse {
 	out := make([]userRuleResponse, 0, len(rules))
 	for _, rule := range rules {
 		out = append(out, userRuleResponse{
-			ID:        rule.ID,
-			Type:      rule.Type,
-			Content:   rule.Content,
-			StorageID: rule.StorageID,
-			DirPath:   rule.DirPath,
+			ID:          rule.ID,
+			Type:        rule.Type,
+			Content:     rule.Content,
+			StorageID:   rule.StorageID,
+			StorageName: namesByID[rule.StorageID],
+			DirPath:     rule.DirPath,
 		})
 	}
 	return out
@@ -195,7 +218,12 @@ func (s *server) listUserRules(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]any{"rules": userRulesResponse(rules)})
+	names, err := storageNamesByID(r.Context())
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	WriteJSON(w, http.StatusOK, map[string]any{"rules": userRulesResponse(rules, names)})
 }
 
 func (s *server) createUserRule(w http.ResponseWriter, r *http.Request) {
@@ -240,9 +268,15 @@ func (s *server) createUserRule(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
+	names, err := storageNamesByID(r.Context())
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
 	WriteJSON(w, http.StatusCreated, userRuleResponse{
 		ID: record.ID, Type: record.Type, Content: record.Content,
-		StorageID: record.StorageID, DirPath: record.DirPath,
+		StorageID: record.StorageID, StorageName: names[record.StorageID],
+		DirPath: record.DirPath,
 	})
 }
 

@@ -9,6 +9,9 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
+// Version is the current persisted task-parameter schema.
+const Version = 1
+
 // TGFileItem identifies one Telegram file and its destination.
 type TGFileItem struct {
 	ID        string `json:"id,omitempty"`

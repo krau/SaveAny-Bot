@@ -39,15 +39,16 @@ func NewHandler(deps Deps) http.Handler {
 	mux.HandleFunc("GET /api/v1/auth/me", s.me)
 	mux.HandleFunc("POST /api/v1/auth/password", s.changePassword)
 	mux.HandleFunc("GET /api/v1/onboarding", s.onboarding)
+	mux.HandleFunc("GET /api/v1/meta", s.meta)
 
 	mux.HandleFunc("GET /api/v1/settings", s.getSettings)
 	mux.HandleFunc("PUT /api/v1/settings/{group}", s.updateSettings)
 
 	mux.HandleFunc("GET /api/v1/storages", s.listStorages)
 	mux.HandleFunc("POST /api/v1/storages", s.createStorage)
-	mux.HandleFunc("PUT /api/v1/storages/{id}", s.updateStorage)
-	mux.HandleFunc("DELETE /api/v1/storages/{id}", s.deleteStorage)
-	mux.HandleFunc("POST /api/v1/storages/{id}/test", s.testStorage)
+	mux.HandleFunc("PUT /api/v1/storages/{storage_id}", s.updateStorage)
+	mux.HandleFunc("DELETE /api/v1/storages/{storage_id}", s.deleteStorage)
+	mux.HandleFunc("POST /api/v1/storages/{storage_id}/test", s.testStorage)
 
 	mux.HandleFunc("GET /api/v1/users", s.listUsers)
 	mux.HandleFunc("POST /api/v1/users", s.createUser)

@@ -20,6 +20,7 @@ type ItemResult struct {
 	Name            string
 	Path            string
 	StorageName     string
+	StorageID       uint
 	Status          ItemStatus
 	Error           string
 	Size            int64

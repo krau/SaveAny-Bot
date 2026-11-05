@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/gotd/td/constant"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
@@ -39,8 +38,11 @@ func getClientContext() (*ext.Context, error) {
 }
 
 func resolveChatID(_ context.Context, idOrUsername string) (int64, error) {
-	if id, err := strconv.ParseInt(idOrUsername, 10, 64); err == nil {
-		return constant.TDLibPeerID(id).ToPlain(), nil
+	if id, err := strconv.ParseInt(strings.TrimPrefix(idOrUsername, "@"), 10, 64); err == nil {
+		if id == 0 {
+			return 0, fmt.Errorf("chat ID must not be zero")
+		}
+		return id, nil
 	}
 
 	clientCtx, err := getClientContext()
@@ -89,7 +91,13 @@ func ParseMessageLink(ctx context.Context, link string) (int64, int, error) {
 		if paths[0] != "c" {
 			chatPart = paths[0]
 		}
-		chatID, err := resolveChatID(ctx, chatPart)
+		var chatID int64
+		var err error
+		if paths[0] == "c" {
+			chatID, err = tgutil.ParseChannelID(nil, chatPart)
+		} else {
+			chatID, err = resolveChatID(ctx, chatPart)
+		}
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to resolve chat ID: %w", err)
 		}
@@ -103,7 +111,7 @@ func ParseMessageLink(ctx context.Context, link string) (int64, int, error) {
 		if paths[0] != "c" {
 			return 0, 0, fmt.Errorf("invalid message link format: %s", link)
 		}
-		chatID, err := resolveChatID(ctx, paths[1])
+		chatID, err := tgutil.ParseChannelID(nil, paths[1])
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to resolve chat ID: %w", err)
 		}

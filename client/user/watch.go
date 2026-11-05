@@ -91,7 +91,7 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	chatId := update.EffectiveChat().GetID()
+	chatId := tgutil.ChatIdFromPeer(update.EffectiveMessage.GetPeerID())
 	sendMediaMessageEvent(MediaMessageEvent{
 		Ctx:       ctx,
 		ChatID:    chatId,

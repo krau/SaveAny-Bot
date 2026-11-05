@@ -17,9 +17,14 @@ func (s *server) listUsers(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
+	names, err := storageNamesByID(r.Context())
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
 	out := make([]UserResponse, 0, len(users))
 	for i := range users {
-		out = append(out, userResponse(&users[i]))
+		out = append(out, userResponse(&users[i], names))
 	}
 	WriteJSON(w, http.StatusOK, map[string]any{"users": out})
 }
@@ -33,8 +38,8 @@ func (s *server) createUser(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "invalid_request", "invalid request body")
 		return
 	}
-	if body.ChatID == 0 {
-		WriteFieldErrors(w, http.StatusBadRequest, "chat_id is required", map[string]string{"chat_id": "required"})
+	if body.ChatID <= 0 {
+		WriteFieldErrors(w, http.StatusBadRequest, "chat_id must be a positive Telegram user ID", map[string]string{"chat_id": "invalid"})
 		return
 	}
 	if _, err := database.GetUserByChatID(r.Context(), body.ChatID); err == nil {
@@ -69,7 +74,12 @@ func (s *server) createUser(w http.ResponseWriter, r *http.Request) {
 	if err := s.deps.Settings.ReloadConfig(r.Context()); err != nil {
 		log.FromContext(r.Context()).Warnf("Failed to reload settings after user creation: %v", err)
 	}
-	WriteJSON(w, http.StatusCreated, userResponse(user))
+	names, err := storageNamesByID(r.Context())
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	WriteJSON(w, http.StatusCreated, userResponse(user, names))
 }
 
 func (s *server) updateUser(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +109,12 @@ func (s *server) updateUser(w http.ResponseWriter, r *http.Request) {
 	if err := s.deps.Settings.ReloadConfig(r.Context()); err != nil {
 		log.FromContext(r.Context()).Warnf("Failed to reload settings after user update: %v", err)
 	}
-	WriteJSON(w, http.StatusOK, userResponse(user))
+	names, err := storageNamesByID(r.Context())
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
+		return
+	}
+	WriteJSON(w, http.StatusOK, userResponse(user, names))
 }
 
 func (s *server) deleteUser(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +138,21 @@ func (s *server) deleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func userResponse(user *database.User) UserResponse {
+// storageNamesByID resolves names for both enabled and disabled storage
+// records so references remain readable after a storage is disabled.
+func storageNamesByID(ctx context.Context) (map[uint]string, error) {
+	records, err := database.ListStorageRecords(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[uint]string, len(records))
+	for _, record := range records {
+		names[record.ID] = record.Name
+	}
+	return names, nil
+}
+
+func userResponse(user *database.User, namesByID map[uint]string) UserResponse {
 	ids := make([]uint, 0)
 	if user.StorageFilterIDsJSON != "" {
 		if err := json.Unmarshal([]byte(user.StorageFilterIDsJSON), &ids); err != nil {
@@ -133,19 +162,24 @@ func userResponse(user *database.User) UserResponse {
 	if ids == nil {
 		ids = make([]uint, 0)
 	}
+	names := make([]string, 0, len(ids))
+	for _, id := range ids {
+		names = append(names, namesByID[id])
+	}
 	return UserResponse{
-		ID:               user.ID,
-		ChatID:           user.ChatID,
-		Enabled:          user.Enabled,
-		Silent:           user.Silent,
-		DefaultStorageID: user.DefaultStorageID,
-		DefaultDirID:     user.DefaultDirID,
-		ApplyRule:        user.ApplyRule,
-		FilenameStrategy: user.FilenameStrategy,
-		FilenameTemplate: user.FilenameTemplate,
-		ConflictStrategy: user.ConflictStrategy,
-		WatchNotify:      user.WatchNotify,
-		StorageFilter:    UserStorageFilter{StorageIDs: ids, Mode: user.StorageFilterMode.Normalize()},
+		ID:                 user.ID,
+		ChatID:             user.ChatID,
+		Enabled:            user.Enabled,
+		Silent:             user.Silent,
+		DefaultStorageID:   user.DefaultStorageID,
+		DefaultStorageName: namesByID[user.DefaultStorageID],
+		DefaultDirID:       user.DefaultDirID,
+		ApplyRule:          user.ApplyRule,
+		FilenameStrategy:   user.FilenameStrategy,
+		FilenameTemplate:   user.FilenameTemplate,
+		ConflictStrategy:   user.ConflictStrategy,
+		WatchNotify:        user.WatchNotify,
+		StorageFilter:      UserStorageFilter{StorageIDs: ids, StorageNames: names, Mode: user.StorageFilterMode.Normalize()},
 	}
 }
 

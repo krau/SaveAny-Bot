@@ -59,12 +59,12 @@ func relayTestExt(inv *relayFakeInvoker, peers []int64) *ext.Context {
 func TestPrepareResumableReusesRelayMessage(t *testing.T) {
 	oldCfg := config.C()
 	cfg := oldCfg
-	cfg.Telegram.RelayChatID = 500
+	cfg.Telegram.RelayChatID = -1000000000500
 	cfg.Telegram.RelayKeepMessages = false
 	config.Set(cfg)
 	defer config.Set(oldCfg)
 
-	const sourceChatID int64 = 400
+	const sourceChatID int64 = -1000000000400
 	doc := &tg.Document{ID: 7, AccessHash: 8, FileReference: []byte{1}, Size: 9 << 20, DCID: 2}
 	relayMsg := &tg.Message{ID: 777, PeerID: &tg.PeerChannel{ChannelID: 500}, Media: &tg.MessageMediaDocument{Document: doc}}
 	sourceMsg := &tg.Message{ID: 10, PeerID: &tg.PeerChannel{ChannelID: sourceChatID}, Media: &tg.MessageMediaDocument{Document: doc}}
