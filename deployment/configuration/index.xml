@@ -2,38 +2,24 @@
  存储端配置
  &lt;a class="anchor" href="#%e5%ad%98%e5%82%a8%e7%ab%af%e9%85%8d%e7%bd%ae">#&lt;/a>
 &lt;/h1>
-&lt;p>请先阅读 &lt;a href="../">配置说明&lt;/a> 了解配置文件的基本格式.&lt;/p>
+&lt;p>在 Web 控制台的 &lt;strong>存储&lt;/strong> 页面添加存储时填写以下字段。&lt;/p>
+&lt;p>存储名称支持空格、中文与常用符号（最多 64 字符，不可含控制字符）。在 &lt;code>/dirs&lt;/code>、&lt;code>/transfer&lt;/code> 等命令中引用含空格的名称时需加双引号。名称可在 Web 控制台随时更改，用户默认存储、目录及规则均基于内部存储 ID 关联，不受重命名影响。&lt;/p>
 &lt;h2 id="alist">
  Alist
  &lt;a class="anchor" href="#alist">#&lt;/a>
 &lt;/h2>
 &lt;p>&lt;code>type=alist&lt;/code>&lt;/p>
-&lt;p>不支持 Stream 模式.&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">url&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;https://alist.example.com&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 的 URL&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">username&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_username&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 的用户名&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">password&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_password&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 的密码&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;/path/saveanybot&amp;#34;&lt;/span> &lt;span style="color:#75715e"># Alist 中的基础路径, 所有文件将存储在此路径下&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token_exp&lt;/span> = &lt;span style="color:#ae81ff">3600&lt;/span> &lt;span style="color:#75715e"># Alist 访问令牌的自动刷新时间, 单位秒&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">token&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_token&amp;#34;&lt;/span> 
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. &lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 使用 token 验证时无法自动刷新 token&lt;/span>
+&lt;p>不支持流式下载（Stream 模式）。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>url = &amp;#34;https://alist.example.com&amp;#34; # Alist 的 URL
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>username = &amp;#34;your_username&amp;#34; # Alist 的用户名
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>password = &amp;#34;your_password&amp;#34; # Alist 的密码
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>base_path = &amp;#34;/path/saveanybot&amp;#34; # Alist 中的基础路径, 所有文件将存储在此路径下
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>token_exp = 3600 # Alist 访问令牌的自动刷新时间, 单位秒
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>token = &amp;#34;your_token&amp;#34; 
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span># Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. 
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span># 使用 token 验证时无法自动刷新 token
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="本地磁盘">
  本地磁盘
  &lt;a class="anchor" href="#%e6%9c%ac%e5%9c%b0%e7%a3%81%e7%9b%98">#&lt;/a>
 &lt;/h2>
-&lt;p>&lt;code>type=local&lt;/code>&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;./downloads&amp;#34;&lt;/span> &lt;span style="color:#75715e"># 本地存储的基础路径, 所有文件将存储在此路径下&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="webdav">
- WebDAV
- &lt;a class="anchor" href="#webdav">#&lt;/a>
-&lt;/h2>
-&lt;p>&lt;code>type=webdav&lt;/code>&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-toml" data-lang="toml">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">url&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;https://webdav.example.com&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 的 URL&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">username&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_username&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">password&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;your_password&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 的密码&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">base_path&lt;/span> = &lt;span style="color:#e6db74">&amp;#34;/path/to/webdav&amp;#34;&lt;/span> &lt;span style="color:#75715e"># WebDAV 中的基础路径, 所有文件将存储在此路径下&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="s3">
- S3
- &lt;a class="anchor" href="#s3">#&lt;/a>
-&lt;/h2>
-&lt;p>&lt;code>type=s3&lt;/code>&lt;/p></description></item></channel></rss>
+&lt;p>&lt;code>type=local&lt;/code>&lt;/p></description></item></channel></rss>

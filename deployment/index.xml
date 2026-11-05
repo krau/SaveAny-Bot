@@ -2,16 +2,28 @@
  安装与更新
  &lt;a class="anchor" href="#%e5%ae%89%e8%a3%85%e4%b8%8e%e6%9b%b4%e6%96%b0">#&lt;/a>
 &lt;/h1>
-&lt;h2 id="从预编译文件部署推荐">
- 从预编译文件部署(推荐)
- &lt;a class="anchor" href="#%e4%bb%8e%e9%a2%84%e7%bc%96%e8%af%91%e6%96%87%e4%bb%b6%e9%83%a8%e7%bd%b2%e6%8e%a8%e8%8d%90">#&lt;/a>
+&lt;p>准备空数据目录即可启动，随后在 Web 控制台完成 Bot、存储和用户配置。&lt;/p>
+&lt;h2 id="从预编译文件部署">
+ 从预编译文件部署
+ &lt;a class="anchor" href="#%e4%bb%8e%e9%a2%84%e7%bc%96%e8%af%91%e6%96%87%e4%bb%b6%e9%83%a8%e7%bd%b2">#&lt;/a>
 &lt;/h2>
-&lt;p>在 &lt;a href="https://github.com/krau/SaveAny-Bot/releases">Release&lt;/a> 页面下载对应平台的二进制文件.&lt;/p>
-&lt;p>在解压后目录新建 &lt;code>config.toml&lt;/code> 文件, 参考 &lt;a href="../configuration">配置说明&lt;/a> 编辑配置文件&lt;/p>
-&lt;p>运行:&lt;/p>
+&lt;p>在 &lt;a href="https://github.com/krau/SaveAny-Bot/releases">Release&lt;/a> 页面下载对应平台的二进制文件并解压：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>chmod +x saveany-bot
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>./saveany-bot
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="进程守护">
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>程序默认使用当前目录下的 &lt;code>data/&lt;/code> 保存数据库和会话。Web UI 默认监听 &lt;code>127.0.0.1:28080&lt;/code>，启动时会输出带访问 Token 的直达地址：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>Web UI available at http://127.0.0.1:28080/?token=...
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>打开该地址即可登录。未在“设置 → Web”中指定访问 Token 时，每次启动均会重新生成。&lt;/p>
+&lt;p>如需在其他网卡或端口访问，通过命令行指定监听地址：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>./saveany-bot --listen 0.0.0.0:28080
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>对应的环境变量为 &lt;code>SAVEANY_LISTEN&lt;/code>：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>SAVEANY_LISTEN&lt;span style="color:#f92672">=&lt;/span>&lt;span style="color:#e6db74">&amp;#39;0.0.0.0:28080&amp;#39;&lt;/span> ./saveany-bot
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>自动生成的管理员密码用于首次登录，也可通过环境变量 &lt;code>SAVEANY_ADMIN_PASSWORD&lt;/code> 预设。初始密码仅在首次启动时打印，登录后可在侧栏修改密码。打开日志中的直达地址后，参照指南页面完成初始化：&lt;/p>
+&lt;ol>
+&lt;li>在 Telegram 页面填写 Bot Token。&lt;/li>
+&lt;li>在存储页面添加至少一个存储。&lt;/li>
+&lt;li>在用户页面添加你的 Telegram User ID。&lt;/li>
+&lt;/ol>
+&lt;h3 id="进程守护">
  进程守护
  &lt;a class="anchor" href="#%e8%bf%9b%e7%a8%8b%e5%ae%88%e6%8a%a4">#&lt;/a>
 &lt;/h3>
@@ -22,9 +34,10 @@
 &lt;label for="tabs-daemon-0">systemd (常规 Linux)&lt;/label>
 &lt;div class="book-tabs-content markdown-inner">
 
-创建文件 &lt;code>/etc/systemd/system/saveany-bot.service&lt;/code> 并写入以下内容:
+创建 `/etc/systemd/system/saveany-bot.service`：
 
-&lt;pre>&lt;code class="language-text">[Unit]
+```ini
+[Unit]
 Description=SaveAnyBot
 After=systemd-user-sessions.service
 
@@ -35,65 +48,37 @@ ExecStart=/yourpath/saveany-bot
 Restart=always
 
 [Install]
-WantedBy=multi-user.target&lt;/code>&lt;/pre>
+WantedBy=multi-user.target
+```
 
-设为开机启动并启动服务:
-
-&lt;pre>&lt;code class="language-text">systemctl enable --now saveany-bot&lt;/code>&lt;/pre>
+```bash
+systemctl enable --now saveany-bot
+```
 
 &lt;/div>
-
 
 
 &lt;input type="radio" class="toggle" name="tabs-daemon" id="tabs-daemon-1" />
 &lt;label for="tabs-daemon-1">procd (OpenWrt)&lt;/label>
 &lt;div class="book-tabs-content markdown-inner">
 
-&lt;h4>添加开机自启动服务&lt;/h4>
+创建 `/etc/init.d/saveanybot`，参考 [wrt_init](https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init) 并修改工作目录与程序路径：
 
-创建文件 &lt;code>/etc/init.d/saveanybot&lt;/code> ，参考 &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init" target="_blank">wrt_init&lt;/a> 并自行修改:
-
-&lt;pre>&lt;code class="language-text">#!/bin/sh /etc/rc.common
-
-#This is the OpenWRT init.d script for SaveAnyBot
-
-START=99 
+```sh
+#!/bin/sh /etc/rc.common
+START=99
 STOP=10
-description=&amp;amp;#34;SaveAnyBot&amp;amp;#34;
+description="SaveAnyBot"
+WORKING_DIR="/mnt/mmc1-1/SaveAnyBot"
+EXEC_PATH="$WORKING_DIR/saveany-bot"
+start() { cd $WORKING_DIR &amp;&amp; $EXEC_PATH &amp; }
+stop() { killall saveany-bot; }
+```
 
-WORKING_DIR=&amp;amp;#34;/mnt/mmc1-1/SaveAnyBot&amp;amp;#34;
-EXEC_PATH=&amp;amp;#34;$WORKING_DIR/saveany-bot&amp;amp;#34;
-start() {
- echo &amp;amp;#34;Starting SaveAnyBot...&amp;amp;#34;
- cd $WORKING_DIR
- $EXEC_PATH &amp;amp;amp;
-}
-stop() {
- echo &amp;amp;#34;Stopping SaveAnyBot...&amp;amp;#34;
- killall saveany-bot
-}
-reload() {
- stop
- start
-}&lt;/code>&lt;/pre>
-
-赋予权限:
-
-&lt;pre>&lt;code class="language-text">chmod &amp;#43;x /etc/init.d/saveanybot&lt;/code>&lt;/pre>
-
-然后将文件复制到 &lt;code>/etc/rc.d&lt;/code> 并重命名为 &lt;code>S99saveanybot&lt;/code>, 同样赋予权限:
-
-&lt;pre>&lt;code class="language-text">chmod &amp;#43;x /etc/rc.d/S99saveanybot&lt;/code>&lt;/pre>
-
-&lt;h4>添加快捷指令&lt;/h4>
-
-创建文件 &lt;code>/usr/bin/sabot&lt;/code> ，参考 &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_bin" target="_blank">wrt_bin&lt;/a> 并自行修改，注意此处文件编码仅支持 ANSI 936 .
-
-随后赋予权限:
-
-&lt;pre>&lt;code class="language-text">chmod &amp;#43;x /usr/bin/sabot&lt;/code>&lt;/pre>
-
-使用: &lt;code>sudo sabot start|stop|restart|status|enable|disable&lt;/code>
+```bash
+chmod +x /etc/init.d/saveanybot
+ln -s /etc/init.d/saveanybot /etc/rc.d/S99saveanybot
+```
 
 &lt;/div>
 
@@ -108,4 +93,40 @@ reload() {
  Docker Compose
  &lt;a class="anchor" href="#docker-compose">#&lt;/a>
 &lt;/h3>
-&lt;p>下载 &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml">docker-compose.yml&lt;/a> 文件, 在同目录下新建 &lt;code>config.toml&lt;/code> 文件, 参考 &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml">config.example.toml&lt;/a> 编辑配置文件.&lt;/p></description></item></channel></rss>
+&lt;p>下载 &lt;a href="https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml">docker-compose.yml&lt;/a>，按需修改端口和数据目录，然后启动：&lt;/p></description></item><item><title>从 v0 升级</title><link>https://sabot.unv.app/deployment/migration/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/deployment/migration/</guid><description>&lt;h1 id="从-v0-升级">
+ 从 v0 升级
+ &lt;a class="anchor" href="#%e4%bb%8e-v0-%e5%8d%87%e7%ba%a7">#&lt;/a>
+&lt;/h1>
+&lt;p>v1 使用本地 SQLite 数据库保存配置。首次启动若检测到 v0 的 &lt;code>config.toml&lt;/code>，会自动导入数据库；此后所有配置均在 Web 控制台管理。&lt;/p>
+&lt;p>v1 不迁移 Telegram 会话。旧版 &lt;code>session.db&lt;/code> 与 &lt;code>usersession.db&lt;/code> 已弃用，迁移仅导入旧版配置并写入新数据库。Bot 将使用现有 Token 重新登录，Userbot 则需在 Web 控制台重新登录。升级前请完整备份数据。&lt;/p>
+&lt;h2 id="1-停止并备份">
+ 1. 停止并备份
+ &lt;a class="anchor" href="#1-%e5%81%9c%e6%ad%a2%e5%b9%b6%e5%a4%87%e4%bb%bd">#&lt;/a>
+&lt;/h2>
+&lt;p>先停止 v0，再备份配置、数据和下载目录：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>docker compose down
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cp -a config.toml data downloads /path/to/backup/
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>如果使用二进制部署，直接停止进程后备份相同目录即可。&lt;/p>
+&lt;p>不要同时运行 v0 和 v1，也不要让两个实例共用同一个 &lt;code>data/&lt;/code> 目录。&lt;/p>
+&lt;h2 id="2-保留数据目录">
+ 2. 保留数据目录
+ &lt;a class="anchor" href="#2-%e4%bf%9d%e7%95%99%e6%95%b0%e6%8d%ae%e7%9b%ae%e5%bd%95">#&lt;/a>
+&lt;/h2>
+&lt;p>v1 不复用 v0 数据库。请保留旧文件作为备份，由 v1 创建新的 &lt;code>data/saveany.db&lt;/code>：&lt;/p>
+&lt;table>
+ &lt;thead>
+ &lt;tr>
+ &lt;th>v0 文件&lt;/th>
+ &lt;th>v1 默认路径&lt;/th>
+ &lt;th>说明&lt;/th>
+ &lt;/tr>
+ &lt;/thead>
+ &lt;tbody>
+ &lt;tr>
+ &lt;td>&lt;code>data/saveany.db&lt;/code>&lt;/td>
+ &lt;td>不复用&lt;/td>
+ &lt;td>保留作为备份；v1 创建新数据库&lt;/td>
+ &lt;/tr>
+ &lt;/tbody>
+&lt;/table>
+&lt;p>不要使用 &lt;code>--db-path&lt;/code> 或 &lt;code>SAVEANY_DB_PATH&lt;/code> 指向 v0 数据库（旧 schema 不兼容）。请在启动 v1 前将旧的 &lt;code>data/saveany.db&lt;/code> 移出或重命名备份，由 v1 在默认路径创建新数据库。&lt;/p></description></item></channel></rss>

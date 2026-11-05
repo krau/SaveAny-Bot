@@ -4,48 +4,48 @@
 
 
   
-该功能需开启 UserBot 集成.
+需要启用 UserBot 集成。
 
 
 
-监听指定聊天的消息, 并自动保存到默认存储中, 遵从存储规则, 并且可以设置过滤器来只保存匹配的消息.
-监听聊天:
-/watch <chat_id/username> [filter] 
-取消监听:
-/unwatch <chat_id/username>
+可监听指定聊天中的新消息，支持按过滤器筛选并依照存储规则自动保存。
+发送 /watch 管理监听聊天：
+
+添加监听 — 显示添加聊天的语法
+监听列表 — 列出正在监听的聊天，可逐项停止
+通知开关 — 开关所有监听聊天的任务通知
+同步对话 — 将 UserBot 的对话列表同步到 peer 缓存
+
+开始监听：
+/watch <聊天ID/用户名> [过滤器]
+停止监听：在 /watch 的“监听列表”中点击对应聊天即可停止。
 过滤器类型:
 
   msgre
   #
 
-正则匹配消息文本, 例如:
-/watch 12345678 msgre:.*hello.*
-这将会监听 ID 为 12345678 的聊天, 并且只保存消息文本中包含 &ldquo;hello&rdquo; 的消息.
+按消息文本正则匹配，例如：
+/watch -1002229835658 msgre:.*hello.*
+这会监听 ID 为 -1002229835658 的频道，只保存文本包含 hello 的消息。用户私聊使用正数 ID，普通群使用负数 ID，超级群和频道使用 -100...。
 
   任务通知
   #
 
-所有用户的监听任务通知默认关闭. 开启后, 机器人从被监听聊天中保存的每条消息都会在此处收到通知, 并随下载进度更新, 最终显示保存结果:
-/watch notify on
-使用 /watch notify off 关闭, 使用 /watch notify 查询当前状态.
-通知由机器人发送到你与它的私聊中. 该开关按用户生效, 而非按聊天: /watch notify off 会关闭该用户所有被监听聊天的通知."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/watch/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="监听聊天"><meta property="og:description" content="监听聊天 # 该功能需开启 UserBot 集成. 监听指定聊天的消息, 并自动保存到默认存储中, 遵从存储规则, 并且可以设置过滤器来只保存匹配的消息.
-监听聊天:
-/watch <chat_id/username> [filter] 取消监听:
-/unwatch <chat_id/username> 过滤器类型:
-msgre # 正则匹配消息文本, 例如:
-/watch 12345678 msgre:.*hello.* 这将会监听 ID 为 12345678 的聊天, 并且只保存消息文本中包含 “hello” 的消息.
-任务通知 # 所有用户的监听任务通知默认关闭. 开启后, 机器人从被监听聊天中保存的每条消息都会在此处收到通知, 并随下载进度更新, 最终显示保存结果:
-/watch notify on 使用 /watch notify off 关闭, 使用 /watch notify 查询当前状态.
-通知由机器人发送到你与它的私聊中. 该开关按用户生效, 而非按聊天: /watch notify off 会关闭该用户所有被监听聊天的通知."><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="usage"><meta property="article:modified_time" content="2026-09-28T21:05:44+08:00"><title>监听聊天 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/watch/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/watch/ title="Watch Chats"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
-<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+任务通知默认关闭。在 /watch 中切换“通知开关”开启后，Bot 会在私聊中实时推送监听到的消息进度与保存结果。此开关按用户生效，作用于该用户的所有监听聊天。再次点击即可关闭。"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/watch/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="监听聊天"><meta property="og:description" content="监听聊天 # 需要启用 UserBot 集成。 可监听指定聊天中的新消息，支持按过滤器筛选并依照存储规则自动保存。
+发送 /watch 管理监听聊天：
+添加监听 — 显示添加聊天的语法 监听列表 — 列出正在监听的聊天，可逐项停止 通知开关 — 开关所有监听聊天的任务通知 同步对话 — 将 UserBot 的对话列表同步到 peer 缓存 开始监听：
+/watch <聊天ID/用户名> [过滤器] 停止监听：在 /watch 的“监听列表”中点击对应聊天即可停止。
+过滤器类型:
+msgre # 按消息文本正则匹配，例如：
+/watch -1002229835658 msgre:.*hello.* 这会监听 ID 为 -1002229835658 的频道，只保存文本包含 hello 的消息。用户私聊使用正数 ID，普通群使用负数 ID，超级群和频道使用 -100...。
+任务通知 # 任务通知默认关闭。在 /watch 中切换“通知开关”开启后，Bot 会在私聊中实时推送监听到的消息进度与保存结果。此开关按用户生效，作用于该用户的所有监听聊天。再次点击即可关闭。"><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="usage"><meta property="article:modified_time" content="2026-11-05T17:03:21+08:00"><title>监听聊天 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/watch/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/watch/ title="Watch Chats"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.svg alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
 <label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
-简体中文</a></label><ul><li><a href=/en/usage/watch/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/ class=active>监听聊天</a></li><li><a href=/usage/directlinks/>直接下载链接</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>yt-dlp 视频下载</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>监听聊天</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#msgre>msgre</a></li><li><a href=#任务通知>任务通知</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=监听聊天>监听聊天
-<a class=anchor href=#%e7%9b%91%e5%90%ac%e8%81%8a%e5%a4%a9>#</a></h1><blockquote class="book-hint warning">该功能需开启 UserBot 集成.</blockquote><p>监听指定聊天的消息, 并自动保存到默认存储中, 遵从存储规则, 并且可以设置过滤器来只保存匹配的消息.</p><p>监听聊天:</p><pre tabindex=0><code>/watch &lt;chat_id/username&gt; [filter] 
-</code></pre><p>取消监听:</p><pre tabindex=0><code>/unwatch &lt;chat_id/username&gt;
-</code></pre><p>过滤器类型:</p><h2 id=msgre>msgre
-<a class=anchor href=#msgre>#</a></h2><p>正则匹配消息文本, 例如:</p><pre tabindex=0><code>/watch 12345678 msgre:.*hello.*
-</code></pre><p>这将会监听 ID 为 12345678 的聊天, 并且只保存消息文本中包含 &ldquo;hello&rdquo; 的消息.</p><h2 id=任务通知>任务通知
-<a class=anchor href=#%e4%bb%bb%e5%8a%a1%e9%80%9a%e7%9f%a5>#</a></h2><p>所有用户的监听任务通知默认关闭. 开启后, 机器人从被监听聊天中保存的每条消息都会在此处收到通知, 并随下载进度更新, 最终显示保存结果:</p><pre tabindex=0><code>/watch notify on
-</code></pre><p>使用 <code>/watch notify off</code> 关闭, 使用 <code>/watch notify</code> 查询当前状态.</p><p>通知由机器人发送到你与它的私聊中. 该开关按用户生效, 而非按聊天: <code>/watch notify off</code> 会关闭该用户所有被监听聊天的通知.</p></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/2957438ce8978c144c65356717fe9440cb53f99b title='最后修改者 Krau | 2026/09/28' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
-<span>2026/09/28</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/watch.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+简体中文</a></label><ul><li><a href=/en/usage/watch/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li><li><a href=/deployment/migration/>从 v0 升级</a></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/ class=active>监听聊天</a></li><li><a href=/usage/directlinks/>链接下载</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>视频下载 (yt-dlp)</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul><li><a href=/contribute/testing/>测试</a></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>监听聊天</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#msgre>msgre</a></li><li><a href=#任务通知>任务通知</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=监听聊天>监听聊天
+<a class=anchor href=#%e7%9b%91%e5%90%ac%e8%81%8a%e5%a4%a9>#</a></h1><blockquote class="book-hint warning">需要启用 UserBot 集成。</blockquote><p>可监听指定聊天中的新消息，支持按过滤器筛选并依照存储规则自动保存。</p><p>发送 <code>/watch</code> 管理监听聊天：</p><ul><li><strong>添加监听</strong> — 显示添加聊天的语法</li><li><strong>监听列表</strong> — 列出正在监听的聊天，可逐项停止</li><li><strong>通知开关</strong> — 开关所有监听聊天的任务通知</li><li><strong>同步对话</strong> — 将 UserBot 的对话列表同步到 peer 缓存</li></ul><p>开始监听：</p><pre tabindex=0><code>/watch &lt;聊天ID/用户名&gt; [过滤器]
+</code></pre><p>停止监听：在 <code>/watch</code> 的“监听列表”中点击对应聊天即可停止。</p><p>过滤器类型:</p><h2 id=msgre>msgre
+<a class=anchor href=#msgre>#</a></h2><p>按消息文本正则匹配，例如：</p><pre tabindex=0><code>/watch -1002229835658 msgre:.*hello.*
+</code></pre><p>这会监听 ID 为 <code>-1002229835658</code> 的频道，只保存文本包含 <code>hello</code> 的消息。用户私聊使用正数 ID，普通群使用负数 ID，超级群和频道使用 <code>-100...</code>。</p><h2 id=任务通知>任务通知
+<a class=anchor href=#%e4%bb%bb%e5%8a%a1%e9%80%9a%e7%9f%a5>#</a></h2><p>任务通知默认关闭。在 <code>/watch</code> 中切换“通知开关”开启后，Bot 会在私聊中实时推送监听到的消息进度与保存结果。此开关按用户生效，作用于该用户的所有监听聊天。再次点击即可关闭。</p></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/5a0a7cc1dbba2b47377adc7ef55bc983c266def7 title='最后修改者 krau | 2026/11/05' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/11/05</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/watch.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
 <span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#msgre>msgre</a></li><li><a href=#任务通知>任务通知</a></li></ul></nav></div></aside></main></body></html>

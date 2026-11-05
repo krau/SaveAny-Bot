@@ -2,20 +2,64 @@
   转存 Telegram 之外的文件
   #
 
-除了 Telegram 上的文件, Bot 还可通过 JavaScript 插件或内置解析器来支持转存其他网站的文件.
+除 Telegram 文件外，Bot 还可通过内置解析器或 JavaScript 插件转存第三方网站内容。
 
-查看贡献解析器文档了解详情
-只需向 Bot 发送符合解析器要求的链接即可使用, 当前内置的解析器:
+编写与贡献解析器请参阅相关文档。
+向 Bot 发送符合解析器要求的链接。内置解析器：
 
 Twitter
 Kemono
-"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/parsers/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="转存 Telegram 之外的文件"><meta property="og:description" content="转存 Telegram 之外的文件 # 除了 Telegram 上的文件, Bot 还可通过 JavaScript 插件或内置解析器来支持转存其他网站的文件.
-查看贡献解析器文档了解详情
-只需向 Bot 发送符合解析器要求的链接即可使用, 当前内置的解析器:
-Twitter Kemono"><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="usage"><meta property="article:modified_time" content="2026-03-11T19:37:25+08:00"><title>转存 Telegram 之外的文件 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/parsers/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/parsers/ title="Save Files Outside Telegram"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
-<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+
+
+  JavaScript 插件 API
+  #
+
+JavaScript 插件通过以下结构注册解析器：
+registerParser({
+  metadata: {
+    name: 'example',
+    version: '1.0.0',
+    apiVersion: '1',
+    description: '示例插件',
+    author: 'you',
+  },
+  canHandle(url) { return url.includes('example.com') },
+  parse(url) {
+    return {
+      site: 'example',
+      url,
+      title: 'Example',
+      resources: [{ url: 'https://cdn.example.com/file.zip', filename: 'file.zip' }],
+    }
+  },
+})
+apiVersion 是插件 ABI 版本，与插件自身的 version 独立。当前 ABI 为 &#34;1&#34;，其他值会被拒绝。可用全局对象为 console、ghttp（get、getJSON、head）和 playwright。parse 返回 Item，其中 resources 支持 url、filename，以及可选的 mime_type、extension、size、hash、headers、extra。"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/parsers/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="转存 Telegram 之外的文件"><meta property="og:description" content="转存 Telegram 之外的文件 # 除 Telegram 文件外，Bot 还可通过内置解析器或 JavaScript 插件转存第三方网站内容。
+编写与贡献解析器请参阅相关文档。
+向 Bot 发送符合解析器要求的链接。内置解析器：
+Twitter Kemono JavaScript 插件 API # JavaScript 插件通过以下结构注册解析器：
+registerParser({ metadata: { name: 'example', version: '1.0.0', apiVersion: '1', description: '示例插件', author: 'you', }, canHandle(url) { return url.includes('example.com') }, parse(url) { return { site: 'example', url, title: 'Example', resources: [{ url: 'https://cdn.example.com/file.zip', filename: 'file.zip' }], } }, }) apiVersion 是插件 ABI 版本，与插件自身的 version 独立。当前 ABI 为 &#34;1&#34;，其他值会被拒绝。可用全局对象为 console、ghttp（get、getJSON、head）和 playwright。parse 返回 Item，其中 resources 支持 url、filename，以及可选的 mime_type、extension、size、hash、headers、extra。"><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="usage"><meta property="article:modified_time" content="2026-11-05T17:03:21+08:00"><title>转存 Telegram 之外的文件 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/parsers/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/parsers/ title="Save Files Outside Telegram"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.svg alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
 <label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
-简体中文</a></label><ul><li><a href=/en/usage/parsers/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>直接下载链接</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>yt-dlp 视频下载</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/ class=active>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>转存 Telegram 之外的文件</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents></nav></aside></header><article class="markdown book-article"><h1 id=转存-telegram-之外的文件>转存 Telegram 之外的文件
-<a class=anchor href=#%e8%bd%ac%e5%ad%98-telegram-%e4%b9%8b%e5%a4%96%e7%9a%84%e6%96%87%e4%bb%b6>#</a></h1><p>除了 Telegram 上的文件, Bot 还可通过 JavaScript 插件或内置解析器来支持转存其他网站的文件.</p><blockquote><p>查看<a href=../contribute>贡献解析器</a>文档了解详情</p></blockquote><p>只需向 Bot 发送符合解析器要求的链接即可使用, 当前内置的解析器:</p><ul><li>Twitter</li><li>Kemono</li></ul></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/38355dfd142f0f1a819a8837875b33da0d3a81b7 title='最后修改者 krau | 2026/03/11' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
-<span>2026/03/11</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/parsers.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
-<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents></nav></div></aside></main></body></html>
+简体中文</a></label><ul><li><a href=/en/usage/parsers/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li><li><a href=/deployment/migration/>从 v0 升级</a></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>链接下载</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>视频下载 (yt-dlp)</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/ class=active>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul><li><a href=/contribute/testing/>测试</a></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>转存 Telegram 之外的文件</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#javascript-插件-api>JavaScript 插件 API</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=转存-telegram-之外的文件>转存 Telegram 之外的文件
+<a class=anchor href=#%e8%bd%ac%e5%ad%98-telegram-%e4%b9%8b%e5%a4%96%e7%9a%84%e6%96%87%e4%bb%b6>#</a></h1><p>除 Telegram 文件外，Bot 还可通过内置解析器或 JavaScript 插件转存第三方网站内容。</p><blockquote><p>编写与贡献解析器请参阅<a href=../contribute>相关文档</a>。</p></blockquote><p>向 Bot 发送符合解析器要求的链接。内置解析器：</p><ul><li>Twitter</li><li>Kemono</li></ul><h2 id=javascript-插件-api>JavaScript 插件 API
+<a class=anchor href=#javascript-%e6%8f%92%e4%bb%b6-api>#</a></h2><p>JavaScript 插件通过以下结构注册解析器：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#a6e22e>registerParser</span>({
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>metadata</span><span style=color:#f92672>:</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>name</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;example&#39;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>version</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;1.0.0&#39;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>apiVersion</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;1&#39;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>description</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;示例插件&#39;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>author</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;you&#39;</span>,
+</span></span><span style=display:flex><span>  },
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>canHandle</span>(<span style=color:#a6e22e>url</span>) { <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>url</span>.<span style=color:#a6e22e>includes</span>(<span style=color:#e6db74>&#39;example.com&#39;</span>) },
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>parse</span>(<span style=color:#a6e22e>url</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> {
+</span></span><span style=display:flex><span>      <span style=color:#a6e22e>site</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;example&#39;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#a6e22e>url</span>,
+</span></span><span style=display:flex><span>      <span style=color:#a6e22e>title</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;Example&#39;</span>,
+</span></span><span style=display:flex><span>      <span style=color:#a6e22e>resources</span><span style=color:#f92672>:</span> [{ <span style=color:#a6e22e>url</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;https://cdn.example.com/file.zip&#39;</span>, <span style=color:#a6e22e>filename</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;file.zip&#39;</span> }],
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>  },
+</span></span><span style=display:flex><span>})
+</span></span></code></pre></div><p><code>apiVersion</code> 是插件 ABI 版本，与插件自身的 <code>version</code> 独立。当前 ABI 为 <code>"1"</code>，其他值会被拒绝。可用全局对象为 <code>console</code>、<code>ghttp</code>（<code>get</code>、<code>getJSON</code>、<code>head</code>）和 <code>playwright</code>。<code>parse</code> 返回 <code>Item</code>，其中 <code>resources</code> 支持 <code>url</code>、<code>filename</code>，以及可选的 <code>mime_type</code>、<code>extension</code>、<code>size</code>、<code>hash</code>、<code>headers</code>、<code>extra</code>。</p></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/5a0a7cc1dbba2b47377adc7ef55bc983c266def7 title='最后修改者 krau | 2026/11/05' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/11/05</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/parsers.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#javascript-插件-api>JavaScript 插件 API</a></li></ul></nav></div></aside></main></body></html>

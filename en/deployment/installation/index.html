@@ -1,174 +1,86 @@
 <!doctype html><html lang=en dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="
-  Installation and Updates
+  Installation and updates
   #
 
+Start with an empty data directory, then configure the bot, storage, and users in the web console.
 
-  Deploy from Pre-compiled Binary (Recommended)
+  Binary deployment
   #
 
-Download the binary file for your platform from the Release page.
-Create a config.toml file in the extracted directory, refer to the Configuration Guide to edit the configuration file.
-Run:
+Download and extract a release for your platform:
 chmod +x saveany-bot
 ./saveany-bot
-
-  Daemon
-  #
-
-
-
-
-
-systemd (Regular Linux)
-
-
-Create a file /etc/systemd/system/saveany-bot.service and write the following content:
-
+The default data directory is data/ under the current working directory. The web UI listens on 127.0.0.1:28080 by default. At startup it prints a direct URL with an access token:
+Web UI available at http://127.0.0.1:28080/?token=...
+Open that URL; the token creates an authenticated session. Unless an access token is set under Settings → Web, a new token is generated on every start."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/en/deployment/installation/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="Installation and updates"><meta property="og:description" content="Installation and updates # Start with an empty data directory, then configure the bot, storage, and users in the web console.
+Binary deployment # Download and extract a release for your platform:
+chmod +x saveany-bot ./saveany-bot The default data directory is data/ under the current working directory. The web UI listens on 127.0.0.1:28080 by default. At startup it prints a direct URL with an access token:
+Web UI available at http://127.0.0.1:28080/?token=... Open that URL; the token creates an authenticated session. Unless an access token is set under Settings → Web, a new token is generated on every start."><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="article:section" content="deployment"><meta property="article:modified_time" content="2026-11-03T19:21:58+08:00"><title>Installation and updates | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/en/deployment/installation/><link rel=alternate hreflang=zh href=https://sabot.unv.app/deployment/installation/ title=安装与更新><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/en/><img src=/logo.svg alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+<label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
+English</a></label><ul><li><a href=/deployment/installation/>简体中文</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>Deployment Guide</span><ul><li><a href=/en/deployment/installation/ class=active>Installation and updates</a></li><li><a href=/en/deployment/configuration/>Configuration</a><ul><li><a href=/en/deployment/configuration/storages/>Storage Configuration</a></li></ul></li><li><a href=/en/deployment/migration/>Migrate from v0</a></li></ul></li><li><a href=/en/usage/>Usage</a><ul><li><a href=/en/usage/silent/>Silent Mode</a></li><li><a href=/en/usage/rules/>Storage Rules</a></li><li><a href=/en/usage/watch/>Watch Chats</a></li><li><a href=/en/usage/directlinks/>URL Downloads</a></li><li><a href=/en/usage/aria2/>Aria2 Downloads</a></li><li><a href=/en/usage/ytdlp/>Video Downloads (yt-dlp)</a></li><li><a href=/en/usage/transfer/>Storage Transfer</a></li><li><a href=/en/usage/parsers/>Save Files Outside Telegram</a></li><li><a href=/en/usage/config/>File Naming & Conflict Strategies</a></li><li><a href=/en/usage/api/>HTTP API</a></li><li><a href=/en/usage/cli/>CLI Subcommands</a></li></ul></li><li><a href=/en/help/>Frequently Asked Questions</a><ul></ul></li><li><a href=/en/contribute/>Contributing</a><ul><li><a href=/en/contribute/testing/>Testing</a></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>Installation and updates</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#binary-deployment>Binary deployment</a><ul><li><a href=#process-supervision>Process supervision</a></li></ul></li><li><a href=#docker-deployment>Docker deployment</a><ul><li><a href=#docker-compose>Docker Compose</a></li><li><a href=#docker>Docker</a></li></ul></li><li><a href=#updates>Updates</a><ul><li><a href=#binary>Binary</a></li><li><a href=#docker-1>Docker</a></li><li><a href=#docker-compose-1>Docker Compose</a></li></ul></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=installation-and-updates>Installation and updates
+<a class=anchor href=#installation-and-updates>#</a></h1><p>Start with an empty data directory, then configure the bot, storage, and users in the web console.</p><h2 id=binary-deployment>Binary deployment
+<a class=anchor href=#binary-deployment>#</a></h2><p>Download and extract a release for your platform:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>chmod +x saveany-bot
+</span></span><span style=display:flex><span>./saveany-bot
+</span></span></code></pre></div><p>The default data directory is <code>data/</code> under the current working directory. The web UI listens on <code>127.0.0.1:28080</code> by default. At startup it prints a direct URL with an access token:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>Web UI available at http://127.0.0.1:28080/?token=...
+</span></span></code></pre></div><p>Open that URL; the token creates an authenticated session. Unless an access token is set under <strong>Settings → Web</strong>, a new token is generated on every start.</p><p>To expose the web UI on another interface or port, pass the listen address on the command line:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>./saveany-bot --listen 0.0.0.0:28080
+</span></span></code></pre></div><p>The equivalent environment variable is <code>SAVEANY_LISTEN</code>:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>SAVEANY_LISTEN<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;0.0.0.0:28080&#39;</span> ./saveany-bot
+</span></span></code></pre></div><p>The generated admin password remains available for password login; set <code>SAVEANY_ADMIN_PASSWORD</code> to choose it. It is printed only on the first start. After signing in, change it from the sidebar <strong>Change password</strong> dialog. Open the logged URL and follow the <strong>Guide</strong> page:</p><ol><li>Enter the bot token on the Telegram page.</li><li>Add at least one storage on the Storages page.</li><li>Add your Telegram user ID on the Users page.</li></ol><h3 id=process-supervision>Process supervision
+<a class=anchor href=#process-supervision>#</a></h3><div class=book-tabs><input type=radio class=toggle name=tabs-daemon id=tabs-daemon-0 checked>
+<label for=tabs-daemon-0>systemd (Linux)</label><div class="book-tabs-content markdown-inner">Create `/etc/systemd/system/saveany-bot.service`:
+```ini
 [Unit]
 Description=SaveAnyBot
 After=systemd-user-sessions.service
-
 [Service]
 Type=simple
 WorkingDirectory=/yourpath/
 ExecStart=/yourpath/saveany-bot
 Restart=always
-
 [Install]
 WantedBy=multi-user.target
-
-Enable startup on boot and start the service:
-
+```
+```bash
 systemctl enable --now saveany-bot
-
-
-
-
-
-
-procd (OpenWrt)
-
-
-Add Boot Autostart Service
-
-Create a file /etc/init.d/saveanybot, refer to wrt_init and modify as needed:
-
+```</div><input type=radio class=toggle name=tabs-daemon id=tabs-daemon-1>
+<label for=tabs-daemon-1>procd (OpenWrt)</label><div class="book-tabs-content markdown-inner">Create `/etc/init.d/saveanybot`, based on [wrt_init](https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init), and adjust the working directory and executable path:
+```sh
 #!/bin/sh /etc/rc.common
-
-#This is the OpenWRT init.d script for SaveAnyBot
-
-START=99 
+START=99
 STOP=10
-description=&amp;#34;SaveAnyBot&amp;#34;
-
-WORKING_DIR=&amp;#34;/mnt/mmc1-1/SaveAnyBot&amp;#34;
-EXEC_PATH=&amp;#34;$WORKING_DIR/saveany-bot&amp;#34;
-start() {
-    echo &amp;#34;Starting SaveAnyBot...&amp;#34;
-    cd $WORKING_DIR
-    $EXEC_PATH &amp;amp;
-}
-stop() {
-    echo &amp;#34;Stopping SaveAnyBot...&amp;#34;
-    killall saveany-bot
-}
-reload() {
-    stop
-    start
-}
-
-Set permissions:
-
+description="SaveAnyBot"
+WORKING_DIR="/mnt/mmc1-1/SaveAnyBot"
+EXEC_PATH="$WORKING_DIR/saveany-bot"
+start() { cd $WORKING_DIR && $EXEC_PATH & }
+stop() { killall saveany-bot; }
+```
+```bash
 chmod +x /etc/init.d/saveanybot
-
-Then copy the file to /etc/rc.d and rename it to S99saveanybot, also set permissions:
-
-chmod +x /etc/rc.d/S99saveanybot
-
-Add Shortcut Commands
-
-Create a file /usr/bin/sabot, refer to wrt_bin and modify as needed. Note that the file encoding here only supports ANSI 936.
-
-Then set permissions:
-
-chmod +x /usr/bin/sabot
-
-Usage: sudo sabot start|stop|restart|status|enable|disable
-
-
-
-
-
-
-
-  Deploy Using Docker
-  #
-
-
-  Docker Compose
-  #
-
-Download the docker-compose.yml file, create a new config.toml file in the same directory, refer to config.example.toml to edit the configuration file."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/en/deployment/installation/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="Installation and Updates"><meta property="og:description" content="Installation and Updates # Deploy from Pre-compiled Binary (Recommended) # Download the binary file for your platform from the Release page.
-Create a config.toml file in the extracted directory, refer to the Configuration Guide to edit the configuration file.
-Run:
-chmod +x saveany-bot ./saveany-bot Daemon # systemd (Regular Linux) Create a file /etc/systemd/system/saveany-bot.service and write the following content: [Unit] Description=SaveAnyBot After=systemd-user-sessions.service [Service] Type=simple WorkingDirectory=/yourpath/ ExecStart=/yourpath/saveany-bot Restart=always [Install] WantedBy=multi-user.target Enable startup on boot and start the service: systemctl enable --now saveany-bot procd (OpenWrt) Add Boot Autostart Service Create a file /etc/init.d/saveanybot, refer to wrt_init and modify as needed: #!/bin/sh /etc/rc.common #This is the OpenWRT init.d script for SaveAnyBot START=99 STOP=10 description=&amp;#34;SaveAnyBot&amp;#34; WORKING_DIR=&amp;#34;/mnt/mmc1-1/SaveAnyBot&amp;#34; EXEC_PATH=&amp;#34;$WORKING_DIR/saveany-bot&amp;#34; start() { echo &amp;#34;Starting SaveAnyBot...&amp;#34; cd $WORKING_DIR $EXEC_PATH &amp;amp; } stop() { echo &amp;#34;Stopping SaveAnyBot...&amp;#34; killall saveany-bot } reload() { stop start } Set permissions: chmod +x /etc/init.d/saveanybot Then copy the file to /etc/rc.d and rename it to S99saveanybot, also set permissions: chmod +x /etc/rc.d/S99saveanybot Add Shortcut Commands Create a file /usr/bin/sabot, refer to wrt_bin and modify as needed. Note that the file encoding here only supports ANSI 936. Then set permissions: chmod +x /usr/bin/sabot Usage: sudo sabot start|stop|restart|status|enable|disable Deploy Using Docker # Docker Compose # Download the docker-compose.yml file, create a new config.toml file in the same directory, refer to config.example.toml to edit the configuration file."><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="article:section" content="deployment"><meta property="article:modified_time" content="2026-09-28T20:59:13+08:00"><title>Installation and Updates | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/en/deployment/installation/><link rel=alternate hreflang=zh href=https://sabot.unv.app/deployment/installation/ title=安装与更新><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
-<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/en/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
-<label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
-English</a></label><ul><li><a href=/deployment/installation/>简体中文</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>Deployment Guide</span><ul><li><a href=/en/deployment/configuration/>Configuration Guide</a><ul><li><a href=/en/deployment/configuration/storages/>Storage Configuration</a></li></ul></li><li><a href=/en/deployment/installation/ class=active>Installation and Updates</a></li></ul></li><li><a href=/en/usage/>Usage</a><ul><li><a href=/en/usage/silent/>Silent Mode</a></li><li><a href=/en/usage/rules/>Storage Rules</a></li><li><a href=/en/usage/watch/>Watch Chats</a></li><li><a href=/en/usage/directlinks/>Direct Download Links</a></li><li><a href=/en/usage/aria2/>Aria2 Download</a></li><li><a href=/en/usage/ytdlp/>yt-dlp Video Download</a></li><li><a href=/en/usage/transfer/>Storage Transfer</a></li><li><a href=/en/usage/parsers/>Save Files Outside Telegram</a></li><li><a href=/en/usage/config/>File Naming & Conflict Strategies</a></li><li><a href=/en/usage/api/>HTTP API</a></li><li><a href=/en/usage/cli/>CLI Subcommands</a></li></ul></li><li><a href=/en/help/>Frequently Asked Questions</a><ul></ul></li><li><a href=/en/contribute/>Contributing</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>Installation and Updates</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#deploy-from-pre-compiled-binary-recommended>Deploy from Pre-compiled Binary (Recommended)</a><ul><li><a href=#daemon>Daemon</a></li></ul></li><li><a href=#deploy-using-docker>Deploy Using Docker</a><ul><li><a href=#docker-compose>Docker Compose</a></li><li><a href=#docker>Docker</a></li></ul></li><li><a href=#updates>Updates</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=installation-and-updates>Installation and Updates
-<a class=anchor href=#installation-and-updates>#</a></h1><h2 id=deploy-from-pre-compiled-binary-recommended>Deploy from Pre-compiled Binary (Recommended)
-<a class=anchor href=#deploy-from-pre-compiled-binary-recommended>#</a></h2><p>Download the binary file for your platform from the <a href=https://github.com/krau/SaveAny-Bot/releases>Release</a> page.</p><p>Create a <code>config.toml</code> file in the extracted directory, refer to the <a href=../configuration>Configuration Guide</a> to edit the configuration file.</p><p>Run:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>chmod +x saveany-bot
-</span></span><span style=display:flex><span>./saveany-bot
-</span></span></code></pre></div><h3 id=daemon>Daemon
-<a class=anchor href=#daemon>#</a></h3><div class=book-tabs><input type=radio class=toggle name=tabs-daemon id=tabs-daemon-0 checked>
-<label for=tabs-daemon-0>systemd (Regular Linux)</label><div class="book-tabs-content markdown-inner">Create a file <code>/etc/systemd/system/saveany-bot.service</code> and write the following content:<pre><code class=language-text>[Unit]
-Description=SaveAnyBot
-After=systemd-user-sessions.service
-
-[Service]
-Type=simple
-WorkingDirectory=/yourpath/
-ExecStart=/yourpath/saveany-bot
-Restart=always
-
-[Install]
-WantedBy=multi-user.target</code></pre>Enable startup on boot and start the service:<pre><code class=language-text>systemctl enable --now saveany-bot</code></pre></div><input type=radio class=toggle name=tabs-daemon id=tabs-daemon-1>
-<label for=tabs-daemon-1>procd (OpenWrt)</label><div class="book-tabs-content markdown-inner"><h4>Add Boot Autostart Service</h4>Create a file <code>/etc/init.d/saveanybot</code>, refer to <a href=https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init target=_blank>wrt_init</a> and modify as needed:<pre><code class=language-text>#!/bin/sh /etc/rc.common
-
-#This is the OpenWRT init.d script for SaveAnyBot
-
-START=99 
-STOP=10
-description=&amp;#34;SaveAnyBot&amp;#34;
-
-WORKING_DIR=&amp;#34;/mnt/mmc1-1/SaveAnyBot&amp;#34;
-EXEC_PATH=&amp;#34;$WORKING_DIR/saveany-bot&amp;#34;
-start() {
-    echo &amp;#34;Starting SaveAnyBot...&amp;#34;
-    cd $WORKING_DIR
-    $EXEC_PATH &amp;amp;
-}
-stop() {
-    echo &amp;#34;Stopping SaveAnyBot...&amp;#34;
-    killall saveany-bot
-}
-reload() {
-    stop
-    start
-}</code></pre>Set permissions:<pre><code class=language-text>chmod &#43;x /etc/init.d/saveanybot</code></pre>Then copy the file to <code>/etc/rc.d</code> and rename it to <code>S99saveanybot</code>, also set permissions:<pre><code class=language-text>chmod &#43;x /etc/rc.d/S99saveanybot</code></pre><h4>Add Shortcut Commands</h4>Create a file <code>/usr/bin/sabot</code>, refer to <a href=https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_bin target=_blank>wrt_bin</a> and modify as needed. Note that the file encoding here only supports ANSI 936.
-Then set permissions:<pre><code class=language-text>chmod &#43;x /usr/bin/sabot</code></pre>Usage: <code>sudo sabot start|stop|restart|status|enable|disable</code></div></div><h2 id=deploy-using-docker>Deploy Using Docker
-<a class=anchor href=#deploy-using-docker>#</a></h2><h3 id=docker-compose>Docker Compose
-<a class=anchor href=#docker-compose>#</a></h3><p>Download the <a href=https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml>docker-compose.yml</a> file, create a new <code>config.toml</code> file in the same directory, refer to <a href=https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml>config.example.toml</a> to edit the configuration file.</p><p>Start:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker compose up -d
+ln -s /etc/init.d/saveanybot /etc/rc.d/S99saveanybot
+```</div></div><h2 id=docker-deployment>Docker deployment
+<a class=anchor href=#docker-deployment>#</a></h2><h3 id=docker-compose>Docker Compose
+<a class=anchor href=#docker-compose>#</a></h3><p>Download <a href=https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml>docker-compose.yml</a>, adjust ports and paths if needed, then start:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker compose up -d
+</span></span><span style=display:flex><span>docker compose logs -f saveany-bot
+</span></span></code></pre></div><p>Default mounts:</p><ul><li><code>./data:/app/data</code> — settings, task history, and sessions</li><li><code>./downloads:/app/downloads</code> — default local storage</li><li><code>./cache:/app/cache</code> — download cache</li></ul><p>Set an admin password, or read the generated one from the log. Set the listen address for bridge networking:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>environment</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>SAVEANY_ADMIN_PASSWORD</span>: <span style=color:#ae81ff>change-me</span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>SAVEANY_LISTEN</span>: <span style=color:#ae81ff>0.0.0.0</span>:<span style=color:#ae81ff>28080</span>
 </span></span></code></pre></div><h3 id=docker>Docker
-<a class=anchor href=#docker>#</a></h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=display:flex><span>docker run -d --name saveany-bot <span style=color:#ae81ff>\
-</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    -v /path/to/config.toml:/app/config.toml <span style=color:#ae81ff>\
-</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    -v /path/to/downloads:/app/downloads <span style=color:#ae81ff>\
+<a class=anchor href=#docker>#</a></h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker run -d --name saveany-bot <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    -p 28080:28080 <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    -e SAVEANY_LISTEN<span style=color:#f92672>=</span>0.0.0.0:28080 <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    -v ./data:/app/data <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    -v ./downloads:/app/downloads <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    -v ./cache:/app/cache <span style=color:#ae81ff>\
 </span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    ghcr.io/krau/saveany-bot:latest
-</span></span></code></pre></div><blockquote class="book-hint info">About Docker image variants<br><ul><li>Default: Includes all features and dependencies, larger in size. Use this if you don't have special requirements.</li><li>micro: Slimmed-down image with some optional dependencies removed, smaller in size.</li><li>pico: Minimal image containing only core features, smallest in size.</li></ul>You can pull different variants by specifying tags, for example: <code>ghcr.io/krau/saveany-bot:micro</code><br>For more details about the variants, see the Dockerfile in the project root.</blockquote><h2 id=updates>Updates
-<a class=anchor href=#updates>#</a></h2><p>If you deployed from pre-compiled binaries, use the following CLI command to update:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>./saveany-bot up
-</span></span></code></pre></div><p>(<code>upgrade</code> is also available as an alias.)</p><p>The command replaces the binary in place; a running bot keeps the old version until it is restarted. You can also send <code>/update</code> to the bot: it downloads the new version, replaces its own binary and restarts itself in place (on Windows it exits instead, and the service manager starts the new version).</p><p>If you deployed with Docker, use the following commands to update:</p><p>docker:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker pull ghcr.io/krau/saveany-bot:latest
+</span></span></code></pre></div><p>Read the tokenized URL from the logs and open it. For local storage in Docker, use <code>/app/downloads</code> as the base path.</p><h2 id=updates>Updates
+<a class=anchor href=#updates>#</a></h2><h3 id=binary>Binary
+<a class=anchor href=#binary>#</a></h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>./saveany-bot up
+</span></span></code></pre></div><p>You can also send <code>/update</code> in Telegram. The updated process restarts itself; on Windows, restart it from your service manager.</p><h3 id=docker-1>Docker
+<a class=anchor href=#docker-1>#</a></h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker pull ghcr.io/krau/saveany-bot:latest
 </span></span><span style=display:flex><span>docker restart saveany-bot
-</span></span></code></pre></div><p>docker compose:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker compose pull
-</span></span><span style=display:flex><span>docker compose restart
-</span></span></code></pre></div></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/27c253d8192733397e8afaf7bc60f6c9a877a332 title='Last modified by krau | 2026/09/28' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
-<span>2026/09/28</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/en/deployment/installation.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
-<span>Edit this page</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#deploy-from-pre-compiled-binary-recommended>Deploy from Pre-compiled Binary (Recommended)</a><ul><li><a href=#daemon>Daemon</a></li></ul></li><li><a href=#deploy-using-docker>Deploy Using Docker</a><ul><li><a href=#docker-compose>Docker Compose</a></li><li><a href=#docker>Docker</a></li></ul></li><li><a href=#updates>Updates</a></li></ul></nav></div></aside></main></body></html>
+</span></span></code></pre></div><h3 id=docker-compose-1>Docker Compose
+<a class=anchor href=#docker-compose-1>#</a></h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>docker compose pull
+</span></span><span style=display:flex><span>docker compose up -d
+</span></span></code></pre></div><p>Back up <code>data/</code> before updating and keep the Docker volume.</p></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/f7bc35b4a43a1ba4d48684bb6fada2a7f36ec8e6 title='Last modified by krau | 2026/11/03' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/11/03</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/en/deployment/installation.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>Edit this page</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#binary-deployment>Binary deployment</a><ul><li><a href=#process-supervision>Process supervision</a></li></ul></li><li><a href=#docker-deployment>Docker deployment</a><ul><li><a href=#docker-compose>Docker Compose</a></li><li><a href=#docker>Docker</a></li></ul></li><li><a href=#updates>Updates</a><ul><li><a href=#binary>Binary</a></li><li><a href=#docker-1>Docker</a></li><li><a href=#docker-compose-1>Docker Compose</a></li></ul></li></ul></nav></div></aside></main></body></html>

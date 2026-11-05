@@ -2,13 +2,14 @@
   存储端配置
   #
 
-请先阅读 配置说明 了解配置文件的基本格式.
+在 Web 控制台的 存储 页面添加存储时填写以下字段。
+存储名称支持空格、中文与常用符号（最多 64 字符，不可含控制字符）。在 /dirs、/transfer 等命令中引用含空格的名称时需加双引号。名称可在 Web 控制台随时更改，用户默认存储、目录及规则均基于内部存储 ID 关联，不受重命名影响。
 
   Alist
   #
 
 type=alist
-不支持 Stream 模式.
+不支持流式下载（Stream 模式）。
 url = "https://alist.example.com" # Alist 的 URL
 username = "your_username"  # Alist 的用户名
 password = "your_password" # Alist 的密码
@@ -21,94 +22,82 @@ token = "your_token"
   本地磁盘
   #
 
-type=local
-base_path = "./downloads" # 本地存储的基础路径, 所有文件将存储在此路径下
-
-  WebDAV
-  #
-
-type=webdav
-url = "https://webdav.example.com" # WebDAV 的 URL
-username = "your_username"  # WebDAV
-password = "your_password" # WebDAV 的密码
-base_path = "/path/to/webdav" # WebDAV 中的基础路径, 所有文件将存储在此路径下
-
-  S3
-  #
-
-type=s3'><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/deployment/configuration/storages/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="存储端配置"><meta property="og:description" content='存储端配置 # 请先阅读 配置说明 了解配置文件的基本格式.
+type=local'><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/deployment/configuration/storages/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="存储端配置"><meta property="og:description" content='存储端配置 # 在 Web 控制台的 存储 页面添加存储时填写以下字段。
+存储名称支持空格、中文与常用符号（最多 64 字符，不可含控制字符）。在 /dirs、/transfer 等命令中引用含空格的名称时需加双引号。名称可在 Web 控制台随时更改，用户默认存储、目录及规则均基于内部存储 ID 关联，不受重命名影响。
 Alist # type=alist
-不支持 Stream 模式.
-url = "https://alist.example.com" # Alist 的 URL username = "your_username" # Alist 的用户名 password = "your_password" # Alist 的密码 base_path = "/path/saveanybot" # Alist 中的基础路径, 所有文件将存储在此路径下 token_exp = 3600 # Alist 访问令牌的自动刷新时间, 单位秒 token = "your_token" # Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. # 使用 token 验证时无法自动刷新 token 本地磁盘 # type=local
-base_path = "./downloads" # 本地存储的基础路径, 所有文件将存储在此路径下 WebDAV # type=webdav
-url = "https://webdav.example.com" # WebDAV 的 URL username = "your_username" # WebDAV password = "your_password" # WebDAV 的密码 base_path = "/path/to/webdav" # WebDAV 中的基础路径, 所有文件将存储在此路径下 S3 # type=s3'><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="deployment"><meta property="article:modified_time" content="2026-08-05T16:57:46+08:00"><title>存储端配置 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/deployment/configuration/storages/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/deployment/configuration/storages/ title="Storage Configuration"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
-<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+不支持流式下载（Stream 模式）。
+url = "https://alist.example.com" # Alist 的 URL username = "your_username" # Alist 的用户名 password = "your_password" # Alist 的密码 base_path = "/path/saveanybot" # Alist 中的基础路径, 所有文件将存储在此路径下 token_exp = 3600 # Alist 访问令牌的自动刷新时间, 单位秒 token = "your_token" # Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. # 使用 token 验证时无法自动刷新 token 本地磁盘 # type=local'><meta property="og:locale" content="zh"><meta property="og:type" content="article"><meta property="article:section" content="deployment"><meta property="article:modified_time" content="2026-11-05T17:03:21+08:00"><title>存储端配置 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/deployment/configuration/storages/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/deployment/configuration/storages/ title="Storage Configuration"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.svg alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
 <label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
-简体中文</a></label><ul><li><a href=/en/deployment/configuration/storages/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/ class=active>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>直接下载链接</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>yt-dlp 视频下载</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>存储端配置</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#alist>Alist</a></li><li><a href=#本地磁盘>本地磁盘</a></li><li><a href=#webdav>WebDAV</a></li><li><a href=#s3>S3</a></li><li><a href=#telegram>Telegram</a></li><li><a href=#rclone>Rclone</a><ul><li><a href=#配置-rclone-远程>配置 rclone 远程</a></li><li><a href=#使用示例>使用示例</a></li></ul></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=存储端配置>存储端配置
-<a class=anchor href=#%e5%ad%98%e5%82%a8%e7%ab%af%e9%85%8d%e7%bd%ae>#</a></h1><p>请先阅读 <a href=../>配置说明</a> 了解配置文件的基本格式.</p><h2 id=alist>Alist
-<a class=anchor href=#alist>#</a></h2><p><code>type=alist</code></p><p>不支持 Stream 模式.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#a6e22e>url</span> = <span style=color:#e6db74>&#34;https://alist.example.com&#34;</span> <span style=color:#75715e># Alist 的 URL</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>username</span> = <span style=color:#e6db74>&#34;your_username&#34;</span>  <span style=color:#75715e># Alist 的用户名</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>password</span> = <span style=color:#e6db74>&#34;your_password&#34;</span> <span style=color:#75715e># Alist 的密码</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;/path/saveanybot&#34;</span> <span style=color:#75715e># Alist 中的基础路径, 所有文件将存储在此路径下</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>token_exp</span> = <span style=color:#ae81ff>3600</span> <span style=color:#75715e># Alist 访问令牌的自动刷新时间, 单位秒</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>token</span> = <span style=color:#e6db74>&#34;your_token&#34;</span> 
-</span></span><span style=display:flex><span><span style=color:#75715e># Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. </span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 使用 token 验证时无法自动刷新 token</span>
+简体中文</a></label><ul><li><a href=/en/deployment/configuration/storages/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/ class=active>存储端配置</a></li></ul></li><li><a href=/deployment/migration/>从 v0 升级</a></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>链接下载</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>视频下载 (yt-dlp)</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul><li><a href=/contribute/testing/>测试</a></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>存储端配置</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#alist>Alist</a></li><li><a href=#本地磁盘>本地磁盘</a></li><li><a href=#webdav>WebDAV</a></li><li><a href=#s3>S3</a></li><li><a href=#telegram>Telegram</a></li><li><a href=#rclone>Rclone</a><ul><li><a href=#配置-rclone-远程>配置 rclone 远程</a></li><li><a href=#使用示例>使用示例</a></li></ul></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=存储端配置>存储端配置
+<a class=anchor href=#%e5%ad%98%e5%82%a8%e7%ab%af%e9%85%8d%e7%bd%ae>#</a></h1><p>在 Web 控制台的 <strong>存储</strong> 页面添加存储时填写以下字段。</p><p>存储名称支持空格、中文与常用符号（最多 64 字符，不可含控制字符）。在 <code>/dirs</code>、<code>/transfer</code> 等命令中引用含空格的名称时需加双引号。名称可在 Web 控制台随时更改，用户默认存储、目录及规则均基于内部存储 ID 关联，不受重命名影响。</p><h2 id=alist>Alist
+<a class=anchor href=#alist>#</a></h2><p><code>type=alist</code></p><p>不支持流式下载（Stream 模式）。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>url = &#34;https://alist.example.com&#34; # Alist 的 URL
+</span></span><span style=display:flex><span>username = &#34;your_username&#34;  # Alist 的用户名
+</span></span><span style=display:flex><span>password = &#34;your_password&#34; # Alist 的密码
+</span></span><span style=display:flex><span>base_path = &#34;/path/saveanybot&#34; # Alist 中的基础路径, 所有文件将存储在此路径下
+</span></span><span style=display:flex><span>token_exp = 3600 # Alist 访问令牌的自动刷新时间, 单位秒
+</span></span><span style=display:flex><span>token = &#34;your_token&#34; 
+</span></span><span style=display:flex><span># Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. 
+</span></span><span style=display:flex><span># 使用 token 验证时无法自动刷新 token
 </span></span></code></pre></div><h2 id=本地磁盘>本地磁盘
-<a class=anchor href=#%e6%9c%ac%e5%9c%b0%e7%a3%81%e7%9b%98>#</a></h2><p><code>type=local</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;./downloads&#34;</span> <span style=color:#75715e># 本地存储的基础路径, 所有文件将存储在此路径下</span>
+<a class=anchor href=#%e6%9c%ac%e5%9c%b0%e7%a3%81%e7%9b%98>#</a></h2><p><code>type=local</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>base_path = &#34;./downloads&#34; # 本地存储的基础路径, 所有文件将存储在此路径下
 </span></span></code></pre></div><h2 id=webdav>WebDAV
-<a class=anchor href=#webdav>#</a></h2><p><code>type=webdav</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#a6e22e>url</span> = <span style=color:#e6db74>&#34;https://webdav.example.com&#34;</span> <span style=color:#75715e># WebDAV 的 URL</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>username</span> = <span style=color:#e6db74>&#34;your_username&#34;</span>  <span style=color:#75715e># WebDAV</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>password</span> = <span style=color:#e6db74>&#34;your_password&#34;</span> <span style=color:#75715e># WebDAV 的密码</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;/path/to/webdav&#34;</span> <span style=color:#75715e># WebDAV 中的基础路径, 所有文件将存储在此路径下</span>
+<a class=anchor href=#webdav>#</a></h2><p><code>type=webdav</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>url = &#34;https://webdav.example.com&#34; # WebDAV 的 URL
+</span></span><span style=display:flex><span>username = &#34;your_username&#34;  # WebDAV
+</span></span><span style=display:flex><span>password = &#34;your_password&#34; # WebDAV 的密码
+</span></span><span style=display:flex><span>base_path = &#34;/path/to/webdav&#34; # WebDAV 中的基础路径, 所有文件将存储在此路径下
 </span></span></code></pre></div><h2 id=s3>S3
-<a class=anchor href=#s3>#</a></h2><p><code>type=s3</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#a6e22e>endpoint</span> = <span style=color:#e6db74>&#34;s3.example.com&#34;</span> <span style=color:#75715e># S3 的端点, 默认为 aws S3 的端点</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>region</span> = <span style=color:#e6db74>&#34;us-east-1&#34;</span> <span style=color:#75715e># S3 的区域</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>access_key_id</span> = <span style=color:#e6db74>&#34;your_access_key_id&#34;</span> <span style=color:#75715e># S3 的访问密钥 ID</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>secret_access_key</span> = <span style=color:#e6db74>&#34;your_secret_access_key&#34;</span> <span style=color:#75715e># S3 的秘密访问密钥</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>bucket_name</span> = <span style=color:#e6db74>&#34;your_bucket_name&#34;</span> <span style=color:#75715e># S3 的存储桶名称</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;/path/to/s3&#34;</span> <span style=color:#75715e># S3 中的基础路径, 所有文件将存储在此路径下</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>virtual_host</span> = <span style=color:#66d9ef>false</span> <span style=color:#75715e># 使用虚拟主机风格的 URL, 默认为 false</span>
+<a class=anchor href=#s3>#</a></h2><p><code>type=s3</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>endpoint = &#34;https://s3.example.com&#34; # S3 的端点, 默认为 aws S3 的端点
+</span></span><span style=display:flex><span>region = &#34;us-east-1&#34; # S3 的区域
+</span></span><span style=display:flex><span>access_key_id = &#34;your_access_key_id&#34; # S3 的访问密钥 ID
+</span></span><span style=display:flex><span>secret_access_key = &#34;your_secret_access_key&#34; # S3 的秘密访问密钥
+</span></span><span style=display:flex><span>bucket_name = &#34;your_bucket_name&#34; # S3 的存储桶名称
+</span></span><span style=display:flex><span>base_path = &#34;/path/to/s3&#34; # S3 中的基础路径, 所有文件将存储在此路径下
+</span></span><span style=display:flex><span>virtual_host = false # 使用虚拟主机风格的 URL, 默认为 false
 </span></span></code></pre></div><p>虚拟主机风格的 URL 示例:</p><pre tabindex=0><code>https://your_bucket_name.s3.example.com/path/to/s3/your_file
 </code></pre><p>路径风格(关闭 virtual_host)的 URL 示例:</p><pre tabindex=0><code>https://s3.example.com/your_bucket_name/path/to/s3/your_file
-</code></pre><p>如果你使用的是第三方的兼容 S3 的服务, 一般使用的是路径风格的 URL. 而 AWS S3 则通常使用虚拟主机风格的 URL. 详情请参考你所使用的 S3 兼容服务的文档.</p><h2 id=telegram>Telegram
-<a class=anchor href=#telegram>#</a></h2><p><code>type=telegram</code></p><p>不支持 Stream 模式.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#75715e># Telegram 聊天 ID, Bot 将把文件发送到这个聊天</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>chat_id</span> = <span style=color:#e6db74>&#34;123456789&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 是否强制使用文件方式发送, 默认为 false</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>force_file</span> = <span style=color:#66d9ef>false</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 是否跳过大文件, 默认为 false. 如果启用, 超过 Telegram 限制的文件将不会上传.</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>skip_large</span> = <span style=color:#66d9ef>false</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 超限视频是否使用 FFmpeg 无损分割成一个媒体组（最多 10 个）内可独立播放的小视频；失败或需要超过 10 段时回退到 ZIP 分卷.</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>split_large_video</span> = <span style=color:#66d9ef>false</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 分卷大小, 单位 MB. 设为 0 时使用实际上传账号的限制：Bot/普通用户为 2000 MB，Premium 用户为 4000 MB.</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 超过该大小的文件将被分割成多个部分上传；非视频使用 ZIP 格式.</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 当 skip_large 启用时, 该选项无效.</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>split_size_mb</span> = <span style=color:#ae81ff>0</span>
-</span></span></code></pre></div><h2 id=rclone>Rclone
-<a class=anchor href=#rclone>#</a></h2><p><code>type=rclone</code></p><p>通过 <a href=https://rclone.org/>rclone</a> 命令行工具支持多种云存储服务. 需要先安装 rclone 并配置好远程存储.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#75715e># rclone 配置的远程名称, 可以是任何在 rclone.conf 中配置的远程</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>remote</span> = <span style=color:#e6db74>&#34;mydrive&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 在远程存储中的基础路径, 所有文件将存储在此路径下</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;/telegram&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># rclone 配置文件的路径, 可选, 留空使用默认路径 (~/.config/rclone/rclone.conf)</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>config_path</span> = <span style=color:#e6db74>&#34;&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 传递给 rclone 命令的额外参数, 可选</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>flags</span> = [<span style=color:#e6db74>&#34;--transfers&#34;</span>, <span style=color:#e6db74>&#34;4&#34;</span>, <span style=color:#e6db74>&#34;--checkers&#34;</span>, <span style=color:#e6db74>&#34;8&#34;</span>]
+</code></pre><p>第三方 S3 兼容服务通常采用路径风格 URL，AWS S3 则默认使用虚拟主机风格。具体请参考对应服务文档。</p><h2 id=telegram>Telegram
+<a class=anchor href=#telegram>#</a></h2><p><code>type=telegram</code></p><p>不支持流式下载（Stream 模式）。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span># Telegram 聊天 ID, Bot 将把文件发送到这个聊天
+</span></span><span style=display:flex><span>chat_id = &#34;-1001234567890&#34; # Bot API 聊天 ID（用户为正数，普通群为负数，超级群/频道使用 -100...）
+</span></span><span style=display:flex><span># 是否强制使用文件方式发送, 默认为 false
+</span></span><span style=display:flex><span>force_file = false
+</span></span><span style=display:flex><span># 是否跳过大文件, 默认为 false. 如果启用, 超过 Telegram 限制的文件将不会上传.
+</span></span><span style=display:flex><span>skip_large = false
+</span></span><span style=display:flex><span># 超限视频是否使用 FFmpeg 分割为单组（最多 10 个）独立播放的小视频；失败或超过 10 段时回退为 ZIP 分卷.
+</span></span><span style=display:flex><span>split_large_video = false
+</span></span><span style=display:flex><span># 分卷大小, 单位 MB. 设为 0 时使用实际上传账号的限制：Bot/普通用户为 2000 MB，Premium 用户为 4000 MB.
+</span></span><span style=display:flex><span># 超过该大小的文件将被分割成多个部分上传；非视频使用 ZIP 格式.
+</span></span><span style=display:flex><span># 当 skip_large 启用时, 该选项无效.
+</span></span><span style=display:flex><span>split_size_mb = 0
+</span></span><span style=display:flex><span># 没有实时 caption 时，用元数据中的消息文本作为发送 caption
+</span></span><span style=display:flex><span>use_metadata_caption = false
+</span></span><span style=display:flex><span># 没有实时分组信息时，用元数据 grouped_id 将文件作为媒体组发送
+</span></span><span style=display:flex><span>use_metadata_album = false
+</span></span></code></pre></div><p>启用消息元数据后，Telegram 存储会直接消费元数据，不会把 <code>.meta.json</code> 作为文件上传。<code>use_metadata_caption</code> 在没有实时 caption 时用原消息文本还原 caption；<code>use_metadata_album</code> 在没有实时分组信息时用元数据 <code>grouped_id</code> 将文件作为媒体组发送。两项默认关闭。媒体组只会在第一个文件上添加 caption，以符合 Telegram 客户端行为。</p><h2 id=rclone>Rclone
+<a class=anchor href=#rclone>#</a></h2><p><code>type=rclone</code></p><p>通过 <a href=https://rclone.org/>rclone</a> 命令行工具支持多种云存储服务. 需要先安装 rclone 并配置好远程存储.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span># rclone 配置的远程名称, 可以是任何在 rclone.conf 中配置的远程
+</span></span><span style=display:flex><span>remote = &#34;mydrive&#34;
+</span></span><span style=display:flex><span># 在远程存储中的基础路径, 所有文件将存储在此路径下
+</span></span><span style=display:flex><span>base_path = &#34;/telegram&#34;
+</span></span><span style=display:flex><span># rclone 配置文件的路径, 可选, 留空使用默认路径 (~/.config/rclone/rclone.conf)
+</span></span><span style=display:flex><span>config_path = &#34;&#34;
+</span></span><span style=display:flex><span># 传递给 rclone 命令的额外参数, 可选
+</span></span><span style=display:flex><span>flags = [&#34;--transfers&#34;, &#34;4&#34;, &#34;--checkers&#34;, &#34;8&#34;]
 </span></span></code></pre></div><h3 id=配置-rclone-远程>配置 rclone 远程
-<a class=anchor href=#%e9%85%8d%e7%bd%ae-rclone-%e8%bf%9c%e7%a8%8b>#</a></h3><p>首先需要配置 rclone 远程, 运行 <code>rclone config</code> 命令进行交互式配置, 或直接编辑 <code>rclone.conf</code> 文件.</p><p>rclone 支持多种云存储服务, 包括但不限于:</p><ul><li>Google Drive</li><li>Dropbox</li><li>OneDrive</li><li>Amazon S3 及兼容服务</li><li>SFTP</li><li>FTP</li><li>更多服务请参考 <a href=https://rclone.org/overview/>rclone 官方文档</a></li></ul><h3 id=使用示例>使用示例
-<a class=anchor href=#%e4%bd%bf%e7%94%a8%e7%a4%ba%e4%be%8b>#</a></h3><p>配置 Google Drive 后, 可以这样配置存储:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[[<span style=color:#a6e22e>storages</span>]]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>name</span> = <span style=color:#e6db74>&#34;GoogleDrive&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>type</span> = <span style=color:#e6db74>&#34;rclone&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>true</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>remote</span> = <span style=color:#e6db74>&#34;gdrive&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;/SaveAnyBot&#34;</span>
-</span></span></code></pre></div><p>如果使用自定义的 rclone 配置文件:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[[<span style=color:#a6e22e>storages</span>]]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>name</span> = <span style=color:#e6db74>&#34;MyRemote&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>type</span> = <span style=color:#e6db74>&#34;rclone&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>true</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>remote</span> = <span style=color:#e6db74>&#34;myremote&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;/backup&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>config_path</span> = <span style=color:#e6db74>&#34;/path/to/rclone.conf&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>flags</span> = [<span style=color:#e6db74>&#34;--progress&#34;</span>]
-</span></span></code></pre></div></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/e4144e73e6a24db1418423d11a42bcb7bc2c4c90 title='最后修改者 Haopeng  Huo | 2026/08/05' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
-<span>2026/08/05</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/deployment/configuration/storages.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<a class=anchor href=#%e9%85%8d%e7%bd%ae-rclone-%e8%bf%9c%e7%a8%8b>#</a></h3><p>首先需要配置 rclone 远程，运行 <code>rclone config</code> 进行交互式配置，或直接编辑 <code>rclone.conf</code> 文件。</p><p>支持 Google Drive、Dropbox、OneDrive、S3 兼容存储、SFTP/FTP 等服务，详见 <a href=https://rclone.org/overview/>rclone 官方文档</a>。</p><h3 id=使用示例>使用示例
+<a class=anchor href=#%e4%bd%bf%e7%94%a8%e7%a4%ba%e4%be%8b>#</a></h3><p>配置 Google Drive 后, 可以这样配置存储:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>[[storages]]
+</span></span><span style=display:flex><span>name = &#34;GoogleDrive&#34;
+</span></span><span style=display:flex><span>type = &#34;rclone&#34;
+</span></span><span style=display:flex><span>enable = true
+</span></span><span style=display:flex><span>remote = &#34;gdrive&#34;
+</span></span><span style=display:flex><span>base_path = &#34;/SaveAnyBot&#34;
+</span></span></code></pre></div><p>如果使用自定义的 rclone 配置文件:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-text data-lang=text><span style=display:flex><span>[[storages]]
+</span></span><span style=display:flex><span>name = &#34;MyRemote&#34;
+</span></span><span style=display:flex><span>type = &#34;rclone&#34;
+</span></span><span style=display:flex><span>enable = true
+</span></span><span style=display:flex><span>remote = &#34;myremote&#34;
+</span></span><span style=display:flex><span>base_path = &#34;/backup&#34;
+</span></span><span style=display:flex><span>config_path = &#34;/path/to/rclone.conf&#34;
+</span></span><span style=display:flex><span>flags = [&#34;--progress&#34;]
+</span></span></code></pre></div></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/5a0a7cc1dbba2b47377adc7ef55bc983c266def7 title='最后修改者 krau | 2026/11/05' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/11/05</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/deployment/configuration/storages.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
 <span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#alist>Alist</a></li><li><a href=#本地磁盘>本地磁盘</a></li><li><a href=#webdav>WebDAV</a></li><li><a href=#s3>S3</a></li><li><a href=#telegram>Telegram</a></li><li><a href=#rclone>Rclone</a><ul><li><a href=#配置-rclone-远程>配置 rclone 远程</a></li><li><a href=#使用示例>使用示例</a></li></ul></li></ul></nav></div></aside></main></body></html>

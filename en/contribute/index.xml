@@ -1,1 +1,21 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Contributing on Save Any Bot</title><link>https://sabot.unv.app/en/contribute/</link><description>Recent content in Contributing on Save Any Bot</description><generator>Hugo</generator><language>en</language><atom:link href="https://sabot.unv.app/en/contribute/index.xml" rel="self" type="application/rss+xml"/></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Contributing on Save Any Bot</title><link>https://sabot.unv.app/en/contribute/</link><description>Recent content in Contributing on Save Any Bot</description><generator>Hugo</generator><language>en</language><atom:link href="https://sabot.unv.app/en/contribute/index.xml" rel="self" type="application/rss+xml"/><item><title>Testing</title><link>https://sabot.unv.app/en/contribute/testing/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/en/contribute/testing/</guid><description>&lt;h1 id="testing">
+ Testing
+ &lt;a class="anchor" href="#testing">#&lt;/a>
+&lt;/h1>
+&lt;p>The project ships a seeded local environment and two end-to-end suites that do
+not need Telegram credentials.&lt;/p>
+&lt;h2 id="seeded-environment">
+ Seeded environment
+ &lt;a class="anchor" href="#seeded-environment">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>make testenv
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The command creates a disposable data directory and prints:&lt;/p>
+&lt;ul>
+&lt;li>the Web UI URL&lt;/li>
+&lt;li>the admin password (&lt;code>saveany-test&lt;/code> by default)&lt;/li>
+&lt;li>a seeded local storage and whitelisted user&lt;/li>
+&lt;li>a sample URL that can be used as a direct-links task&lt;/li>
+&lt;/ul>
+&lt;p>Use &lt;code>--keep&lt;/code> to retain the generated data directory, or pass &lt;code>--data-dir&lt;/code> to
+reuse an existing one. Telegram is left stopped, so the web console and the
+non-Telegram task pipeline are available immediately.&lt;/p></description></item></channel></rss>

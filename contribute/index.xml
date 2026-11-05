@@ -1,1 +1,38 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>参与开发 on Save Any Bot</title><link>https://sabot.unv.app/contribute/</link><description>Recent content in 参与开发 on Save Any Bot</description><generator>Hugo</generator><language>zh</language><atom:link href="https://sabot.unv.app/contribute/index.xml" rel="self" type="application/rss+xml"/></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>参与开发 on Save Any Bot</title><link>https://sabot.unv.app/contribute/</link><description>Recent content in 参与开发 on Save Any Bot</description><generator>Hugo</generator><language>zh</language><atom:link href="https://sabot.unv.app/contribute/index.xml" rel="self" type="application/rss+xml"/><item><title>测试</title><link>https://sabot.unv.app/contribute/testing/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/contribute/testing/</guid><description>&lt;h1 id="测试">
+ 测试
+ &lt;a class="anchor" href="#%e6%b5%8b%e8%af%95">#&lt;/a>
+&lt;/h1>
+&lt;p>项目提供预置测试数据的本地环境，以及无需 Telegram 凭据的端到端测试。&lt;/p>
+&lt;h2 id="预置环境">
+ 预置环境
+ &lt;a class="anchor" href="#%e9%a2%84%e7%bd%ae%e7%8e%af%e5%a2%83">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>make testenv
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>命令会创建临时数据目录并输出：&lt;/p>
+&lt;ul>
+&lt;li>Web UI 地址&lt;/li>
+&lt;li>管理员密码（默认为 &lt;code>saveany-test&lt;/code>）&lt;/li>
+&lt;li>预置的本地存储和白名单用户&lt;/li>
+&lt;li>用于创建直链下载任务的示例 URL&lt;/li>
+&lt;/ul>
+&lt;p>使用 &lt;code>--keep&lt;/code> 保留生成的数据目录，或传入 &lt;code>--data-dir&lt;/code> 复用已有目录。Telegram 保持停止状态，可直接测试 Web 控制台及非 Telegram 任务流程。&lt;/p>
+&lt;h2 id="后端端到端测试">
+ 后端端到端测试
+ &lt;a class="anchor" href="#%e5%90%8e%e7%ab%af%e7%ab%af%e5%88%b0%e7%ab%af%e6%b5%8b%e8%af%95">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>make e2e-api
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>测试会构建二进制，在随机端口启动预置环境并调用公开 API。覆盖认证与 CSRF、新手引导、存储与用户生命周期、设置更新、SPA 静态资源回退，以及下载直链文件到预置存储的任务。&lt;/p>
+&lt;p>测试位于 &lt;code>e2e/&lt;/code>，使用 &lt;code>e2e&lt;/code> build tag，普通 &lt;code>go test ./...&lt;/code> 不会触发。&lt;/p>
+&lt;h2 id="telegram-端到端测试">
+ Telegram 端到端测试
+ &lt;a class="anchor" href="#telegram-%e7%ab%af%e5%88%b0%e7%ab%af%e6%b5%8b%e8%af%95">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>make e2e-telegram
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>该测试让 Bot handler、dispatcher、任务队列和存储实现运行在内存 &lt;code>tg.Invoker&lt;/code> 之上。覆盖 &lt;code>/start&lt;/code>、群聊准入、将 Telegram 文件保存到本地存储（含进度编辑）及上传到 Telegram 存储。全程无需真实 Telegram 账号或外部网络。&lt;/p>
+&lt;h2 id="前端端到端测试">
+ 前端端到端测试
+ &lt;a class="anchor" href="#%e5%89%8d%e7%ab%af%e7%ab%af%e5%88%b0%e7%ab%af%e6%b5%8b%e8%af%95">#&lt;/a>
+&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>make e2e-web-setup &lt;span style="color:#75715e"># 首次运行, 下载 Chromium&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>make e2e-web
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>启动预置环境并使用 Playwright 驱动 Web UI。覆盖登录、存储配置测试与创建，以及直链任务创建与完成状态校验。测试产物写入 &lt;code>tmp/e2e-web-results/&lt;/code>。&lt;/p></description></item></channel></rss>

@@ -4,21 +4,79 @@
 
 This page introduces some of Save Any Bot&rsquo;s features and basic usage. If you can&rsquo;t find what you need here, please also see the Configuration Guide or ask in GitHub Discussions.
 
+  Bot Commands
+  #
+
+
+  
+      
+          Command
+          Purpose
+      
+  
+  
+      
+          /start
+          Open help and the command list
+      
+      
+          /save
+          Save a replied media message, or batch-save a message range
+      
+      
+          /download
+          Download links using Direct, Aria2, or Video
+      
+      
+          /transfer
+          Transfer files between storages
+      
+      
+          /tasks
+          Inspect and manage running, queued, and failed tasks
+      
+      
+          /config
+          User settings: filename and conflict strategy, silent mode, default storage
+      
+      
+          /template
+          Set the custom filename template
+      
+      
+          /dirs
+          Manage storage directories
+      
+      
+          /rules
+          Manage storage rules
+      
+      
+          /watch
+          Watch chats and manage notifications/peer sync (UserBot)
+      
+      
+          /parser
+          Manage parser plugins
+      
+      
+          /update
+          Check for updates
+      
+  
+
+
   File Transfer
   #
 
-To use the bot&rsquo;s Telegram file saving feature, you need to send or forward the following types of messages to the bot:
-
-File or media messages, such as images, videos, documents, etc.
-Telegram message links, for example: https://t.me/acherkrau/1097. Even if the channel prohibits forwarding and saving, the bot can still download its files.
-Telegra.ph article links. The bot will download all images in the article.
-"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/en/usage/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="Usage"><meta property="og:description" content="Usage # This page introduces some of Save Any Bot’s features and basic usage. If you can’t find what you need here, please also see the Configuration Guide or ask in GitHub Discussions.
-File Transfer # To use the bot’s Telegram file saving feature, you need to send or forward the following types of messages to the bot:
-File or media messages, such as images, videos, documents, etc. Telegram message links, for example: https://t.me/acherkrau/1097. Even if the channel prohibits forwarding and saving, the bot can still download its files. Telegra.ph article links. The bot will download all images in the article."><meta property="og:locale" content="en"><meta property="og:type" content="website"><title>Usage | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/en/usage/><link rel=alternate hreflang=zh href=https://sabot.unv.app/usage/ title=使用帮助><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous><link rel=alternate type=application/rss+xml href=https://sabot.unv.app/en/usage/index.xml title="Save Any Bot"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
-<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/en/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+To use the bot&rsquo;s Telegram file saving feature, you need to send or forward the following types of messages to the bot:"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/en/usage/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="Usage"><meta property="og:description" content="Usage # This page introduces some of Save Any Bot’s features and basic usage. If you can’t find what you need here, please also see the Configuration Guide or ask in GitHub Discussions.
+Bot Commands # Command Purpose /start Open help and the command list /save Save a replied media message, or batch-save a message range /download Download links using Direct, Aria2, or Video /transfer Transfer files between storages /tasks Inspect and manage running, queued, and failed tasks /config User settings: filename and conflict strategy, silent mode, default storage /template Set the custom filename template /dirs Manage storage directories /rules Manage storage rules /watch Watch chats and manage notifications/peer sync (UserBot) /parser Manage parser plugins /update Check for updates File Transfer # To use the bot’s Telegram file saving feature, you need to send or forward the following types of messages to the bot:"><meta property="og:locale" content="en"><meta property="og:type" content="website"><title>Usage | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/en/usage/><link rel=alternate hreflang=zh href=https://sabot.unv.app/usage/ title=使用帮助><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous><link rel=alternate type=application/rss+xml href=https://sabot.unv.app/en/usage/index.xml title="Save Any Bot"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/en/><img src=/logo.svg alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
 <label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
-English</a></label><ul><li><a href=/usage/>简体中文</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>Deployment Guide</span><ul><li><a href=/en/deployment/configuration/>Configuration Guide</a><ul><li><a href=/en/deployment/configuration/storages/>Storage Configuration</a></li></ul></li><li><a href=/en/deployment/installation/>Installation and Updates</a></li></ul></li><li><a href=/en/usage/ class=active>Usage</a><ul><li><a href=/en/usage/silent/>Silent Mode</a></li><li><a href=/en/usage/rules/>Storage Rules</a></li><li><a href=/en/usage/watch/>Watch Chats</a></li><li><a href=/en/usage/directlinks/>Direct Download Links</a></li><li><a href=/en/usage/aria2/>Aria2 Download</a></li><li><a href=/en/usage/ytdlp/>yt-dlp Video Download</a></li><li><a href=/en/usage/transfer/>Storage Transfer</a></li><li><a href=/en/usage/parsers/>Save Files Outside Telegram</a></li><li><a href=/en/usage/config/>File Naming & Conflict Strategies</a></li><li><a href=/en/usage/api/>HTTP API</a></li><li><a href=/en/usage/cli/>CLI Subcommands</a></li></ul></li><li><a href=/en/help/>Frequently Asked Questions</a><ul></ul></li><li><a href=/en/contribute/>Contributing</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>Usage</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#file-transfer>File Transfer</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=usage>Usage
-<a class=anchor href=#usage>#</a></h1><p>This page introduces some of Save Any Bot&rsquo;s features and basic usage. If you can&rsquo;t find what you need here, please also see the <a href=../deployment/configuration>Configuration Guide</a> or ask in GitHub <a href=https://github.com/krau/SaveAny-Bot/discussions>Discussions</a>.</p><h2 id=file-transfer>File Transfer
-<a class=anchor href=#file-transfer>#</a></h2><p>To use the bot&rsquo;s Telegram file saving feature, you need to send or forward the following types of messages to the bot:</p><ol><li>File or media messages, such as images, videos, documents, etc.</li><li>Telegram message links, for example: <code>https://t.me/acherkrau/1097</code>. <strong>Even if the channel prohibits forwarding and saving, the bot can still download its files.</strong></li><li>Telegra.ph article links. The bot will download all images in the article.</li></ol></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/38355dfd142f0f1a819a8837875b33da0d3a81b7 title='Last modified by krau | 2026/03/11' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
-<span>2026/03/11</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/en/usage/_index.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
-<span>Edit this page</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#file-transfer>File Transfer</a></li></ul></nav></div></aside></main></body></html>
+English</a></label><ul><li><a href=/usage/>简体中文</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>Deployment Guide</span><ul><li><a href=/en/deployment/installation/>Installation and updates</a></li><li><a href=/en/deployment/configuration/>Configuration</a><ul><li><a href=/en/deployment/configuration/storages/>Storage Configuration</a></li></ul></li><li><a href=/en/deployment/migration/>Migrate from v0</a></li></ul></li><li><a href=/en/usage/ class=active>Usage</a><ul><li><a href=/en/usage/silent/>Silent Mode</a></li><li><a href=/en/usage/rules/>Storage Rules</a></li><li><a href=/en/usage/watch/>Watch Chats</a></li><li><a href=/en/usage/directlinks/>URL Downloads</a></li><li><a href=/en/usage/aria2/>Aria2 Downloads</a></li><li><a href=/en/usage/ytdlp/>Video Downloads (yt-dlp)</a></li><li><a href=/en/usage/transfer/>Storage Transfer</a></li><li><a href=/en/usage/parsers/>Save Files Outside Telegram</a></li><li><a href=/en/usage/config/>File Naming & Conflict Strategies</a></li><li><a href=/en/usage/api/>HTTP API</a></li><li><a href=/en/usage/cli/>CLI Subcommands</a></li></ul></li><li><a href=/en/help/>Frequently Asked Questions</a><ul></ul></li><li><a href=/en/contribute/>Contributing</a><ul><li><a href=/en/contribute/testing/>Testing</a></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>Usage</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#bot-commands>Bot Commands</a></li><li><a href=#file-transfer>File Transfer</a></li><li><a href=#group-chats>Group Chats</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=usage>Usage
+<a class=anchor href=#usage>#</a></h1><p>This page introduces some of Save Any Bot&rsquo;s features and basic usage. If you can&rsquo;t find what you need here, please also see the <a href=../deployment/configuration>Configuration Guide</a> or ask in GitHub <a href=https://github.com/krau/SaveAny-Bot/discussions>Discussions</a>.</p><h2 id=bot-commands>Bot Commands
+<a class=anchor href=#bot-commands>#</a></h2><table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/start</code></td><td>Open help and the command list</td></tr><tr><td><code>/save</code></td><td>Save a replied media message, or batch-save a message range</td></tr><tr><td><code>/download</code></td><td>Download links using Direct, Aria2, or Video</td></tr><tr><td><code>/transfer</code></td><td>Transfer files between storages</td></tr><tr><td><code>/tasks</code></td><td>Inspect and manage running, queued, and failed tasks</td></tr><tr><td><code>/config</code></td><td>User settings: filename and conflict strategy, silent mode, default storage</td></tr><tr><td><code>/template</code></td><td>Set the custom filename template</td></tr><tr><td><code>/dirs</code></td><td>Manage storage directories</td></tr><tr><td><code>/rules</code></td><td>Manage storage rules</td></tr><tr><td><code>/watch</code></td><td>Watch chats and manage notifications/peer sync (UserBot)</td></tr><tr><td><code>/parser</code></td><td>Manage parser plugins</td></tr><tr><td><code>/update</code></td><td>Check for updates</td></tr></tbody></table><h2 id=file-transfer>File Transfer
+<a class=anchor href=#file-transfer>#</a></h2><p>To use the bot&rsquo;s Telegram file saving feature, you need to send or forward the following types of messages to the bot:</p><ol><li>File or media messages, such as images, videos, documents, etc.</li><li>Telegram message links, for example: <code>https://t.me/acherkrau/1097</code>. <strong>Even if the channel prohibits forwarding and saving, the bot can still download its files.</strong></li><li>Telegra.ph article links. The bot will download all images in the article.</li></ol><h2 id=group-chats>Group Chats
+<a class=anchor href=#group-chats>#</a></h2><p>The bot works in basic groups and supergroups. Broadcast channels are not supported.</p><ul><li>In groups the bot only reacts to explicit commands and button callbacks; ordinary media and link messages are not saved automatically.</li><li>To save a file from the group, reply to it with <code>/save</code>, or use <code>/save@YourBot</code> in groups. Other commands such as <code>/download</code> work as usual.</li><li>Only whitelisted users can use the bot. Messages from other members are ignored silently, and their button clicks receive a permission alert.</li><li>Messages sent by anonymous administrators in supergroups have no identifiable user and are ignored.</li><li>With the default Privacy Mode, the bot only receives commands addressed to it, mentions, and replies to its own messages. To let it receive all group messages, use <code>/setprivacy</code> in <a href=https://t.me/BotFather>@BotFather</a> to disable Privacy Mode and re-add the bot to the group. Even then, the bot only reacts to commands and buttons in groups.</li></ul></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/4b022e346c69176bce4f26f687391a6c68fb0b79 title='Last modified by krau | 2026/11/04' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/11/04</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/en/usage/_index.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>Edit this page</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#bot-commands>Bot Commands</a></li><li><a href=#file-transfer>File Transfer</a></li><li><a href=#group-chats>Group Chats</a></li></ul></nav></div></aside></main></body></html>

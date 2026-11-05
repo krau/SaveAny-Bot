@@ -1,215 +1,88 @@
-<!doctype html><html lang=zh dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content='
+<!doctype html><html lang=zh dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="
   配置说明
   #
 
-SaveAnyBot 的配置文件使用 toml 格式, 你可以在 TOML 官方网站 上了解更多关于 toml 的语法.
-SaveAnyBot 需要读取工作目录下的 config.toml 文件作为配置文件, 若缺少该文件则会创建默认文件, 并尝试从环境变量中加载配置.
-以下是一个最简的配置文件示例:
-[telegram]
-token = "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+配置保存在数据目录下的 SQLite 数据库（默认 data/saveany.db），通过 Web 控制台统一管理。首次启动采用默认设置，并在日志中输出带 Token 的直达链接；可通过 SAVEANY_ADMIN_PASSWORD 预设管理员密码。
 
-[[users]]
-# telegram user id
-id = 777000
-blacklist = true
-
-[[storages]]
-name = "本机存储"
-type = "local"
-enable = true
-base_path = "./downloads"
-
-  详细配置
+  配置页面
   #
-
-
-  全局配置
-  #
-
-
-lang: Bot 使用的语言, 默认为 zh-CN (简体中文), 设为 en 则使用英语.
-stream: 是否启用 Stream 模式, 默认为 false. 启用后 Bot 将直接将文件流式传输到存储端(若存储端支持), 不需要下载到本地
-
-  
-Stream 模式对于磁盘空间有限的部署环境十分有用, 但也有一些弊端:
-
-
-无法使用多线程从 Telegram 下载文件, 速度较慢.
-网络不稳定时, 任务失败率高.
-无法在中间层对文件进行处理, 例如自动文件类型识别.
-并非支持所有存储端, 不支持的存储端可能会降级为普通模式或无法上传.
-
-
-
-
-workers: 同时处理任务数量, 默认为 3
-threads: 下载文件时使用的线程数, 默认为 4. 仅在未启用 Stream 模式时生效.
-retry: 任务失败时的重试次数, 默认为 3.
-proxy: 全局代理配置, 配置后程序内一切网络连接将会尝试使用该代理, 可选.
-
-lang = "zh-CN"
-stream = false
-workers = 3
-threads = 4
-retry = 3
-proxy = "socks5://127.0.0.1:7890"
-
-  Telegram 配置
-  #
-
-
-token: 你的 Telegram Bot Token, 可以通过 BotFather 创建 Bot 并获取 Token.
-app_id, app_hash: Telegram API ID & Hash, 在 Telegram API 创建应用获取, 若不提供则使用默认值.
-flood_retry: Flood 控制重试次数, 默认为 5.
-rpc_retry: RPC 请求重试次数, 默认为 5.
-proxy: 代理配置, 可选.
-
-enable: 是否启用代理.
-url: 代理地址
-
-
-userbot: userbot 配置, 可选.
-
-enable: 启用 userbot 集成, 需要登录用户账号, 此时请务必使用自己的 api id & hash.
-session: userbot 会话文件路径, 默认为 data/usersession.db.
-
-
 
 
   
-启用 userbot 集成后, bot 可以下载私密频道和群组的文件, 但具有无法避免的账号被封禁的风险.
+      
+          页面
+          内容
+      
+  
+  
+      
+          指南
+          首次配置检查清单和日常使用说明
+      
+      
+          Telegram
+          Bot Token、API ID/Hash、代理、Userbot 登录
+      
+      
+          存储
+          本地磁盘、WebDAV、Alist、S3、Rclone、Telegram 等存储端
+      
+      
+          用户
+          Telegram 用户 ID、默认存储、目录、规则和存储访问权限
+      
+      
+          自动化
+          按用户管理目录、规则、监听聊天和对话同步
+      
+      
+          设置
+          任务并发、语言、代理、媒体类型过滤、Aria2、yt-dlp、解析器、缓存、日志、Web 和 API
+      
+      
+          解析器
+          安装 JavaScript 解析器插件
+      
+      
+          系统
+          运行信息、重启、版本检查和更新
+      
+  
 
-开启 userbot 集成后第一次启动 bot 时需要通过终端交互输入手机号, 2FA 和验证码.
+部分配置需重启进程生效（如任务并发数、全局代理、缓存、插件、Hook 及 Web 监听地址），保存时页面会明确提示。
 
-如果你使用 docker 部署, 请使用 -it 参数为容器提供交互式环境, 然后执行登录操作.
-
-
-
-[telegram]
-token = "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-app_id = 1025907
-app_hash = "452b0359b988148995f22ff0f4229750"
-flood_retry = 5
-rpc_retry = 5
-[telegram.proxy]
-enable = false
-url = "socks5://127.0.0.1:7890"
-[telegram.userbot]
-enable = false
-session = "data/usersession.db"
-
-  Aria2 配置
+  自动化
   #
 
-Aria2 是一个强大的下载管理器，支持 HTTP/HTTPS、FTP、BitTorrent 等多种协议。启用后，Bot 可以使用 /aria2dl 命令通过 Aria2 下载文件。'><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/deployment/configuration/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="配置说明"><meta property="og:description" content='配置说明 # SaveAnyBot 的配置文件使用 toml 格式, 你可以在 TOML 官方网站 上了解更多关于 toml 的语法.
-SaveAnyBot 需要读取工作目录下的 config.toml 文件作为配置文件, 若缺少该文件则会创建默认文件, 并尝试从环境变量中加载配置.
-以下是一个最简的配置文件示例:
-[telegram] token = "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ" [[users]] # telegram user id id = 777000 blacklist = true [[storages]] name = "本机存储" type = "local" enable = true base_path = "./downloads" 详细配置 # 全局配置 # lang: Bot 使用的语言, 默认为 zh-CN (简体中文), 设为 en 则使用英语. stream: 是否启用 Stream 模式, 默认为 false. 启用后 Bot 将直接将文件流式传输到存储端(若存储端支持), 不需要下载到本地 Stream 模式对于磁盘空间有限的部署环境十分有用, 但也有一些弊端: 无法使用多线程从 Telegram 下载文件, 速度较慢. 网络不稳定时, 任务失败率高. 无法在中间层对文件进行处理, 例如自动文件类型识别. 并非支持所有存储端, 不支持的存储端可能会降级为普通模式或无法上传. workers: 同时处理任务数量, 默认为 3 threads: 下载文件时使用的线程数, 默认为 4. 仅在未启用 Stream 模式时生效. retry: 任务失败时的重试次数, 默认为 3. proxy: 全局代理配置, 配置后程序内一切网络连接将会尝试使用该代理, 可选. lang = "zh-CN" stream = false workers = 3 threads = 4 retry = 3 proxy = "socks5://127.0.0.1:7890" Telegram 配置 # token: 你的 Telegram Bot Token, 可以通过 BotFather 创建 Bot 并获取 Token. app_id, app_hash: Telegram API ID & Hash, 在 Telegram API 创建应用获取, 若不提供则使用默认值. flood_retry: Flood 控制重试次数, 默认为 5. rpc_retry: RPC 请求重试次数, 默认为 5. proxy: 代理配置, 可选. enable: 是否启用代理. url: 代理地址 userbot: userbot 配置, 可选. enable: 启用 userbot 集成, 需要登录用户账号, 此时请务必使用自己的 api id & hash. session: userbot 会话文件路径, 默认为 data/usersession.db. 启用 userbot 集成后, bot 可以下载私密频道和群组的文件, 但具有无法避免的账号被封禁的风险. 开启 userbot 集成后第一次启动 bot 时需要通过终端交互输入手机号, 2FA 和验证码. 如果你使用 docker 部署, 请使用 -it 参数为容器提供交互式环境, 然后执行登录操作. [telegram] token = "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ" app_id = 1025907 app_hash = "452b0359b988148995f22ff0f4229750" flood_retry = 5 rpc_retry = 5 [telegram.proxy] enable = false url = "socks5://127.0.0.1:7890" [telegram.userbot] enable = false session = "data/usersession.db" Aria2 配置 # Aria2 是一个强大的下载管理器，支持 HTTP/HTTPS、FTP、BitTorrent 等多种协议。启用后，Bot 可以使用 /aria2dl 命令通过 Aria2 下载文件。'><meta property="og:locale" content="zh"><meta property="og:type" content="website"><title>配置说明 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/deployment/configuration/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/deployment/configuration/ title="Configuration Guide"><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous><link rel=alternate type=application/rss+xml href=https://sabot.unv.app/deployment/configuration/index.xml title="Save Any Bot"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
-<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+自动化页面按用户分别管理目录、规则、监听聊天及 Userbot 对话同步。可设置默认目录，并支持规则的启停、增删与预设导入。
+
+  解析器
+  #
+
+解析器页面用于安装 JavaScript 解析器插件（需在设置中启用解析器插件）。支持上传 .js 文件或直接粘贴代码，安装后立即可用，无需重启。
+
+  Telegram
+  #
+
+Bot Token 在 @BotFather 创建。API ID 和 API Hash 已提供默认值，通常无需修改；启用 Userbot 时建议使用自己的 Telegram API 凭据。"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/deployment/configuration/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="配置说明"><meta property="og:description" content="配置说明 # 配置保存在数据目录下的 SQLite 数据库（默认 data/saveany.db），通过 Web 控制台统一管理。首次启动采用默认设置，并在日志中输出带 Token 的直达链接；可通过 SAVEANY_ADMIN_PASSWORD 预设管理员密码。
+配置页面 # 页面 内容 指南 首次配置检查清单和日常使用说明 Telegram Bot Token、API ID/Hash、代理、Userbot 登录 存储 本地磁盘、WebDAV、Alist、S3、Rclone、Telegram 等存储端 用户 Telegram 用户 ID、默认存储、目录、规则和存储访问权限 自动化 按用户管理目录、规则、监听聊天和对话同步 设置 任务并发、语言、代理、媒体类型过滤、Aria2、yt-dlp、解析器、缓存、日志、Web 和 API 解析器 安装 JavaScript 解析器插件 系统 运行信息、重启、版本检查和更新 部分配置需重启进程生效（如任务并发数、全局代理、缓存、插件、Hook 及 Web 监听地址），保存时页面会明确提示。
+自动化 # 自动化页面按用户分别管理目录、规则、监听聊天及 Userbot 对话同步。可设置默认目录，并支持规则的启停、增删与预设导入。
+解析器 # 解析器页面用于安装 JavaScript 解析器插件（需在设置中启用解析器插件）。支持上传 .js 文件或直接粘贴代码，安装后立即可用，无需重启。
+Telegram # Bot Token 在 @BotFather 创建。API ID 和 API Hash 已提供默认值，通常无需修改；启用 Userbot 时建议使用自己的 Telegram API 凭据。"><meta property="og:locale" content="zh"><meta property="og:type" content="website"><title>配置说明 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/deployment/configuration/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/deployment/configuration/ title=Configuration><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous><link rel=alternate type=application/rss+xml href=https://sabot.unv.app/deployment/configuration/index.xml title="Save Any Bot"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.svg alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
 <label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
-简体中文</a></label><ul><li><a href=/en/deployment/configuration/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/ class=active>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>直接下载链接</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>yt-dlp 视频下载</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>配置说明</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#详细配置>详细配置</a><ul><li><a href=#全局配置>全局配置</a></li><li><a href=#telegram-配置>Telegram 配置</a></li><li><a href=#aria2-配置>Aria2 配置</a></li><li><a href=#yt-dlp-配置>yt-dlp 配置</a></li><li><a href=#http-api-配置>HTTP API 配置</a></li><li><a href=#日志配置>日志配置</a></li><li><a href=#存储端列表>存储端列表</a></li><li><a href=#用户列表>用户列表</a></li><li><a href=#事件触发>事件触发</a></li><li><a href=#解析器>解析器</a></li><li><a href=#杂项>杂项</a></li></ul></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=配置说明>配置说明
-<a class=anchor href=#%e9%85%8d%e7%bd%ae%e8%af%b4%e6%98%8e>#</a></h1><p>SaveAnyBot 的配置文件使用 toml 格式, 你可以在 <a href=https://toml.io/>TOML 官方网站</a> 上了解更多关于 toml 的语法.</p><p>SaveAnyBot 需要读取工作目录下的 <code>config.toml</code> 文件作为配置文件, 若缺少该文件则会创建默认文件, 并尝试从环境变量中加载配置.</p><p>以下是一个最简的配置文件示例:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[<span style=color:#a6e22e>telegram</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>token</span> = <span style=color:#e6db74>&#34;1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ&#34;</span>
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>[[<span style=color:#a6e22e>users</span>]]
-</span></span><span style=display:flex><span><span style=color:#75715e># telegram user id</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>id</span> = <span style=color:#ae81ff>777000</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>blacklist</span> = <span style=color:#66d9ef>true</span>
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>[[<span style=color:#a6e22e>storages</span>]]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>name</span> = <span style=color:#e6db74>&#34;本机存储&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>type</span> = <span style=color:#e6db74>&#34;local&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>true</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;./downloads&#34;</span>
-</span></span></code></pre></div><h2 id=详细配置>详细配置
-<a class=anchor href=#%e8%af%a6%e7%bb%86%e9%85%8d%e7%bd%ae>#</a></h2><h3 id=全局配置>全局配置
-<a class=anchor href=#%e5%85%a8%e5%b1%80%e9%85%8d%e7%bd%ae>#</a></h3><ul><li><code>lang</code>: Bot 使用的语言, 默认为 <code>zh-CN</code> (简体中文), 设为 <code>en</code> 则使用英语.</li><li><code>stream</code>: 是否启用 Stream 模式, 默认为 <code>false</code>. 启用后 Bot 将直接将文件流式传输到存储端(若存储端支持), 不需要下载到本地<blockquote class="book-hint warning">Stream 模式对于磁盘空间有限的部署环境十分有用, 但也有一些弊端:<br><ul><li>无法使用多线程从 Telegram 下载文件, 速度较慢.</li><li>网络不稳定时, 任务失败率高.</li><li>无法在中间层对文件进行处理, 例如自动文件类型识别.</li><li>并非支持所有存储端, 不支持的存储端可能会降级为普通模式或无法上传.</li></ul></blockquote></li><li><code>workers</code>: 同时处理任务数量, 默认为 3</li><li><code>threads</code>: 下载文件时使用的线程数, 默认为 4. 仅在未启用 Stream 模式时生效.</li><li><code>retry</code>: 任务失败时的重试次数, 默认为 3.</li><li><code>proxy</code>: 全局代理配置, 配置后程序内一切网络连接将会尝试使用该代理, 可选.</li></ul><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#a6e22e>lang</span> = <span style=color:#e6db74>&#34;zh-CN&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>stream</span> = <span style=color:#66d9ef>false</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>workers</span> = <span style=color:#ae81ff>3</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>threads</span> = <span style=color:#ae81ff>4</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>retry</span> = <span style=color:#ae81ff>3</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>proxy</span> = <span style=color:#e6db74>&#34;socks5://127.0.0.1:7890&#34;</span>
-</span></span></code></pre></div><h3 id=telegram-配置>Telegram 配置
-<a class=anchor href=#telegram-%e9%85%8d%e7%bd%ae>#</a></h3><ul><li><code>token</code>: 你的 Telegram Bot Token, 可以通过 <a href=https://t.me/botfather>BotFather</a> 创建 Bot 并获取 Token.</li><li><code>app_id</code>, <code>app_hash</code>: Telegram API ID & Hash, 在 <a href=https://my.telegram.org/apps>Telegram API</a> 创建应用获取, 若不提供则使用默认值.</li><li><code>flood_retry</code>: Flood 控制重试次数, 默认为 5.</li><li><code>rpc_retry</code>: RPC 请求重试次数, 默认为 5.</li><li><code>proxy</code>: 代理配置, 可选.<ul><li><code>enable</code>: 是否启用代理.</li><li><code>url</code>: 代理地址</li></ul></li><li><code>userbot</code>: userbot 配置, 可选.<ul><li><code>enable</code>: 启用 userbot 集成, 需要登录用户账号, 此时请务必使用自己的 api id & hash.</li><li><code>session</code>: userbot 会话文件路径, 默认为 <code>data/usersession.db</code>.</li></ul></li></ul><blockquote class="book-hint warning">启用 userbot 集成后, bot 可以下载私密频道和群组的文件, 但具有无法避免的账号被封禁的风险.<br>开启 userbot 集成后第一次启动 bot 时需要通过终端交互输入手机号, 2FA 和验证码.<br>如果你使用 docker 部署, 请使用 -it 参数为容器提供交互式环境, 然后执行登录操作.</blockquote><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[<span style=color:#a6e22e>telegram</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>token</span> = <span style=color:#e6db74>&#34;1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>app_id</span> = <span style=color:#ae81ff>1025907</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>app_hash</span> = <span style=color:#e6db74>&#34;452b0359b988148995f22ff0f4229750&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>flood_retry</span> = <span style=color:#ae81ff>5</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>rpc_retry</span> = <span style=color:#ae81ff>5</span>
-</span></span><span style=display:flex><span>[<span style=color:#a6e22e>telegram</span>.<span style=color:#a6e22e>proxy</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>false</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>url</span> = <span style=color:#e6db74>&#34;socks5://127.0.0.1:7890&#34;</span>
-</span></span><span style=display:flex><span>[<span style=color:#a6e22e>telegram</span>.<span style=color:#a6e22e>userbot</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>false</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>session</span> = <span style=color:#e6db74>&#34;data/usersession.db&#34;</span>
-</span></span></code></pre></div><h3 id=aria2-配置>Aria2 配置
-<a class=anchor href=#aria2-%e9%85%8d%e7%bd%ae>#</a></h3><p>Aria2 是一个强大的下载管理器，支持 HTTP/HTTPS、FTP、BitTorrent 等多种协议。启用后，Bot 可以使用 <code>/aria2dl</code> 命令通过 Aria2 下载文件。</p><ul><li><code>enable</code>: 是否启用 Aria2 支持，默认为 <code>false</code></li><li><code>url</code>: Aria2 RPC 地址，通常为 <code>http://localhost:6800/jsonrpc</code></li><li><code>secret</code>: Aria2 RPC 密钥，如果你在 Aria2 中配置了 <code>rpc-secret</code>，需要在此填写</li><li><code>remove_after_transfer</code>: 转存完成后是否删除 Aria2 下载的本地文件，默认为 <code>true</code></li></ul><blockquote class="book-hint info">Aria2 需要单独安装和运行。你可以参考 [Aria2 官方文档](https://aria2.github.io/) 了解如何安装和配置 Aria2。</blockquote><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[<span style=color:#a6e22e>aria2</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>true</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>url</span> = <span style=color:#e6db74>&#34;http://localhost:6800/jsonrpc&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>secret</span> = <span style=color:#e6db74>&#34;your-rpc-secret&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>remove_after_transfer</span> = <span style=color:#66d9ef>true</span>
-</span></span></code></pre></div><h3 id=yt-dlp-配置>yt-dlp 配置
-<a class=anchor href=#yt-dlp-%e9%85%8d%e7%bd%ae>#</a></h3><p>用于配置 <code>/ytdlp</code> 命令以及 HTTP API 中 <code>ytdlp</code> 任务类型在未传自定义参数时的默认行为.</p><ul><li><code>max_height</code>: 默认下载的最高视频清晰度 (按高度限制), 如 <code>1080</code>, <code>720</code>, <code>480</code>; <code>0</code> 表示不限制 (下载最佳画质). 当设置了 <code>format</code> 时此项被忽略.</li><li><code>format</code>: 直接指定 yt-dlp format 选择表达式, 设置后优先级高于 <code>max_height</code>, 例如 <code>bv*[height&lt;=720]+ba/b</code>.</li><li><code>recode</code>: 下载后转封装的视频容器格式 (如 <code>mp4</code>), 留空则不转封装.</li><li><code>filename_template</code>: 下载文件名模板 (yt-dlp output template), 默认 <code>%(title)s.%(ext)s</code>. 模板中的目录会创建在 bot 的下载目录下, 并保留到存储路径中.</li><li><code>restrict_filenames</code>: 将文件名限制为 ASCII 字符 (yt-dlp <code>--restrict-filenames</code>), 同时会去掉空格和 <code>&</code>. 默认关闭.</li></ul><blockquote class="book-hint info">`max_height`、`format` 和 `recode` 仅在使用 `/ytdlp` 命令 (或 API 的 `ytdlp` 任务类型) 且未传任何自定义参数时生效. `filename_template` 和 `restrict_filenames` 在传了其他参数时依然生效, 除非自己传了对应的参数 (`-o/--output`、`--restrict-filenames` 或 `--no-restrict-filenames`).</blockquote><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[<span style=color:#a6e22e>ytdlp</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>max_height</span> = <span style=color:#ae81ff>1080</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>format</span> = <span style=color:#e6db74>&#34;&#34;</span>        <span style=color:#75715e># 例如 &#34;bv*[height&lt;=720]+ba/b&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>recode</span> = <span style=color:#e6db74>&#34;mp4&#34;</span>     <span style=color:#75715e># 留空则不转封装</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>filename_template</span> = <span style=color:#e6db74>&#34;%(title)s.%(ext)s&#34;</span>  <span style=color:#75715e># 例如 &#34;%(uploader)s - %(title)s.%(ext)s&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>restrict_filenames</span> = <span style=color:#66d9ef>false</span>
-</span></span></code></pre></div><h3 id=http-api-配置>HTTP API 配置
-<a class=anchor href=#http-api-%e9%85%8d%e7%bd%ae>#</a></h3><p>启用后, SaveAny-Bot 会暴露一套 HTTP API, 用于以编程方式创建/查询/取消任务. 完整的接口说明见 <a href=../../usage/api>HTTP API</a>.</p><ul><li><code>enable</code>: 是否启用 HTTP API 服务, 默认为 <code>false</code>.</li><li><code>host</code>: 监听地址, 默认 <code>0.0.0.0</code>.</li><li><code>port</code>: 监听端口, 默认 <code>8080</code>.</li><li><code>token</code>: 鉴权 Token, <strong>强烈建议设置</strong> — 若为空, API 将在无任何鉴权的情况下暴露.</li></ul><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[<span style=color:#a6e22e>api</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>false</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>host</span> = <span style=color:#e6db74>&#34;0.0.0.0&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>port</span> = <span style=color:#ae81ff>8080</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>token</span> = <span style=color:#e6db74>&#34;your-token&#34;</span>
-</span></span></code></pre></div><h3 id=日志配置>日志配置
-<a class=anchor href=#%e6%97%a5%e5%bf%97%e9%85%8d%e7%bd%ae>#</a></h3><ul><li><code>level</code>: 日志级别, 可选 <code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>, <code>fatal</code>. 默认为 <code>info</code>.</li></ul><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[<span style=color:#a6e22e>log</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>level</span> = <span style=color:#e6db74>&#34;info&#34;</span>
-</span></span></code></pre></div><h3 id=存储端列表>存储端列表
-<a class=anchor href=#%e5%ad%98%e5%82%a8%e7%ab%af%e5%88%97%e8%a1%a8>#</a></h3><p>存储端列表用于定义 Bot 支持的存储位置, 每个存储端需要指定名称、类型和相关配置, 使用双中括号语法 <code>[[storages]]</code> 定义.</p><p>每一个存储端至少需要以下字段:</p><ul><li><code>name</code>: 存储端名称, 用于在 Bot 中识别, 需要唯一</li><li><code>enable</code>: 是否启用该存储端, 默认为 <code>true</code></li><li><code>type</code>: 存储端类型, 目前支持以下类型:<ul><li><code>local</code>: 本地磁盘</li><li><code>alist</code>: Alist</li><li><code>webdav</code>: WebDAV</li><li><code>s3</code>: aws S3 及其他兼容 S3 的服务</li><li><code>rclone</code>: 调用 rclone 实现上传</li><li><code>telegram</code>: 上传到 Telegram</li></ul></li></ul><p>示例, 这是一个包含本地存储和 webdav 存储的配置:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[[<span style=color:#a6e22e>storages</span>]]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>name</span> = <span style=color:#e6db74>&#34;本地存储&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>type</span> = <span style=color:#e6db74>&#34;local&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>true</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 以下是 local 类型存储的自定义配置</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;./downloads&#34;</span>
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>[[<span style=color:#a6e22e>storages</span>]]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>name</span> = <span style=color:#e6db74>&#34;WebDAV&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>type</span> = <span style=color:#e6db74>&#34;webdav&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>enable</span> = <span style=color:#66d9ef>true</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 以下是 webdav 类型存储的自定义配置</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>url</span> = <span style=color:#e6db74>&#34;https://example.com/webdav&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;/path/to/webdav&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>username</span> = <span style=color:#e6db74>&#34;your_username&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>password</span> = <span style=color:#e6db74>&#34;your_password&#34;</span>
-</span></span></code></pre></div><p>所有存储端的自定义配置项可查看 <a href=./storages>存储端配置</a></p><h3 id=用户列表>用户列表
-<a class=anchor href=#%e7%94%a8%e6%88%b7%e5%88%97%e8%a1%a8>#</a></h3><p>用户列表用于定义对存储端的访问控制, 每个用户需要指定 Telegram 上的用户 ID, 使用双中括号语法 <code>[[users]]</code> 定义.</p><ul><li><code>id</code>: 用户的 Telegram User ID</li><li><code>storages</code>: 过滤的存储端列表, 使用存储端名称定义, 默认为白名单模式 (即只允许访问列表中的存储端)</li><li><code>blacklist</code>: 是否启用黑名单模式, 默认为 <code>false</code>. 若启用黑名单模式, 则仅允许访问<strong>没有</strong>在列表中的存储端.</li></ul><p>示例, 这是一个包含三个用户的配置, 用户 <code>123123</code> 只能访问本地存储, 用户 <code>456456</code> 只能访问除 WebDAV 以外的存储, 用户 <code>789789</code> 启用黑名单模式但没有指定存储端, 因此可以访问所有存储:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[[<span style=color:#a6e22e>users</span>]]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>id</span> = <span style=color:#ae81ff>123123</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>storages</span> = [<span style=color:#e6db74>&#34;本地存储&#34;</span>]
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>[[<span style=color:#a6e22e>users</span>]]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>id</span> = <span style=color:#ae81ff>456456</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>storages</span> = [<span style=color:#e6db74>&#34;WebDAV&#34;</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>blacklist</span> = <span style=color:#66d9ef>true</span>
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>[[<span style=color:#a6e22e>users</span>]]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>id</span> = <span style=color:#ae81ff>789789</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>storages</span> = []
-</span></span><span style=display:flex><span><span style=color:#a6e22e>blacklist</span> = <span style=color:#66d9ef>true</span>
-</span></span></code></pre></div><h3 id=事件触发>事件触发
-<a class=anchor href=#%e4%ba%8b%e4%bb%b6%e8%a7%a6%e5%8f%91>#</a></h3><p>事件触发提供了在 Bot 处理任务时根据任务状态执行自定义操作的能力, 目前仅支持任意命令执行. 使用 <code>[hook.exec]</code> 配置.</p><p>目前具有以下几种事件类型:</p><ul><li><code>task_before_start</code>: 任务即将开始前</li><li><code>task_success</code>: 任务成功完成后</li><li><code>task_fail</code>: 任务失败后</li><li><code>task_cancel</code>: 任务被取消后</li></ul><p>提供的配置值需要为完整的命令行命令, Bot 会在事件发生时执行该命令. 示例:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[<span style=color:#a6e22e>hook</span>.<span style=color:#a6e22e>exec</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>task_before_start</span> = <span style=color:#e6db74>&#34;echo &#39;任务即将开始&#39;&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>task_success</span> = <span style=color:#e6db74>&#34;bash /path/to/success_script.sh&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>task_fail</span> = <span style=color:#e6db74>&#34;curl -X POST https://example.com/api/notify -d &#39;任务失败&#39;&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>task_cancel</span> = <span style=color:#e6db74>&#34;bash /path/to/cancel_script.sh&#34;</span>
-</span></span></code></pre></div><h3 id=解析器>解析器
-<a class=anchor href=#%e8%a7%a3%e6%9e%90%e5%99%a8>#</a></h3><p>解析器为 Bot 提供了处理非 Telegram 文件的能力, 例如从其他网站下载文件. 使用 <code>[parsers]</code> 配置.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span>[<span style=color:#a6e22e>parsers</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>plugin_enable</span> = <span style=color:#66d9ef>true</span> <span style=color:#75715e># 是否启用解析器插件</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>plugin_dirs</span> = [<span style=color:#e6db74>&#34;./plugins&#34;</span>] <span style=color:#75715e># 插件目录, 可以是多个目录</span>
-</span></span></code></pre></div><p>上述两个配置项只用于控制以 JavaScript 编写的解析器插件, Bot 还有内置的使用 Go 实现的解析器, 目前默认开启.</p><h3 id=杂项>杂项
-<a class=anchor href=#%e6%9d%82%e9%a1%b9>#</a></h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#a6e22e>no_clean_cache</span> = <span style=color:#66d9ef>false</span> <span style=color:#75715e># 是否在退出时不清空缓存文件夹</span>
-</span></span><span style=display:flex><span><span style=color:#75715e># 临时下载文件夹配置</span>
-</span></span><span style=display:flex><span>[<span style=color:#a6e22e>temp</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>base_path</span> = <span style=color:#e6db74>&#34;./cache&#34;</span>
-</span></span></code></pre></div></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/cfff3c221ae4837e2e9b642aa8eedb524965edca title='最后修改者 Krau | 2026/09/26' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
-<span>2026/09/26</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/deployment/configuration/_index.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
-<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#详细配置>详细配置</a><ul><li><a href=#全局配置>全局配置</a></li><li><a href=#telegram-配置>Telegram 配置</a></li><li><a href=#aria2-配置>Aria2 配置</a></li><li><a href=#yt-dlp-配置>yt-dlp 配置</a></li><li><a href=#http-api-配置>HTTP API 配置</a></li><li><a href=#日志配置>日志配置</a></li><li><a href=#存储端列表>存储端列表</a></li><li><a href=#用户列表>用户列表</a></li><li><a href=#事件触发>事件触发</a></li><li><a href=#解析器>解析器</a></li><li><a href=#杂项>杂项</a></li></ul></li></ul></nav></div></aside></main></body></html>
+简体中文</a></label><ul><li><a href=/en/deployment/configuration/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/ class=active>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li><li><a href=/deployment/migration/>从 v0 升级</a></li></ul></li><li><a href=/usage/>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>链接下载</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>视频下载 (yt-dlp)</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul><li><a href=/contribute/testing/>测试</a></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>配置说明</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#配置页面>配置页面</a><ul><li><a href=#自动化>自动化</a></li><li><a href=#解析器>解析器</a></li><li><a href=#telegram>Telegram</a></li><li><a href=#辅助-bot>辅助 Bot</a></li><li><a href=#媒体过滤>媒体过滤</a></li><li><a href=#消息元数据>消息元数据</a></li><li><a href=#存储>存储</a></li><li><a href=#用户>用户</a></li></ul></li><li><a href=#环境变量>环境变量</a></li><li><a href=#安全>安全</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=配置说明>配置说明
+<a class=anchor href=#%e9%85%8d%e7%bd%ae%e8%af%b4%e6%98%8e>#</a></h1><p>配置保存在数据目录下的 SQLite 数据库（默认 <code>data/saveany.db</code>），通过 Web 控制台统一管理。首次启动采用默认设置，并在日志中输出带 Token 的直达链接；可通过 <code>SAVEANY_ADMIN_PASSWORD</code> 预设管理员密码。</p><h2 id=配置页面>配置页面
+<a class=anchor href=#%e9%85%8d%e7%bd%ae%e9%a1%b5%e9%9d%a2>#</a></h2><table><thead><tr><th>页面</th><th>内容</th></tr></thead><tbody><tr><td>指南</td><td>首次配置检查清单和日常使用说明</td></tr><tr><td>Telegram</td><td>Bot Token、API ID/Hash、代理、Userbot 登录</td></tr><tr><td>存储</td><td>本地磁盘、WebDAV、Alist、S3、Rclone、Telegram 等存储端</td></tr><tr><td>用户</td><td>Telegram 用户 ID、默认存储、目录、规则和存储访问权限</td></tr><tr><td>自动化</td><td>按用户管理目录、规则、监听聊天和对话同步</td></tr><tr><td>设置</td><td>任务并发、语言、代理、媒体类型过滤、Aria2、yt-dlp、解析器、缓存、日志、Web 和 API</td></tr><tr><td>解析器</td><td>安装 JavaScript 解析器插件</td></tr><tr><td>系统</td><td>运行信息、重启、版本检查和更新</td></tr></tbody></table><p>部分配置需重启进程生效（如任务并发数、全局代理、缓存、插件、Hook 及 Web 监听地址），保存时页面会明确提示。</p><h3 id=自动化>自动化
+<a class=anchor href=#%e8%87%aa%e5%8a%a8%e5%8c%96>#</a></h3><p>自动化页面按用户分别管理目录、规则、监听聊天及 Userbot 对话同步。可设置默认目录，并支持规则的启停、增删与预设导入。</p><h3 id=解析器>解析器
+<a class=anchor href=#%e8%a7%a3%e6%9e%90%e5%99%a8>#</a></h3><p>解析器页面用于安装 JavaScript 解析器插件（需在设置中启用解析器插件）。支持上传 <code>.js</code> 文件或直接粘贴代码，安装后立即可用，无需重启。</p><h3 id=telegram>Telegram
+<a class=anchor href=#telegram>#</a></h3><p>Bot Token 在 <a href=https://t.me/BotFather>@BotFather</a> 创建。<code>API ID</code> 和 <code>API Hash</code> 已提供默认值，通常无需修改；启用 Userbot 时建议使用自己的 <a href=https://my.telegram.org/apps>Telegram API</a> 凭据。</p><p>保存 Bot 配置后会自动建立连接。Userbot 的登录在 Telegram 页面完成，无需进入终端。</p><h3 id=辅助-bot>辅助 Bot
+<a class=anchor href=#%e8%be%85%e5%8a%a9-bot>#</a></h3><p>配置辅助 Bot 可提升 Telegram 文件的传输效率。在 <strong>Telegram</strong> 页面的 <strong>辅助 Bot</strong> 区域填入 Token，将辅助 Bot 加入目标 Telegram 聊天并授予发文件权限。Telegram 存储上传将自动分配给可用且在群内的辅助 Bot；若辅助 Bot 无法访问目标聊天，上传自动回退到主 Bot。辅助 Bot 不响应命令。</p><p>若需通过多个辅助 Bot 分块加速下载大文件，可在 <strong>Telegram</strong> 页面填写私有的 <strong>辅助下载频道 ID</strong>。需确保主 Bot 可向该频道发帖，且频道内已加入至少两个辅助 Bot。主 Bot 会把收到的文件转发到辅助下载频道，各辅助 Bot 刷新文件引用后下载各自的分块。该功能仅在非流式模式下对达到 <strong>Relay 最小文件大小</strong>（默认 8 MB）的文件生效；频道或辅助 Bot 异常时自动回退为单客户端下载。默认保留转发到频道的消息；关闭“保留频道转发消息”将在下载完成后自动清理。</p><p>传输并发可在 <strong>设置 → 核心</strong> 中调整：</p><table><thead><tr><th>设置</th><th>默认值</th><th>说明</th></tr></thead><tbody><tr><td><code>单文件下载线程数</code></td><td>4</td><td>自动调度的基础线程数</td></tr><tr><td><code>下载线程覆盖</code></td><td>0</td><td>0 表示自动；大于 0 时直接使用该总线程数</td></tr><tr><td><code>自动线程上限</code></td><td>16</td><td>自动调度时的总线程上限</td></tr><tr><td><code>全局传输并发上限</code></td><td>0</td><td>0 表示 <code>workers × threads</code>；下载与上传共享</td></tr><tr><td><code>Relay 最小文件大小 (MB)</code></td><td>8</td><td>更小的文件不使用辅助 Bot</td></tr><tr><td><code>分块重试次数</code></td><td>20</td><td>单个分块超时或连接中断的最大重试次数</td></tr></tbody></table><h3 id=媒体过滤>媒体过滤
+<a class=anchor href=#%e5%aa%92%e4%bd%93%e8%bf%87%e6%bb%a4>#</a></h3><p>在 <strong>设置 → 媒体过滤</strong> 中可以限制 Bot 只处理指定类型的 Telegram 媒体。<code>允许的媒体类型</code> 每行填写一个值，留空表示全部允许：</p><table><thead><tr><th>值</th><th>匹配内容</th></tr></thead><tbody><tr><td><code>image</code></td><td>Telegram 图片、图片文件、贴纸和动态图片</td></tr><tr><td><code>video</code></td><td>Telegram 视频文件（含视频消息）</td></tr><tr><td><code>audio</code></td><td>Telegram 音频和语音消息</td></tr><tr><td><code>document</code></td><td>其余文档文件</td></tr></tbody></table><p>过滤在创建下载任务之前执行，不匹配的媒体不会下载，也不会出现在任务列表。媒体组只保留匹配项；如果整组都被过滤，则静默跳过。该设置是实例级配置，修改后立即生效。</p><p>目前只覆盖 Telegram 媒体入口：直接发送/转发媒体、媒体组、<code>/save</code> 批量保存、消息链接、监听聊天和 Telegraph 图片。解析器、HTTP 直链和 yt-dlp 等非 Telegram 媒体不参与该过滤。存储规则只负责改变归档位置，不会跳过文件。</p><h3 id=消息元数据>消息元数据
+<a class=anchor href=#%e6%b6%88%e6%81%af%e5%85%83%e6%95%b0%e6%8d%ae>#</a></h3><p>在 <strong>设置 → 消息元数据</strong> 中启用后，新的 Telegram 文件任务会保存规范化后的消息数据。本地数据库记录来源聊天、消息 ID、时间、发送者、正文或 caption、回复/转发引用、相册分组及媒体属性；任务详情 API 和 Web 控制台可导出对应 JSON。</p><p>“保存消息文本”控制是否保存正文与标签。该选项不保存 access hash、Token 或原始 Telegram 对象，且仅对启用后创建的新任务生效。</p><p>“写入旁车 JSON”会在实际文件旁写入 <code>&lt;文件路径>.meta.json</code>，默认关闭。Telegram 存储不会上传旁车文件，而是可用存储配置中的选项消费元数据来还原 caption 或媒体组。</p><h3 id=存储>存储
+<a class=anchor href=#%e5%ad%98%e5%82%a8>#</a></h3><p>存储端在 <strong>存储</strong> 页面添加并启用。本地磁盘只需要一个基础路径：</p><ul><li>Docker 部署通常填写 <code>/app/downloads</code>。</li><li>二进制部署可以填写 <code>./downloads</code> 或绝对路径。</li></ul><p>存储端字段说明见 <a href=./storages>存储端配置</a>。</p><h3 id=用户>用户
+<a class=anchor href=#%e7%94%a8%e6%88%b7>#</a></h3><p>只有 <strong>用户</strong> 页面中启用的 Telegram User ID 能使用 Bot。新建用户时至少填写数字 User ID；默认存储可以留空，之后再设置。</p><h2 id=环境变量>环境变量
+<a class=anchor href=#%e7%8e%af%e5%a2%83%e5%8f%98%e9%87%8f>#</a></h2><table><thead><tr><th>变量</th><th>说明</th></tr></thead><tbody><tr><td><code>SAVEANY_DATA_DIR</code></td><td>数据目录，默认 <code>./data</code></td></tr><tr><td><code>SAVEANY_DB_PATH</code></td><td>SQLite 文件路径，默认 <code>&lt;data-dir>/saveany.db</code></td></tr><tr><td><code>SAVEANY_LISTEN</code></td><td>Web 监听地址，默认 <code>127.0.0.1:28080</code>；需要对外开放时使用 <code>0.0.0.0:28080</code></td></tr><tr><td><code>SAVEANY_ADMIN_PASSWORD</code></td><td>首次启动时设置备用管理员密码；未设置则自动生成并打印</td></tr></tbody></table><h2 id=安全>安全
+<a class=anchor href=#%e5%ae%89%e5%85%a8>#</a></h2><ul><li>Web 控制台默认仅监听 <code>127.0.0.1:28080</code>；若需对外开放，请使用反向代理和 HTTPS。</li><li>设置中的 <code>访问 Token</code> 可用于 <code>/?token=...</code> 直接登录 Web UI，也用于 <code>/api/v1</code> 的 Bearer 认证。留空时，每次启动自动生成并打印到日志。</li><li>首次使用密码登录后，立即修改自动生成的备用管理员密码。</li><li>不要公开 <code>data/</code>、Bot Token、Userbot 会话或访问 Token。</li></ul></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/dec677b9defa51a379a17a1a9d3bc77c94adbf68 title='最后修改者 krau | 2026/11/05' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/11/05</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/deployment/configuration/_index.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#配置页面>配置页面</a><ul><li><a href=#自动化>自动化</a></li><li><a href=#解析器>解析器</a></li><li><a href=#telegram>Telegram</a></li><li><a href=#辅助-bot>辅助 Bot</a></li><li><a href=#媒体过滤>媒体过滤</a></li><li><a href=#消息元数据>消息元数据</a></li><li><a href=#存储>存储</a></li><li><a href=#用户>用户</a></li></ul></li><li><a href=#环境变量>环境变量</a></li><li><a href=#安全>安全</a></li></ul></nav></div></aside></main></body></html>

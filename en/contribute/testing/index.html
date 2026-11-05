@@ -1,0 +1,60 @@
+<!doctype html><html lang=en dir=ltr><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="
+  Testing
+  #
+
+The project ships a seeded local environment and two end-to-end suites that do
+not need Telegram credentials.
+
+  Seeded environment
+  #
+
+make testenv
+The command creates a disposable data directory and prints:
+
+the Web UI URL
+the admin password (saveany-test by default)
+a seeded local storage and whitelisted user
+a sample URL that can be used as a direct-links task
+
+Use --keep to retain the generated data directory, or pass --data-dir to
+reuse an existing one. Telegram is left stopped, so the web console and the
+non-Telegram task pipeline are available immediately."><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/en/contribute/testing/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="Testing"><meta property="og:description" content="Testing # The project ships a seeded local environment and two end-to-end suites that do not need Telegram credentials.
+Seeded environment # make testenv The command creates a disposable data directory and prints:
+the Web UI URL the admin password (saveany-test by default) a seeded local storage and whitelisted user a sample URL that can be used as a direct-links task Use --keep to retain the generated data directory, or pass --data-dir to reuse an existing one. Telegram is left stopped, so the web console and the non-Telegram task pipeline are available immediately."><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="article:section" content="contribute"><meta property="article:modified_time" content="2026-11-02T18:29:43+08:00"><title>Testing | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/en/contribute/testing/><link rel=alternate hreflang=zh href=https://sabot.unv.app/contribute/testing/ title=测试><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/en/><img src=/logo.svg alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+<label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
+English</a></label><ul><li><a href=/contribute/testing/>简体中文</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>Deployment Guide</span><ul><li><a href=/en/deployment/installation/>Installation and updates</a></li><li><a href=/en/deployment/configuration/>Configuration</a><ul><li><a href=/en/deployment/configuration/storages/>Storage Configuration</a></li></ul></li><li><a href=/en/deployment/migration/>Migrate from v0</a></li></ul></li><li><a href=/en/usage/>Usage</a><ul><li><a href=/en/usage/silent/>Silent Mode</a></li><li><a href=/en/usage/rules/>Storage Rules</a></li><li><a href=/en/usage/watch/>Watch Chats</a></li><li><a href=/en/usage/directlinks/>URL Downloads</a></li><li><a href=/en/usage/aria2/>Aria2 Downloads</a></li><li><a href=/en/usage/ytdlp/>Video Downloads (yt-dlp)</a></li><li><a href=/en/usage/transfer/>Storage Transfer</a></li><li><a href=/en/usage/parsers/>Save Files Outside Telegram</a></li><li><a href=/en/usage/config/>File Naming & Conflict Strategies</a></li><li><a href=/en/usage/api/>HTTP API</a></li><li><a href=/en/usage/cli/>CLI Subcommands</a></li></ul></li><li><a href=/en/help/>Frequently Asked Questions</a><ul></ul></li><li><a href=/en/contribute/>Contributing</a><ul><li><a href=/en/contribute/testing/ class=active>Testing</a></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>Testing</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#seeded-environment>Seeded environment</a></li><li><a href=#backend-end-to-end-tests>Backend end-to-end tests</a></li><li><a href=#telegram-end-to-end-tests>Telegram end-to-end tests</a></li><li><a href=#web-end-to-end-tests>Web end-to-end tests</a></li><li><a href=#combined>Combined</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=testing>Testing
+<a class=anchor href=#testing>#</a></h1><p>The project ships a seeded local environment and two end-to-end suites that do
+not need Telegram credentials.</p><h2 id=seeded-environment>Seeded environment
+<a class=anchor href=#seeded-environment>#</a></h2><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>make testenv
+</span></span></code></pre></div><p>The command creates a disposable data directory and prints:</p><ul><li>the Web UI URL</li><li>the admin password (<code>saveany-test</code> by default)</li><li>a seeded local storage and whitelisted user</li><li>a sample URL that can be used as a direct-links task</li></ul><p>Use <code>--keep</code> to retain the generated data directory, or pass <code>--data-dir</code> to
+reuse an existing one. Telegram is left stopped, so the web console and the
+non-Telegram task pipeline are available immediately.</p><h2 id=backend-end-to-end-tests>Backend end-to-end tests
+<a class=anchor href=#backend-end-to-end-tests>#</a></h2><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>make e2e-api
+</span></span></code></pre></div><p>The suite builds the binary, starts the seeded environment on an ephemeral
+port and drives the public API with a real HTTP client. It covers authentication
+and CSRF, onboarding, storage and user lifecycle, settings updates, the SPA
+asset fallback, and a direct-links task that downloads from a local HTTP server
+into the seeded storage.</p><p>The tests live under <code>e2e/</code> behind the <code>e2e</code> build tag, so <code>go test ./...</code> does
+not start the environment.</p><h2 id=telegram-end-to-end-tests>Telegram end-to-end tests
+<a class=anchor href=#telegram-end-to-end-tests>#</a></h2><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>make e2e-telegram
+</span></span></code></pre></div><p>This suite runs the real bot handlers, dispatcher, task queue, and storage
+backends against an in-memory <code>tg.Invoker</code>. It covers <code>/start</code>, group admission,
+saving a Telegram document to local storage (including progress edits), and
+uploading it to a Telegram storage backend. No Telegram account or network is
+used: gotd&rsquo;s client, sender, downloader, and uploader run unchanged against the
+fake RPC layer.</p><h2 id=web-end-to-end-tests>Web end-to-end tests
+<a class=anchor href=#web-end-to-end-tests>#</a></h2><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>make e2e-web-setup   <span style=color:#75715e># once, downloads the Chromium build</span>
+</span></span><span style=display:flex><span>make e2e-web
+</span></span></code></pre></div><p>The suite starts the seeded environment and drives the built web UI with
+Playwright. It covers login, storage testing and creation, and creating a
+direct-links task that reaches the completed state. Test artifacts are written
+to <code>tmp/e2e-web-results/</code>.</p><p>Playwright is a dev dependency of <code>web/ui</code> and its version is locked by
+<code>pnpm-lock.yaml</code>. <code>make e2e-web-setup</code> installs the matching Chromium build.</p><h2 id=combined>Combined
+<a class=anchor href=#combined>#</a></h2><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>make e2e
+</span></span></code></pre></div><p>Runs the API, Telegram, and browser suites after building the web UI. The fake
+Telegram layer covers commands, downloads, uploads, and group admission without
+an account. Real Telegram server semantics, userbot login, and live rate limits
+still need a test account.</p></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/5427f4fb0fde8f93d67bf97faea05e079ac5c08c title='Last modified by krau | 2026/11/02' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/11/02</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/en/contribute/testing.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>Edit this page</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#seeded-environment>Seeded environment</a></li><li><a href=#backend-end-to-end-tests>Backend end-to-end tests</a></li><li><a href=#telegram-end-to-end-tests>Telegram end-to-end tests</a></li><li><a href=#web-end-to-end-tests>Web end-to-end tests</a></li><li><a href=#combined>Combined</a></li></ul></nav></div></aside></main></body></html>

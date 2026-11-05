@@ -2,23 +2,100 @@
   使用帮助
   #
 
-这里介绍 Save Any Bot 的一些功能和使用方法, 如果你没有在这里找到你需要的内容, 另请参阅 配置说明 或前往 Github Discussions 提问.
+介绍 Save Any Bot 的常用功能与命令操作。如需部署及高级配置，请参阅配置说明；其他问题可在 GitHub Discussions 交流。
+
+  Bot 命令
+  #
+
+
+  
+      
+          命令
+          用途
+      
+  
+  
+      
+          /start
+          打开帮助和命令列表
+      
+      
+          /save
+          保存回复的媒体消息，或按消息范围批量保存
+      
+      
+          /download
+          使用直接下载、Aria2 或视频解析下载链接
+      
+      
+          /transfer
+          在存储端之间传输文件
+      
+      
+          /tasks
+          查看和管理运行中、排队中和失败任务
+      
+      
+          /config
+          用户设置：文件名和重名策略、静默模式、默认存储
+      
+      
+          /template
+          设置自定义文件名模板
+      
+      
+          /dirs
+          管理存储目录
+      
+      
+          /rules
+          管理存储规则
+      
+      
+          /watch
+          监听聊天并管理通知/对话同步 (UserBot)
+      
+      
+          /parser
+          管理解析器插件
+      
+      
+          /update
+          检查更新
+      
+  
+
 
   转存文件
   #
 
-要使用 Bot 的转存 Telegram 文件功能, 需要向 Bot 发送或转发以下类型的消息.
+向 Bot 发送或转发以下内容即可触发转存：
 
-文件或媒体消息, 如图片, 视频, 文档等
-Telegram 消息链接, 例如: https://t.me/acherkrau/1097. 即使频道禁止了转发和保存, Bot 依然可以下载其文件.
-Telegra.ph 的文章链接, Bot 将下载其中的所有图片
-"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="使用帮助"><meta property="og:description" content="使用帮助 # 这里介绍 Save Any Bot 的一些功能和使用方法, 如果你没有在这里找到你需要的内容, 另请参阅 配置说明 或前往 Github Discussions 提问.
-转存文件 # 要使用 Bot 的转存 Telegram 文件功能, 需要向 Bot 发送或转发以下类型的消息.
-文件或媒体消息, 如图片, 视频, 文档等 Telegram 消息链接, 例如: https://t.me/acherkrau/1097. 即使频道禁止了转发和保存, Bot 依然可以下载其文件. Telegra.ph 的文章链接, Bot 将下载其中的所有图片"><meta property="og:locale" content="zh"><meta property="og:type" content="website"><title>使用帮助 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/ title=Usage><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous><link rel=alternate type=application/rss+xml href=https://sabot.unv.app/usage/index.xml title="Save Any Bot"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
-<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.png alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
+图片、视频、音频、文档等媒体文件
+Telegram 消息链接（如 https://t.me/acherkrau/1097），支持转存开启了防转发/防保存保护的频道文件
+Telegra.ph 文章链接，自动提取并下载其中的所有图片
+
+
+  在群组中使用
+  #
+
+Bot 支持普通群组和超级群组，不支持广播频道。
+
+群组中仅响应显式命令和按钮回调，不会自动保存群内的普通媒体或普通文本消息。
+转存群内文件时，回复目标消息并发送 /save（群组中亦可使用 /save@YourBot 格式）；其他命令（如 /download）用法相同。
+仅白名单用户可以使用。非白名单成员的消息会被忽略，点击内联按钮将提示无权限。
+超级群中以匿名管理员身份发送的消息因无法识别具体用户，会被直接忽略。
+默认的 Privacy Mode 下，Bot 仅能接收针对它的命令、@提及以及对其消息的回复。若需接收群内全部消息，可在 @BotFather 使用 /setprivacy 关闭 Privacy Mode；Bot 在群组中依然仅响应命令和交互按钮。
+"><meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff"><meta name=theme-color media="(prefers-color-scheme: dark)" content="#343a40"><meta name=color-scheme content="light dark"><meta property="og:url" content="https://sabot.unv.app/usage/"><meta property="og:site_name" content="Save Any Bot"><meta property="og:title" content="使用帮助"><meta property="og:description" content="使用帮助 # 介绍 Save Any Bot 的常用功能与命令操作。如需部署及高级配置，请参阅配置说明；其他问题可在 GitHub Discussions 交流。
+Bot 命令 # 命令 用途 /start 打开帮助和命令列表 /save 保存回复的媒体消息，或按消息范围批量保存 /download 使用直接下载、Aria2 或视频解析下载链接 /transfer 在存储端之间传输文件 /tasks 查看和管理运行中、排队中和失败任务 /config 用户设置：文件名和重名策略、静默模式、默认存储 /template 设置自定义文件名模板 /dirs 管理存储目录 /rules 管理存储规则 /watch 监听聊天并管理通知/对话同步 (UserBot) /parser 管理解析器插件 /update 检查更新 转存文件 # 向 Bot 发送或转发以下内容即可触发转存：
+图片、视频、音频、文档等媒体文件 Telegram 消息链接（如 https://t.me/acherkrau/1097），支持转存开启了防转发/防保存保护的频道文件 Telegra.ph 文章链接，自动提取并下载其中的所有图片 在群组中使用 # Bot 支持普通群组和超级群组，不支持广播频道。
+群组中仅响应显式命令和按钮回调，不会自动保存群内的普通媒体或普通文本消息。 转存群内文件时，回复目标消息并发送 /save（群组中亦可使用 /save@YourBot 格式）；其他命令（如 /download）用法相同。 仅白名单用户可以使用。非白名单成员的消息会被忽略，点击内联按钮将提示无权限。 超级群中以匿名管理员身份发送的消息因无法识别具体用户，会被直接忽略。 默认的 Privacy Mode 下，Bot 仅能接收针对它的命令、@提及以及对其消息的回复。若需接收群内全部消息，可在 @BotFather 使用 /setprivacy 关闭 Privacy Mode；Bot 在群组中依然仅响应命令和交互按钮。"><meta property="og:locale" content="zh"><meta property="og:type" content="website"><title>使用帮助 | Save Any Bot</title><link rel=icon href=/favicon.png><link rel=manifest href=/manifest.json><link rel=canonical href=https://sabot.unv.app/usage/><link rel=alternate hreflang=en href=https://sabot.unv.app/en/usage/ title=Usage><link rel=stylesheet href=/book.min.a22f4c7d8c2bdc5e3d6e34ba11cb59ab50ea5772594e71305bfd5a595dc78b7e.css integrity="sha256-oi9MfYwr3F49bjS6EctZq1DqV3JZTnEwW/1aWV3Hi34=" crossorigin=anonymous><link rel=alternate type=application/rss+xml href=https://sabot.unv.app/usage/index.xml title="Save Any Bot"></head><body dir=ltr><input type=checkbox class="hidden toggle" id=menu-control>
+<input type=checkbox class="hidden toggle" id=toc-control><main class="container flex"><aside class=book-menu><div class=book-menu-content><nav><h2 class=book-brand><a class="flex align-center" href=/><img src=/logo.svg alt=Logo class=book-icon><span>Save Any Bot</span></a></h2><ul class=book-languages><li><input type=checkbox id=languages class=toggle>
 <label for=languages class=flex><a role=button class="flex flex-auto"><img src=/svg/translate.svg class=book-icon alt=Languages>
-简体中文</a></label><ul><li><a href=/en/usage/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li></ul></li><li><a href=/usage/ class=active>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>直接下载链接</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>yt-dlp 视频下载</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>使用帮助</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#转存文件>转存文件</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=使用帮助>使用帮助
-<a class=anchor href=#%e4%bd%bf%e7%94%a8%e5%b8%ae%e5%8a%a9>#</a></h1><p>这里介绍 Save Any Bot 的一些功能和使用方法, 如果你没有在这里找到你需要的内容, 另请参阅 <a href=../deployment/configuration>配置说明</a> 或前往 Github <a href=https://github.com/krau/SaveAny-Bot/discussions>Discussions</a> 提问.</p><h2 id=转存文件>转存文件
-<a class=anchor href=#%e8%bd%ac%e5%ad%98%e6%96%87%e4%bb%b6>#</a></h2><p>要使用 Bot 的转存 Telegram 文件功能, 需要向 Bot 发送或转发以下类型的消息.</p><ol><li>文件或媒体消息, 如图片, 视频, 文档等</li><li>Telegram 消息链接, 例如: <code>https://t.me/acherkrau/1097</code>. <strong>即使频道禁止了转发和保存, Bot 依然可以下载其文件.</strong></li><li>Telegra.ph 的文章链接, Bot 将下载其中的所有图片</li></ol></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/38355dfd142f0f1a819a8837875b33da0d3a81b7 title='最后修改者 krau | 2026/03/11' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
-<span>2026/03/11</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/_index.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
-<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#转存文件>转存文件</a></li></ul></nav></div></aside></main></body></html>
+简体中文</a></label><ul><li><a href=/en/usage/>English</a></li></ul></li></ul><ul><li><a href=https://github.com/krau/SaveAny-Bot target=_blank rel=noopener>🔗 GitHub</a></li></ul><ul><li><span>部署指南</span><ul><li><a href=/deployment/installation/>安装与更新</a></li><li><a href=/deployment/configuration/>配置说明</a><ul><li><a href=/deployment/configuration/storages/>存储端配置</a></li></ul></li><li><a href=/deployment/migration/>从 v0 升级</a></li></ul></li><li><a href=/usage/ class=active>使用帮助</a><ul><li><a href=/usage/silent/>静默模式</a></li><li><a href=/usage/rules/>存储规则</a></li><li><a href=/usage/watch/>监听聊天</a></li><li><a href=/usage/directlinks/>链接下载</a></li><li><a href=/usage/aria2/>Aria2 下载</a></li><li><a href=/usage/ytdlp/>视频下载 (yt-dlp)</a></li><li><a href=/usage/transfer/>存储间传输</a></li><li><a href=/usage/parsers/>转存 Telegram 之外的文件</a></li><li><a href=/usage/config/>文件命名与重名策略</a></li><li><a href=/usage/api/>HTTP API</a></li><li><a href=/usage/cli/>命令行子命令</a></li></ul></li><li><a href=/help/>常见问题</a><ul></ul></li><li><a href=/contribute/>参与开发</a><ul><li><a href=/contribute/testing/>测试</a></li></ul></li></ul></nav><script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script></div></aside><div class=book-page><header class=book-header><div class="flex align-center justify-between"><label for=menu-control><img src=/svg/menu.svg class=book-icon alt=Menu></label><h3>使用帮助</h3><label for=toc-control><img src=/svg/toc.svg class=book-icon alt="Table of Contents"></label></div><aside class="hidden clearfix"><nav id=TableOfContents><ul><li><a href=#bot-命令>Bot 命令</a></li><li><a href=#转存文件>转存文件</a></li><li><a href=#在群组中使用>在群组中使用</a></li></ul></nav></aside></header><article class="markdown book-article"><h1 id=使用帮助>使用帮助
+<a class=anchor href=#%e4%bd%bf%e7%94%a8%e5%b8%ae%e5%8a%a9>#</a></h1><p>介绍 Save Any Bot 的常用功能与命令操作。如需部署及高级配置，请参阅<a href=../deployment/configuration>配置说明</a>；其他问题可在 GitHub <a href=https://github.com/krau/SaveAny-Bot/discussions>Discussions</a> 交流。</p><h2 id=bot-命令>Bot 命令
+<a class=anchor href=#bot-%e5%91%bd%e4%bb%a4>#</a></h2><table><thead><tr><th>命令</th><th>用途</th></tr></thead><tbody><tr><td><code>/start</code></td><td>打开帮助和命令列表</td></tr><tr><td><code>/save</code></td><td>保存回复的媒体消息，或按消息范围批量保存</td></tr><tr><td><code>/download</code></td><td>使用直接下载、Aria2 或视频解析下载链接</td></tr><tr><td><code>/transfer</code></td><td>在存储端之间传输文件</td></tr><tr><td><code>/tasks</code></td><td>查看和管理运行中、排队中和失败任务</td></tr><tr><td><code>/config</code></td><td>用户设置：文件名和重名策略、静默模式、默认存储</td></tr><tr><td><code>/template</code></td><td>设置自定义文件名模板</td></tr><tr><td><code>/dirs</code></td><td>管理存储目录</td></tr><tr><td><code>/rules</code></td><td>管理存储规则</td></tr><tr><td><code>/watch</code></td><td>监听聊天并管理通知/对话同步 (UserBot)</td></tr><tr><td><code>/parser</code></td><td>管理解析器插件</td></tr><tr><td><code>/update</code></td><td>检查更新</td></tr></tbody></table><h2 id=转存文件>转存文件
+<a class=anchor href=#%e8%bd%ac%e5%ad%98%e6%96%87%e4%bb%b6>#</a></h2><p>向 Bot 发送或转发以下内容即可触发转存：</p><ol><li>图片、视频、音频、文档等媒体文件</li><li>Telegram 消息链接（如 <code>https://t.me/acherkrau/1097</code>），支持转存开启了防转发/防保存保护的频道文件</li><li>Telegra.ph 文章链接，自动提取并下载其中的所有图片</li></ol><h2 id=在群组中使用>在群组中使用
+<a class=anchor href=#%e5%9c%a8%e7%be%a4%e7%bb%84%e4%b8%ad%e4%bd%bf%e7%94%a8>#</a></h2><p>Bot 支持普通群组和超级群组，不支持广播频道。</p><ul><li>群组中仅响应显式命令和按钮回调，不会自动保存群内的普通媒体或普通文本消息。</li><li>转存群内文件时，回复目标消息并发送 <code>/save</code>（群组中亦可使用 <code>/save@YourBot</code> 格式）；其他命令（如 <code>/download</code>）用法相同。</li><li>仅白名单用户可以使用。非白名单成员的消息会被忽略，点击内联按钮将提示无权限。</li><li>超级群中以匿名管理员身份发送的消息因无法识别具体用户，会被直接忽略。</li><li>默认的 Privacy Mode 下，Bot 仅能接收针对它的命令、@提及以及对其消息的回复。若需接收群内全部消息，可在 <a href=https://t.me/BotFather>@BotFather</a> 使用 <code>/setprivacy</code> 关闭 Privacy Mode；Bot 在群组中依然仅响应命令和交互按钮。</li></ul></article><footer class=book-footer><div class="flex flex-wrap justify-between"><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/commit/5a0a7cc1dbba2b47377adc7ef55bc983c266def7 title='最后修改者 krau | 2026/11/05' target=_blank rel=noopener><img src=/svg/calendar.svg class=book-icon alt>
+<span>2026/11/05</span></a></div><div><a class="flex align-center" href=https://github.com/krau/saveany-bot/edit/main/docs/content/zh/usage/_index.md target=_blank rel=noopener><img src=/svg/edit.svg class=book-icon alt>
+<span>编辑本页</span></a></div></div><script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script></footer><div class=book-comments></div><label for=menu-control class="hidden book-menu-overlay"></label></div><aside class=book-toc><div class=book-toc-content><nav id=TableOfContents><ul><li><a href=#bot-命令>Bot 命令</a></li><li><a href=#转存文件>转存文件</a></li><li><a href=#在群组中使用>在群组中使用</a></li></ul></nav></div></aside></main></body></html>
