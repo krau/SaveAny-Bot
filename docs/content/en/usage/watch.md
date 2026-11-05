@@ -33,10 +33,10 @@ Filter types:
 Regex-match the message text. For example:
 
 ```
-/watch 12345678 msgre:.*hello.*
+/watch -1002229835658 msgre:.*hello.*
 ```
 
-This will watch the chat with ID `12345678`, and only save messages whose text contains `hello`.
+This will watch the channel with ID `-1002229835658`, and only save messages whose text contains `hello`. Use the Bot API form: positive IDs for users, negative IDs for basic groups, and `-100...` for supergroups and channels.
 
 ## Task notifications
 

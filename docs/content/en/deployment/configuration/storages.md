@@ -78,7 +78,7 @@ If you are using a third-party S3-compatible service, it usually uses path-style
 Stream mode is not supported.
 
 ```text
-chat_id = "123456789" # Telegram chat ID, the bot will send files to this chat
+chat_id = "-1001234567890" # Bot API chat ID (positive for users, negative for basic groups, -100... for channels/supergroups)
 force_file = false # Force sending as file, default is false
 skip_large = false # Skip large files, default is false. If enabled, files exceeding Telegram's limit will not be uploaded.
 split_large_video = false # Losslessly split oversized videos into one album of up to 10 independently playable parts. Falls back to ZIP parts on failure or when more than 10 parts are required.

@@ -79,7 +79,7 @@ https://s3.example.com/your_bucket_name/path/to/s3/your_file
 
 ```text
 # Telegram 聊天 ID, Bot 将把文件发送到这个聊天
-chat_id = "123456789"
+chat_id = "-1001234567890" # Bot API 聊天 ID（用户为正数，普通群为负数，超级群/频道使用 -100...）
 # 是否强制使用文件方式发送, 默认为 false
 force_file = false
 # 是否跳过大文件, 默认为 false. 如果启用, 超过 Telegram 限制的文件将不会上传.

@@ -50,7 +50,6 @@ Authorization: Bearer <your-token>
 | 错误码 | HTTP 状态 | 含义 |
 |---|---|---|
 | `unauthorized` | 401 | 鉴权失败 |
-| `method_not_allowed` | 405 | HTTP 方法不正确 |
 | `invalid_request` | 400 | 请求体/参数非法 |
 | `task_creation_failed` | 400 | 任务创建失败 |
 | `task_not_found` | 404 | 任务 ID 不存在 |
@@ -68,7 +67,7 @@ Authorization: Bearer <your-token>
 **响应 `200 OK`：**
 
 ```json
-{ "status": "ok" }
+{ "status": "ok", "version": "1.0.0" }
 ```
 
 ---
@@ -82,11 +81,41 @@ Authorization: Bearer <your-token>
 ```json
 {
   "storages": [
-    { "name": "local", "type": "local" },
-    { "name": "MyS3", "type": "s3" }
+    {
+      "storage_id": 1,
+      "name": "local",
+      "type": "local",
+      "enable": true,
+      "config": { "base_path": "/app/downloads" },
+      "config_version": 1
+    }
   ]
 }
 ```
+
+---
+
+### GET /api/v1/meta — API 与能力元数据
+
+返回冻结的 v1 能力词表和数据库 schema 版本。
+
+```json
+{
+  "api_version": "v1",
+  "version": "1.0.0",
+  "schema_version": 1,
+  "chat_id_format": "bot_api",
+  "task_types": ["tgfiles", "tphpics", "parseditem", "directlinks", "aria2", "ytdlp", "transfer"],
+  "task_statuses": ["queued", "running", "completed", "partial", "failed", "cancelled"],
+  "task_item_statuses": ["completed", "failed", "skipped", "cancelled"],
+  "storage_types": ["local", "webdav", "alist", "telegram", "s3", "rclone"],
+  "rule_types": ["FILENAME-REGEX", "MESSAGE-REGEX", "IS-ALBUM"],
+  "filename_strategies": ["default", "message", "template"],
+  "conflict_strategies": ["rename", "ask", "overwrite", "skip"]
+}
+```
+
+聊天 ID 使用 Bot API 形式：用户为正数，普通群为负数，超级群和频道使用 `-100...`。
 
 ---
 
@@ -97,13 +126,8 @@ Authorization: Bearer <your-token>
 ```json
 {
   "types": [
-    "directlinks",
-    "ytdlp",
-    "aria2",
-    "parseditem",
-    "tgfiles",
-    "tphpics",
-    "transfer"
+    { "type": "directlinks", "label": "directlinks" },
+    { "type": "tgfiles", "label": "tgfiles" }
   ]
 }
 ```
@@ -151,7 +175,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "<任务类型>",
-  "storage": "<存储名>",
+  "storage_id": 1,
   "path":    "<子目录>",
   "webhook": "<回调URL>",
   "params":  { }
@@ -161,7 +185,7 @@ Authorization: Bearer <token>
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | `type` | string | 是 | 任务类型，见下文 |
-| `storage` | string | 是 | 目标存储名，须与配置中的存储名一致 |
+| `storage_id` | uint | 是 | 目标存储 ID |
 | `path` | string | 否 | 存储内的子目录路径 |
 | `webhook` | string | 否 | 任务完成/失败时的回调地址 |
 | `params` | object | 是 | 各任务类型的专属参数，见下文 |
@@ -170,9 +194,11 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "task_id":    "abc123xyz",
-  "type":       "directlinks",
-  "status":     "queued",
+  "task_id":      "abc123xyz",
+  "type":         "directlinks",
+  "status":       "queued",
+  "storage_id":   1,
+  "storage_name": "local",
   "created_at": "2026-03-11T10:00:00Z"
 }
 ```
@@ -186,7 +212,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "directlinks",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "downloads",
   "params": {
     "urls": [
@@ -212,7 +238,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "ytdlp",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "videos",
   "params": {
     "urls":  ["https://www.youtube.com/watch?v=xxx"],
@@ -237,7 +263,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "aria2",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "downloads",
   "params": {
     "urls":    ["magnet:?xt=urn:btih:..."],
@@ -258,7 +284,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "parseditem",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "parsed",
   "params": {
     "url": "https://some-site.com/page"
@@ -286,7 +312,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "tgfiles",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "telegram",
   "params": {
     "message_links": [
@@ -299,7 +325,10 @@ Authorization: Bearer <token>
 
 | params 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `message_links` | []string | 是 | Telegram 消息链接列表，至少 1 条 |
+| `message_links` | []string | 否 | Telegram 消息链接列表；与 `chat_id` + `message_range` 二选一 |
+| `chat_id` | string | 否 | 与消息范围配合使用的 Bot API 聊天 ID 或用户名 |
+| `message_range` | string | 否 | 消息范围，例如 `100-120` |
+| `filter` | string | 否 | 可选正则，匹配消息文本或文件名 |
 
 ##### tphpics — Telegraph 文章图片下载
 
@@ -310,7 +339,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "tphpics",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "telegraph",
   "params": {
     "telegraph_url": "https://telegra.ph/Some-Article-01-01"
@@ -327,34 +356,34 @@ Authorization: Bearer <token>
 在两个存储后端之间直接传输文件，无需经过 Telegram。源存储须支持列举（list）和读取（read）操作。
 
 {{< hint info >}}
-`transfer` 任务中，顶层的 `storage` 字段仍然必须填写（用于通过参数校验），但实际使用的存储由 `params` 中的 `source_storage` 和 `target_storage` 决定。
+`transfer` 任务中，顶层的 `storage_id` 字段仍然必须填写（用于通过参数校验），但实际使用的存储由 `params` 中的 `source_storage_id` 和 `target_storage_id` 决定。
 {{< /hint >}}
 
 ```json
 {
   "type":    "transfer",
-  "storage": "local",
+  "storage_id": 1,
   "params": {
-    "source_storage": "MyS3",
-    "source_path":    "backups/",
-    "target_storage": "LocalDisk",
-    "target_path":    "restored/"
+    "source_storage_id": 2,
+    "source_path":       "backups/",
+    "target_storage_id": 1,
+    "target_path":       "restored/"
   }
 }
 ```
 
 | params 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `source_storage` | string | 是 | 源存储名 |
+| `source_storage_id` | uint | 是 | 源存储 ID |
 | `source_path` | string | 是 | 源存储中的路径，须包含至少一个文件 |
-| `target_storage` | string | 是 | 目标存储名 |
+| `target_storage_id` | uint | 是 | 目标存储 ID |
 | `target_path` | string | 是 | 目标存储中的路径 |
 
 ---
 
 ### GET /api/v1/tasks — 列出所有任务
 
-返回所有 API 创建的任务，按创建时间由新到旧排序（仅在内存中保留，重启后清空）。已进入终态的任务在最后一次更新 24 小时后也会被清理，清理任务每 10 分钟执行一次。
+返回所有任务，按创建时间由新到旧排序。任务记录和创建参数持久化在 SQLite 中；排队中和中断的任务会在重启后恢复。终态记录保留到通过 API 删除。
 
 **响应 `200 OK`：**
 
@@ -366,7 +395,8 @@ Authorization: Bearer <token>
       "type":       "directlinks",
       "status":     "running",
       "title":      "file.zip",
-      "storage":    "local",
+      "storage_id":   1,
+      "storage_name": "local",
       "path":       "downloads",
       "error":      "",
       "created_at": "2026-03-11T10:00:00Z",
@@ -424,20 +454,34 @@ Authorization: Bearer <token>
 
 ---
 
-### DELETE /api/v1/tasks/{task_id} — 取消任务
+### POST /api/v1/tasks/{task_id}/cancel — 取消任务
 
-**路径参数：** `task_id`
+取消排队中或运行中的任务。
 
-**响应 `200 OK`：**
+**路径参数：** `task_id` — 要取消的任务。
+
+**响应 `202 Accepted`：**
 
 ```json
-{ "message": "task cancelled successfully" }
+{ "task_id": "abc123xyz", "status": "cancelled" }
 ```
 
 **错误响应：**
-- `400 invalid_request` — 路径中未提供 task_id
+- `409 task_not_active` — 任务已经结束
 - `404 task_not_found` — 任务不存在
 - `500 cancel_failed` — 取消操作失败
+
+---
+
+### DELETE /api/v1/tasks/{task_id} — 删除任务
+
+删除已结束的任务及其记录。取消排队中或运行中的任务请使用 `POST /api/v1/tasks/{task_id}/cancel`。
+
+**路径参数：** `task_id`
+
+**响应 `204 No Content`：**
+- `409 task_active` — 请先取消任务
+- `404 task_not_found` — 任务不存在
 
 ---
 
@@ -450,7 +494,7 @@ Authorization: Bearer <token>
 | `completed` | 已成功完成 |
 | `partial` | 已完成，但部分文件失败 |
 | `failed` | 执行失败 |
-| `cancelled` | 已通过 DELETE 接口取消 |
+| `cancelled` | 已通过取消接口取消 |
 
 排队中的任务和进程停止时正在运行的任务都会保存创建参数，重启后自动重新入队。Telegram 下载会从部分缓存继续，已完成上传的文件会被跳过。
 
@@ -480,7 +524,8 @@ User-Agent: SaveAny-Bot/1.0
   "task_id":      "abc123xyz",
   "type":         "directlinks",
   "status":       "completed",
-  "storage":      "local",
+  "storage_id":   1,
+  "storage_name": "local",
   "path":         "downloads",
   "completed_at": "2026-03-11T10:01:00Z",
   "error":        ""
