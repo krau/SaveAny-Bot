@@ -1,0 +1,47 @@
+/* Route transitions */
+
+.route-enter-active {
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth-out),
+    transform var(--duration-fast) var(--ease-smooth-out),
+    filter var(--duration-fast) var(--ease-smooth-out);
+  will-change: opacity, transform, filter;
+}
+
+.route-leave-active {
+  transition:
+    opacity 120ms var(--ease-smooth-out),
+    transform 120ms var(--ease-smooth-out),
+    filter 120ms var(--ease-smooth-out);
+  will-change: opacity, transform, filter;
+}
+
+.route-enter-from {
+  opacity: 0;
+  transform: translateY(var(--distance-base));
+  filter: blur(var(--blur-small));
+}
+
+.route-leave-to {
+  opacity: 0;
+  transform: translateY(-3px);
+  filter: blur(1px);
+}
+
+.shell-enter-active {
+  transition: opacity var(--duration-fast) var(--ease-smooth-out);
+}
+
+.shell-leave-active {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  transition: opacity 120ms var(--ease-smooth-out);
+}
+
+.shell-enter-from,
+.shell-leave-to {
+  opacity: 0;
+}
+

@@ -1,0 +1,101 @@
+/* Storages */
+
+.storage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.storage-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.storage-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.storage-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+}
+
+.storage-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  color: var(--text-2);
+  background: var(--surface-muted);
+  border-radius: 9px;
+}
+
+.storage-card h2 {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storage-kind {
+  margin-top: 2px;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.storage-detail {
+  min-height: 38px;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.storage-card-error {
+  margin: -6px 0 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.storage-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 16px;
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+}
+
+.storage-empty {
+  display: flex;
+  grid-column: 1 / -1;
+  min-height: 220px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  padding: 32px;
+  color: var(--text-3);
+  background: var(--surface);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  text-align: center;
+}
+

@@ -1,0 +1,124 @@
+/* Settings */
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.settings-mobile-nav {
+  display: none;
+}
+
+.settings-nav {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.settings-nav button {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 10px;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 14px;
+  text-align: left;
+  transition:
+    color 140ms var(--ease),
+    background-color 140ms var(--ease),
+    border-color 140ms var(--ease);
+}
+
+.settings-nav button:hover {
+  color: var(--text);
+  background: rgba(17, 19, 23, 0.045);
+}
+
+.settings-nav button.active {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--line);
+  font-weight: 500;
+}
+
+.settings-sections {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settings-group {
+  scroll-margin-top: 24px;
+}
+
+.settings-group-head {
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-group-head h2 {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.settings-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-fields > .field:only-child {
+  grid-column: 1 / -1;
+}
+
+.settings-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  padding-top: 18px;
+}
+
+.settings-toggle {
+  min-height: 24px;
+  padding-top: 0;
+  gap: 8px;
+}
+
+.settings-toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-toggle-copy small {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+html[data-theme='dark'] .btn.primary:disabled:not(.is-loading) {
+  color: var(--text-3);
+  background: var(--surface-muted);
+  border-color: var(--line);
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 18px;
+  margin-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
