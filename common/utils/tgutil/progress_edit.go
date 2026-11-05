@@ -40,6 +40,14 @@ func SendProgressEdit(ctx context.Context, chatID int64, req *tg.MessagesEditMes
 	if ext == nil {
 		return nil
 	}
+	if ext.Context != nil && ext.Context.Err() != nil {
+		// The final progress edit can run after the task context is canceled.
+		// Keep the Telegram client and other context values, but detach the
+		// cancellation signal so EditMessage can still be sent.
+		clone := *ext
+		clone.Context = context.WithoutCancel(ext.Context)
+		ext = &clone
+	}
 	if _, err := ext.EditMessage(chatID, req); err != nil {
 		return err
 	}
@@ -67,6 +75,12 @@ func NewProgressEditQueue(sender ProgressSender) *ProgressEditQueue {
 }
 
 func (q *ProgressEditQueue) Submit(ctx context.Context, chatID int64, req *tg.MessagesEditMessageRequest, final bool) {
+	if final {
+		// The final edit may run after the task context is canceled by the
+		// queue. Keep its values (including the Telegram client) but not the
+		// cancellation signal, otherwise the message stays in an old phase.
+		ctx = context.WithoutCancel(ctx)
+	}
 	job := progressEditJob{ctx: ctx, chatID: chatID, req: req, final: final}
 	q.start.Do(func() { go q.run() })
 	for {
