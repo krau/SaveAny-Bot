@@ -27,7 +27,7 @@ const enabledStorages = computed(() => storages.value.filter((storage) => storag
 const enabledUsers = computed(() => users.value.filter((user) => user.enabled).length)
 const defaultStorageOptions = computed(() => [
   { value: '', label: t('users.unset') },
-  ...enabledStorages.value.map((storage) => ({ value: String(storage.id), label: storage.name })),
+  ...enabledStorages.value.map((storage) => ({ value: String(storage.storage_id), label: storage.name })),
 ])
 const defaultDirOptions = computed(() => [
   { value: '', label: t('users.unset') },
@@ -38,7 +38,7 @@ const defaultDirOptions = computed(() => [
 function storageName(id: number | string | undefined): string {
   if (!id) return ''
   const numeric = Number(id)
-  return storages.value.find((storage) => storage.id === numeric)?.name ?? `#${numeric}`
+  return storages.value.find((storage) => storage.storage_id === numeric)?.name ?? `#${numeric}`
 }
 function storageNames(ids: number[]): string[] {
   return ids.map(storageName).filter((name) => name !== '')
@@ -337,7 +337,6 @@ async function remove(user: UserItem) {
                   :options="defaultDirOptions"
                   :disabled="!userDirs.length && !form.default_dir_id"
                 />
-                <span class="hint">{{ t('users.form.defaultDirHint') }}</span>
               </div>
             </div>
             <div class="row">
@@ -353,13 +352,12 @@ async function remove(user: UserItem) {
                 v-model="form.mode"
                 :options="storageFilterModeOptions"
               />
-              <span class="hint">{{ t('users.form.storageFilterHint') }}</span>
             </div>
             <div class="field">
               <label>{{ t('users.form.storageFilter', { mode: form.mode === 'blacklist' ? t('users.filter.blacklist') : t('users.filter.whitelist') }) }}</label>
               <div class="checkbox-list">
-                <label v-for="storage in enabledStorages" :key="storage.id">
-                  <input type="checkbox" :checked="form.storage_ids.includes(storage.id)" @change="toggleStorage(storage.id)" />
+                <label v-for="storage in enabledStorages" :key="storage.storage_id">
+                  <input type="checkbox" :checked="form.storage_ids.includes(storage.storage_id)" @change="toggleStorage(storage.storage_id)" />
                   <span>{{ storage.name }}</span>
                 </label>
               </div>

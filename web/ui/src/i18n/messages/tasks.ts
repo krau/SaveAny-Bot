@@ -52,8 +52,8 @@ export const zhHans = {
       storage: '存储',
       storagePlaceholder: '请选择存储',
       targetPath: '目标路径',
-      targetPathPlaceholder: '可留空，例如 downloads/anime',
-      webhook: 'Webhook（可选）',
+      targetPathPlaceholder: '例如 downloads/anime',
+      webhook: 'Webhook',
       webhookPlaceholder: 'https://example.com/hook',
       required: '请填写{field}',
       invalidJson: '{field} 不是合法的 JSON',
@@ -76,13 +76,11 @@ export const zhHans = {
       directlinks: {
         urls: {
           label: '下载链接',
-          hint: '每行一个链接',
         },
       },
       ytdlp: {
         urls: {
           label: '视频链接',
-          hint: '每行一个链接',
         },
         flags: {
           label: '额外参数',
@@ -92,11 +90,10 @@ export const zhHans = {
       aria2: {
         urls: {
           label: '下载链接',
-          hint: '每行一个链接',
         },
         options: {
           label: 'Aria2 选项 (JSON)',
-          hint: 'JSON 对象，键值均为字符串（可选）',
+          hint: 'JSON 对象，键值均为字符串',
         },
       },
       parseditem: {
@@ -107,19 +104,15 @@ export const zhHans = {
       tgfiles: {
         message_links: {
           label: '消息链接',
-          hint: '每行一个消息链接；也可以改用下方的聊天 ID + 消息范围',
         },
         chat_id: {
           label: '聊天 ID / 用户名',
-          hint: '使用消息范围时填写',
         },
         message_range: {
           label: '消息范围',
-          hint: '例如 100-120',
         },
         filter: {
           label: '过滤器',
-          hint: '可选的正则表达式，匹配消息文本或文件名',
         },
       },
       tphpics: {
@@ -199,8 +192,8 @@ export const en = {
       storage: 'Storage',
       storagePlaceholder: 'Select storage',
       targetPath: 'Target path',
-      targetPathPlaceholder: 'Optional, e.g. downloads/anime',
-      webhook: 'Webhook (optional)',
+      targetPathPlaceholder: 'e.g. downloads/anime',
+      webhook: 'Webhook',
       webhookPlaceholder: 'https://example.com/hook',
       required: 'Enter {field}',
       invalidJson: '{field} is not valid JSON',
@@ -223,13 +216,11 @@ export const en = {
       directlinks: {
         urls: {
           label: 'Download links',
-          hint: 'One link per line',
         },
       },
       ytdlp: {
         urls: {
           label: 'Video links',
-          hint: 'One link per line',
         },
         flags: {
           label: 'Extra flags',
@@ -239,11 +230,10 @@ export const en = {
       aria2: {
         urls: {
           label: 'Download links',
-          hint: 'One link per line',
         },
         options: {
           label: 'Aria2 options (JSON)',
-          hint: 'A JSON object with string keys and values (optional)',
+          hint: 'JSON object with string keys and values',
         },
       },
       parseditem: {
@@ -254,19 +244,15 @@ export const en = {
       tgfiles: {
         message_links: {
           label: 'Message links',
-          hint: 'One message link per line; alternatively use a chat ID and message range',
         },
         chat_id: {
           label: 'Chat ID / username',
-          hint: 'Required when using a message range',
         },
         message_range: {
           label: 'Message range',
-          hint: 'For example 100-120',
         },
         filter: {
           label: 'Filter',
-          hint: 'Optional regular expression matching message text or filename',
         },
       },
       tphpics: {

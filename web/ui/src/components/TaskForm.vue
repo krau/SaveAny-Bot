@@ -43,9 +43,11 @@ const storageOptions = computed(() => [
   { value: '', label: t('tasks.form.storagePlaceholder') },
   ...props.storages
     .filter((item) => item.enable)
-    .map((item) => ({ value: item.name, label: item.name })),
+    .map((item) => ({ value: String(item.storage_id), label: item.name })),
 ])
-const selectedStorage = computed(() => props.storages.find((item) => item.name === storage.value))
+const selectedStorage = computed(() =>
+  props.storages.find((item) => String(item.storage_id) === storage.value),
+)
 const localStorageRoot = computed(() => {
   const selected = selectedStorage.value
   if (!selected || selected.type !== 'local') return ''
@@ -60,7 +62,7 @@ watch(
       return
     }
     const enabled = list.find((item) => item.enable)
-    storage.value = (enabled ?? list[0]).name
+    storage.value = String((enabled ?? list[0]).storage_id)
   },
   { immediate: true },
 )
@@ -109,6 +111,17 @@ function buildParams(): JsonObject {
   const params: JsonObject = {}
   for (const field of fields.value) {
     const raw = (values[field.name] ?? '').trim()
+    if (field.storageSelect) {
+      if (!raw) {
+        if (field.required) {
+          invalidField.value = `task-field-${field.name}`
+          throw new Error(t('tasks.form.required', { field: t(field.label) }))
+        }
+        continue
+      }
+      params[field.name] = Number(raw)
+      continue
+    }
     switch (field.kind) {
       case 'list': {
         const list = splitList(raw)
@@ -213,21 +226,21 @@ function submit() {
         throw new Error(t('tasks.form.tgfilesSourceRequired'))
       }
     }
-    let targetStorage = storage.value
+    let targetStorageID = Number(storage.value)
     let targetPath = path.value.trim()
     if (isTransfer.value) {
-      const target = params.target_storage
-      targetStorage = typeof target === 'string' ? target : ''
+      const target = params.target_storage_id
+      targetStorageID = typeof target === 'number' ? target : 0
       const transferPath = params.target_path
       targetPath = typeof transferPath === 'string' ? transferPath : ''
     }
-    if (!targetStorage) {
-      invalidField.value = isTransfer.value ? 'task-field-target_storage' : 'task-storage'
+    if (!targetStorageID) {
+      invalidField.value = isTransfer.value ? 'task-field-target_storage_id' : 'task-storage'
       throw new Error(t('tasks.form.storageRequired'))
     }
     const payload: CreateTaskRequest = {
       type: type.value,
-      storage: targetStorage,
+      storage_id: targetStorageID,
       path: targetPath,
       params,
     }

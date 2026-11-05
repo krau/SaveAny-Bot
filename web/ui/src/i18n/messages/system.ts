@@ -3,7 +3,6 @@ export const zhHans = {
     restart: '重启进程',
     update: {
       title: '版本更新',
-      hint: '检查 GitHub 上的最新版本。',
       check: '检查更新',
       checking: '正在检查…',
       current: '当前版本',
@@ -21,7 +20,8 @@ export const zhHans = {
       releaseNotes: '更新说明',
       published: '发布时间',
       size: '文件大小',
-      noRelease: '没有可用的发布版本',
+      notChecked: '尚未检查',
+      noRelease: '未找到发布版本',
     },
     process: {
       running: '进程运行中',
@@ -41,7 +41,7 @@ export const zhHans = {
       buildTime: '构建时间',
       dataDir: '数据目录',
       database: '数据库',
-      listenAddress: '监听地址',
+      listenAddress: 'Web 地址',
     },
     confirm: {
       restartTitle: '重启进程',
@@ -61,7 +61,6 @@ export const en = {
     restart: 'Restart process',
     update: {
       title: 'Version update',
-      hint: 'Check for the latest release on GitHub.',
       check: 'Check for updates',
       checking: 'Checking…',
       current: 'Current version',
@@ -79,7 +78,8 @@ export const en = {
       releaseNotes: 'Release notes',
       published: 'Published',
       size: 'Size',
-      noRelease: 'No release available',
+      notChecked: 'Not checked',
+      noRelease: 'No release found',
     },
     process: {
       running: 'Process running',
@@ -99,7 +99,7 @@ export const en = {
       buildTime: 'Build time',
       dataDir: 'Data directory',
       database: 'Database',
-      listenAddress: 'Listen address',
+      listenAddress: 'Web address',
     },
     confirm: {
       restartTitle: 'Restart process',

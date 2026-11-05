@@ -97,7 +97,7 @@ function progressText(task: TaskItem): string {
             </span>
           </td>
           <td>
-            <div>{{ task.storage || '—' }}</div>
+            <div>{{ task.storage_name || '—' }}</div>
             <div class="task-path">{{ task.path || t('tasks.table.rootPath') }}</div>
           </td>
           <td style="min-width: 170px">
@@ -165,7 +165,7 @@ function progressText(task: TaskItem): string {
         <span class="mono">{{ task.task_id }}</span>
       </div>
       <div class="task-mobile-target">
-        {{ task.storage || t('tasks.table.noStorage') }}
+        {{ task.storage_name || t('tasks.table.noStorage') }}
         <span class="task-path">{{ task.path || t('tasks.table.rootPath') }}</span>
       </div>
       <div v-if="task.error" class="field-error">{{ task.error }}</div>

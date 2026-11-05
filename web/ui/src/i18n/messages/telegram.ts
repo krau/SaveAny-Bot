@@ -19,7 +19,7 @@ export const zhHans = {
       relayKeepHint: '默认开启：保留转发到辅助下载频道的消息；关闭后在下载结束后自动删除。',
       proxyURL: '代理地址',
       proxyEnable: '使用代理',
-      maskedHint: '已保存的密钥不会再次显示。保持不变并保存即可继续使用原值；输入新值可替换。',
+      maskedHint: '已保存的密钥不会再次显示。保持不变时使用原值；输入新值替换。',
       loading: '正在加载凭据…',
     },
     userbotPanel: {
@@ -119,7 +119,7 @@ export const en = {
       relayKeepHint: 'On by default: keep forwarded messages in the relay channel; disable to delete them after download.',
       proxyURL: 'Proxy URL',
       proxyEnable: 'Use proxy',
-      maskedHint: 'Saved secrets are hidden. Keep the field unchanged to retain the current value, or enter a new one to replace it.',
+      maskedHint: 'Saved secrets are hidden. Leave a field unchanged to keep its value; enter a new value to replace it.',
       loading: 'Loading credentials…',
     },
     userbotPanel: {

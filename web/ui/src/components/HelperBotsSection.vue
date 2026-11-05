@@ -170,7 +170,6 @@ function stateTone(state: string): string {
         </button>
       </div>
     </div>
-    <p class="hint">{{ t('workers.intro') }}</p>
     <p class="hint">{{ t('workers.note') }}</p>
 
     <PageLoading v-if="!loaded" :rows="3" />
@@ -243,7 +242,6 @@ function stateTone(state: string): string {
             <tr v-if="workers.length === 0">
               <td colspan="5" class="empty">
                 <strong>{{ t('workers.empty') }}</strong>
-                <div class="hint">{{ t('workers.emptyHint') }}</div>
               </td>
             </tr>
           </tbody>
@@ -303,7 +301,6 @@ function stateTone(state: string): string {
       </article>
       <div v-if="workers.length === 0" class="empty helper-bots-empty">
         <strong>{{ t('workers.empty') }}</strong>
-        <div class="hint">{{ t('workers.emptyHint') }}</div>
       </div>
     </div>
     </template>
@@ -343,11 +340,11 @@ function stateTone(state: string): string {
                   :aria-invalid="invalidField === 'worker-token' ? 'true' : undefined"
                   @input="clear('worker-token')"
                 />
-                <span class="hint">{{ editing ? t('workers.tokenHint') : t('workers.tokenCreateHint') }}</span>
+                <span v-if="editing" class="hint">{{ t('workers.tokenHint') }}</span>
               </div>
               <label class="checkbox">
                 <input v-model="form.enabled" type="checkbox" />
-                <span>{{ t('workers.enabledHint') }}</span>
+                <span>{{ t('workers.enabled') }}</span>
               </label>
               <div class="modal-actions">
                 <button class="btn" type="button" @click="formOpen = false">{{ t('common.actions.cancel') }}</button>

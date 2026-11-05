@@ -145,9 +145,8 @@ async function restart(force = false) {
           <div class="stat-sub">{{ t('system.process.queued', { n: info.queued_tasks }) }}</div>
         </div>
         <div>
-          <div class="stat-label">Worker</div>
+          <div class="stat-label">{{ t('system.process.concurrency') }}</div>
           <div class="stat-value">{{ info.workers }}</div>
-          <div class="stat-sub">{{ t('system.process.concurrency') }}</div>
         </div>
       </div>
     </div>
@@ -178,8 +177,7 @@ async function restart(force = false) {
           {{ checking ? t('system.update.checking') : t('system.update.check') }}
         </button>
       </div>
-      <p class="muted">{{ t('system.update.hint') }}</p>
-      <div v-if="!updateInfo" class="muted">{{ t('system.update.noRelease') }}</div>
+      <div v-if="!updateInfo" class="muted">{{ t('system.update.notChecked') }}</div>
       <template v-else>
         <dl class="kv">
           <dt>{{ t('system.update.current') }}</dt><dd class="mono">{{ updateInfo.current }}</dd>
@@ -188,7 +186,8 @@ async function restart(force = false) {
           <dt v-if="updateInfo.size">{{ t('system.update.size') }}</dt><dd v-if="updateInfo.size">{{ updateInfo.size }} B</dd>
         </dl>
         <p v-if="!updateInfo.updatable" class="muted">{{ t('system.update.notUpdatable') }}<span v-if="updateInfo.reason">: {{ updateInfo.reason }}</span></p>
-        <p v-else-if="updateInfo.reason === 'major upgrade required'" class="muted">{{ t('system.update.major') }}</p>
+        <p v-else-if="updateInfo.reason_code === 'major_upgrade_required'" class="muted">{{ t('system.update.major') }}</p>
+        <p v-else-if="updateInfo.reason_code === 'no_release'" class="muted">{{ t('system.update.noRelease') }}</p>
         <p v-else-if="updateInfo.available" class="badge info">{{ t('system.update.available') }}</p>
         <p v-else class="badge success">{{ t('system.update.upToDate') }}</p>
         <button v-if="updateInfo.available" class="btn primary small" type="button" :disabled="updating" @click="installUpdate">

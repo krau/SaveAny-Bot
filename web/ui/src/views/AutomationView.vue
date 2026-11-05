@@ -41,11 +41,11 @@ const userOptions = computed(() =>
 const enabledStorages = computed(() => storages.value.filter((storage) => storage.enable))
 const storageOptions = computed(() => [
   { value: '', label: t('automation.selectStorage') },
-  ...enabledStorages.value.map((storage) => ({ value: String(storage.id), label: storage.name })),
+  ...enabledStorages.value.map((storage) => ({ value: String(storage.storage_id), label: storage.name })),
 ])
 const ruleStorageOptions = computed(() => [
   { value: '0', label: t('automation.rules.chosenStorage') },
-  ...enabledStorages.value.map((storage) => ({ value: String(storage.id), label: storage.name })),
+  ...enabledStorages.value.map((storage) => ({ value: String(storage.storage_id), label: storage.name })),
 ])
 const ruleTypeOptions = computed(() => [
   { value: 'FILENAME-REGEX', label: t('automation.rules.types.filename') },
@@ -59,7 +59,7 @@ const presetForm = reactive({ storage_id: '0', base_path: '' })
 const watchForm = reactive({ chat_id: '', filter: '' })
 
 function storageName(id: number): string {
-  return storages.value.find((storage) => storage.id === id)?.name ?? `#${id}`
+  return storages.value.find((storage) => storage.storage_id === id)?.name ?? `#${id}`
 }
 
 function ruleTypeLabel(type: string): string {
@@ -341,7 +341,6 @@ async function syncPeers() {
             <h2 class="panel-title">{{ t('automation.directories.title') }}</h2>
             <span class="badge muted">{{ t('automation.directories.count', { count: dirs.length }) }}</span>
           </div>
-          <p class="panel-hint">{{ t('automation.directories.hint') }}</p>
           <form class="form-section" @submit.prevent="addDir">
             <div class="form-grid">
               <div class="field">
@@ -393,7 +392,6 @@ async function syncPeers() {
               </button>
             </div>
           </div>
-          <p class="panel-hint">{{ t('automation.rules.hint') }}</p>
 
           <form class="form-section" @submit.prevent="addRule">
             <div class="form-grid">
@@ -474,7 +472,6 @@ async function syncPeers() {
               </button>
             </div>
           </div>
-          <p class="panel-hint">{{ t('automation.watches.hint') }}</p>
 
           <form class="form-section" @submit.prevent="addWatch">
             <div class="form-grid">
@@ -517,10 +514,6 @@ async function syncPeers() {
 <style scoped>
 .panel-head {
   align-items: center;
-}
-
-.panel-hint {
-  margin: 0 0 20px;
 }
 
 .panel-toolbar {

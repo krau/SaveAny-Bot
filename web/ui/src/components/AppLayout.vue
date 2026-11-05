@@ -133,7 +133,6 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
           <span class="brand-mark"><BrandMark :size="22" /></span>
           <div class="brand-copy">
             <strong>SaveAny-Bot</strong>
-            <span>{{ t('common.fileRelayConsole') }}</span>
           </div>
           <button class="sidebar-close" type="button" :aria-label="t('common.closeNavigation')" @click="sidebarOpen = false">
             <AppIcon name="close" :size="18" />

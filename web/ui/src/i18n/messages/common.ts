@@ -14,7 +14,7 @@ export const zhHans = {
     telegram: 'Telegram',
     settings: '设置',
     system: '系统',
-    administration: '系统',
+    administration: '管理',
   },
   states: {
     enabled: '已启用',
@@ -41,7 +41,6 @@ export const zhHans = {
     transfer: '存储迁移',
   },
   common: {
-    fileRelayConsole: '文件中继控制台',
     adminConnected: '管理界面已连接',
     skipToContent: '跳到主内容',
     closeNavigation: '关闭导航',
@@ -191,7 +190,6 @@ export const en = {
     transfer: 'Storage transfer',
   },
   common: {
-    fileRelayConsole: 'File relay console',
     adminConnected: 'Admin connected',
     skipToContent: 'Skip to content',
     closeNavigation: 'Close navigation',

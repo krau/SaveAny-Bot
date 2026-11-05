@@ -27,7 +27,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
         kind: 'list',
         required: true,
         placeholder: 'https://example.com/file.zip\nhttps://example.com/another.zip',
-        hint: 'tasks.fields.directlinks.urls.hint',
       },
     ],
   },
@@ -41,7 +40,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
         kind: 'list',
         required: true,
         placeholder: 'https://www.youtube.com/watch?v=...',
-        hint: 'tasks.fields.ytdlp.urls.hint',
       },
       {
         name: 'flags',
@@ -62,7 +60,6 @@ export const taskTypeDefs: TaskTypeDef[] = [
         kind: 'list',
         required: true,
         placeholder: 'https://example.com/file.iso',
-        hint: 'tasks.fields.aria2.urls.hint',
       },
       {
         name: 'options',
@@ -95,28 +92,24 @@ export const taskTypeDefs: TaskTypeDef[] = [
         label: 'tasks.fields.tgfiles.message_links.label',
         kind: 'list',
         placeholder: 'https://t.me/c/123456789/42',
-        hint: 'tasks.fields.tgfiles.message_links.hint',
       },
       {
         name: 'chat_id',
         label: 'tasks.fields.tgfiles.chat_id.label',
         kind: 'text',
         placeholder: '@channel or -1001234567890',
-        hint: 'tasks.fields.tgfiles.chat_id.hint',
       },
       {
         name: 'message_range',
         label: 'tasks.fields.tgfiles.message_range.label',
         kind: 'text',
         placeholder: '100-120',
-        hint: 'tasks.fields.tgfiles.message_range.hint',
       },
       {
         name: 'filter',
         label: 'tasks.fields.tgfiles.filter.label',
         kind: 'text',
         placeholder: '.*\.mp4$',
-        hint: 'tasks.fields.tgfiles.filter.hint',
       },
     ],
   },
@@ -138,7 +131,7 @@ export const taskTypeDefs: TaskTypeDef[] = [
     label: 'tasks.types.transfer',
     fields: [
       {
-        name: 'source_storage',
+        name: 'source_storage_id',
         label: 'tasks.fields.transfer.source_storage.label',
         kind: 'text',
         required: true,
@@ -152,7 +145,7 @@ export const taskTypeDefs: TaskTypeDef[] = [
         placeholder: 'folder/subfolder',
       },
       {
-        name: 'target_storage',
+        name: 'target_storage_id',
         label: 'tasks.fields.transfer.target_storage.label',
         kind: 'text',
         required: true,

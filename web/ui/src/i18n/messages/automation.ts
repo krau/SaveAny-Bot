@@ -8,7 +8,6 @@ export const zhHans = {
     directories: {
       title: '目录',
       count: '{count} 个目录',
-      hint: '为当前用户添加常用目录，保存文件时可以选择。',
       storage: '存储',
       path: '目录路径',
       pathPlaceholder: '例如 downloads/anime',
@@ -23,7 +22,6 @@ export const zhHans = {
     },
     rules: {
       title: '规则',
-      hint: '按文件名、消息内容或相册属性将文件保存到指定位置。',
       enabled: '规则已启用',
       disabled: '规则未启用',
       enable: '启用规则',
@@ -44,7 +42,7 @@ export const zhHans = {
       presetsTitle: '预设规则',
       presetStorage: '预设规则存储',
       presetBasePath: '基础路径',
-      presetBasePathPlaceholder: '可选，例如 downloads',
+      presetBasePathPlaceholder: '例如 downloads',
       importPresets: '导入预设规则',
       presetsImported: '已导入 {count} 条预设规则',
       types: {
@@ -55,7 +53,6 @@ export const zhHans = {
     },
     watches: {
       title: '监听',
-      hint: '监听聊天中的媒体消息，保存到默认存储。过滤器格式为 msgre:正则表达式。',
       notify: '发送监听通知',
       syncPeers: '同步对话',
       syncing: '同步中…',
@@ -71,7 +68,7 @@ export const zhHans = {
       add: '添加监听',
       created: '监听已添加',
       empty: '暂无监听',
-      chatRequired: '请填写聊天 ID',
+      chatRequired: '请填写聊天 ID 或用户名',
       deleteTitle: '取消监听',
       deleteMessage: '取消监听聊天 {chat}？',
     },
@@ -88,7 +85,6 @@ export const en = {
     directories: {
       title: 'Directories',
       count: '{count} directories',
-      hint: 'Add directories for this user to choose when saving files.',
       storage: 'Storage',
       path: 'Directory path',
       pathPlaceholder: 'e.g. downloads/anime',
@@ -103,7 +99,6 @@ export const en = {
     },
     rules: {
       title: 'Rules',
-      hint: 'Route files by filename, message content, or album membership.',
       enabled: 'Rules enabled',
       disabled: 'Rules disabled',
       enable: 'Enable rules',
@@ -124,7 +119,7 @@ export const en = {
       presetsTitle: 'Preset rules',
       presetStorage: 'Preset target storage',
       presetBasePath: 'Base path',
-      presetBasePathPlaceholder: 'Optional, e.g. downloads',
+      presetBasePathPlaceholder: 'e.g. downloads',
       importPresets: 'Import presets',
       presetsImported: 'Imported {count} preset rules',
       types: {
@@ -135,7 +130,6 @@ export const en = {
     },
     watches: {
       title: 'Watch chats',
-      hint: 'Watch media messages in chats and save them to the default storage. Filters use msgre:<regular expression>.',
       notify: 'Send watch notifications',
       syncPeers: 'Sync peers',
       syncing: 'Syncing…',
@@ -151,7 +145,7 @@ export const en = {
       add: 'Add watch',
       created: 'Watch added',
       empty: 'No watched chats',
-      chatRequired: 'Enter a chat ID',
+      chatRequired: 'Enter a chat ID or username',
       deleteTitle: 'Stop watching',
       deleteMessage: 'Stop watching chat {chat}?',
     },

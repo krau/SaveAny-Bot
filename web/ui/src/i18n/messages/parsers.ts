@@ -1,10 +1,8 @@
 export const zhHans = {
   parsers: {
     title: '解析器插件',
-    hint: '上传 JavaScript 解析器插件。插件启用后无需重启即可使用。',
     enabled: '已启用',
     disabled: '已禁用',
-    file: '选择 .js 文件',
     chooseFile: '选择文件',
     noFile: '未选择文件',
     filename: '文件名',
@@ -24,10 +22,8 @@ export const zhHans = {
 export const en = {
   parsers: {
     title: 'Parser plugins',
-    hint: 'Upload JavaScript parser plugins. Enabled plugins are available without a restart.',
     enabled: 'Enabled',
     disabled: 'Disabled',
-    file: 'Choose a .js file',
     chooseFile: 'Choose file',
     noFile: 'No file selected',
     filename: 'Filename',

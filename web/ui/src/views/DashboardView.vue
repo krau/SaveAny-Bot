@@ -283,7 +283,7 @@ onUnmounted(() => {
           <RouterLink class="link-quiet" to="/storages">{{ t('dashboard.storage.manage') }}</RouterLink>
         </div>
         <div v-if="recentStorages.length > 0" class="storage-mini-list">
-          <div v-for="storage in recentStorages" :key="storage.id" class="storage-mini">
+          <div v-for="storage in recentStorages" :key="storage.storage_id" class="storage-mini">
             <span class="storage-mini-icon"><AppIcon :name="storageTypeIcon(storage.type)" :size="15" /></span>
             <div class="storage-mini-main">
               <strong>{{ storage.name }}</strong>
@@ -318,7 +318,7 @@ onUnmounted(() => {
             <div class="recent-task-title">{{ taskDisplayTitle(task) }}</div>
             <div class="recent-task-meta">
               <span v-if="taskDisplayTitle(task) !== taskTypeLabel(task.type)">{{ taskTypeLabel(task.type) }}{{ t('dashboard.tasks.separator') }}</span>
-              <span>{{ task.storage || t('dashboard.tasks.noStorage') }}{{ t('dashboard.tasks.separator') }}</span>
+              <span>{{ task.storage_name || t('dashboard.tasks.noStorage') }}{{ t('dashboard.tasks.separator') }}</span>
               <span>{{ formatRelativeTime(task.created_at) }}</span>
             </div>
           </div>

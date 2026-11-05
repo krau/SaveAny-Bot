@@ -53,7 +53,7 @@ async function save(payload: StorageInput) {
   busy.value = true
   try {
     if (editing.value) {
-      await storagesApi.update(editing.value.id, payload)
+      await storagesApi.update(editing.value.storage_id, payload)
       toast.push(t('storages.updated'), 'success')
     } else {
       await storagesApi.create(payload)
@@ -76,9 +76,9 @@ async function remove(storage: StorageRecord) {
     danger: true,
   })
   if (!confirmed) return
-  removingId.value = storage.id
+  removingId.value = storage.storage_id
   try {
-    await storagesApi.remove(storage.id)
+    await storagesApi.remove(storage.storage_id)
     toast.push(t('storages.deleted', { name: storage.name }), 'success')
     await load()
   } catch (err) {
@@ -89,9 +89,9 @@ async function remove(storage: StorageRecord) {
 }
 
 async function test(storage: StorageRecord) {
-  testingId.value = storage.id
+  testingId.value = storage.storage_id
   try {
-    const result = await storagesApi.test(storage.id)
+    const result = await storagesApi.test(storage.storage_id)
     if (result.ok) {
       toast.push(t('storages.testOk', { name: storage.name }), 'success')
     } else {
@@ -127,7 +127,7 @@ async function test(storage: StorageRecord) {
     <PageLoading v-if="!loaded" variant="cards" :rows="3" />
 
     <div v-else class="storage-grid">
-      <article v-for="storage in storages" :key="storage.id" class="storage-card">
+      <article v-for="storage in storages" :key="storage.storage_id" class="storage-card">
         <div class="storage-card-head">
           <div class="storage-identity">
             <span class="storage-icon"><AppIcon :name="storageTypeIcon(storage.type)" :size="18" /></span>
@@ -153,7 +153,7 @@ async function test(storage: StorageRecord) {
             <LoadingButton
               class="small ghost"
               type="button"
-              :loading="testingId === storage.id"
+              :loading="testingId === storage.storage_id"
               @click="test(storage)"
             >
               <AppIcon name="plug" :size="14" />
@@ -163,7 +163,7 @@ async function test(storage: StorageRecord) {
           <button
             class="btn small danger"
             type="button"
-            :disabled="removingId === storage.id"
+            :disabled="removingId === storage.storage_id"
             @click="remove(storage)"
           >
             <AppIcon name="trash" :size="14" />

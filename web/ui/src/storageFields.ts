@@ -52,6 +52,7 @@ export const storageTypeDefs: StorageTypeDef[] = [
         label: 'storages.fields.basePath',
         kind: 'text',
         placeholder: 'storages.fields.placeholders.basePath',
+        required: true,
       },
     ],
   },
@@ -79,6 +80,7 @@ export const storageTypeDefs: StorageTypeDef[] = [
         label: 'storages.fields.basePath',
         kind: 'text',
         placeholder: 'storages.fields.placeholders.basePath',
+        required: true,
       },
       {
         name: 'token_exp',
@@ -102,8 +104,7 @@ export const storageTypeDefs: StorageTypeDef[] = [
       { name: 'access_key_id', label: 'storages.fields.accessKeyId', kind: 'secret', required: true },
       { name: 'secret_access_key', label: 'storages.fields.secretAccessKey', kind: 'secret', required: true },
       { name: 'bucket_name', label: 'storages.fields.bucket', kind: 'text', required: true },
-      { name: 'base_path', label: 'storages.fields.basePath', kind: 'text' },
-      { name: 'use_ssl', label: 'storages.fields.useSsl', kind: 'bool' },
+      { name: 'base_path', label: 'storages.fields.basePath', kind: 'text', required: true },
       { name: 'region', label: 'storages.fields.region', kind: 'text', placeholder: 'storages.fields.placeholders.region' },
       { name: 'virtual_host', label: 'storages.fields.virtualHost', kind: 'bool' },
     ],
@@ -202,9 +203,6 @@ export function storageDefaults(type: string): Record<string, unknown> {
       default:
         config[field.name] = ''
     }
-  }
-  if (type === 's3') {
-    config.use_ssl = true
   }
   return config
 }

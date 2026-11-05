@@ -78,10 +78,8 @@ async function install() {
             {{ data.enabled ? t('parsers.enabled') : t('parsers.disabled') }}
           </span>
         </div>
-        <p class="muted">{{ t('parsers.hint') }}</p>
         <div class="stack">
           <div class="field">
-            <label for="parser-file">{{ t('parsers.file') }}</label>
             <div class="file-picker">
               <label class="btn small file-picker-button" for="parser-file">
                 <AppIcon name="file" :size="15" />

@@ -99,7 +99,6 @@ const steps = computed(() => {
       done: s.first_task,
       title: t('guide.setup.steps.task.title'),
       body: t('guide.setup.steps.task.body'),
-      hint: t('guide.setup.steps.task.hint'),
       to: '/tasks?create=1',
       action: t('common.actions.createTask'),
     },
@@ -195,7 +194,7 @@ onMounted(load)
                 <span class="guide-state">{{ step.done ? t('guide.setup.done') : t('guide.setup.pending') }}</span>
               </div>
               <p>{{ step.body }}</p>
-              <small>{{ step.hint }}</small>
+              <small v-if="step.hint">{{ step.hint }}</small>
             </div>
             <RouterLink class="btn small" :to="step.to">{{ step.action }}</RouterLink>
           </li>
@@ -217,12 +216,6 @@ onMounted(load)
         </div>
         <template v-else>
           <p class="guide-copy">{{ t('guide.migration.intro') }}</p>
-          <ol class="guide-numbered">
-            <li>{{ t('guide.migration.step1') }}</li>
-            <li>{{ t('guide.migration.step2') }}</li>
-            <li>{{ t('guide.migration.step3') }}</li>
-            <li>{{ t('guide.migration.step4') }}</li>
-          </ol>
           <p class="guide-note">{{ t('guide.migration.note') }}</p>
         </template>
       </section>
@@ -256,7 +249,6 @@ onMounted(load)
                 <code>{{ t('guide.usage.commands.task') }}</code>
                 <code>{{ t('guide.usage.commands.config') }}</code>
               </div>
-              <p>{{ t('guide.usage.commandsBody') }}</p>
             </div>
           </article>
           <article class="guide-usage-item">
