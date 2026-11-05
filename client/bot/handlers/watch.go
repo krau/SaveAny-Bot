@@ -20,6 +20,7 @@ import (
 	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/mediafilter"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
@@ -328,6 +329,11 @@ func ListenUserbotMediaEvents(runCtx context.Context, resolve func() *ext.Contex
 			continue
 		}
 		logger.Debug("Received media message event", "chat_id", event.ChatID, "file_name", event.File.Name())
+		message := event.File.Message()
+		if message == nil || !mediafilter.Allowed(message.Media) {
+			logger.Debug("Skipping filtered media message", "chat_id", event.ChatID, "file_name", event.File.Name())
+			continue
+		}
 		ctx := event.Ctx
 		file := event.File
 		chats, err := database.GetWatchChatsByChatID(ctx, event.ChatID)
@@ -335,7 +341,7 @@ func ListenUserbotMediaEvents(runCtx context.Context, resolve func() *ext.Contex
 			logger.Errorf("Failed to get watch chats for chat ID %d: %v", event.ChatID, err)
 			continue
 		}
-		msgText := event.File.Message().GetMessage()
+		msgText := message.GetMessage()
 		for _, chat := range chats {
 			if chat.MessageFilter != "" {
 				filter := strings.Split(chat.MessageFilter, ":")

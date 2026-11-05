@@ -7,6 +7,7 @@ export const zhHans = {
     groups: {
       core: '核心',
       metadata: '消息元数据',
+      media: '媒体过滤',
       log: '日志',
       aria2: 'Aria2',
       ytdlp: 'yt-dlp',
@@ -43,6 +44,10 @@ export const zhHans = {
       noCleanCache: '保留缓存',
       proxy: '全局代理',
       proxyHint: '重启后生效',
+    },
+    media: {
+      allowedMediaTypes: '允许的媒体类型',
+      allowedMediaTypesHint: '每行一个：image、video、audio、document；留空表示全部允许。过滤仅作用于 Telegram 媒体入口',
     },
     metadata: {
       enabled: '保存消息元数据',
@@ -144,6 +149,7 @@ export const en = {
     groups: {
       core: 'Core',
       metadata: 'Message metadata',
+      media: 'Media filter',
       log: 'Logs',
       aria2: 'Aria2',
       ytdlp: 'yt-dlp',
@@ -180,6 +186,10 @@ export const en = {
       noCleanCache: 'Keep cache',
       proxy: 'Global proxy',
       proxyHint: 'Takes effect after restart',
+    },
+    media: {
+      allowedMediaTypes: 'Allowed media types',
+      allowedMediaTypesHint: 'One per line: image, video, audio, document. Leave empty to allow everything. Applies to Telegram media entry points only',
     },
     metadata: {
       enabled: 'Save message metadata',

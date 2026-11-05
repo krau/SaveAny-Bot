@@ -11,6 +11,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/shortcut"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/mediafilter"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
@@ -57,8 +58,7 @@ func handleGroupMediaMessage(ctx *ext.Context, update *ext.Update, message *tg.M
 	mediaGroupHandler.SetupTimeout(max(config.C().Telegram.MediaGroupTimeout, 1))
 	logger := log.FromContext(ctx)
 	media := message.Media
-	supported := mediautil.IsSupported(media)
-	if !supported {
+	if !mediautil.IsSupported(media) || !mediafilter.Allowed(media) {
 		return dispatcher.EndGroups
 	}
 	userId := responsibleUserID(update)

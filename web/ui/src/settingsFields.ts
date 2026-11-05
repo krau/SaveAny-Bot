@@ -125,6 +125,20 @@ export const settingsGroups: SettingsGroupDef[] = [
     ],
   },
   {
+    key: 'media',
+    title: 'settings.groups.media',
+    fields: [
+      {
+        path: 'allowed_media_types',
+        label: 'settings.media.allowedMediaTypes',
+        kind: 'list',
+        placeholder: 'image\nvideo\naudio\ndocument',
+        hint: 'settings.media.allowedMediaTypesHint',
+        wide: true,
+      },
+    ],
+  },
+  {
     key: 'log',
     title: 'settings.groups.log',
     fields: [

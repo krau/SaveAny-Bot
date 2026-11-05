@@ -47,12 +47,18 @@ type Config struct {
 	Ytdlp        YtdlpConfig             `toml:"ytdlp" mapstructure:"ytdlp" json:"ytdlp"`
 	Web          webConfig               `toml:"web" mapstructure:"web" json:"web"`
 	Metadata     metadataConfig          `toml:"metadata" mapstructure:"metadata" json:"metadata"`
+	Media        mediaConfig             `toml:"media" mapstructure:"media" json:"media"`
 }
 
 type metadataConfig struct {
 	Enabled     bool `toml:"enabled" mapstructure:"enabled" json:"enabled"`
 	IncludeText bool `toml:"include_text" mapstructure:"include_text" json:"include_text"`
 	Sidecar     bool `toml:"sidecar" mapstructure:"sidecar" json:"sidecar"`
+}
+
+type mediaConfig struct {
+	// AllowedMediaTypes is empty when all supported media types are allowed.
+	AllowedMediaTypes []string `toml:"allowed_media_types" mapstructure:"allowed_media_types" json:"allowed_media_types"`
 }
 
 type webConfig struct {
@@ -147,9 +153,10 @@ func DefaultsMap(dataDir string) map[string]any {
 		"ytdlp.format":             "",
 		"ytdlp.restrict_filenames": false,
 
-		"metadata.enabled":      false,
-		"metadata.include_text": true,
-		"metadata.sidecar":      false,
+		"metadata.enabled":          false,
+		"metadata.include_text":     true,
+		"metadata.sidecar":          false,
+		"media.allowed_media_types": []string{},
 	}
 }
 
@@ -188,6 +195,7 @@ func Default(dataDir string) Config {
 			Listen: defaultWebListen,
 		},
 		Metadata: metadataConfig{IncludeText: true},
+		Media:    mediaConfig{},
 	}
 }
 

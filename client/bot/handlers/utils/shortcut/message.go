@@ -14,10 +14,12 @@ import (
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/mediafilter"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
+	"github.com/krau/SaveAny-Bot/pkg/mediatype"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/mygotg/dispatcher"
@@ -30,9 +32,11 @@ func GetFileFromMessageWithReply(ctx *ext.Context, update *ext.Update, message *
 ) {
 	logger := log.FromContext(ctx)
 	media := message.Media
-	supported := mediautil.IsSupported(media)
-	if !supported {
+	if !mediautil.IsSupported(media) {
 		return nil, nil, dispatcher.ContinueGroups
+	}
+	if !mediafilter.Allowed(media) {
+		return nil, nil, dispatcher.EndGroups
 	}
 
 	replied, err = ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoFetchingFileInfo, nil)), nil)
@@ -91,6 +95,10 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 		media, ok := msg.GetMedia()
 		if !ok {
 			logger.Debugf("message %d has no media", msg.GetID())
+			return
+		}
+		if !mediautil.IsSupported(media) || !mediafilter.Allowed(media) {
+			logger.Debugf("message %d media type is filtered", msg.GetID())
 			return
 		}
 		opts := mediautil.TfileOptions(ctx, user, msg)
@@ -166,6 +174,10 @@ type TelegraphResult struct {
 
 func GetTphPicsFromMessageWithReply(ctx *ext.Context, update *ext.Update) (*types.Message, *TelegraphResult, error) {
 	logger := log.FromContext(ctx)
+	if !mediafilter.Allows(mediatype.Image) {
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorNoSavableFilesFound)), nil)
+		return nil, nil, dispatcher.EndGroups
+	}
 	tphurl := findTelegraphURL(update.EffectiveMessage.Message)
 	if tphurl == "" {
 		logger.Warnf("No telegraph url found but called handleTelegraph")

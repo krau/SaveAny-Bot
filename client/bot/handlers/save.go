@@ -14,6 +14,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/mediafilter"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/database"
@@ -141,8 +142,7 @@ func handleBatchSave(ctx *ext.Context, update *ext.Update, args []string) error 
 		if !ok {
 			continue
 		}
-		supported := mediautil.IsSupported(media)
-		if !supported {
+		if !mediautil.IsSupported(media) || !mediafilter.Allowed(media) {
 			continue
 		}
 		file, err := tfile.FromMediaMessage(media, tctx.Raw, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))

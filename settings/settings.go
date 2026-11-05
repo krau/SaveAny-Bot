@@ -22,6 +22,7 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/parsers"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
+	"github.com/krau/SaveAny-Bot/pkg/mediatype"
 	storages "github.com/krau/SaveAny-Bot/storage"
 )
 
@@ -38,6 +39,7 @@ const (
 	GroupHook     = "hook"
 	GroupWeb      = "web"
 	GroupMetadata = "metadata"
+	GroupMedia    = "media"
 )
 
 const maskedValue = "__MASKED__"
@@ -66,6 +68,10 @@ type coreGroup struct {
 
 type authGroup struct {
 	PasswordHash string `json:"password_hash"`
+}
+
+type mediaGroup struct {
+	AllowedMediaTypes []string `json:"allowed_media_types"`
 }
 
 type StorageInput struct {
@@ -114,6 +120,8 @@ func groupValue(cfg config.Config, group string) (any, error) {
 		return cfg.Web, nil
 	case GroupMetadata:
 		return cfg.Metadata, nil
+	case GroupMedia:
+		return cfg.Media, nil
 	default:
 		return nil, ErrUnknownGroup
 	}
@@ -177,6 +185,17 @@ func applyGroup(cfg *config.Config, group string, raw []byte) error {
 		return json.Unmarshal(raw, &cfg.Web)
 	case GroupMetadata:
 		return json.Unmarshal(raw, &cfg.Metadata)
+	case GroupMedia:
+		var g mediaGroup
+		if err := json.Unmarshal(raw, &g); err != nil {
+			return err
+		}
+		allowed, err := mediatype.NormalizeAllowed(g.AllowedMediaTypes)
+		if err != nil {
+			return err
+		}
+		cfg.Media.AllowedMediaTypes = allowed
+		return nil
 	default:
 		return ErrUnknownGroup
 	}
@@ -343,7 +362,7 @@ func (s *Service) Reload(ctx context.Context) error {
 func (s *Service) PublicSettings() (map[string]any, error) {
 	cfg := s.Config()
 	out := make(map[string]any)
-	for _, group := range []string{GroupCore, GroupLog, GroupDB, GroupTelegram, GroupAria2, GroupCache, GroupTemp, GroupYtdlp, GroupParser, GroupHook, GroupWeb, GroupMetadata} {
+	for _, group := range []string{GroupCore, GroupLog, GroupDB, GroupTelegram, GroupAria2, GroupCache, GroupTemp, GroupYtdlp, GroupParser, GroupHook, GroupWeb, GroupMetadata, GroupMedia} {
 		value, err := groupValue(cfg, group)
 		if err != nil {
 			return nil, err
