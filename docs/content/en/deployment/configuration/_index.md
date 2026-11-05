@@ -16,7 +16,7 @@ Settings are stored in the SQLite database under the data directory (default `da
 | Storages | Local disk, WebDAV, Alist, S3, Rclone, Telegram, and more |
 | Users | Telegram user IDs, default storage, directories, rules, and storage access |
 | Automation | Per-user directories, rules, watched chats, and peer sync |
-| Settings | Task concurrency, language, proxy, Aria2, yt-dlp, parsers, cache, logging, web, and API |
+| Settings | Task concurrency, language, proxy, media type filter, Aria2, yt-dlp, parsers, cache, logging, web, and API |
 | Parsers | Install JavaScript parser plugins |
 | System | Runtime information, restart, version checks, and updates |
 
@@ -52,6 +52,21 @@ Transfer concurrency can be tuned under **Settings → Core**:
 | `Global transfer budget` | 0 | 0 uses `workers × threads`; downloads and uploads share this cap |
 | `Relay minimum file size (MB)` | 8 | Smaller files skip helper relays |
 | `Chunk retry count` | 20 | Retries for timeouts or connection failures on one chunk |
+
+### Media filter
+
+Use **Settings → Media filter** to restrict the bot to selected Telegram media types. Enter one value per line under **Allowed media types**; leave the field empty to allow everything:
+
+| Value | Matches |
+|---|---|
+| `image` | Telegram photos, image documents, stickers, and animated images |
+| `video` | Telegram video documents, including video messages |
+| `audio` | Telegram audio and voice messages |
+| `document` | Other document files |
+
+Filtering happens before download tasks are created. Non-matching media is not downloaded and does not appear in the task list. Media groups keep only matching items; a group with no matching items is skipped silently. This is an instance-wide setting and takes effect immediately.
+
+The filter currently covers Telegram media entry points: direct and forwarded media, media groups, batch `/save`, message links, watched chats, and Telegraph images. Parser results, direct HTTP links, and yt-dlp output are not filtered. Storage rules only change the destination path; they do not skip files.
 
 ### Message metadata
 
