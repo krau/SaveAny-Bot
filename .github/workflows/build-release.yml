@@ -10,8 +10,12 @@ permissions:
   packages: write
 
 jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
   create-release:
     name: Create Release
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,6 +42,7 @@ jobs:
 
   build-matrix:
     name: Release Go Binary
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
