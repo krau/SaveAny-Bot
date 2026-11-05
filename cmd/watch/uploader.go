@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	uploadpkg "github.com/krau/SaveAny-Bot/common/upload"
 	"github.com/krau/SaveAny-Bot/storage"
 )
 
@@ -126,7 +126,7 @@ func (u *Uploader) worker(ctx context.Context) {
 }
 
 func (u *Uploader) process(ctx context.Context, job uploadJob) {
-	if err := u.uploadWithRetry(ctx, job); err != nil {
+	if err := u.upload(ctx, job); err != nil {
 		if ctx.Err() != nil {
 			u.clearInflight(job.localPath)
 			return
@@ -160,40 +160,8 @@ func (u *Uploader) clearInflight(localPath string) {
 	u.mu.Unlock()
 }
 
-func (u *Uploader) uploadWithRetry(ctx context.Context, job uploadJob) error {
-	var lastErr error
-	for attempt := 1; attempt <= u.retry; attempt++ {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		err := u.upload(ctx, job)
-		if err == nil {
-			return nil
-		}
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		lastErr = err
-		u.logger.Warnf("upload %s failed (attempt %d/%d): %v", job.localPath, attempt, u.retry, err)
-		if attempt < u.retry {
-			select {
-			case <-time.After(u.retryDelay):
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-		}
-	}
-	return lastErr
-}
-
 func (u *Uploader) upload(ctx context.Context, job uploadJob) error {
-	file, err := os.Open(filepath.Clean(job.localPath))
-	if err != nil {
-		return fmt.Errorf("failed to open file: %w", err)
-	}
-	defer file.Close()
-
-	info, err := file.Stat()
+	info, err := os.Stat(filepath.Clean(job.localPath))
 	if err != nil {
 		return fmt.Errorf("failed to stat file: %w", err)
 	}
@@ -204,16 +172,25 @@ func (u *Uploader) upload(ctx context.Context, job uploadJob) error {
 	// Keep the relative directory structure on the storage side.
 	storagePath := path.Join(u.destDir, filepath.ToSlash(job.relPath))
 
-	uploadCtx := context.WithValue(ctx, ctxkey.ContentLength, info.Size())
-	if u.overwrite {
-		uploadCtx = storage.WithOverwrite(uploadCtx)
-	} else if u.stor.Exists(uploadCtx, storagePath) {
-		u.logger.Infof("skip existing file: %s", storagePath)
-		return nil
+	uploadCtx := ctx
+	if !u.overwrite {
+		exists, checkErr := u.stor.Exists(uploadCtx, storagePath)
+		if checkErr != nil {
+			return fmt.Errorf("failed to check existing file: %w", checkErr)
+		}
+		if exists {
+			u.logger.Infof("skip existing file: %s", storagePath)
+			return nil
+		}
 	}
 
 	u.logger.Infof("uploading %s -> %s (%d bytes)", job.localPath, storagePath, info.Size())
-	if err := u.stor.Save(uploadCtx, file, storagePath); err != nil {
+	if err := uploadpkg.SaveFile(uploadCtx, job.localPath, storagePath, uploadpkg.Options{
+		Storage:    u.stor,
+		Overwrite:  u.overwrite,
+		Retries:    u.retry,
+		RetryDelay: u.retryDelay,
+	}); err != nil {
 		return fmt.Errorf("failed to save to storage: %w", err)
 	}
 	u.logger.Infof("uploaded %s", storagePath)

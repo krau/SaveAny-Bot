@@ -1,17 +1,26 @@
 package s3
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
+	"crypto/md5"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 )
 
 type Client struct {
@@ -22,6 +31,27 @@ type Client struct {
 	secretKey  string
 	httpClient *http.Client
 	pathStyle  bool
+}
+
+const (
+	maxRequestAttempts   = 4
+	multipartThreshold   = 64 << 20
+	multipartPartSize    = 16 << 20
+	minMultipartPartSize = 5 << 20
+)
+
+type initiateMultipartUploadResult struct {
+	UploadID string `xml:"UploadId"`
+}
+
+type completeMultipartUpload struct {
+	XMLName xml.Name        `xml:"CompleteMultipartUpload"`
+	Parts   []completedPart `xml:"Part"`
+}
+
+type completedPart struct {
+	PartNumber int    `xml:"PartNumber"`
+	ETag       string `xml:"ETag"`
 }
 
 type Config struct {
@@ -36,7 +66,17 @@ type Config struct {
 
 func (c *Config) ApplyDefaults() {
 	if c.HttpClient == nil {
-		c.HttpClient = http.DefaultClient
+		transport, ok := http.DefaultTransport.(*http.Transport)
+		if ok {
+			cloned := transport.Clone()
+			cloned.ResponseHeaderTimeout = 30 * time.Second
+			cloned.IdleConnTimeout = 90 * time.Second
+			c.HttpClient = &http.Client{Transport: cloned}
+		} else {
+			c.HttpClient = &http.Client{
+				Transport: &http.Transport{ResponseHeaderTimeout: 30 * time.Second},
+			}
+		}
 	}
 	if c.Endpoint == "" {
 		switch c.Region {
@@ -66,20 +106,20 @@ func (c *Client) HeadBucket(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
+	resp, err := c.doRetry(ctx, func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+		if err != nil {
+			return nil, err
+		}
+		if err := signRequest(req, c.region, c.accessKey, c.secretKey, hashSHA256(nil)); err != nil {
+			return nil, err
+		}
+		return req, nil
+	}, true)
 	if err != nil {
 		return err
 	}
-
-	if err := signRequest(req, c.region, c.accessKey, c.secretKey, hashSHA256(nil)); err != nil {
-		return err
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+	defer closeBody(resp.Body)
 
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("head bucket failed: %s", resp.Status)
@@ -87,55 +127,368 @@ func (c *Client) HeadBucket(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) Exists(ctx context.Context, key string) bool {
+func (c *Client) Exists(ctx context.Context, key string) (bool, error) {
 	url, err := c.buildURL(key)
 	if err != nil {
-		return false
+		return false, err
 	}
-	req, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
+	resp, err := c.doRetry(ctx, func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+		if err != nil {
+			return nil, err
+		}
+		if err := signRequest(req, c.region, c.accessKey, c.secretKey, hashSHA256(nil)); err != nil {
+			return nil, err
+		}
+		return req, nil
+	}, true)
 	if err != nil {
-		return false
+		return false, err
 	}
-	if err := signRequest(req, c.region, c.accessKey, c.secretKey, hashSHA256(nil)); err != nil {
-		return false
-	}
+	defer closeBody(resp.Body)
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return false
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return true, nil
+	case http.StatusNotFound:
+		return false, nil
+	default:
+		return false, responseError("head object", resp)
 	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode == http.StatusOK
 }
 
 func (c *Client) Put(ctx context.Context, key string, r io.Reader, size int64) error {
+	return c.put(ctx, key, r, size, false)
+}
+
+// PutIfAbsent creates an object only when the key does not exist yet.
+func (c *Client) PutIfAbsent(ctx context.Context, key string, r io.Reader, size int64) error {
+	return c.put(ctx, key, r, size, true)
+}
+
+func (c *Client) put(ctx context.Context, key string, r io.Reader, size int64, ifAbsent bool) error {
+	if size > multipartThreshold {
+		return c.putMultipart(ctx, key, r, size, ifAbsent)
+	}
+	return c.putSingle(ctx, key, r, size, ifAbsent)
+}
+
+func (c *Client) putSingle(ctx context.Context, key string, r io.Reader, size int64, ifAbsent bool) error {
 	url, err := c.buildURL(key)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, "PUT", url, r)
+
+	var start int64
+	seeker, canRewind := r.(io.Seeker)
+	if canRewind {
+		start, err = seeker.Seek(0, io.SeekCurrent)
+		if err != nil {
+			canRewind = false
+		}
+	}
+
+	resp, err := c.doRetry(ctx, func() (*http.Request, error) {
+		if canRewind {
+			if _, err := seeker.Seek(start, io.SeekStart); err != nil {
+				return nil, fmt.Errorf("rewind S3 request body: %w", err)
+			}
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, r)
+		if err != nil {
+			return nil, err
+		}
+		if size >= 0 {
+			req.ContentLength = size
+		}
+		if ifAbsent {
+			req.Header.Set("If-None-Match", "*")
+		}
+		if err := signRequest(req, c.region, c.accessKey, c.secretKey, "UNSIGNED-PAYLOAD"); err != nil {
+			return nil, err
+		}
+		return req, nil
+	}, canRewind)
 	if err != nil {
 		return err
 	}
-	if size >= 0 {
-		req.ContentLength = size
-	}
+	defer closeBody(resp.Body)
 
-	if err := signRequest(req, c.region, c.accessKey, c.secretKey, "UNSIGNED-PAYLOAD"); err != nil {
+	if resp.StatusCode >= 300 {
+		if ifAbsent && (resp.StatusCode == http.StatusPreconditionFailed || resp.StatusCode == http.StatusConflict) {
+			return storagetypes.ErrAlreadyExists
+		}
+		return responseError("put object", resp)
+	}
+	return nil
+}
+
+func (c *Client) putMultipart(ctx context.Context, key string, r io.Reader, size int64, ifAbsent bool) error {
+	uploadID, err := c.createMultipartUpload(ctx, key)
+	if err != nil {
 		return err
 	}
+	complete := false
+	defer func() {
+		if complete {
+			return
+		}
+		abortCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer cancel()
+		if err := c.abortMultipartUpload(abortCtx, key, uploadID); err != nil {
+			log.FromContext(ctx).Warnf("Failed to abort S3 multipart upload: %v", err)
+		}
+	}()
 
+	partSize := int64(multipartPartSize)
+	if size <= partSize {
+		partSize = size
+	}
+	if partSize < minMultipartPartSize && size > partSize {
+		partSize = minMultipartPartSize
+	}
+	// S3 allows at most 10,000 parts; grow the part size for very large objects.
+	if (size+partSize-1)/partSize > 10000 {
+		partSize = (size + 9999) / 10000
+		partSize = ((partSize + minMultipartPartSize - 1) / minMultipartPartSize) * minMultipartPartSize
+	}
+	parts := make([]completedPart, 0, (size+partSize-1)/partSize)
+	for offset, number := int64(0), 1; offset < size; number++ {
+		length := min(partSize, size-offset)
+		buf := make([]byte, length)
+		if _, err := io.ReadFull(r, buf); err != nil {
+			return fmt.Errorf("read multipart body at part %d: %w", number, err)
+		}
+		etag, err := c.uploadPart(ctx, key, uploadID, number, buf)
+		if err != nil {
+			return err
+		}
+		parts = append(parts, completedPart{PartNumber: number, ETag: etag})
+		offset += length
+	}
+	if err := c.completeMultipartUpload(ctx, key, uploadID, parts, ifAbsent); err != nil {
+		return err
+	}
+	complete = true
+	return nil
+}
+
+func (c *Client) createMultipartUpload(ctx context.Context, key string) (string, error) {
+	url, err := c.buildURLWithQuery(key, url.Values{"uploads": {""}})
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.doRetry(ctx, func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		if err := signRequest(req, c.region, c.accessKey, c.secretKey, hashSHA256(nil)); err != nil {
+			return nil, err
+		}
+		return req, nil
+	}, true)
+	if err != nil {
+		return "", err
+	}
+	defer closeBody(resp.Body)
+	if resp.StatusCode >= 300 {
+		return "", responseError("create multipart upload", resp)
+	}
+	var result initiateMultipartUploadResult
+	if err := xml.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode multipart upload response: %w", err)
+	}
+	if result.UploadID == "" {
+		return "", errors.New("S3 returned an empty multipart upload ID")
+	}
+	return result.UploadID, nil
+}
+
+func (c *Client) uploadPart(ctx context.Context, key, uploadID string, number int, body []byte) (string, error) {
+	url, err := c.buildURLWithQuery(key, url.Values{
+		"partNumber": {strconv.Itoa(number)},
+		"uploadId":   {uploadID},
+	})
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.doRetry(ctx, func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		req.ContentLength = int64(len(body))
+		req.Header.Set("Content-MD5", md5Base64(body))
+		if err := signRequest(req, c.region, c.accessKey, c.secretKey, "UNSIGNED-PAYLOAD"); err != nil {
+			return nil, err
+		}
+		return req, nil
+	}, true)
+	if err != nil {
+		return "", err
+	}
+	defer closeBody(resp.Body)
+	if resp.StatusCode >= 300 {
+		return "", responseError(fmt.Sprintf("upload multipart part %d", number), resp)
+	}
+	etag := strings.TrimSpace(resp.Header.Get("ETag"))
+	if etag == "" {
+		return "", fmt.Errorf("S3 did not return an ETag for part %d", number)
+	}
+	return etag, nil
+}
+
+func (c *Client) completeMultipartUpload(ctx context.Context, key, uploadID string, parts []completedPart, ifAbsent bool) error {
+	url, err := c.buildURLWithQuery(key, url.Values{"uploadId": {uploadID}})
+	if err != nil {
+		return err
+	}
+	payload, err := xml.Marshal(completeMultipartUpload{
+		XMLName: xml.Name{Local: "CompleteMultipartUpload"},
+		Parts:   parts,
+	})
+	if err != nil {
+		return fmt.Errorf("encode complete multipart upload: %w", err)
+	}
+	resp, err := c.doRetry(ctx, func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
+		if err != nil {
+			return nil, err
+		}
+		req.ContentLength = int64(len(payload))
+		req.Header.Set("Content-Type", "application/xml")
+		if ifAbsent {
+			req.Header.Set("If-None-Match", "*")
+		}
+		if err := signRequest(req, c.region, c.accessKey, c.secretKey, hashSHA256(payload)); err != nil {
+			return nil, err
+		}
+		return req, nil
+	}, true)
+	if err != nil {
+		return err
+	}
+	defer closeBody(resp.Body)
+	if resp.StatusCode >= 300 {
+		if ifAbsent && (resp.StatusCode == http.StatusPreconditionFailed || resp.StatusCode == http.StatusConflict) {
+			return storagetypes.ErrAlreadyExists
+		}
+		return responseError("complete multipart upload", resp)
+	}
+	return nil
+}
+
+func (c *Client) abortMultipartUpload(ctx context.Context, key, uploadID string) error {
+	url, err := c.buildURLWithQuery(key, url.Values{"uploadId": {uploadID}})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return err
+	}
+	if err := signRequest(req, c.region, c.accessKey, c.secretKey, hashSHA256(nil)); err != nil {
+		return err
+	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		return responseError("put object", resp)
+	defer closeBody(resp.Body)
+	if resp.StatusCode >= 300 && resp.StatusCode != http.StatusNotFound {
+		return responseError("abort multipart upload", resp)
 	}
 	return nil
+}
+
+func (c *Client) doRetry(ctx context.Context, build func() (*http.Request, error), canRetryBody bool) (*http.Response, error) {
+	var lastErr error
+	for attempt := 0; attempt < maxRequestAttempts; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		req, err := build()
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.httpClient.Do(req)
+		if err == nil && !retryableStatus(resp.StatusCode) {
+			return resp, nil
+		}
+		if err != nil {
+			if resp != nil {
+				closeBody(resp.Body)
+			}
+			lastErr = err
+		} else {
+			lastErr = responseError(req.Method+" "+req.URL.Path, resp)
+			closeBody(resp.Body)
+		}
+		if !canRetryBody {
+			return nil, lastErr
+		}
+		if attempt+1 >= maxRequestAttempts {
+			break
+		}
+		delay := retryDelay(attempt)
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
+	return nil, lastErr
+}
+
+func retryableStatus(status int) bool {
+	switch status {
+	case http.StatusRequestTimeout, http.StatusTooManyRequests, http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
+func retryDelay(attempt int) time.Duration {
+	return time.Duration(200*(1<<attempt)) * time.Millisecond
+}
+
+func closeBody(body io.ReadCloser) {
+	if err := discardAndClose(body); err != nil {
+		log.Warnf("Failed to close S3 response body: %v", err)
+	}
+}
+
+func discardAndClose(body io.ReadCloser) error {
+	_, readErr := io.Copy(io.Discard, io.LimitReader(body, 4096))
+	return errors.Join(readErr, body.Close())
+}
+
+func md5Base64(data []byte) string {
+	sum := md5.Sum(data)
+	return base64.StdEncoding.EncodeToString(sum[:])
+}
+
+func (c *Client) buildURLWithQuery(key string, query url.Values) (string, error) {
+	raw, err := c.buildURL(key)
+	if err != nil {
+		return "", err
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", err
+	}
+	rawQuery := query.Encode()
+	if len(query) == 1 {
+		if values, ok := query["uploads"]; ok && len(values) == 1 && values[0] == "" {
+			rawQuery = "uploads"
+		}
+	}
+	u.RawQuery = rawQuery
+	return u.String(), nil
 }
 
 func (c *Client) buildURL(key string) (string, error) {

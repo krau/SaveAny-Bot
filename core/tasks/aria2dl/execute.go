@@ -49,7 +49,9 @@ func (t *Task) Execute(ctx context.Context) error {
 		t.Progress.OnDone(ctx, t, nil)
 	}
 
-	if _, err := t.Aria2Client.RemoveDownloadResult(context.Background(), t.GID); err != nil {
+	cleanupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if _, err := t.Aria2Client.RemoveDownloadResult(cleanupCtx, t.GID); err != nil {
 		logger.Warnf("Failed to remove aria2 download result: %v", err)
 	}
 

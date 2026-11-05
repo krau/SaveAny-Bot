@@ -158,7 +158,7 @@ if (response.error) {
 
 ---
 
-最后别忘了调用 `registerParser` 注册解析器:
+最后调用 `registerParser` 注册解析器:
 
 ```js
 registerParser({
@@ -170,6 +170,5 @@ registerParser({
 
 ### Examples
 
-请先查看 [example_parser_basic.js](./example_parser_basic.js) 了解最简示例解析器插件的实现.
-
-然后查看 [example_parser_danbooru.js](./example_parser_danbooru.js) , 这是一个可直接使用的插件, 用于解析 Danbooru 图片页面并提取图片资源.
+- 基础示例：[example_parser_basic.js](./example_parser_basic.js)
+- 完整示例（Danbooru 图集解析）：[example_parser_danbooru.js](./example_parser_danbooru.js)

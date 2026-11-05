@@ -1,0 +1,18 @@
+/* Utilities */
+
+@supports (corner-shape: squircle) {
+  .panel,
+  .storage-card,
+  .connection-card,
+  .process-panel,
+  .modal,
+  .toast,
+  .select-menu,
+  .select-trigger,
+  .btn,
+  .field input,
+  .field textarea {
+    corner-shape: squircle;
+  }
+}
+

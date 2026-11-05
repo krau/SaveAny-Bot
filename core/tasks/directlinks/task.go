@@ -28,6 +28,7 @@ func (f *File) FileSize() int64 {
 }
 
 var _ core.Executable = (*Task)(nil)
+var _ core.DestinationInfo = (*Task)(nil)
 
 type Task struct {
 	ID       string
@@ -110,7 +111,12 @@ func NewTask(
 	_, ok := stor.(storage.StorageCannotStream)
 	stream := config.C().Stream && !ok
 	files := make([]*File, 0, len(links))
+	seen := make(map[string]struct{}, len(links))
 	for _, link := range links {
+		if _, duplicate := seen[link]; duplicate {
+			continue
+		}
+		seen[link] = struct{}{}
 		files = append(files, &File{
 			URL: link,
 		})

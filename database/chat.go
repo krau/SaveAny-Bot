@@ -1,6 +1,8 @@
 package database
 
-import "context"
+import (
+	"context"
+)
 
 func (user *User) WatchChat(ctx context.Context, chat WatchChat) error {
 	if len(user.WatchChats) == 0 {

@@ -15,3 +15,6 @@ testplugins/
 tmp-*
 saveany-bot
 .codegraph/
+web/ui/node_modules/
+web/dist/*
+!web/dist/.gitkeep

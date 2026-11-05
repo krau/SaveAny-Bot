@@ -4,11 +4,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 type MediaMessageEvent struct {
@@ -51,16 +51,18 @@ func sendMediaMessageEvent(event MediaMessageEvent) {
 
 	if timer, exists := mediaMessageHandler.timers[key]; exists {
 		timer.Stop()
-	} else {
-		mediaMessageHandler.events[key] = event
 	}
+	mediaMessageHandler.events[key] = event
 
 	mediaMessageHandler.timers[key] = time.AfterFunc(mediaMessageHandler.debounce, func() {
 		mediaMessageHandler.mu.Lock()
-		event := mediaMessageHandler.events[key]
+		event, ok := mediaMessageHandler.events[key]
 		delete(mediaMessageHandler.events, key)
 		delete(mediaMessageHandler.timers, key)
 		mediaMessageHandler.mu.Unlock()
+		if !ok {
+			return
+		}
 
 		mediaMessageCh <- event
 	})
@@ -89,7 +91,7 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	chatId := update.EffectiveChat().GetID()
+	chatId := tgutil.ChatIdFromPeer(update.EffectiveMessage.GetPeerID())
 	sendMediaMessageEvent(MediaMessageEvent{
 		Ctx:       ctx,
 		ChatID:    chatId,

@@ -5,52 +5,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
-
-	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
-	"github.com/krau/SaveAny-Bot/common/i18n"
-	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
-	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
-	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
-	"github.com/krau/SaveAny-Bot/storage"
 )
-
-func handleYtdlpCmd(ctx *ext.Context, update *ext.Update) error {
-	logger := log.FromContext(ctx)
-	args := splitQuotedArgs(update.EffectiveMessage.Text)
-	if len(args) < 2 {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgYtdlpUsage)), nil)
-		return dispatcher.EndGroups
-	}
-
-	urls, flags := parseYtdlpArgs(logger, args[1:])
-
-	if len(urls) == 0 {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgYtdlpErrorNoValidUrls)), nil)
-		return dispatcher.EndGroups
-	}
-
-	logger.Debugf("Preparing yt-dlp download for %d URL(s) with %d flag(s)", len(urls), len(flags))
-
-	markup, err := msgelem.BuildAddSelectStorageKeyboard(storage.GetUserStorages(ctx, update.GetUserChat().GetID()), tcbdata.Add{
-		TaskType:   tasktype.TaskTypeYtdlp,
-		YtdlpURLs:  urls,
-		YtdlpFlags: flags,
-	})
-	if err != nil {
-		return err
-	}
-
-	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgYtdlpInfoUrlsSelectStorage, map[string]any{
-		"Count": len(urls),
-	})), &ext.ReplyOpts{
-		Markup: markup,
-	})
-
-	return dispatcher.EndGroups
-}
 
 // splitQuotedArgs splits a command line on whitespace, keeping quoted values
 // together and removing the quotes. Quotes only delimit a value when they start
@@ -84,7 +40,7 @@ func splitQuotedArgs(text string) []string {
 	return args
 }
 
-// parseYtdlpArgs separates the /ytdlp arguments into URLs and custom yt-dlp
+// parseYtdlpArgs separates download arguments into URLs and custom yt-dlp
 // flags. A flag value is kept together with its flag, unless it looks like a URL
 // of its own.
 func parseYtdlpArgs(logger *log.Logger, args []string) (urls []string, flags []string) {
@@ -110,8 +66,13 @@ func parseYtdlpArgs(logger *log.Logger, args []string) (urls []string, flags []s
 			}
 		} else {
 			u, err := url.Parse(arg)
-			if err != nil || u.Scheme == "" || u.Host == "" {
+			if err != nil || u.Scheme == "" {
 				logger.Warnf("Invalid URL: %s", arg)
+				continue
+			}
+			// Magnet and other non-web schemes are valid Aria2 inputs but not
+			// yt-dlp URLs; parseDownloadURIs handles them separately.
+			if u.Host == "" {
 				continue
 			}
 			urls = append(urls, arg)

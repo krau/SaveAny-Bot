@@ -1,36 +1,112 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
 
+	"github.com/krau/SaveAny-Bot/pkg/enums/storagefilter"
+	"github.com/krau/SaveAny-Bot/pkg/enums/taskstatus"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
+	"github.com/krau/SaveAny-Bot/settings"
 )
 
-type TaskStatus string
+type Deps struct {
+	Ctx      context.Context
+	Settings *settings.Service
+	Telegram TelegramController
+	DataDir  string
+	DBPath   string
+	WebToken string
+}
+
+type StorageInput struct {
+	Name   string         `json:"name"`
+	Type   string         `json:"type"`
+	Enable bool           `json:"enable"`
+	Config map[string]any `json:"config"`
+}
+
+type StorageRecord struct {
+	StorageID     uint           `json:"storage_id"`
+	Name          string         `json:"name"`
+	Type          string         `json:"type"`
+	Enable        bool           `json:"enable"`
+	Config        map[string]any `json:"config"`
+	ConfigVersion int            `json:"config_version,omitempty"`
+	Error         string         `json:"error,omitempty"`
+}
+
+type BotStatus struct {
+	State     string    `json:"state"`
+	ID        int64     `json:"id,omitempty"`
+	Username  string    `json:"username,omitempty"`
+	Error     string    `json:"error,omitempty"`
+	StartedAt time.Time `json:"started_at"`
+}
+
+type LoginFlow struct {
+	FlowID string `json:"flow_id"`
+	State  string `json:"state"`
+	Error  string `json:"error,omitempty"`
+}
+
+type UserbotStatus struct {
+	Enabled  bool       `json:"enabled"`
+	State    string     `json:"state"`
+	ID       int64      `json:"id,omitempty"`
+	Username string     `json:"username,omitempty"`
+	Phone    string     `json:"phone,omitempty"`
+	Error    string     `json:"error,omitempty"`
+	Login    *LoginFlow `json:"login,omitempty"`
+}
+
+type TelegramStatus struct {
+	Bot     BotStatus     `json:"bot"`
+	Userbot UserbotStatus `json:"userbot"`
+}
+
+type TelegramController interface {
+	Status(ctx context.Context) TelegramStatus
+	StartBot(ctx context.Context) error
+	StopBot(ctx context.Context, force bool) error
+	RestartBot(ctx context.Context, force bool) error
+	StartUserbotLogin(ctx context.Context, phone string) (flowID string, err error)
+	SubmitUserbotCode(ctx context.Context, flowID, code string) error
+	SubmitUserbotPassword(ctx context.Context, flowID, password string) error
+	CancelUserbotLogin(ctx context.Context, flowID string) error
+	LogoutUserbot(ctx context.Context) error
+	ApplyTelegram(ctx context.Context) error
+	RestartProcess()
+}
+
+type TaskStatus = taskstatus.Status
 
 const (
-	TaskStatusQueued    TaskStatus = "queued"
-	TaskStatusRunning   TaskStatus = "running"
-	TaskStatusCompleted TaskStatus = "completed"
-	TaskStatusFailed    TaskStatus = "failed"
-	TaskStatusCancelled TaskStatus = "cancelled"
+	TaskStatusQueued    = taskstatus.Queued
+	TaskStatusRunning   = taskstatus.Running
+	TaskStatusCompleted = taskstatus.Completed
+	TaskStatusPartial   = taskstatus.Partial
+	TaskStatusFailed    = taskstatus.Failed
+	TaskStatusCancelled = taskstatus.Cancelled
 )
 
 type CreateTaskRequest struct {
-	Type    tasktype.TaskType `json:"type"`
-	Storage string            `json:"storage"`
-	Path    string            `json:"path"`
-	Webhook string            `json:"webhook,omitempty"`
-	Params  json.RawMessage   `json:"params"`
+	Type      tasktype.TaskType `json:"type"`
+	StorageID uint              `json:"storage_id"`
+	Path      string            `json:"path"`
+	Webhook   string            `json:"webhook,omitempty"`
+	Params    json.RawMessage   `json:"params"`
 }
 
 type CreateTaskResponse struct {
-	TaskID    string            `json:"task_id"`
-	Type      tasktype.TaskType `json:"type"`
-	Status    TaskStatus        `json:"status"`
-	CreatedAt time.Time         `json:"created_at"`
+	TaskID      string            `json:"task_id"`
+	Type        tasktype.TaskType `json:"type"`
+	Status      TaskStatus        `json:"status"`
+	StorageID   uint              `json:"storage_id"`
+	StorageName string            `json:"storage_name"`
+	CreatedAt   time.Time         `json:"created_at"`
 }
 
 type TaskProgress struct {
@@ -43,45 +119,107 @@ type TaskProgress struct {
 }
 
 type TaskInfoResponse struct {
-	TaskID    string            `json:"task_id"`
-	Type      tasktype.TaskType `json:"type"`
-	Status    TaskStatus        `json:"status"`
-	Title     string            `json:"title"`
-	Progress  *TaskProgress     `json:"progress,omitempty"`
-	Storage   string            `json:"storage"`
-	Path      string            `json:"path"`
-	Error     string            `json:"error,omitempty"`
-	CreatedAt time.Time         `json:"created_at"`
-	UpdatedAt time.Time         `json:"updated_at"`
+	TaskID            string             `json:"task_id"`
+	Type              tasktype.TaskType  `json:"type"`
+	Status            TaskStatus         `json:"status"`
+	Title             string             `json:"title"`
+	Progress          *TaskProgress      `json:"progress,omitempty"`
+	StorageID         uint               `json:"storage_id"`
+	StorageName       string             `json:"storage_name"`
+	Path              string             `json:"path"`
+	Source            string             `json:"source,omitempty"`
+	Error             string             `json:"error,omitempty"`
+	CreatedAt         time.Time          `json:"created_at"`
+	StartedAt         *time.Time         `json:"started_at,omitempty"`
+	FinishedAt        *time.Time         `json:"finished_at,omitempty"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+	Items             []TaskItemResponse `json:"items,omitempty"`
+	FailedItems       []TaskItemResponse `json:"failed_items,omitempty"`
+	FailedCount       int                `json:"failed_count,omitempty"`
+	MetadataAvailable bool               `json:"metadata_available,omitempty"`
+}
+
+type TaskItemResponse struct {
+	Index             int    `json:"index"`
+	Name              string `json:"name"`
+	Path              string `json:"path,omitempty"`
+	StorageID         uint   `json:"storage_id,omitempty"`
+	StorageName       string `json:"storage_name,omitempty"`
+	Status            string `json:"status"`
+	Error             string `json:"error,omitempty"`
+	Size              int64  `json:"size,omitempty"`
+	SourceChatID      int64  `json:"source_chat_id,omitempty"`
+	SourceMessageID   int    `json:"source_message_id,omitempty"`
+	MetadataAvailable bool   `json:"metadata_available,omitempty"`
+}
+
+type TaskMetadataResponse struct {
+	TaskID string             `json:"task_id"`
+	Items  []TaskMetadataItem `json:"items"`
+}
+
+type TaskMetadataItem struct {
+	Index    int             `json:"index"`
+	Name     string          `json:"name,omitempty"`
+	Path     string          `json:"path,omitempty"`
+	Metadata json.RawMessage `json:"metadata"`
 }
 
 type TasksListResponse struct {
 	Tasks []TaskInfoResponse `json:"tasks"`
-	Total int                `json:"total"`
+	Total int64              `json:"total"`
 }
 
-type StoragesResponse struct {
-	Storages []StorageInfo `json:"storages"`
+type UserStorageFilter struct {
+	StorageIDs   []uint             `json:"storage_ids"`
+	StorageNames []string           `json:"storage_names,omitempty"`
+	Mode         storagefilter.Mode `json:"mode"`
 }
 
-type StorageInfo struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+type UserResponse struct {
+	ID                 uint              `json:"id"`
+	ChatID             int64             `json:"chat_id"`
+	Enabled            bool              `json:"enabled"`
+	Silent             bool              `json:"silent"`
+	DefaultStorageID   uint              `json:"default_storage_id"`
+	DefaultStorageName string            `json:"default_storage_name,omitempty"`
+	DefaultDirID       uint              `json:"default_dir_id"`
+	ApplyRule          bool              `json:"apply_rule"`
+	FilenameStrategy   string            `json:"filename_strategy"`
+	FilenameTemplate   string            `json:"filename_template"`
+	ConflictStrategy   string            `json:"conflict_strategy"`
+	WatchNotify        bool              `json:"watch_notify"`
+	StorageFilter      UserStorageFilter `json:"storage_filter"`
+}
+
+type UserPatch struct {
+	Enabled          *bool              `json:"enabled,omitempty"`
+	Silent           *bool              `json:"silent,omitempty"`
+	DefaultStorageID *uint              `json:"default_storage_id,omitempty"`
+	DefaultDirID     *uint              `json:"default_dir_id,omitempty"`
+	ApplyRule        *bool              `json:"apply_rule,omitempty"`
+	FilenameStrategy *string            `json:"filename_strategy,omitempty"`
+	FilenameTemplate *string            `json:"filename_template,omitempty"`
+	ConflictStrategy *string            `json:"conflict_strategy,omitempty"`
+	WatchNotify      *bool              `json:"watch_notify,omitempty"`
+	StorageFilter    *UserStorageFilter `json:"storage_filter,omitempty"`
 }
 
 type WebhookPayload struct {
 	TaskID      string     `json:"task_id"`
 	Type        string     `json:"type"`
 	Status      TaskStatus `json:"status"`
-	Storage     string     `json:"storage"`
+	StorageID   uint       `json:"storage_id"`
+	StorageName string     `json:"storage_name"`
 	Path        string     `json:"path"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 	Error       string     `json:"error,omitempty"`
 }
 
 type ErrorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message,omitempty"`
+	Error   string            `json:"error"`
+	Message string            `json:"message,omitempty"`
+	Fields  map[string]string `json:"fields,omitempty"`
 }
 
 type APIError struct {
@@ -90,9 +228,7 @@ type APIError struct {
 	Message    string
 }
 
-func (e *APIError) Error() string {
-	return e.Message
-}
+func (e *APIError) Error() string { return e.Message }
 
 func WriteJSON(w http.ResponseWriter, statusCode int, data any) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -101,10 +237,11 @@ func WriteJSON(w http.ResponseWriter, statusCode int, data any) error {
 }
 
 func WriteError(w http.ResponseWriter, statusCode int, errCode, message string) error {
-	return WriteJSON(w, statusCode, ErrorResponse{
-		Error:   errCode,
-		Message: message,
-	})
+	return WriteJSON(w, statusCode, ErrorResponse{Error: errCode, Message: message})
+}
+
+func WriteFieldErrors(w http.ResponseWriter, statusCode int, message string, fields map[string]string) error {
+	return WriteJSON(w, statusCode, ErrorResponse{Error: "validation_failed", Message: message, Fields: fields})
 }
 
 type DirectLinksParams struct {
@@ -126,14 +263,17 @@ type ParsedParams struct {
 }
 
 type TransferParams struct {
-	SourceStorage string `json:"source_storage"`
-	SourcePath    string `json:"source_path"`
-	TargetStorage string `json:"target_storage"`
-	TargetPath    string `json:"target_path"`
+	SourceStorageID uint   `json:"source_storage_id"`
+	SourcePath      string `json:"source_path"`
+	TargetStorageID uint   `json:"target_storage_id"`
+	TargetPath      string `json:"target_path"`
 }
 
 type TGFilesParams struct {
 	MessageLinks []string `json:"message_links"`
+	ChatID       string   `json:"chat_id,omitempty"`
+	MessageRange string   `json:"message_range,omitempty"`
+	Filter       string   `json:"filter,omitempty"`
 }
 
 type TPHPicsParams struct {

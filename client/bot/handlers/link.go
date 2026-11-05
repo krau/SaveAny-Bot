@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
@@ -11,6 +9,8 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
@@ -19,7 +19,7 @@ func handleMessageLink(ctx *ext.Context, update *ext.Update) error {
 		return err
 	}
 	logger := log.FromContext(ctx)
-	userId := update.GetUserChat().GetID()
+	userId := responsibleUserID(update)
 	stors := storage.GetUserStorages(ctx, userId)
 	if len(files) == 1 {
 		req, err := msgelem.BuildAddOneSelectStorageMessage(ctx, stors, files[0], replied.ID)
@@ -55,9 +55,9 @@ func handleSilentSaveLink(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	userId := update.GetUserChat().GetID()
+	userId := responsibleUserID(update)
 	if len(files) == 1 {
-		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, stor, dirutil.PathFromContext(ctx), files[0], replied.ID)
+		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userId, chatID(update), stor, dirutil.PathFromContext(ctx), files[0], replied.ID)
 	}
-	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, stor, dirutil.PathFromContext(ctx), files, replied.ID)
+	return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userId, chatID(update), stor, dirutil.PathFromContext(ctx), files, replied.ID)
 }

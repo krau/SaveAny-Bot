@@ -3,12 +3,10 @@ title: "Silent Mode"
 weight: 2
 ---
 
-# Silent Mode (silent)
+# Silent Mode
 
-Use the `/silent` command to toggle silent mode.
+Silent mode is configured in `/config`. Toggle **Silent mode** there.
 
-By default, silent mode is off, and the bot will ask you for the save location of each file.
+By default, silent mode is off, and the bot asks for the save location of each file.
 
-When silent mode is enabled, the bot will save files directly to the default location without confirmation.
-
-Before enabling silent mode, you need to set the default save location using the `/storage` command.
+When silent mode is enabled, the bot saves files directly to the default location without confirmation. Set the default storage and directory in `/config` before enabling it.

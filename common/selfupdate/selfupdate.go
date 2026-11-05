@@ -12,15 +12,24 @@ import (
 	"sync/atomic"
 
 	"github.com/blang/semver"
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/unvgo/ghselfupdate"
 )
 
 var (
-	ErrDevBuild    = errors.New("not a release build")
-	ErrDocker      = errors.New("built into a Docker image")
-	ErrNotWritable = errors.New("the binary's folder is not writable")
+	ErrDevBuild      = errors.New("not a release build")
+	ErrDocker        = errors.New("built into a Docker image")
+	ErrNotWritable   = errors.New("the binary's folder is not writable")
+	ErrRestart       = errors.New(RestartSignal)
+	ErrNoRelease     = errors.New("no release found")
+	ErrMajorUpgrade  = errors.New("major upgrade requires a manual download and migration review")
+	ErrAlreadyLatest = errors.New("already on the latest version")
 )
+
+// RestartSignal marks a handler error that asks the client to restart the
+// process after an update.
+const RestartSignal = "saveanybot-restart"
 
 var (
 	restarting atomic.Bool
@@ -74,15 +83,39 @@ func Updatable() error {
 	return nil
 }
 
+// CheckTarget validates that latest can be installed by this build.
+func CheckTarget(current, latest semver.Version) error {
+	if latest.Major > current.Major {
+		return fmt.Errorf("%w: %s -> %s", ErrMajorUpgrade, current, latest)
+	}
+	if !latest.GT(current) {
+		return fmt.Errorf("%w: %s", ErrAlreadyLatest, current)
+	}
+	return nil
+}
+
 func Update(current semver.Version) (*ghselfupdate.Release, error) {
 	if err := Updatable(); err != nil {
 		return nil, err
 	}
-	rel, err := ghselfupdate.UpdateSelf(current, config.GitRepo)
+	latest, found, err := ghselfupdate.DetectLatest(config.GitRepo)
 	if err != nil {
+		return nil, fmt.Errorf("failed to detect latest release: %w", err)
+	}
+	if !found {
+		return nil, ErrNoRelease
+	}
+	if err := CheckTarget(current, latest.Version); err != nil {
+		return nil, err
+	}
+	exe, err := SelfPath()
+	if err != nil {
+		return nil, err
+	}
+	if err := ghselfupdate.DefaultUpdater().UpdateTo(latest, exe); err != nil {
 		return nil, fmt.Errorf("failed to update: %w", err)
 	}
-	return rel, nil
+	return latest, nil
 }
 
 func Restart() error {
@@ -96,6 +129,7 @@ func Restart() error {
 func CleanLeftovers() {
 	exe, err := SelfPath()
 	if err != nil {
+		log.Warnf("Failed to resolve executable path for cleanup: %v", err)
 		return
 	}
 	cleanLeftovers(exe)
@@ -103,10 +137,18 @@ func CleanLeftovers() {
 
 func cleanLeftovers(exe string) {
 	dir, name := filepath.Split(exe)
-	_ = os.Remove(filepath.Join(dir, "."+name+".old"))
+	if err := os.Remove(filepath.Join(dir, "."+name+".old")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Warnf("Failed to remove stale update file: %v", err)
+	}
 	staged := filepath.Join(dir, "."+name+".new")
-	if same, err := sameContent(exe, staged); err == nil && same {
-		_ = os.Remove(staged)
+	if same, err := sameContent(exe, staged); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			log.Warnf("Failed to compare staged update: %v", err)
+		}
+	} else if same {
+		if err := os.Remove(staged); err != nil {
+			log.Warnf("Failed to remove staged update: %v", err)
+		}
 	}
 }
 
@@ -115,8 +157,14 @@ func writable(dir string) bool {
 	if err != nil {
 		return false
 	}
-	f.Close()
-	os.Remove(f.Name())
+	if err := f.Close(); err != nil {
+		log.Warnf("Failed to close update probe: %v", err)
+		return false
+	}
+	if err := os.Remove(f.Name()); err != nil {
+		log.Warnf("Failed to remove update probe: %v", err)
+		return false
+	}
 	return true
 }
 

@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 
+	"github.com/gotd/td/constant"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 )
 
@@ -19,11 +20,20 @@ type TelegramStorageConfig struct {
 	// only effective when SkipLarge is false
 	// use zip when splitting non-video files or when lossless video splitting is disabled/unavailable
 	SplitSizeMB int64 `toml:"split_size_mb" mapstructure:"split_size_mb" json:"split_size_mb"`
+	// Use metadata text as the caption when the live source caption is absent.
+	UseMetadataCaption bool `toml:"use_metadata_caption" mapstructure:"use_metadata_caption" json:"use_metadata_caption"`
+	// Use grouped_id from metadata to preserve source media groups when the live
+	// source group key is absent.
+	UseMetadataAlbum bool `toml:"use_metadata_album" mapstructure:"use_metadata_album" json:"use_metadata_album"`
 }
 
 func (m *TelegramStorageConfig) Validate() error {
 	if m.ChatID == 0 {
 		return fmt.Errorf("chat_id is required for telegram storage")
+	}
+	peerID := constant.TDLibPeerID(m.ChatID)
+	if !peerID.IsUser() && !peerID.IsChat() && !peerID.IsChannel() {
+		return fmt.Errorf("chat_id must be a Bot API style user or chat ID")
 	}
 	if m.RateLimit < 0 || m.RateBurst < 0 {
 		return fmt.Errorf("rate_limit and rate_burst must be greater than 0 for telegram storage")

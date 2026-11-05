@@ -10,6 +10,7 @@ import (
 )
 
 var _ core.Executable = (*Task)(nil)
+var _ core.DestinationInfo = (*Task)(nil)
 
 type Task struct {
 	ID       string
@@ -28,6 +29,17 @@ func (t *Task) Title() string {
 		return fmt.Sprintf("[%s](%s->%s:%s)", t.Type(), t.URLs[0], t.Storage.Name(), t.StorPath)
 	}
 	return fmt.Sprintf("[%s](%d URLs->%s:%s)", t.Type(), urlCount, t.Storage.Name(), t.StorPath)
+}
+
+func (t *Task) StorageName() string {
+	if t.Storage == nil {
+		return ""
+	}
+	return t.Storage.Name()
+}
+
+func (t *Task) StoragePath() string {
+	return t.StorPath
 }
 
 // Type implements core.Executable.

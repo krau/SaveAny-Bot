@@ -34,8 +34,8 @@ func (m *mockStorage) Save(ctx context.Context, reader io.Reader, path string) e
 	return nil
 }
 
-func (m *mockStorage) Exists(ctx context.Context, path string) bool {
-	return false
+func (m *mockStorage) Exists(ctx context.Context, path string) (bool, error) {
+	return false, nil
 }
 
 func (m *mockStorage) JoinStoragePath(path string) string {

@@ -10,8 +10,12 @@ permissions:
   packages: write
 
 jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
   create-release:
     name: Create Release
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,18 +25,26 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v3
+        with:
+          prerelease: ${{ contains(github.ref_name, '-') }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
 
       - name: Setup node
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
 
-      - run: npx changelogithub
+      - run: pnpm dlx changelogithub
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
   build-matrix:
     name: Release Go Binary
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -45,11 +57,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.27.x"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: web/ui/pnpm-lock.yaml
+
       - name: Extract version from Git Ref
         id: extract_version
         run: |
           VERSION=$(echo "${{ github.ref }}" | sed 's/refs\/tags\/v//')
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Build Web UI
+        run: |
+          cd web/ui
+          pnpm install --frozen-lockfile
+          pnpm run build
 
       - name: Release Go Binary
         uses: wangyoucao577/go-release-action@v1

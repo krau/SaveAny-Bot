@@ -1,6 +1,6 @@
 <div align="center">
 
-# <img src="docs/static/logo.png" width="45" align="center"> Save Any Bot
+# <img src="docs/static/logo.svg" width="45" align="center"> Save Any Bot
 
 > **把 Telegram 上的文件转存到多种存储端**
 
@@ -15,19 +15,19 @@
 
 </div>
 
-## 🎯 特性
+## 特性
 
-- 支持文档/视频/图片/贴纸…甚至还有 [Telegraph](https://telegra.ph/)
-- 破解禁止保存的文件
+- 支持文档、视频、图片、贴纸及 [Telegraph](https://telegra.ph/) 图集
+- 支持转存受限频道中禁止转发与保存的内容
 - 批量下载
 - 流式传输
-- 多用户使用
-- 基于存储规则的自动整理
-- 监听并自动转存指定聊天的消息, 支持过滤
-- 在不同存储端之间转存文件
-- 集成 yt-dlp, 从所支持的网站下载并转存媒体文件
-- 集成 Aria2, 支持直链/磁力下载和转存
-- 使用 js 编写解析器插件以转存任意网站的文件
+- 多用户支持
+- 基于规则自动分类整理
+- 监听指定聊天并按过滤器自动转存
+- 存储端之间互相传输文件
+- 集成 yt-dlp，下载视频并转存
+- 集成 Aria2，支持直链与磁力链接转存
+- 支持编写 JavaScript 解析器插件扩展站点
 - 存储端支持:
   - Alist
   - S3
@@ -38,38 +38,45 @@
 
 ## 快速开始
 
-创建文件 `config.toml` 并填入以下内容:
-
-```toml
-[telegram]
-token = "" # 你的 Bot Token, 在 @BotFather 获取
-[telegram.proxy]
-# 启用代理连接 telegram
-enable = false
-url = "socks5://127.0.0.1:7890"
-
-[[storages]]
-name = "本地磁盘"
-type = "local"
-enable = true
-base_path = "./downloads"
-
-[[users]]
-id = 114514 # 你的 Telegram 账号 id
-storages = []
-blacklist = true
-```
-
-使用 Docker 运行 Save Any Bot:
+SaveAny-Bot 通过 Web 控制台配置。启动时挂载数据、下载和缓存目录：
 
 ```bash
 docker run -d --name saveany-bot \
-    -v ./config.toml:/app/config.toml \
+    -p 28080:28080 \
+    -e SAVEANY_LISTEN=0.0.0.0:28080 \
+    -v ./data:/app/data \
     -v ./downloads:/app/downloads \
+    -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-请 [**查看文档**](https://sabot.unv.app/) 以获取更多配置选项和使用方法.
+Web 界面默认监听 `127.0.0.1:28080`。启动日志会输出带访问 Token 的直达地址：
+
+```bash
+docker logs saveany-bot | grep -E "Web UI available at|Generated web admin password"
+```
+
+直接运行二进制文件时，可通过命令行指定监听地址：
+
+```bash
+./saveany-bot --listen 0.0.0.0:28080
+```
+
+访问该地址即可登录。首启日志同时包含初始管理员密码，登录后可在侧栏修改。若未在“设置 → Web”中指定 Token，每次启动均会重新生成。初次登录可根据指南页面完成配置：
+
+1. 连接 Telegram Bot。
+2. 添加存储位置。
+3. 授权 Telegram 账号。
+
+完成后向 Bot 发送文件或消息链接，即可在任务页查看转存进度。
+
+若使用预编译二进制文件，解压后直接运行，程序将自动创建 `data/` 目录并输出访问地址：
+
+```bash
+./saveany-bot
+```
+
+更多存储配置与使用方法请参阅[官方文档](https://sabot.unv.app/)。
 
 ## 赞助
 

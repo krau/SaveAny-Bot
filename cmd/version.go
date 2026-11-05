@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -16,8 +17,9 @@ var VersionCmd = &cobra.Command{
 	Use:     "version",
 	Aliases: []string{"v"},
 	Short:   "Print the version number of saveany-bot",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("saveany-bot version: %s %s/%s\nBuildTime: %s, Commit: %s\n", config.Version, runtime.GOOS, runtime.GOARCH, config.BuildTime, config.GitCommit)
+		return nil
 	},
 }
 
@@ -25,42 +27,37 @@ var upgradeCmd = &cobra.Command{
 	Use:     "upgrade",
 	Aliases: []string{"up"},
 	Short:   "Upgrade saveany-bot to the latest version",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		v, err := semver.Parse(config.Version)
 		if err != nil {
-			fmt.Println("Currently in development version or version info injection failed:", err)
-			return
+			return fmt.Errorf("current build has no release version: %w", err)
 		}
 		if err := selfupdate.Updatable(); err != nil {
-			fmt.Println("This build cannot update itself:", err)
-			return
+			return fmt.Errorf("this build cannot update itself: %w", err)
 		}
 		latest, found, err := ghselfupdate.DetectLatest(config.GitRepo)
 		if err != nil {
-			fmt.Println("Error occurred while detecting latest version:", err)
-			return
+			return fmt.Errorf("detect latest release: %w", err)
 		}
 		if !found {
-			fmt.Println("No releases found")
-			return
+			return errors.New("no releases found")
 		}
 		if latest.Version.Major != v.Major {
-			fmt.Printf("Major version upgrade detected: %s -> %s. Please manually download the latest version and check the migration guide.\n", v, latest.Version)
-			return
+			return fmt.Errorf("major upgrade %s -> %s requires a manual download and migration review", v, latest.Version)
 		}
 		if latest.Version.Equals(v) || latest.Version.LT(v) {
 			fmt.Println("Current binary is the latest version", config.Version)
-			return
+			return nil
 		}
 		fmt.Printf("Updating to version %s...\n", latest.Version)
 		latest, err = selfupdate.Update(v)
 		if err != nil {
-			fmt.Println("Update failed:", err)
-			return
+			return fmt.Errorf("update failed: %w", err)
 		}
 		fmt.Println("Successfully updated to version", latest.Version)
 		fmt.Println("Release note:\n", latest.ReleaseNotes)
 		fmt.Println("Restart saveany-bot to use it.")
+		return nil
 	},
 }
 

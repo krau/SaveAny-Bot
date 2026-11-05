@@ -28,11 +28,13 @@ type retry struct {
 func (r retry) Handle(next tg.Invoker) telegram.InvokeFunc {
 	return func(ctx context.Context, input bin.Encoder, output bin.Decoder) error {
 		retries := 0
+		var lastErr error
 
 		for retries < r.max {
 			if err := next.Invoke(ctx, input, output); err != nil {
 				if tgerr.Is(err, r.errors...) {
 					log.FromContext(ctx).Debug("retry middleware", "retries", retries, "error", err)
+					lastErr = err
 					retries++
 					continue
 				}
@@ -42,7 +44,10 @@ func (r retry) Handle(next tg.Invoker) telegram.InvokeFunc {
 			return nil
 		}
 
-		return fmt.Errorf("retry limit reached after %d attempts", r.max)
+		if lastErr == nil {
+			return fmt.Errorf("retry limit reached after %d attempts", r.max)
+		}
+		return fmt.Errorf("retry limit reached after %d attempts: %w", r.max, lastErr)
 	}
 }
 

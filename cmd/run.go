@@ -7,26 +7,20 @@ import (
 	"strings"
 	"time"
 
-	"slices"
-
 	"github.com/charmbracelet/log"
-	"github.com/krau/SaveAny-Bot/api"
-	"github.com/krau/SaveAny-Bot/client/bot"
-	userclient "github.com/krau/SaveAny-Bot/client/user"
-	"github.com/krau/SaveAny-Bot/common/cache"
-	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/spf13/cobra"
+
+	"github.com/krau/SaveAny-Bot/app"
+	"github.com/krau/SaveAny-Bot/boot"
 	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/database"
-	"github.com/krau/SaveAny-Bot/parsers"
-	"github.com/krau/SaveAny-Bot/storage"
-	"github.com/spf13/cobra"
 )
 
 func Run(cmd *cobra.Command, _ []string) {
 	ctx, cancel := context.WithCancel(cmd.Context())
+	defer cancel()
 	logger := log.NewWithOptions(os.Stdout, log.Options{
 		Level:           log.InfoLevel,
 		ReportTimestamp: true,
@@ -38,34 +32,36 @@ func Run(cmd *cobra.Command, _ []string) {
 
 	selfupdate.CleanLeftovers()
 
-	configFile := config.GetConfigFile(cmd)
-	if err := config.Init(ctx, configFile); err != nil {
-		logger.Fatal("Init failed", "error", err)
-	}
-
-	level, err := log.ParseLevel(strings.TrimSpace(config.C().Log.Level))
-	if err != nil {
-		logger.Warn("Invalid log level, fallback to debug", "level", config.C().Log.Level, "error", err)
-		level = log.DebugLevel
-	}
-	logger.SetLevel(level)
-
-	exitChan, err := initAll(ctx)
+	opts := boot.Parse(cmd)
+	opts.InitWeb = true
+	res, err := boot.Init(ctx, opts)
 	if err != nil {
 		logger.Fatal("Init failed", "error", err)
 	}
-	go func() {
-		<-exitChan
-		cancel()
-	}()
+	cfg := res.Config
+	if level, err := log.ParseLevel(strings.TrimSpace(cfg.Log.Level)); err == nil {
+		logger.SetLevel(level)
+	}
 
-	core.Run(ctx)
+	if unfinished, err := database.HasUnfinishedTasks(ctx); err != nil {
+		logger.Errorf("Failed to inspect unfinished tasks; keeping cache: %v", err)
+	} else if !unfinished {
+		cleanCache(cfg)
+	}
+	application := app.New(ctx, res.Settings, app.Options{
+		DataDir: res.DataDir,
+		DBPath:  res.DBPath,
+		Listen:  res.Listen,
+		NoWeb:   res.NoWeb,
+	})
+	if err := application.Start(); err != nil {
+		logger.Fatal("Init failed", "error", err)
+	}
 
-	<-ctx.Done()
+	<-application.Done()
 	logger.Info("Exiting...")
 	defer logger.Info("Exit complete")
-	core.Close()
-	cleanCache()
+	application.Stop()
 	if selfupdate.ShouldRestart() {
 		logger.Info("Restarting to run the updated version...")
 		if err := selfupdate.Restart(); err != nil {
@@ -74,52 +70,32 @@ func Run(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func initAll(ctx context.Context) (<-chan struct{}, error) {
-	cache.Init()
-	logger := log.FromContext(ctx)
-	i18n.Init(config.C().Lang)
-	logger.Info("Initializing...")
-	database.Init(ctx)
-	storage.LoadStorages(ctx)
-	if config.C().Parser.PluginEnable {
-		for _, dir := range config.C().Parser.PluginDirs {
-			if err := parsers.LoadPlugins(ctx, dir); err != nil {
-				logger.Error("Failed to load parser plugins", "dir", dir, "error", err)
-			} else {
-				logger.Debug("Loaded parser plugins from directory", "dir", dir)
-			}
-		}
-	}
-	if config.C().Telegram.Userbot.Enable {
-		_, err := userclient.Login(ctx)
-		if err != nil {
-			logger.Fatal("User login failed", "error", err)
-		}
-	}
-	if err := api.Start(ctx); err != nil {
-		logger.Fatal("Failed to start API server", "error", err)
-	}
-	return bot.Init(ctx), nil
-}
-
-func cleanCache() {
-	if config.C().NoCleanCache {
+func cleanCache(cfg config.Config) {
+	if cfg.NoCleanCache {
 		return
 	}
-	if config.C().Temp.BasePath != "" && !config.C().Stream {
-		if slices.Contains([]string{"/", ".", "\\", ".."}, filepath.Clean(config.C().Temp.BasePath)) {
-			log.Error("Invalid cache directory", "path", config.C().Temp.BasePath)
-			return
-		}
+	if cfg.Temp.BasePath != "" && !cfg.Stream {
 		currentDir, err := os.Getwd()
 		if err != nil {
 			log.Error("Failed to get working directory", "error", err)
 			return
 		}
-		cachePath := filepath.Join(currentDir, config.C().Temp.BasePath)
+		cachePath := cfg.Temp.BasePath
+		if !filepath.IsAbs(cachePath) {
+			cachePath = filepath.Join(currentDir, cachePath)
+		}
 		cachePath, err = filepath.Abs(cachePath)
 		if err != nil {
 			log.Error("Failed to get absolute cache path", "error", err)
+			return
+		}
+		cachePath = filepath.Clean(cachePath)
+		// Never clean the working directory or one of its ancestors.
+		if rel, err := filepath.Rel(cachePath, currentDir); err != nil || rel == "." || !strings.HasPrefix(rel, "..") {
+			log.Error("Refusing to clean unsafe cache directory", "path", cachePath)
+			return
+		}
+		if _, err := os.Stat(cachePath); os.IsNotExist(err) {
 			return
 		}
 		log.Info("Cleaning cache directory", "path", cachePath)

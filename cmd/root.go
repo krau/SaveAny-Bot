@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"os"
 
+	"github.com/krau/SaveAny-Bot/boot"
+	"github.com/krau/SaveAny-Bot/cmd/testenv"
 	"github.com/krau/SaveAny-Bot/cmd/upload"
 	"github.com/krau/SaveAny-Bot/cmd/watch"
-	"github.com/krau/SaveAny-Bot/config"
 	"github.com/spf13/cobra"
 )
 
@@ -17,13 +18,14 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	config.RegisterFlags(rootCmd)
+	boot.RegisterFlags(rootCmd)
+	testenv.Register(rootCmd)
 	upload.Register(rootCmd)
 	watch.Register(rootCmd)
 }
 
 func Execute(ctx context.Context) {
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
-		fmt.Println(err)
+		os.Exit(1)
 	}
 }

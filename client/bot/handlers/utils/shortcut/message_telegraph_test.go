@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/utils/tphutil"
 )
 
 func TestFindTelegraphURL(t *testing.T) {
@@ -145,18 +146,18 @@ func TestParseTelegraphPagePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseTelegraphPagePath(tt.pageURL)
+			got, err := tphutil.ParsePagePath(tt.pageURL)
 			if tt.wantErr {
 				if err == nil {
-					t.Fatalf("parseTelegraphPagePath(%q) returned no error", tt.pageURL)
+					t.Fatalf("tphutil.ParsePagePath(%q) returned no error", tt.pageURL)
 				}
 				return
 			}
 			if err != nil {
-				t.Fatalf("parseTelegraphPagePath(%q) failed: %v", tt.pageURL, err)
+				t.Fatalf("tphutil.ParsePagePath(%q) failed: %v", tt.pageURL, err)
 			}
 			if got != tt.want {
-				t.Fatalf("parseTelegraphPagePath(%q) = %q, want %q", tt.pageURL, got, tt.want)
+				t.Fatalf("tphutil.ParsePagePath(%q) = %q, want %q", tt.pageURL, got, tt.want)
 			}
 		})
 	}

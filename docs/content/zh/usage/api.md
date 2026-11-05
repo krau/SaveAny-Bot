@@ -5,45 +5,33 @@ weight: 20
 
 # HTTP API
 
-SaveAny-Bot 提供了一套 HTTP API，允许你通过程序化方式创建下载/转存任务、查询任务状态、取消任务等，无需通过 Telegram 操作。
+SaveAny-Bot 提供 HTTP API，支持通过脚本或第三方程序创建下载/转存任务、查询状态及取消任务。
 
 ## 启用 API
 
-在 `config.toml` 中添加或修改以下配置：
+API 与 Web 控制台共用监听地址和端口，不需要单独启用。Web 控制台默认监听 `127.0.0.1:28080`。在 **设置 → Web** 中配置访问 Token：
 
-```toml
-[api]
-enable = true
-host   = "0.0.0.0"   # 监听地址，默认 0.0.0.0
-port   = 8080         # 监听端口，默认 8080
-token  = "your-token" # 鉴权 Token，强烈建议设置
-```
+- `访问 Token`：用于 `/?token=...` 直接登录 Web UI，也用于 API 的 `Authorization: Bearer <token>`。
+- `监听地址`：控制台与 API 共用；需要从其他主机访问时使用 `0.0.0.0:28080`。
 
-也可通过环境变量覆盖（前缀 `SAVEANY_`）：
+所有接口位于 `/api/v1` 下。
 
-| 环境变量 | 对应配置项 |
-|---|---|
-| `SAVEANY_API_ENABLE` | `api.enable` |
-| `SAVEANY_API_HOST` | `api.host` |
-| `SAVEANY_API_PORT` | `api.port` |
-| `SAVEANY_API_TOKEN` | `api.token` |
+## 认证
 
-{{< hint warning >}}
-若 `token` 为空，API 服务将**不进行任何鉴权**即可访问，存在安全风险。
-{{< /hint >}}
-
-## 鉴权
-
-当配置了 `token` 时，所有 API 请求均需在 HTTP 请求头中携带 Bearer Token：
+在 **设置 → Web** 中配置访问 Token，然后在请求头中携带：
 
 ```
 Authorization: Bearer <your-token>
 ```
 
+未配置访问 Token 时，每次启动都会生成随机 Token，并作为 Web UI 直达地址的一部分打印到日志。该 Token 在当前进程内同样可用于 Bearer 认证。
+
+也可以使用 Web 控制台登录 Cookie。使用 Cookie 的非 GET 请求还需要携带 `X-CSRF-Token`。
+
 鉴权失败时返回 `401`：
 
 ```json
-{ "error": "unauthorized", "message": "invalid token" }
+{ "error": "unauthorized", "message": "authentication required" }
 ```
 
 ## 错误响应格式
@@ -62,7 +50,6 @@ Authorization: Bearer <your-token>
 | 错误码 | HTTP 状态 | 含义 |
 |---|---|---|
 | `unauthorized` | 401 | 鉴权失败 |
-| `method_not_allowed` | 405 | HTTP 方法不正确 |
 | `invalid_request` | 400 | 请求体/参数非法 |
 | `task_creation_failed` | 400 | 任务创建失败 |
 | `task_not_found` | 404 | 任务 ID 不存在 |
@@ -80,7 +67,7 @@ Authorization: Bearer <your-token>
 **响应 `200 OK`：**
 
 ```json
-{ "status": "ok" }
+{ "status": "ok", "version": "1.0.0" }
 ```
 
 ---
@@ -94,11 +81,41 @@ Authorization: Bearer <your-token>
 ```json
 {
   "storages": [
-    { "name": "local",   "type": "local" },
-    { "name": "MyMinio", "type": "s3" }
+    {
+      "storage_id": 1,
+      "name": "local",
+      "type": "local",
+      "enable": true,
+      "config": { "base_path": "/app/downloads" },
+      "config_version": 1
+    }
   ]
 }
 ```
+
+---
+
+### GET /api/v1/meta — API 与能力元数据
+
+返回冻结的 v1 能力词表和数据库 schema 版本。
+
+```json
+{
+  "api_version": "v1",
+  "version": "1.0.0",
+  "schema_version": 1,
+  "chat_id_format": "bot_api",
+  "task_types": ["tgfiles", "tphpics", "parseditem", "directlinks", "aria2", "ytdlp", "transfer"],
+  "task_statuses": ["queued", "running", "completed", "partial", "failed", "cancelled"],
+  "task_item_statuses": ["completed", "failed", "skipped", "cancelled"],
+  "storage_types": ["local", "webdav", "alist", "telegram", "s3", "rclone"],
+  "rule_types": ["FILENAME-REGEX", "MESSAGE-REGEX", "IS-ALBUM"],
+  "filename_strategies": ["default", "message", "template"],
+  "conflict_strategies": ["rename", "ask", "overwrite", "skip"]
+}
+```
+
+聊天 ID 使用 Bot API 形式：用户为正数，普通群为负数，超级群和频道使用 `-100...`。
 
 ---
 
@@ -109,13 +126,8 @@ Authorization: Bearer <your-token>
 ```json
 {
   "types": [
-    "directlinks",
-    "ytdlp",
-    "aria2",
-    "parseditem",
-    "tgfiles",
-    "tphpics",
-    "transfer"
+    { "type": "directlinks", "label": "directlinks" },
+    { "type": "tgfiles", "label": "tgfiles" }
   ]
 }
 ```
@@ -124,12 +136,12 @@ Authorization: Bearer <your-token>
 
 ### GET /api/v1/media-metadata — 媒体元数据查询
 
-对 Telegram 消息链接、直链音视频地址或其他 yt-dlp 支持的媒体链接进行探测，在不完整下载文件的情况下返回标题、缩略图、上传者和音视频时长等可用元数据。
+探测 Telegram 消息链接、直链音视频或 yt-dlp 支持的媒体链接，无需完整下载即可提取标题、缩略图、上传者和时长等元数据。
 
 请求：
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
+curl -X GET "http://127.0.0.1:28080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -163,7 +175,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "<任务类型>",
-  "storage": "<存储名>",
+  "storage_id": 1,
   "path":    "<子目录>",
   "webhook": "<回调URL>",
   "params":  { }
@@ -173,7 +185,7 @@ Authorization: Bearer <token>
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | `type` | string | 是 | 任务类型，见下文 |
-| `storage` | string | 是 | 目标存储名，须与配置中的存储名一致 |
+| `storage_id` | uint | 是 | 目标存储 ID |
 | `path` | string | 否 | 存储内的子目录路径 |
 | `webhook` | string | 否 | 任务完成/失败时的回调地址 |
 | `params` | object | 是 | 各任务类型的专属参数，见下文 |
@@ -182,9 +194,11 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "task_id":    "abc123xyz",
-  "type":       "directlinks",
-  "status":     "queued",
+  "task_id":      "abc123xyz",
+  "type":         "directlinks",
+  "status":       "queued",
+  "storage_id":   1,
+  "storage_name": "local",
   "created_at": "2026-03-11T10:00:00Z"
 }
 ```
@@ -198,7 +212,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "directlinks",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "downloads",
   "params": {
     "urls": [
@@ -219,12 +233,12 @@ Authorization: Bearer <token>
 需要在系统中安装 yt-dlp。
 {{< /hint >}}
 
-通过 yt-dlp 下载视频/音频，支持 YouTube、Bilibili 等 1000+ 网站。
+通过 yt-dlp 下载音视频，支持主流视频网站。
 
 ```json
 {
   "type":    "ytdlp",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "videos",
   "params": {
     "urls":  ["https://www.youtube.com/watch?v=xxx"],
@@ -241,7 +255,7 @@ Authorization: Bearer <token>
 ##### aria2 — Aria2 下载
 
 {{< hint warning >}}
-需要在配置文件中启用并配置 Aria2 RPC。
+需要在 **设置 → Aria2** 中启用并配置 Aria2 RPC。
 {{< /hint >}}
 
 通过 Aria2 下载管理器下载文件，支持 HTTP/HTTPS、FTP、BitTorrent（磁力链接、种子）等协议。
@@ -249,7 +263,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "aria2",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "downloads",
   "params": {
     "urls":    ["magnet:?xt=urn:btih:..."],
@@ -270,7 +284,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "parseditem",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "parsed",
   "params": {
     "url": "https://some-site.com/page"
@@ -298,7 +312,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "tgfiles",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "telegram",
   "params": {
     "message_links": [
@@ -311,7 +325,10 @@ Authorization: Bearer <token>
 
 | params 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `message_links` | []string | 是 | Telegram 消息链接列表，至少 1 条 |
+| `message_links` | []string | 否 | Telegram 消息链接列表；与 `chat_id` + `message_range` 二选一 |
+| `chat_id` | string | 否 | 与消息范围配合使用的 Bot API 聊天 ID 或用户名 |
+| `message_range` | string | 否 | 消息范围，例如 `100-120` |
+| `filter` | string | 否 | 可选正则，匹配消息文本或文件名 |
 
 ##### tphpics — Telegraph 文章图片下载
 
@@ -322,7 +339,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "tphpics",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "telegraph",
   "params": {
     "telegraph_url": "https://telegra.ph/Some-Article-01-01"
@@ -339,34 +356,34 @@ Authorization: Bearer <token>
 在两个存储后端之间直接传输文件，无需经过 Telegram。源存储须支持列举（list）和读取（read）操作。
 
 {{< hint info >}}
-`transfer` 任务中，顶层的 `storage` 字段仍然必须填写（用于通过参数校验），但实际使用的存储由 `params` 中的 `source_storage` 和 `target_storage` 决定。
+`transfer` 任务中，顶层的 `storage_id` 字段仍然必须填写（用于通过参数校验），但实际使用的存储由 `params` 中的 `source_storage_id` 和 `target_storage_id` 决定。
 {{< /hint >}}
 
 ```json
 {
   "type":    "transfer",
-  "storage": "local",
+  "storage_id": 1,
   "params": {
-    "source_storage": "MyS3",
-    "source_path":    "backups/",
-    "target_storage": "LocalDisk",
-    "target_path":    "restored/"
+    "source_storage_id": 2,
+    "source_path":       "backups/",
+    "target_storage_id": 1,
+    "target_path":       "restored/"
   }
 }
 ```
 
 | params 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `source_storage` | string | 是 | 源存储名 |
+| `source_storage_id` | uint | 是 | 源存储 ID |
 | `source_path` | string | 是 | 源存储中的路径，须包含至少一个文件 |
-| `target_storage` | string | 是 | 目标存储名 |
+| `target_storage_id` | uint | 是 | 目标存储 ID |
 | `target_path` | string | 是 | 目标存储中的路径 |
 
 ---
 
 ### GET /api/v1/tasks — 列出所有任务
 
-返回所有 API 创建的任务，按创建时间由新到旧排序（仅在内存中保留，重启后清空）。已进入终态的任务在最后一次更新 24 小时后也会被清理，清理任务每 10 分钟执行一次。
+返回所有任务，按创建时间由新到旧排序。任务记录和创建参数持久化在 SQLite 中；排队中和中断的任务会在重启后恢复。终态记录保留到通过 API 删除。
 
 **响应 `200 OK`：**
 
@@ -378,7 +395,8 @@ Authorization: Bearer <token>
       "type":       "directlinks",
       "status":     "running",
       "title":      "file.zip",
-      "storage":    "local",
+      "storage_id":   1,
+      "storage_name": "local",
       "path":       "downloads",
       "error":      "",
       "created_at": "2026-03-11T10:00:00Z",
@@ -411,22 +429,110 @@ Authorization: Bearer <token>
 - `400 invalid_request` — 路径中未提供 task_id
 - `404 task_not_found` — 任务不存在
 
+任务对象在至少一个文件保存了消息元数据时会返回 `metadata_available`。
+
 ---
 
-### DELETE /api/v1/tasks/{task_id} — 取消任务
+### GET /api/v1/tasks/{task_id}/metadata — 查询消息元数据
 
-**路径参数：** `task_id`
+返回 Telegram 文件任务中每个已保存文件的消息元数据。需要先在 **设置 → 消息元数据** 中启用；元数据始终保存在本地数据库。启用“写入旁车 JSON”时还会在实际文件旁写入 `<文件路径>.meta.json`，Telegram 存储会跳过旁车。
+
+**路径参数：** `task_id` — 要查询的任务。
 
 **响应 `200 OK`：**
 
 ```json
-{ "message": "task cancelled successfully" }
+{
+  "task_id": "abc123xyz",
+  "items": [
+    {
+      "index": 1,
+      "name": "saved-video.mp4",
+      "path": "downloads/saved-video.mp4",
+      "metadata": {
+        "version": 1,
+        "message": {
+          "id": 123,
+          "chat": { "id": -1001234567890, "title": "Channel" },
+          "sender": { "id": 123456789, "name": "Alice" },
+          "text": "caption",
+          "grouped_id": 999
+        },
+        "file": {
+          "name": "saved-video.mp4",
+          "media_type": "document",
+          "mime_type": "video/mp4",
+          "size": 12345678,
+          "width": 1920,
+          "height": 1080,
+          "duration": 123.4
+        }
+      }
+    }
+  ]
+}
 ```
+
+关闭“保存消息文本”时不会保存消息正文。不会保存 access hash、Token 或原始 Telegram 对象。
 
 **错误响应：**
 - `400 invalid_request` — 路径中未提供 task_id
 - `404 task_not_found` — 任务不存在
+- `404 metadata_not_found` — 该任务没有已记录的元数据
+
+---
+
+### POST /api/v1/tasks/{task_id}/retry — 重试失败文件
+
+使用已完成任务中失败的文件创建新任务。Bot 会重新拉取原始消息，同时刷新文件引用。仅支持 Telegram 文件任务（`tgfiles`）。
+
+**路径参数：** `task_id` — 要重试的任务。
+
+**响应 `202 Accepted`：**
+
+```json
+{ "task_id": "d4f7u1crvimcs4n4j8e1", "status": "queued", "file_count": 2 }
+```
+
+**错误响应：**
+- `409 task_active` — 任务仍在排队或运行中
+- `409 nothing_to_retry` — 没有失败或未完成的文件
+- `409 storage_missing` / `409 source_unavailable`
+- `400 retry_unsupported` — 该任务类型不支持重试
+- `503 client_unavailable` — 没有运行中的 Telegram 客户端
+
+任务响应包含单文件结果：列表响应返回失败总数（`failed_count`）以及每个任务最多 5 个失败项（`failed_items`），单任务查询返回全部记录（`items`）。
+
+---
+
+### POST /api/v1/tasks/{task_id}/cancel — 取消任务
+
+取消排队中或运行中的任务。
+
+**路径参数：** `task_id` — 要取消的任务。
+
+**响应 `202 Accepted`：**
+
+```json
+{ "task_id": "abc123xyz", "status": "cancelled" }
+```
+
+**错误响应：**
+- `409 task_not_active` — 任务已经结束
+- `404 task_not_found` — 任务不存在
 - `500 cancel_failed` — 取消操作失败
+
+---
+
+### DELETE /api/v1/tasks/{task_id} — 删除任务
+
+删除已结束的任务及其记录。取消排队中或运行中的任务请使用 `POST /api/v1/tasks/{task_id}/cancel`。
+
+**路径参数：** `task_id`
+
+**响应 `204 No Content`：**
+- `409 task_active` — 请先取消任务
+- `404 task_not_found` — 任务不存在
 
 ---
 
@@ -437,17 +543,20 @@ Authorization: Bearer <token>
 | `queued` | 已入队，等待执行 |
 | `running` | 正在执行 |
 | `completed` | 已成功完成 |
+| `partial` | 已完成，但部分文件失败 |
 | `failed` | 执行失败 |
-| `cancelled` | 已通过 DELETE 接口取消 |
+| `cancelled` | 已通过取消接口取消 |
+
+排队中的任务和进程停止时正在运行的任务都会保存创建参数，重启后自动重新入队。Telegram 下载会从部分缓存继续，已完成上传的文件会被跳过。
 
 ---
 
 ## Webhook 回调
 
-创建任务时可设置 `webhook` 字段。当任务进入 `completed` 或 `failed` 状态时，Bot 会向该地址发送一个 `POST` 请求。
+创建任务时可设置 `webhook` 字段。当任务进入 `completed`、`partial` 或 `failed` 状态时，Bot 会向该地址发送一个 `POST` 请求。
 
 {{< hint info >}}
-被取消的任务**不会**触发 Webhook——取消操作的发起方已经知晓结果。每个任务最多只会发送一次回调。
+已取消的任务不会触发 Webhook，每个任务最多发送一次回调。
 {{< /hint >}}
 
 回调为异步发送，不会因为回调地址响应缓慢或不可达而阻塞任务。
@@ -466,13 +575,14 @@ User-Agent: SaveAny-Bot/1.0
   "task_id":      "abc123xyz",
   "type":         "directlinks",
   "status":       "completed",
-  "storage":      "local",
+  "storage_id":   1,
+  "storage_name": "local",
   "path":         "downloads",
   "completed_at": "2026-03-11T10:01:00Z",
   "error":        ""
 }
 ```
 
-`completed_at` 仅在状态为 `completed` 或 `failed` 时出现。`error` 仅在有错误时出现。
+`completed_at` 仅在状态为 `completed`、`partial` 或 `failed` 时出现。`error` 仅在有错误时出现。
 
 **重试机制：** 最多尝试 3 次。响应非 2xx 或请求出错时会重试，间隔依次为 100 毫秒、400 毫秒。每次请求超时为 30 秒。

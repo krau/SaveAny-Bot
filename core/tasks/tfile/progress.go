@@ -39,6 +39,7 @@ type Progress struct {
 	lastUpdatePercent atomic.Int32
 	lastUpdateAt      atomic.Int64
 	updateMu          sync.Mutex
+	edits             *tgutil.ProgressEditQueue
 	uploadAttempt     int
 	uploadedBytes     int64
 	actualSize        int64
@@ -220,9 +221,12 @@ func (p *Progress) editMessage(ctx context.Context, taskID string, message rende
 	}
 	req := buildSingleEditMessageRequest(p.MessageID, taskID, message, cancellable)
 	if ext := tgutil.ExtFromContext(ctx); ext != nil {
-		if _, err := ext.EditMessage(p.ChatID, req); err != nil {
-			log.FromContext(ctx).Errorf("Failed to edit file progress message: %v", err)
+		if p.edits == nil {
+			p.edits = tgutil.NewProgressEditQueue(tgutil.SendProgressEdit)
 		}
+		// Queue the edit so a FLOOD_WAIT or a slow RPC never blocks the
+		// transfer goroutine that is holding the progress mutex.
+		p.edits.Submit(ctx, p.ChatID, req, !cancellable)
 	}
 }
 
@@ -233,9 +237,7 @@ func buildSingleEditMessageRequest(messageID int, taskID string, message rendere
 		req.SetEntities(message.Entities)
 	}
 	if cancellable {
-		req.SetReplyMarkup(&tg.ReplyInlineMarkup{Rows: []tg.KeyboardButtonRow{{
-			Buttons: []tg.KeyboardButtonClass{tgutil.BuildCancelButton(taskID)},
-		}}})
+		req.SetReplyMarkup(tgutil.BuildCancelMarkup(taskID))
 	}
 	return req
 }

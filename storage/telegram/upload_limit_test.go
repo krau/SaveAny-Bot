@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
+	"github.com/krau/mygotg/ext"
 )
 
 func TestMaxUploadFileSize(t *testing.T) {

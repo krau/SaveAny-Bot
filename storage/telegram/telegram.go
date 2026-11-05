@@ -2,25 +2,29 @@ package telegram
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/duke-git/lancet/v2/retry"
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/gotd/td/constant"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/telegram/uploader"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/worker"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
+	"github.com/krau/SaveAny-Bot/common/utils/rpclimit"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	storconfig "github.com/krau/SaveAny-Bot/config/storage"
@@ -28,6 +32,7 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 	"golang.org/x/time/rate"
 )
@@ -58,6 +63,8 @@ type batchMediaItem struct {
 	useSingleSave bool
 }
 
+type primaryUploadContextKey struct{}
+
 func (t *Telegram) Init(ctx context.Context, cfg storconfig.StorageConfig) error {
 	telegramConfig, ok := cfg.(*storconfig.TelegramStorageConfig)
 	if !ok {
@@ -86,8 +93,47 @@ func (t *Telegram) Name() string {
 // Exists always reports false: Telegram offers no reliable way to query
 // whether a file already exists in a chat, so conflict policies do not apply
 // to this backend.
-func (t *Telegram) Exists(ctx context.Context, storagePath string) bool {
-	return false
+func (t *Telegram) Exists(ctx context.Context, storagePath string) (bool, error) {
+	return false, nil
+}
+
+// Test verifies that a Telegram client is available and can access the
+// configured chat.
+func (t *Telegram) Test(ctx context.Context) error {
+	tctx := tgutil.ExtFromContext(ctx)
+	if tctx == nil {
+		return fmt.Errorf("telegram client is not available")
+	}
+	chatID := t.config.ChatID
+	if chatID == 0 {
+		return fmt.Errorf("telegram chat_id is required")
+	}
+	peer := ensureInputPeer(tctx, chatID)
+	if peer == nil || peer.Zero() {
+		return fmt.Errorf("telegram chat %d is not accessible", chatID)
+	}
+	plainID := constant.TDLibPeerID(chatID).ToPlain()
+	switch peer.(type) {
+	case *tg.InputPeerChannel:
+		if _, err := tctx.GetChat(chatID); err != nil {
+			return fmt.Errorf("telegram chat %d is not accessible: %w", chatID, err)
+		}
+	case *tg.InputPeerChat:
+		if _, err := tctx.GetChat(plainID); err != nil {
+			return fmt.Errorf("telegram chat %d is not accessible: %w", chatID, err)
+		}
+	case *tg.InputPeerUser:
+		if _, err := tctx.GetUser(plainID); err != nil {
+			return fmt.Errorf("telegram user %d is not accessible: %w", chatID, err)
+		}
+	}
+	return nil
+}
+
+// WriteMetadataSidecar intentionally does nothing: Telegram storage consumes
+// metadata during upload instead of sending a separate sidecar message.
+func (t *Telegram) WriteMetadataSidecar(context.Context, string, []byte) error {
+	return nil
 }
 
 func (t *Telegram) Save(ctx context.Context, r io.Reader, storagePath string) error {
@@ -107,12 +153,40 @@ func (t *Telegram) SaveWithProgress(
 }
 
 func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, progress *uploadProgress) error {
-	storagePath = path.Clean(storagePath)
-	captionOverride := sourceCaptionOverride(ctx)
-	tctx := tgutil.ExtFromContext(ctx)
-	if tctx == nil {
+	primary := tgutil.ExtFromContext(ctx)
+	if primary == nil {
 		return fmt.Errorf("failed to get telegram context")
 	}
+	fallback := primary
+	if original, ok := ctx.Value(primaryUploadContextKey{}).(*ext.Context); ok && original != nil {
+		fallback = original
+	}
+	tctx := t.uploadContext(primary, storagePath)
+	uploadCtx := ctx
+	if tctx != primary {
+		uploadCtx = tgutil.ExtWithContext(ctx, tctx)
+	}
+	err := t.saveWithContext(uploadCtx, tctx, r, storagePath, progress)
+	if err == nil || tctx == fallback || ctx.Err() != nil {
+		return err
+	}
+	rs, ok := r.(io.ReadSeeker)
+	if !ok {
+		return err
+	}
+	if _, seekErr := rs.Seek(0, io.SeekStart); seekErr != nil {
+		return err
+	}
+	if progress != nil {
+		progress.reset(contentLength(ctx))
+	}
+	log.FromContext(ctx).Warnf("Helper upload failed, retrying with primary bot: %v", err)
+	return t.saveWithContext(tgutil.ExtWithContext(ctx, fallback), fallback, r, storagePath, progress)
+}
+
+func (t *Telegram) saveWithContext(ctx context.Context, tctx *ext.Context, r io.Reader, storagePath string, progress *uploadProgress) error {
+	storagePath = path.Clean(storagePath)
+	captionOverride := t.captionOverride(ctx)
 	size := contentLength(ctx)
 	maxUploadSize := maxUploadFileSize(tctx)
 	if t.config.SkipLarge && size > maxUploadSize {
@@ -135,7 +209,7 @@ func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, pr
 			}
 		}
 		upler := t.newUploader(tctx, size, progress)
-		peer := tryGetInputPeer(tctx, chatID)
+		peer := ensureInputPeer(tctx, chatID)
 		if peer == nil || peer.Zero() {
 			return fmt.Errorf("failed to get input peer for chat ID %d", chatID)
 		}
@@ -178,13 +252,13 @@ func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, pr
 				}
 			}
 		}
-		return t.splitUpload(tctx, r, filename, upler, peer, size, splitSize, progress)
+		return t.splitUpload(ctx, tctx, r, filename, upler, peer, size, splitSize, progress)
 	}
 
 	if err := t.limiter.Wait(ctx); err != nil {
 		return fmt.Errorf("rate limit failed: %w", err)
 	}
-	prepared, err := t.prepareMedia(ctx, tctx, r, storagePath, size, nil, progress)
+	prepared, err := t.prepareMedia(ctx, tctx, r, storagePath, size, captionOverride, progress)
 	if err != nil {
 		return err
 	}
@@ -193,6 +267,46 @@ func (t *Telegram) save(ctx context.Context, r io.Reader, storagePath string, pr
 		To(prepared.peer).
 		Media(ctx, prepared.media)
 	return err
+}
+
+// uploadContext picks a helper that can resolve the target path with the same
+// destination as the primary client. Helpers that cannot reach the chat are
+// skipped, so an unusable helper never replaces the primary upload path.
+func (t *Telegram) uploadContext(primary *ext.Context, storagePaths ...string) *ext.Context {
+	if primary == nil {
+		return nil
+	}
+	for _, helper := range worker.UploadExts() {
+		if t.canUploadWith(primary, helper, storagePaths) {
+			return helper
+		}
+	}
+	return primary
+}
+
+func (t *Telegram) canUploadWith(primary, helper *ext.Context, storagePaths []string) bool {
+	if helper == nil {
+		return false
+	}
+	if len(storagePaths) == 0 {
+		return true
+	}
+	for _, storagePath := range storagePaths {
+		primaryName, primaryChatID := t.target(primary, path.Clean(storagePath))
+		helperName, helperChatID := t.target(helper, path.Clean(storagePath))
+		if primaryName != helperName || primaryChatID != helperChatID {
+			return false
+		}
+		peer := ensureInputPeer(helper, helperChatID)
+		if peer == nil || peer.Zero() {
+			return false
+		}
+		// A helper bot cannot initiate a DM with a user who has not started it.
+		if _, isUser := peer.(*tg.InputPeerUser); isUser {
+			return false
+		}
+	}
+	return true
 }
 
 func contentLength(ctx context.Context) int64 {
@@ -204,12 +318,45 @@ func contentLength(ctx context.Context) int64 {
 	return -1
 }
 
-func sourceCaptionOverride(ctx context.Context) *string {
-	caption, ok := storagetypes.SourceCaptionFromContext(ctx)
-	if !ok {
-		return nil
+func (t *Telegram) captionOverride(ctx context.Context) *string {
+	if t.config.UseMetadataCaption {
+		if caption, ok := metadataCaption(storagetypes.MessageMetadataFromContext(ctx)); ok {
+			return &caption
+		}
 	}
-	return &caption
+	if caption, ok := storagetypes.SourceCaptionFromContext(ctx); ok {
+		caption = truncateCaption(caption)
+		return &caption
+	}
+	return nil
+}
+
+func (t *Telegram) albumCaption(item storagetypes.BatchItem) *string {
+	if t.config.UseMetadataCaption {
+		if text, ok := metadataCaption(item.MetadataJSON); ok {
+			return &text
+		}
+	}
+	if item.PreserveCaption {
+		caption := truncateCaption(item.Caption)
+		return &caption
+	}
+	return nil
+}
+
+func metadataCaption(raw string) (string, bool) {
+	if raw == "" {
+		return "", false
+	}
+	var meta struct {
+		Message struct {
+			Text string `json:"text"`
+		} `json:"message"`
+	}
+	if err := json.Unmarshal([]byte(raw), &meta); err != nil || meta.Message.Text == "" {
+		return "", false
+	}
+	return truncateCaption(meta.Message.Text), true
 }
 
 func maxUploadFileSize(tctx *ext.Context) int64 {
@@ -238,7 +385,7 @@ func (t *Telegram) target(tctx *ext.Context, storagePath string) (string, int64)
 	if len(parts) >= 1 {
 		filename = parts[len(parts)-1]
 	}
-	if len(parts) >= 2 && validator.IsAlphaNumeric(parts[0]) {
+	if len(parts) >= 2 && isChatRef(parts[0]) {
 		cid, err := tgutil.ParseChatID(tctx, parts[0])
 		if err != nil {
 			log.FromContext(tctx).Warnf("Failed to parse chat ID from path, using configured chat_id: %s", err)
@@ -249,8 +396,26 @@ func (t *Telegram) target(tctx *ext.Context, storagePath string) (string, int64)
 	return filename, chatID
 }
 
+func isChatRef(value string) bool {
+	if strings.HasPrefix(value, "@") {
+		return len(value) > 1
+	}
+	if value == "" {
+		return false
+	}
+	if _, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return true
+	}
+	for _, r := range value {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9') && r != '_' {
+			return false
+		}
+	}
+	return true
+}
+
 func (t *Telegram) newUploader(tctx *ext.Context, size int64, progress *uploadProgress) *uploader.Uploader {
-	upler := uploader.NewUploader(tctx.Raw).
+	upler := uploader.NewUploader(rpclimit.WrapUploader(tctx.Raw)).
 		WithPartSize(tglimit.MaxUploadPartSize).
 		WithThreads(dlutil.BestThreads(size, config.C().Threads))
 	if progress != nil {
@@ -263,10 +428,19 @@ func mediaCaption(filename string, override *string) []message.StyledTextOption 
 	if override == nil {
 		return []message.StyledTextOption{styling.Plain(filename)}
 	}
-	if *override == "" {
+	caption := truncateCaption(*override)
+	if caption == "" {
 		return nil
 	}
-	return []message.StyledTextOption{styling.Plain(*override)}
+	return []message.StyledTextOption{styling.Plain(caption)}
+}
+
+func truncateCaption(value string) string {
+	runes := []rune(value)
+	if len(runes) > 1024 {
+		runes = runes[:1024]
+	}
+	return string(runes)
 }
 
 func (t *Telegram) prepareMedia(
@@ -281,7 +455,7 @@ func (t *Telegram) prepareMedia(
 	storagePath = path.Clean(storagePath)
 	filename, chatID := t.target(tctx, storagePath)
 	upler := t.newUploader(tctx, size, progress)
-	peer := tryGetInputPeer(tctx, chatID)
+	peer := ensureInputPeer(tctx, chatID)
 	if peer == nil || peer.Zero() {
 		return nil, fmt.Errorf("failed to get input peer for chat ID %d", chatID)
 	}
@@ -392,9 +566,18 @@ func (t *Telegram) saveBatch(
 	items []storagetypes.BatchItem,
 	onProgress func(index int, uploaded, total int64),
 ) error {
-	tctx := tgutil.ExtFromContext(ctx)
-	if tctx == nil {
+	primary := tgutil.ExtFromContext(ctx)
+	if primary == nil {
 		return fmt.Errorf("failed to get telegram context")
+	}
+	ctx = context.WithValue(ctx, primaryUploadContextKey{}, primary)
+	paths := make([]string, 0, len(items))
+	for _, item := range items {
+		paths = append(paths, item.StoragePath)
+	}
+	tctx := t.uploadContext(primary, paths...)
+	if tctx != primary {
+		ctx = tgutil.ExtWithContext(ctx, tctx)
 	}
 
 	inspected := make([]batchMediaItem, 0, len(items))
@@ -406,9 +589,22 @@ func (t *Telegram) saveBatch(
 		mediaItem.index = index
 		inspected = append(inspected, mediaItem)
 	}
-	for _, group := range planMediaGroups(inspected) {
+	for _, group := range t.planMediaGroups(inspected) {
 		if err := t.saveMediaGroup(ctx, tctx, group, onProgress); err != nil {
-			return err
+			if tctx == primary || ctx.Err() != nil {
+				return err
+			}
+			for _, mediaItem := range group {
+				if _, seekErr := mediaItem.item.Reader.Seek(0, io.SeekStart); seekErr != nil {
+					return err
+				}
+			}
+			log.FromContext(ctx).Warnf("Helper batch upload failed, retrying group with primary bot: %v", err)
+			ctx = tgutil.ExtWithContext(ctx, primary)
+			tctx = primary
+			if err := t.saveMediaGroup(ctx, tctx, group, onProgress); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -440,11 +636,26 @@ func (t *Telegram) inspectBatchItem(tctx *ext.Context, item storagetypes.BatchIt
 	return result, nil
 }
 
+func batchGroupKey(item storagetypes.BatchItem, useMetadata bool) string {
+	if useMetadata && item.MetadataGroupKey != "" {
+		return item.MetadataGroupKey
+	}
+	return item.SourceGroupKey
+}
+
 func planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
+	return planMediaGroupsWithMetadata(items, false)
+}
+
+func (t *Telegram) planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
+	return planMediaGroupsWithMetadata(items, t.config.UseMetadataAlbum)
+}
+
+func planMediaGroupsWithMetadata(items []batchMediaItem, useMetadata bool) [][]batchMediaItem {
 	groups := make([][]batchMediaItem, 0, len(items))
 	for i := 0; i < len(items); {
 		item := items[i]
-		if item.useSingleSave || !item.albumEligible || item.item.SourceGroupKey == "" {
+		if item.useSingleSave || !item.albumEligible || batchGroupKey(item.item, useMetadata) == "" {
 			groups = append(groups, items[i:i+1])
 			i++
 			continue
@@ -452,7 +663,7 @@ func planMediaGroups(items []batchMediaItem) [][]batchMediaItem {
 		end := i + 1
 		for end < len(items) && end-i < tglimit.MaxAlbumItems {
 			next := items[end]
-			if next.useSingleSave || !next.albumEligible || next.chatID != item.chatID || next.item.SourceGroupKey != item.item.SourceGroupKey {
+			if next.useSingleSave || !next.albumEligible || next.chatID != item.chatID || batchGroupKey(next.item, useMetadata) != batchGroupKey(item.item, useMetadata) {
 				break
 			}
 			end++
@@ -489,6 +700,7 @@ func (t *Telegram) saveMediaGroup(
 				return fmt.Errorf("failed to seek batch item: %w", err)
 			}
 			itemCtx := context.WithValue(ctx, ctxkey.ContentLength, item.Size)
+			itemCtx = storagetypes.WithMessageMetadata(itemCtx, item.MetadataJSON)
 			if item.PreserveCaption {
 				itemCtx = storagetypes.WithSourceCaption(itemCtx, item.Caption)
 			}
@@ -504,14 +716,15 @@ func (t *Telegram) saveMediaGroup(
 		}
 
 		prepared := make([]preparedMedia, 0, len(group))
-		for _, mediaItem := range group {
+		emptyCaption := ""
+		for index, mediaItem := range group {
 			item := mediaItem.item
 			if _, err := item.Reader.Seek(0, io.SeekStart); err != nil {
 				return fmt.Errorf("failed to seek batch item: %w", err)
 			}
-			var captionOverride *string
-			if item.PreserveCaption {
-				captionOverride = &item.Caption
+			captionOverride := &emptyCaption
+			if index == 0 {
+				captionOverride = t.albumCaption(item)
 			}
 			progress := batchItemUploadProgress(mediaItem, onProgress)
 			media, err := t.prepareMedia(ctx, tctx, item.Reader, item.StoragePath, item.Size, captionOverride, progress)
@@ -542,7 +755,8 @@ func (t *Telegram) CannotStream() string {
 }
 
 func (t *Telegram) splitUpload(
-	ctx *ext.Context,
+	ctx context.Context,
+	tctx *ext.Context,
 	r io.Reader,
 	filename string,
 	upler *uploader.Uploader,
@@ -551,18 +765,29 @@ func (t *Telegram) splitUpload(
 	progress *uploadProgress,
 ) error {
 	tempId := xid.New().String()
-	outputBase := filepath.Join(config.C().Temp.BasePath, tempId, strings.Split(filename, ".")[0])
+	// Keep a readable part name, but strip glob metacharacters: the base is
+	// reused as a filepath.Glob pattern below.
+	stem, _, _ := strings.Cut(filename, ".")
+	stem = fsutil.SafeBaseName(stem)
+	stem = strings.NewReplacer("*", "_", "?", "_", "[", "_", "]", "_", "\\", "_").Replace(stem)
+	if stem == "" || stem == "." || stem == ".." {
+		stem = tempId
+	}
+	outputBase := filepath.Join(config.C().Temp.BasePath, tempId, stem)
 	defer func() {
 		if err := os.RemoveAll(filepath.Join(config.C().Temp.BasePath, tempId)); err != nil {
 			log.FromContext(ctx).Warnf("Failed to cleanup temp split files: %s", err)
 		}
 	}()
-	if err := CreateSplitZip(ctx, r, fileSize, filename, outputBase, splitSize); err != nil {
+	if err := CreateSplitZip(ctx, r, fileSize, fsutil.SafeBaseName(filename), outputBase, splitSize); err != nil {
 		return fmt.Errorf("failed to create split zip: %w", err)
 	}
 	matched, err := filepath.Glob(outputBase + ".z*")
 	if err != nil {
 		return fmt.Errorf("failed to glob split files: %w", err)
+	}
+	if len(matched) == 0 {
+		return fmt.Errorf("split upload produced no parts")
 	}
 	inputFiles := make([]tg.InputFileClass, 0, len(matched))
 	if progress != nil {
@@ -590,6 +815,9 @@ func (t *Telegram) splitUpload(
 			}
 			partFileSize := partInfo.Size()
 			partName := filepath.Base(partPath)
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			partInputFile, err := upler.Upload(ctx, uploader.NewUpload(partName, partFile, partFileSize))
 			if err != nil {
 				return fmt.Errorf("failed to upload split part %s: %w", partPath, err)
@@ -607,11 +835,15 @@ func (t *Telegram) splitUpload(
 			Filename(filepath.Base(matched[0])).
 			ForceFile(true).
 			MIME("application/zip")
-		_, err = ctx.Sender.
+		_, err = tctx.Sender.
 			WithUploader(upler).
 			To(peer).
-			Media(ctx, doc)
+			Media(tctx, doc)
 		return err
+	}
+
+	if len(inputFiles) == 0 {
+		return fmt.Errorf("split upload produced no parts")
 	}
 
 	multiMedia := make([]message.MultiMediaOption, 0, len(inputFiles))
@@ -622,12 +854,12 @@ func (t *Telegram) splitUpload(
 		multiMedia = append(multiMedia, doc)
 	}
 
-	sender := ctx.Sender
+	sender := tctx.Sender
 
 	if len(multiMedia) <= tglimit.MaxAlbumItems {
 		_, err = sender.WithUploader(upler).
 			To(peer).
-			Album(ctx, multiMedia[0], multiMedia[1:]...)
+			Album(tctx, multiMedia[0], multiMedia[1:]...)
 		return err
 	}
 
@@ -636,7 +868,7 @@ func (t *Telegram) splitUpload(
 		batch := multiMedia[i:end]
 		_, err = sender.WithUploader(upler).
 			To(peer).
-			Album(ctx, batch[0], batch[1:]...)
+			Album(tctx, batch[0], batch[1:]...)
 		if err != nil {
 			return fmt.Errorf("failed to send album batch: %w", err)
 		}

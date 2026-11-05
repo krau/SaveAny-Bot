@@ -1,70 +1,81 @@
 package storage
 
 import (
+	"encoding/json"
 	"fmt"
-	"reflect"
 
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 )
 
-var storageFactories = map[storenum.StorageType]func(cfg *BaseConfig) (StorageConfig, error){
-	storenum.Local:    createStorageConfig(&LocalStorageConfig{}),
-	storenum.Alist:    createStorageConfig(&AlistStorageConfig{}),
-	storenum.Webdav:   createStorageConfig(&WebdavStorageConfig{}),
-	storenum.Minio:    createStorageConfig(&MinioStorageConfig{}),
-	storenum.S3:       createStorageConfig(&S3StorageConfig{}),
-	storenum.Telegram: createStorageConfig(&TelegramStorageConfig{}),
-	storenum.Rclone:   createStorageConfig(&RcloneStorageConfig{}),
+// NewStorageConfigFromJSON builds a typed storage config from JSON-encoded
+// type-specific fields. Only the legacy importer still needs Viper; runtime
+// storage settings come from the database as JSON.
+func NewStorageConfigFromJSON(id uint, name, typ string, enable bool, raw []byte) (StorageConfig, error) {
+	st, err := storenum.ParseStorageType(typ)
+	if err != nil {
+		return nil, fmt.Errorf("invalid storage type %s: %w", typ, err)
+	}
+
+	base := BaseConfig{ID: id, Name: name, Type: typ, Enable: enable}
+	cfg, err := newStorageConfig(st, base)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(raw) > 0 {
+		if err := json.Unmarshal(raw, cfg); err != nil {
+			return nil, fmt.Errorf("failed to decode %s storage config: %w", typ, err)
+		}
+	}
+	// The database owns identity and enablement; type-specific JSON must not
+	// override them.
+	setBaseConfig(cfg, base)
+	return cfg, nil
 }
 
-func createStorageConfig(configType StorageConfig) func(cfg *BaseConfig) (StorageConfig, error) {
-	return func(cfg *BaseConfig) (StorageConfig, error) {
-		configValue := reflect.New(reflect.TypeOf(configType).Elem()).Interface().(StorageConfig)
-
-		reflect.ValueOf(configValue).Elem().FieldByName("BaseConfig").Set(reflect.ValueOf(*cfg))
-
-		if err := mapstructure.Decode(cfg.RawConfig, configValue); err != nil {
-			return nil, fmt.Errorf("failed to decode %s storage config: %w", cfg.Type, err)
-		}
-
-		return configValue, nil
+func newStorageConfig(st storenum.StorageType, base BaseConfig) (StorageConfig, error) {
+	switch st {
+	case storenum.Local:
+		return &LocalStorageConfig{BaseConfig: base}, nil
+	case storenum.Alist:
+		return &AlistStorageConfig{BaseConfig: base}, nil
+	case storenum.Webdav:
+		return &WebdavStorageConfig{BaseConfig: base}, nil
+	case storenum.S3:
+		return &S3StorageConfig{BaseConfig: base}, nil
+	case storenum.Telegram:
+		return &TelegramStorageConfig{BaseConfig: base}, nil
+	case storenum.Rclone:
+		return &RcloneStorageConfig{BaseConfig: base}, nil
+	default:
+		return nil, fmt.Errorf("unsupported storage type: %s", st)
 	}
 }
 
-func LoadStorageConfigs(v *viper.Viper) ([]StorageConfig, error) {
+func setBaseConfig(cfg StorageConfig, base BaseConfig) {
+	switch typed := cfg.(type) {
+	case *LocalStorageConfig:
+		typed.BaseConfig = base
+	case *AlistStorageConfig:
+		typed.BaseConfig = base
+	case *WebdavStorageConfig:
+		typed.BaseConfig = base
+	case *S3StorageConfig:
+		typed.BaseConfig = base
+	case *TelegramStorageConfig:
+		typed.BaseConfig = base
+	case *RcloneStorageConfig:
+		typed.BaseConfig = base
+	}
+}
+
+// LoadAllBaseConfigs unmarshals every legacy storage entry, including disabled
+// ones. It is only used by the one-time legacy importer.
+func LoadAllBaseConfigs(v *viper.Viper) ([]BaseConfig, error) {
 	var baseConfigs []BaseConfig
 	if err := v.UnmarshalKey("storages", &baseConfigs); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal storage configs: %w", err)
 	}
-
-	var configs []StorageConfig
-	for _, baseCfg := range baseConfigs {
-		if !baseCfg.Enable {
-			continue
-		}
-		st, err := storenum.ParseStorageType(baseCfg.Type)
-		if err != nil {
-			return nil, fmt.Errorf("invalid storage type %s for %s: %w", baseCfg.Type, baseCfg.Name, err)
-		}
-
-		factory, ok := storageFactories[st]
-		if !ok {
-			return nil, fmt.Errorf("unsupported storage type: %s", baseCfg.Type)
-		}
-
-		cfg, err := factory(&baseCfg)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create storage config for %s: %w", baseCfg.Name, err)
-		}
-
-		if err := cfg.Validate(); err != nil {
-			return nil, fmt.Errorf("invalid storage config for %s: %w", baseCfg.Name, err)
-		}
-
-		configs = append(configs, cfg)
-	}
-
-	return configs, nil
+	return baseConfigs, nil
 }

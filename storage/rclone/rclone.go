@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -88,27 +89,37 @@ func (r *Rclone) buildBaseArgs() []string {
 	return args
 }
 
-func (r *Rclone) getRemotePath(storagePath string) string {
+func (r *Rclone) getRemotePath(storagePath string) (string, error) {
 	remote := r.config.Remote
 	if !strings.HasSuffix(remote, ":") {
 		remote += ":"
 	}
-	basePath := strings.TrimPrefix(r.config.BasePath, "/")
-	fullPath := path.Join(basePath, storagePath)
-	return remote + fullPath
+	fullPath, err := storagetypes.SecureJoin(r.config.BasePath, storagePath)
+	if err != nil {
+		return "", err
+	}
+	return remote + fullPath, nil
 }
 
 func (r *Rclone) Save(ctx context.Context, reader io.Reader, storagePath string) error {
 	r.logger.Infof("Saving file to %s", storagePath)
 
 	candidate := storagePath
-	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		candidate = fsutil.UniquePath("", storagePath, func(c string) bool {
+	overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool)
+	if !overwrite {
+		var err error
+		candidate, err = fsutil.UniquePath("", storagePath, func(c string) (bool, error) {
 			return r.Exists(ctx, c)
 		}, 100)
+		if err != nil {
+			return err
+		}
 	}
 
-	remotePath := r.getRemotePath(candidate)
+	remotePath, err := r.getRemotePath(candidate)
+	if err != nil {
+		return err
+	}
 	r.logger.Debugf("Remote path: %s", remotePath)
 
 	// Use rclone rcat to read from stdin and upload
@@ -130,15 +141,28 @@ func (r *Rclone) Save(ctx context.Context, reader io.Reader, storagePath string)
 	return nil
 }
 
-func (r *Rclone) Exists(ctx context.Context, storagePath string) bool {
-	remotePath := r.getRemotePath(storagePath)
+func (r *Rclone) Exists(ctx context.Context, storagePath string) (bool, error) {
+	remotePath, err := r.getRemotePath(storagePath)
+	if err != nil {
+		return false, err
+	}
 
 	args := r.buildBaseArgs()
 	args = append(args, "lsf", remotePath)
 
 	cmd := exec.CommandContext(ctx, "rclone", args...)
-	err := cmd.Run()
-	return err == nil
+	err = cmd.Run()
+	if err == nil {
+		return true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		// rclone uses 3/4 for missing directories/files.
+		if exitErr.ExitCode() == 3 || exitErr.ExitCode() == 4 {
+			return false, nil
+		}
+	}
+	return false, fmt.Errorf("failed to check rclone path %s: %w", storagePath, err)
 }
 
 // lsjsonItem represents a single entry in the output of `rclone lsjson`
@@ -155,7 +179,10 @@ type lsjsonItem struct {
 func (r *Rclone) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error) {
 	r.logger.Infof("Listing files in %s", dirPath)
 
-	remotePath := r.getRemotePath(dirPath)
+	remotePath, err := r.getRemotePath(dirPath)
+	if err != nil {
+		return nil, err
+	}
 
 	args := r.buildBaseArgs()
 	args = append(args, "lsjson", remotePath)
@@ -205,7 +232,10 @@ func (r *Rclone) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.
 func (r *Rclone) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
 	r.logger.Infof("Opening file %s", filePath)
 
-	remotePath := r.getRemotePath(filePath)
+	remotePath, err := r.getRemotePath(filePath)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	size, err := r.getFileSize(ctx, remotePath)
 	if err != nil {
@@ -271,9 +301,7 @@ func (r *rcloneCatReader) Read(p []byte) (n int, err error) {
 }
 
 func (r *rcloneCatReader) Close() error {
-	if err := r.reader.Close(); err != nil {
-		r.logger.Warnf("Failed to close reader: %v", err)
-	}
+	closeErr := r.reader.Close()
 	// Kill the cat process so Wait cannot block on a hung pipe.
 	if r.cmd.Process != nil {
 		if err := r.cmd.Process.Kill(); err != nil {
@@ -282,6 +310,9 @@ func (r *rcloneCatReader) Close() error {
 	}
 	if err := r.cmd.Wait(); err != nil {
 		r.logger.Warnf("rclone cat process exited with error: %v", err)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("close rclone cat pipe: %w", closeErr)
 	}
 	return nil
 }

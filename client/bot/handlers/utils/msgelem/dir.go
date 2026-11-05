@@ -7,6 +7,7 @@ import (
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
 )
 
@@ -27,7 +28,11 @@ func BuildDirHelpStyling(dirs []database.Dir) []styling.StyledTextOption {
 			var sb strings.Builder
 			for _, dir := range dirs {
 				fmt.Fprintf(&sb, "%d: ", dir.ID)
-				sb.WriteString(dir.StorageName)
+				storageName := config.C().GetStorageNameByID(dir.StorageID)
+				if storageName == "" {
+					storageName = fmt.Sprintf("#%d", dir.StorageID)
+				}
+				sb.WriteString(storageName)
 				sb.WriteString(" - ")
 				sb.WriteString(dir.Path)
 				sb.WriteString("\n")

@@ -1,0 +1,361 @@
+export const zhHans = {
+  tasks: {
+    count: '共 {total} 条记录',
+    empty: '暂无任务',
+    createTitle: '新建任务',
+    filters: {
+      status: '状态',
+      type: '类型',
+      allStatuses: '全部状态',
+      allTypes: '全部类型',
+    },
+    status: {
+      queued: '排队中',
+      running: '进行中',
+      completed: '已完成',
+      partial: '部分完成',
+      failed: '失败',
+      cancelled: '已取消',
+    },
+    table: {
+      task: '任务',
+      status: '状态',
+      storagePath: '存储 / 路径',
+      progress: '进度',
+      createdAt: '创建时间',
+      actions: '操作',
+      noStorage: '未指定存储',
+      rootPath: '根目录',
+    },
+    progress: {
+      files: '{done} / {total} 个文件',
+      separator: '，',
+    },
+    toast: {
+      created: '任务已创建',
+      retried: '已创建重试任务，仅包含失败的文件',
+      metadataDownloaded: '元数据已下载',
+    },
+    failedFiles: '失败文件',
+    metadata: '元数据',
+    metadataDialog: {
+      title: '消息元数据',
+      fileCount: '文件：{count}',
+      item: '文件 {index}',
+      version: 'v{version}',
+      loading: '正在加载元数据…',
+      empty: '没有可展示的元数据',
+      unnamed: '未命名文件',
+      download: '下载 JSON',
+      sections: {
+        message: '消息',
+        file: '文件',
+        forward: '转发来源',
+        reply: '回复',
+      },
+      fields: {
+        chat: '聊天',
+        messageId: '消息 ID',
+        date: '时间',
+        edited: '编辑时间',
+        sender: '发送者',
+        topic: '话题 ID',
+        groupedId: '相册分组 ID',
+        link: '链接',
+        text: '文本 / Caption',
+        tags: '标签',
+        name: '文件名',
+        originalName: '原始文件名',
+        mediaType: '媒体类型',
+        mimeType: 'MIME 类型',
+        size: '大小',
+        dimensions: '尺寸',
+        duration: '时长',
+        title: '标题',
+        performer: '作者 / 表演者',
+        sticker: '贴纸 Emoji',
+        author: '原作者',
+      },
+    },
+    confirm: {
+      cancelTitle: '取消任务',
+      cancelMessage: '确定取消该任务？下载将被中断。',
+      cancelConfirm: '取消任务',
+      retryTitle: '重试失败的文件',
+      retryMessage: '将为失败的文件创建新的下载任务。',
+      retryConfirm: '重试',
+      removeTitle: '删除任务记录',
+      removeMessage: '确定删除该任务记录？此操作不可撤销。',
+      removeConfirm: '删除记录',
+    },
+    form: {
+      taskType: '任务类型',
+      storage: '存储',
+      storagePlaceholder: '请选择存储',
+      targetPath: '目标路径',
+      targetPathPlaceholder: '例如 downloads/anime',
+      webhook: 'Webhook',
+      webhookPlaceholder: 'https://example.com/hook',
+      required: '请填写 {field}',
+      invalidJson: '{field} 不是合法的 JSON',
+      jsonObject: '{field} 必须是 JSON 对象',
+      notNumber: '{field} 必须为数字',
+      storageRequired: '请选择存储',
+      pathOutsideStorage: '所选目录不在该存储中',
+      tgfilesSourceRequired: '请填写消息链接，或填写聊天 ID 和消息范围',
+    },
+    types: {
+      directlinks: '直链下载',
+      ytdlp: 'yt-dlp 视频',
+      aria2: 'Aria2 下载',
+      parseditem: '解析链接',
+      tgfiles: 'Telegram 文件',
+      tphpics: 'Telegraph 图集',
+      transfer: '存储迁移',
+    },
+    fields: {
+      directlinks: {
+        urls: {
+          label: '下载链接',
+        },
+      },
+      ytdlp: {
+        urls: {
+          label: '视频链接',
+        },
+        flags: {
+          label: '额外参数',
+          hint: '每行一个 yt-dlp 参数',
+        },
+      },
+      aria2: {
+        urls: {
+          label: '下载链接',
+        },
+        options: {
+          label: 'Aria2 选项 (JSON)',
+          hint: 'JSON 对象，键值均为字符串',
+        },
+      },
+      parseditem: {
+        url: {
+          label: '页面链接',
+        },
+      },
+      tgfiles: {
+        message_links: {
+          label: '消息链接',
+        },
+        chat_id: {
+          label: '聊天 ID / 用户名',
+        },
+        message_range: {
+          label: '消息范围',
+        },
+        filter: {
+          label: '过滤器',
+        },
+      },
+      tphpics: {
+        telegraph_url: {
+          label: 'Telegraph 链接',
+        },
+      },
+      transfer: {
+        source_storage: {
+          label: '源存储',
+        },
+        source_path: {
+          label: '源路径',
+        },
+        target_storage: {
+          label: '目标存储',
+        },
+        target_path: {
+          label: '目标路径',
+        },
+      },
+    },
+  },
+}
+
+export const en = {
+  tasks: {
+    count: 'Total: {total}',
+    empty: 'No tasks',
+    createTitle: 'Create task',
+    filters: {
+      status: 'Status',
+      type: 'Type',
+      allStatuses: 'All statuses',
+      allTypes: 'All types',
+    },
+    status: {
+      queued: 'Queued',
+      running: 'Running',
+      completed: 'Completed',
+      partial: 'Partial',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+    },
+    table: {
+      task: 'Task',
+      status: 'Status',
+      storagePath: 'Storage / path',
+      progress: 'Progress',
+      createdAt: 'Created',
+      actions: 'Actions',
+      noStorage: 'No storage',
+      rootPath: 'Root',
+    },
+    progress: {
+      files: '{done} / {total} files',
+      separator: ', ',
+    },
+    toast: {
+      created: 'Task created',
+      retried: 'Retry task created for the failed files',
+      metadataDownloaded: 'Metadata downloaded',
+    },
+    failedFiles: 'Failed files',
+    metadata: 'Metadata',
+    metadataDialog: {
+      title: 'Message metadata',
+      fileCount: 'Files: {count}',
+      item: 'File {index}',
+      version: 'v{version}',
+      loading: 'Loading metadata…',
+      empty: 'No metadata to display',
+      unnamed: 'Unnamed file',
+      download: 'Download JSON',
+      sections: {
+        message: 'Message',
+        file: 'File',
+        forward: 'Forwarded from',
+        reply: 'Reply',
+      },
+      fields: {
+        chat: 'Chat',
+        messageId: 'Message ID',
+        date: 'Time',
+        edited: 'Edited',
+        sender: 'Sender',
+        topic: 'Topic ID',
+        groupedId: 'Album group ID',
+        link: 'Link',
+        text: 'Text / Caption',
+        tags: 'Tags',
+        name: 'File name',
+        originalName: 'Original name',
+        mediaType: 'Media type',
+        mimeType: 'MIME type',
+        size: 'Size',
+        dimensions: 'Dimensions',
+        duration: 'Duration',
+        title: 'Title',
+        performer: 'Artist / Performer',
+        sticker: 'Sticker emoji',
+        author: 'Original author',
+      },
+    },
+    confirm: {
+      cancelTitle: 'Cancel task',
+      cancelMessage: 'Cancel this task? The current download will be interrupted.',
+      cancelConfirm: 'Cancel task',
+      retryTitle: 'Retry failed files',
+      retryMessage: 'A new download task will be created for the failed files of this task.',
+      retryConfirm: 'Retry',
+      removeTitle: 'Delete task record',
+      removeMessage: 'Delete this task record? This cannot be undone.',
+      removeConfirm: 'Delete record',
+    },
+    form: {
+      taskType: 'Task type',
+      storage: 'Storage',
+      storagePlaceholder: 'Select storage',
+      targetPath: 'Target path',
+      targetPathPlaceholder: 'e.g. downloads/anime',
+      webhook: 'Webhook',
+      webhookPlaceholder: 'https://example.com/hook',
+      required: 'Enter {field}',
+      invalidJson: '{field} is not valid JSON',
+      jsonObject: '{field} must be a JSON object',
+      notNumber: '{field} must be a number',
+      storageRequired: 'Select storage',
+      pathOutsideStorage: 'The selected folder is outside this storage.',
+      tgfilesSourceRequired: 'Enter message links, or a chat ID and message range',
+    },
+    types: {
+      directlinks: 'Direct link',
+      ytdlp: 'yt-dlp video',
+      aria2: 'Aria2 download',
+      parseditem: 'Parsed link',
+      tgfiles: 'Telegram files',
+      tphpics: 'Telegraph gallery',
+      transfer: 'Storage transfer',
+    },
+    fields: {
+      directlinks: {
+        urls: {
+          label: 'Download links',
+        },
+      },
+      ytdlp: {
+        urls: {
+          label: 'Video links',
+        },
+        flags: {
+          label: 'Extra flags',
+          hint: 'One yt-dlp flag per line',
+        },
+      },
+      aria2: {
+        urls: {
+          label: 'Download links',
+        },
+        options: {
+          label: 'Aria2 options (JSON)',
+          hint: 'JSON object with string keys and values',
+        },
+      },
+      parseditem: {
+        url: {
+          label: 'Page link',
+        },
+      },
+      tgfiles: {
+        message_links: {
+          label: 'Message links',
+        },
+        chat_id: {
+          label: 'Chat ID / username',
+        },
+        message_range: {
+          label: 'Message range',
+        },
+        filter: {
+          label: 'Filter',
+        },
+      },
+      tphpics: {
+        telegraph_url: {
+          label: 'Telegraph link',
+        },
+      },
+      transfer: {
+        source_storage: {
+          label: 'Source storage',
+        },
+        source_path: {
+          label: 'Source path',
+        },
+        target_storage: {
+          label: 'Target storage',
+        },
+        target_path: {
+          label: 'Target path',
+        },
+      },
+    },
+  },
+}

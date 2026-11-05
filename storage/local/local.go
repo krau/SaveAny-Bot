@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -51,56 +52,146 @@ func (l *Local) JoinStoragePath(path string) string {
 	return filepath.Join(l.config.BasePath, path)
 }
 
+// resolve maps a storage path to an absolute path inside the storage root. It
+// rejects absolute paths and traversal, including existing symlinks.
+func (l *Local) resolve(storagePath string) (string, error) {
+	clean := filepath.Clean(storagePath)
+	if clean == "." {
+		clean = ""
+	}
+	if clean != "" && !filepath.IsLocal(clean) {
+		return "", fmt.Errorf("local: storage path escapes base directory: %s", storagePath)
+	}
+	absPath := filepath.Join(l.config.BasePath, clean)
+	realBase, err := filepath.EvalSymlinks(l.config.BasePath)
+	if err != nil {
+		return absPath, nil
+	}
+	realPath, err := filepath.EvalSymlinks(absPath)
+	if err != nil {
+		return absPath, nil
+	}
+	rel, err := filepath.Rel(realBase, realPath)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("local: storage path escapes base directory: %s", storagePath)
+	}
+	return absPath, nil
+}
+
 func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error {
-	l.logger.Infof("Saving file to %s", storagePath)
-	storagePath = filepath.Clean(storagePath)
-	if filepath.IsAbs(storagePath) {
-		return fmt.Errorf("local: storage path must be relative: %s", storagePath)
-	}
-	if storagePath == ".." || strings.HasPrefix(storagePath, ".."+string(filepath.Separator)) {
-		return fmt.Errorf("local: storage path escapes base directory: %s", storagePath)
-	}
-
-	candidate := l.JoinStoragePath(storagePath)
-	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		candidate = fsutil.UniquePath(l.config.BasePath, storagePath, l.existsPath, 1000)
-	}
-
-	absPath, err := filepath.Abs(candidate)
-	if err != nil {
-		return err
-	}
-	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
-	}
-	file, err := os.Create(absPath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			l.logger.Errorf("Failed to close file %s: %v", absPath, err)
-		}
-	}()
-	_, err = io.Copy(file, r)
+	_, err := l.SaveWithPath(ctx, r, storagePath)
 	return err
 }
 
-func (l *Local) Exists(ctx context.Context, storagePath string) bool {
-	return l.existsPath(l.JoinStoragePath(storagePath))
+// SaveWithPath saves a file and returns its actual storage-relative path after
+// conflict resolution.
+func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath string) (string, error) {
+	l.logger.Infof("Saving file to %s", storagePath)
+	clean := filepath.Clean(storagePath)
+	if clean == "." {
+		clean = ""
+	}
+	absPath, err := l.resolve(clean)
+	if err != nil {
+		return "", err
+	}
+	overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool)
+	if !overwrite {
+		absPath, err = fsutil.UniquePath(l.config.BasePath, clean, l.existsPathE, 1000)
+		if err != nil {
+			return "", err
+		}
+	}
+	if err := fileutil.CreateDir(filepath.Dir(absPath)); err != nil {
+		return "", fmt.Errorf("failed to create directory: %w", err)
+	}
+	// Write beside the target and rename, so a failed copy never leaves a
+	// truncated file under the final name.
+	tempFile, err := os.CreateTemp(filepath.Dir(absPath), "."+filepath.Base(absPath)+".part-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create file: %w", err)
+	}
+	tempPath := tempFile.Name()
+	removeTemp := true
+	defer func() {
+		if removeTemp {
+			if err := os.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+				l.logger.Warnf("Failed to remove temporary file %s: %v", tempPath, err)
+			}
+		}
+	}()
+	if _, err := io.Copy(tempFile, r); err != nil {
+		return "", errors.Join(err, tempFile.Close())
+	}
+	if err := tempFile.Chmod(0o644); err != nil {
+		return "", errors.Join(err, tempFile.Close())
+	}
+	if err := tempFile.Close(); err != nil {
+		return "", err
+	}
+	if !overwrite {
+		// Link refuses to replace an existing file, closing the check-then-write
+		// race in UniquePath.
+		if err := os.Link(tempPath, absPath); err != nil {
+			if errors.Is(err, os.ErrExist) {
+				return "", storagetypes.ErrAlreadyExists
+			}
+			return "", err
+		}
+		if err := os.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+		removeTemp = false
+		return l.relativePath(absPath)
+	}
+	if err := os.Rename(tempPath, absPath); err != nil {
+		return "", err
+	}
+	removeTemp = false
+	return l.relativePath(absPath)
 }
 
-func (l *Local) existsPath(storagePath string) bool {
+func (l *Local) relativePath(absPath string) (string, error) {
+	base, err := filepath.Abs(l.config.BasePath)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(base, absPath)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Clean(rel), nil
+}
+
+func (l *Local) Exists(ctx context.Context, storagePath string) (bool, error) {
+	absPath, err := l.resolve(storagePath)
+	if err != nil {
+		return false, err
+	}
+	return l.existsPathE(absPath)
+}
+
+func (l *Local) existsPathE(storagePath string) (bool, error) {
 	absPath, err := filepath.Abs(storagePath)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return fileutil.IsExist(absPath)
+	_, err = os.Stat(absPath)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return false, err
 }
 
 // ListFiles implements StorageListable interface
 func (l *Local) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error) {
-	absPath := l.JoinStoragePath(dirPath)
+	absPath, err := l.resolve(dirPath)
+	if err != nil {
+		return nil, err
+	}
 
 	entries, err := os.ReadDir(absPath)
 	if err != nil {
@@ -130,7 +221,10 @@ func (l *Local) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.F
 
 // OpenFile implements StorageReadable interface
 func (l *Local) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
-	absPath := l.JoinStoragePath(filePath)
+	absPath, err := l.resolve(filePath)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	file, err := os.Open(absPath)
 	if err != nil {

@@ -14,4 +14,9 @@ type BatchItem struct {
 	// PreserveCaption distinguishes an intentionally empty source caption from
 	// the storage backend's default caption.
 	PreserveCaption bool
+	// MetadataJSON is the optional normalized Telegram message metadata.
+	MetadataJSON string
+	// MetadataGroupKey is derived from metadata grouped_id and is used as a
+	// fallback by backends that can preserve source albums.
+	MetadataGroupKey string
 }

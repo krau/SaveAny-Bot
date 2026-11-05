@@ -1,6 +1,6 @@
 <div align="center">
 
-# <img src="docs/static/logo.png" width="45" align="center"> Save Any Bot
+# <img src="docs/static/logo.svg" width="45" align="center"> Save Any Bot
 
 **English** | [简体中文](./README_zh.md)
 
@@ -40,39 +40,45 @@
 
 ## 📦 Quick Start
 
-Create a `config.toml` file with the following content:
-
-```toml
-lang = "en" # Language setting, "en" for English
-[telegram]
-token = "" # Your bot token, obtained from @BotFather
-[telegram.proxy]
-# Enable proxy for Telegram
-enable = false
-url = "socks5://127.0.0.1:7890"
-
-[[storages]]
-name = "Local Disk"
-type = "local"
-enable = true
-base_path = "./downloads"
-
-[[users]]
-id = 114514 # Your Telegram account id
-storages = []
-blacklist = true
-```
-
-Run Save Any Bot with Docker:
+SaveAny-Bot is configured in the web console. Start it with empty data, downloads, and cache directories:
 
 ```bash
 docker run -d --name saveany-bot \
-    -v ./config.toml:/app/config.toml \
+    -p 28080:28080 \
+    -e SAVEANY_LISTEN=0.0.0.0:28080 \
+    -v ./data:/app/data \
     -v ./downloads:/app/downloads \
+    -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-Please [**read the docs**](https://sabot.unv.app/en/) for more configuration options and usage.
+The web UI listens on `127.0.0.1:28080` by default. The startup log prints a direct URL with an access token:
+
+```bash
+docker logs saveany-bot | grep -E "Web UI available at|Generated web admin password"
+```
+
+For a binary deployment, pass the address directly:
+
+```bash
+./saveany-bot --listen 0.0.0.0:28080
+```
+
+Open the URL to sign in. On the first start, the same log also contains the generated admin password; use it to change the password from the sidebar after signing in. Unless an access token is set under **Settings → Web**, a new token is generated on every start. The Guide page covers the required setup:
+
+1. Connect your Telegram bot.
+2. Add a storage destination.
+3. Allow your Telegram account.
+
+Then send files or message links to the bot and watch them in the Tasks page.
+
+To run the binary, download a release, extract it, and start it. It creates `data/` and prints the same tokenized URL:
+
+```bash
+./saveany-bot
+```
+
+Please [**read the docs**](https://sabot.unv.app/en/) for storage backends and usage.
 
 ## Sponsors
 

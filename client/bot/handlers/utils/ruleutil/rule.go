@@ -6,6 +6,7 @@ import (
 	"github.com/duke-git/lancet/v2/convertor"
 
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/rule"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -54,9 +55,17 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 	}
 	logger := log.FromContext(ctx)
 	for _, ur := range rules {
+		storageName := rule.RuleStorNameChosen
+		if ur.StorageID != 0 {
+			storageName = config.C().GetStorageNameByID(ur.StorageID)
+			if storageName == "" {
+				logger.Warnf("Skipping rule %d: unknown storage ID %d", ur.ID, ur.StorageID)
+				continue
+			}
+		}
 		switch ur.Type {
 		case rule.FileNameRegex.String():
-			ru, err := rule.NewRuleFileNameRegex(ur.StorageName, ur.DirPath, ur.Data)
+			ru, err := rule.NewRuleFileNameRegex(storageName, ur.DirPath, ur.Content)
 			if err != nil {
 				logger.Errorf("Failed to create rule: %s", err)
 				continue
@@ -71,7 +80,7 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 				matchedStorageName = matchedStorName(ru.StorageName())
 			}
 		case rule.MessageRegex.String():
-			ru, err := rule.NewRuleMessageRegex(ur.StorageName, ur.DirPath, ur.Data)
+			ru, err := rule.NewRuleMessageRegex(storageName, ur.DirPath, ur.Content)
 			if err != nil {
 				logger.Errorf("Failed to create rule: %s", err)
 				continue
@@ -86,11 +95,11 @@ func ApplyRule(ctx context.Context, rules []database.Rule, inputs *ruleInput) (m
 				matchedStorageName = matchedStorName(ru.StorageName())
 			}
 		case rule.IsAlbum.String():
-			matchAlbum, err := convertor.ToBool(ur.Data)
+			matchAlbum, err := convertor.ToBool(ur.Content)
 			if err != nil {
 				matchAlbum = false
 			}
-			ru, err := rule.NewRuleMediaType(ur.StorageName, ur.DirPath, matchAlbum)
+			ru, err := rule.NewRuleMediaType(storageName, ur.DirPath, matchAlbum)
 			if err != nil {
 				logger.Errorf("Failed to create rule: %s", err)
 				continue

@@ -5,16 +5,41 @@ import (
 
 	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/client/relay"
 	"github.com/krau/SaveAny-Bot/common/utils/dlutil"
+	"github.com/krau/SaveAny-Bot/common/utils/rpclimit"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/consts/tglimit"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 )
 
-func NewDownloader(file tfile.TGFile) *downloader.Builder {
+func NewDownloader(ctx context.Context, file tfile.TGFile) (*downloader.Builder, func(context.Context)) {
+	file, cleanup := relay.Prepare(ctx, file)
+	return newDownloader(file), cleanup
+}
+
+func newDownloader(file tfile.TGFile) *downloader.Builder {
 	return downloader.NewDownloader().WithPartSize(tglimit.MaxPartSize).
-		Download(eofAwareClient{Client: file.Dler(), size: file.Size()}, file.Location()).
-		WithThreads(dlutil.BestThreads(file.Size(), config.C().Threads))
+		Download(eofAwareClient{Client: rpclimit.WrapDownloader(file.Dler()), size: file.Size()}, file.Location()).
+		WithThreads(downloadThreads(file))
+}
+
+func downloadThreads(file tfile.TGFile) int {
+	cfg := config.C()
+	if cfg.DownloadThreads > 0 {
+		return cfg.DownloadThreads
+	}
+	threads := dlutil.BestThreads(file.Size(), cfg.Threads)
+	if scalable, ok := file.(interface{ WorkerCount() int }); ok {
+		// A relay file distributes chunks across helpers. Give each helper the
+		// same per-worker concurrency; the global transfer budget still caps the
+		// real number of in-flight RPCs in rpclimit.
+		threads *= max(scalable.WorkerCount(), 1)
+	}
+	if cfg.MaxDownloadThreads > 0 {
+		threads = min(threads, cfg.MaxDownloadThreads)
+	}
+	return max(threads, 1)
 }
 
 // eofAwareClient answers upload.getFile requests at or past the end of the

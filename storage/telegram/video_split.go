@@ -13,9 +13,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/telegram/message"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 
 	"github.com/krau/SaveAny-Bot/config"

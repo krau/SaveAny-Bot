@@ -2,15 +2,18 @@ package api
 
 import (
 	"context"
+
+	"github.com/krau/SaveAny-Bot/config"
 	"sync"
 	"time"
 
+	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 )
 
-// TaskProgressInfo stores the progress of an API-submitted task. All fields are
-// guarded by mu. It implements taskevent.Sink so the task layer can update it
-// without knowing about the API.
+// TaskProgressInfo stores live progress for a task. All fields are guarded by
+// mu. It implements taskevent.Sink so the task layer can update it without
+// knowing about the API.
 type TaskProgressInfo struct {
 	mu              sync.Mutex
 	TaskID          string
@@ -21,6 +24,7 @@ type TaskProgressInfo struct {
 	DownloadedBytes int64
 	TotalFiles      int
 	DownloadedFiles int
+	StorageID       uint
 	Storage         string
 	Path            string
 	Error           string
@@ -31,8 +35,8 @@ type TaskProgressInfo struct {
 	webhookNotified bool
 }
 
-// progressStore holds all API tasks. Entries are removed a fixed duration after
-// they reach a terminal state to bound memory usage.
+// progressStore holds all tracked tasks. Entries are removed a fixed duration
+// after they reach a terminal state to bound memory usage.
 type progressStore struct {
 	mu        sync.RWMutex
 	tasks     map[string]*TaskProgressInfo
@@ -44,12 +48,26 @@ var store = &progressStore{
 	retention: 24 * time.Hour,
 }
 
+// TaskProgressSink creates the in-memory observer used by tasks started
+// outside the API. Their progress is rendered in the task list but no webhook
+// is attached.
+func TaskProgressSink(task core.Executable) taskevent.Sink {
+	storageName := ""
+	storagePath := ""
+	if destination, ok := task.(core.DestinationInfo); ok {
+		storageName = destination.StorageName()
+		storagePath = destination.StoragePath()
+	}
+	return RegisterTask(task.TaskID(), task.Type().String(), storageName, storagePath, task.Title(), "")
+}
+
 func RegisterTask(taskID, taskType, storage, path, title, webhook string) *TaskProgressInfo {
 	info := &TaskProgressInfo{
 		TaskID:    taskID,
 		Type:      taskType,
 		Status:    TaskStatusQueued,
 		Title:     title,
+		StorageID: config.C().GetStorageIDByName(storage),
 		Storage:   storage,
 		Path:      path,
 		CreatedAt: time.Now(),
@@ -96,7 +114,7 @@ func CleanupExpired() {
 	defer store.mu.Unlock()
 	for id, info := range store.tasks {
 		info.mu.Lock()
-		terminal := info.Status == TaskStatusCompleted || info.Status == TaskStatusFailed || info.Status == TaskStatusCancelled
+		terminal := info.Status.IsTerminal()
 		stale := terminal && now.Sub(info.UpdatedAt) > store.retention
 		info.mu.Unlock()
 		if stale {
@@ -153,6 +171,10 @@ func (t *TaskProgressInfo) snapshot() (status TaskStatus, total, downloaded int6
 // status/progress updates and fires the webhook on terminal transitions.
 func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 	t.mu.Lock()
+	if t.Status.IsTerminal() {
+		t.mu.Unlock()
+		return
+	}
 	switch e.Phase {
 	case taskevent.PhaseStart:
 		t.Status = TaskStatusRunning
@@ -175,22 +197,30 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 			t.DownloadedFiles = e.DownloadedFiles
 		}
 	case taskevent.PhaseDone:
-		if e.Err != nil {
-			t.Status = TaskStatusFailed
-			t.Error = e.Err.Error()
-		} else {
-			t.Status = TaskStatusCompleted
+		if t.Status != TaskStatusCancelled {
+			switch {
+			case e.Cancelled:
+				t.Status = TaskStatusCancelled
+			case e.Err != nil:
+				t.Status = TaskStatusFailed
+				t.Error = e.Err.Error()
+			case e.Partial:
+				t.Status = TaskStatusPartial
+			default:
+				t.Status = TaskStatusCompleted
+			}
 		}
 	}
 	t.UpdatedAt = time.Now()
-	notify := t.Webhook != "" && !t.webhookNotified && (t.Status == TaskStatusCompleted || t.Status == TaskStatusFailed)
+	notify := t.Webhook != "" && !t.webhookNotified && t.Status.IsTerminal() && t.Status != TaskStatusCancelled
+	status := t.Status
 	if notify {
 		t.webhookNotified = true
 	}
 	t.mu.Unlock()
 
 	if notify {
-		payload := CreateWebhookPayload(t.TaskID, t.Type, t.Status, t.Storage, t.Path, e.Err)
+		payload := CreateWebhookPayload(t.TaskID, t.Type, status, t.StorageID, t.Storage, t.Path, e.Err)
 		SendWebhook(context.Background(), payload)
 	}
 }

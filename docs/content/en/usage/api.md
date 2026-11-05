@@ -9,41 +9,29 @@ SaveAny-Bot provides an HTTP API that allows you to programmatically create down
 
 ## Enabling the API
 
-Add or modify the following section in `config.toml`:
+The API shares the web console listener and port; there is nothing separate to enable. The web console listens on `127.0.0.1:28080` by default. Set an access token under **Settings → Web**:
 
-```toml
-[api]
-enable = true
-host   = "0.0.0.0"   # Bind address, default 0.0.0.0
-port   = 8080         # Listen port, default 8080
-token  = "your-token" # Auth token — strongly recommended
-```
+- `Access token`: used for direct Web UI access through `/?token=...` and with `Authorization: Bearer <token>` for the API.
+- `Web listen address`: shared by the console and API; use `0.0.0.0:28080` when it must be reachable from other hosts.
 
-You can also override these settings with environment variables (prefix `SAVEANY_`):
-
-| Environment Variable | Config Key |
-|---|---|
-| `SAVEANY_API_ENABLE` | `api.enable` |
-| `SAVEANY_API_HOST` | `api.host` |
-| `SAVEANY_API_PORT` | `api.port` |
-| `SAVEANY_API_TOKEN` | `api.token` |
-
-{{< hint warning >}}
-If `token` is empty, the API server will be accessible **without any authentication**, which is a security risk.
-{{< /hint >}}
+All endpoints live under `/api/v1`.
 
 ## Authentication
 
-When `token` is configured, all API requests must include a Bearer token in the HTTP header:
+Set an access token under **Settings → Web**, then send it in the request header:
 
 ```
 Authorization: Bearer <your-token>
 ```
 
-On authentication failure, the server returns `401`:
+If no access token is configured, a random token is generated on every start and printed in the log as part of the direct Web UI URL. That value also works as a Bearer token for the current process.
+
+You can also use the web console login cookie. Non-GET requests made with a cookie also require the `X-CSRF-Token` header.
+
+Authentication failures return `401`:
 
 ```json
-{ "error": "unauthorized", "message": "invalid token" }
+{ "error": "unauthorized", "message": "authentication required" }
 ```
 
 ## Error Response Format
@@ -62,7 +50,6 @@ Common error codes:
 | Error Code | HTTP Status | Meaning |
 |---|---|---|
 | `unauthorized` | 401 | Authentication failed |
-| `method_not_allowed` | 405 | Wrong HTTP method |
 | `invalid_request` | 400 | Malformed request body or parameters |
 | `task_creation_failed` | 400 | Failed to create task |
 | `task_not_found` | 404 | Task ID does not exist |
@@ -80,7 +67,7 @@ No authentication required.
 **Response `200 OK`:**
 
 ```json
-{ "status": "ok" }
+{ "status": "ok", "version": "1.0.0" }
 ```
 
 ---
@@ -94,11 +81,41 @@ Returns all currently loaded storage backends.
 ```json
 {
   "storages": [
-    { "name": "local",   "type": "local" },
-    { "name": "MyMinio", "type": "s3" }
+    {
+      "storage_id": 1,
+      "name": "local",
+      "type": "local",
+      "enable": true,
+      "config": { "base_path": "/app/downloads" },
+      "config_version": 1
+    }
   ]
 }
 ```
+
+---
+
+### GET /api/v1/meta — API and Capability Metadata
+
+Returns the frozen v1 capability vocabulary and the database schema version.
+
+```json
+{
+  "api_version": "v1",
+  "version": "1.0.0",
+  "schema_version": 1,
+  "chat_id_format": "bot_api",
+  "task_types": ["tgfiles", "tphpics", "parseditem", "directlinks", "aria2", "ytdlp", "transfer"],
+  "task_statuses": ["queued", "running", "completed", "partial", "failed", "cancelled"],
+  "task_item_statuses": ["completed", "failed", "skipped", "cancelled"],
+  "storage_types": ["local", "webdav", "alist", "telegram", "s3", "rclone"],
+  "rule_types": ["FILENAME-REGEX", "MESSAGE-REGEX", "IS-ALBUM"],
+  "filename_strategies": ["default", "message", "template"],
+  "conflict_strategies": ["rename", "ask", "overwrite", "skip"]
+}
+```
+
+Chat IDs use the Bot API form: positive IDs for users, negative IDs for basic groups, and `-100...` IDs for supergroups and channels.
 
 ---
 
@@ -109,13 +126,8 @@ Returns all currently loaded storage backends.
 ```json
 {
   "types": [
-    "directlinks",
-    "ytdlp",
-    "aria2",
-    "parseditem",
-    "tgfiles",
-    "tphpics",
-    "transfer"
+    { "type": "directlinks", "label": "directlinks" },
+    { "type": "tgfiles", "label": "tgfiles" }
   ]
 }
 ```
@@ -129,7 +141,7 @@ Inspect a Telegram message link, direct media URL, or other yt-dlp-supported med
 Request:
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
+curl -X GET "http://127.0.0.1:28080/api/v1/media-metadata?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dxxx" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -163,7 +175,7 @@ Authorization: Bearer <token>
 ```json
 {
   "type":    "<task_type>",
-  "storage": "<storage_name>",
+  "storage_id": 1,
   "path":    "<subpath>",
   "webhook": "<callback_url>",
   "params":  { }
@@ -173,7 +185,7 @@ Authorization: Bearer <token>
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `type` | string | Yes | Task type — see below |
-| `storage` | string | Yes | Target storage name, must match a name in your config |
+| `storage_id` | uint | Yes | Target storage ID |
 | `path` | string | No | Subdirectory path within the storage |
 | `webhook` | string | No | Callback URL invoked when the task reaches a terminal state |
 | `params` | object | Yes | Type-specific parameters — see below |
@@ -182,9 +194,11 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "task_id":    "abc123xyz",
-  "type":       "directlinks",
-  "status":     "queued",
+  "task_id":      "abc123xyz",
+  "type":         "directlinks",
+  "status":       "queued",
+  "storage_id":   1,
+  "storage_name": "local",
   "created_at": "2026-03-11T10:00:00Z"
 }
 ```
@@ -198,7 +212,7 @@ Download one or more files from direct HTTP/HTTPS URLs.
 ```json
 {
   "type":    "directlinks",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "downloads",
   "params": {
     "urls": [
@@ -224,7 +238,7 @@ Download videos or audio via yt-dlp, supporting YouTube, Bilibili, and 1000+ oth
 ```json
 {
   "type":    "ytdlp",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "videos",
   "params": {
     "urls":  ["https://www.youtube.com/watch?v=xxx"],
@@ -241,7 +255,7 @@ Download videos or audio via yt-dlp, supporting YouTube, Bilibili, and 1000+ oth
 ##### aria2 — Aria2 Download
 
 {{< hint warning >}}
-Requires Aria2 to be enabled and configured (RPC) in the config file.
+Requires Aria2 to be enabled and configured (RPC) under **Settings → Aria2**.
 {{< /hint >}}
 
 Download files via the Aria2 download manager, supporting HTTP/HTTPS, FTP, BitTorrent (magnet links, torrent files), and more.
@@ -249,7 +263,7 @@ Download files via the Aria2 download manager, supporting HTTP/HTTPS, FTP, BitTo
 ```json
 {
   "type":    "aria2",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "downloads",
   "params": {
     "urls":    ["magnet:?xt=urn:btih:..."],
@@ -270,7 +284,7 @@ Hand a URL off to a registered JS plugin or built-in parser for processing and d
 ```json
 {
   "type":    "parseditem",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "parsed",
   "params": {
     "url": "https://some-site.com/page"
@@ -298,7 +312,7 @@ If the message is part of a media group (album), all files in the group are down
 ```json
 {
   "type":    "tgfiles",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "telegram",
   "params": {
     "message_links": [
@@ -311,7 +325,10 @@ If the message is part of a media group (album), all files in the group are down
 
 | params field | Type | Required | Description |
 |---|---|---|---|
-| `message_links` | []string | Yes | List of Telegram message links, at least 1 |
+| `message_links` | []string | No | List of Telegram message links; required unless `chat_id` and `message_range` are used |
+| `chat_id` | string | No | Bot API chat ID or username used with `message_range` |
+| `message_range` | string | No | Inclusive message range, for example `100-120` |
+| `filter` | string | No | Optional regular expression matching message text or file names |
 
 ##### tphpics — Telegraph Article Images
 
@@ -322,7 +339,7 @@ Supported URL prefixes: `https://telegra.ph/`, `http://telegra.ph/`, `https://te
 ```json
 {
   "type":    "tphpics",
-  "storage": "local",
+  "storage_id": 1,
   "path":    "telegraph",
   "params": {
     "telegraph_url": "https://telegra.ph/Some-Article-01-01"
@@ -339,34 +356,34 @@ Supported URL prefixes: `https://telegra.ph/`, `http://telegra.ph/`, `https://te
 Transfer files directly between two storage backends without going through Telegram. The source storage must support both listing and reading.
 
 {{< hint info >}}
-For `transfer` tasks, the top-level `storage` field is still required for validation, but the actual storages used are determined by `source_storage` and `target_storage` inside `params`.
+For `transfer` tasks, the top-level `storage_id` field is still required for validation, but the actual storages used are determined by `source_storage_id` and `target_storage_id` inside `params`.
 {{< /hint >}}
 
 ```json
 {
   "type":    "transfer",
-  "storage": "local",
+  "storage_id": 1,
   "params": {
-    "source_storage": "MyS3",
-    "source_path":    "backups/",
-    "target_storage": "LocalDisk",
-    "target_path":    "restored/"
+    "source_storage_id": 2,
+    "source_path":       "backups/",
+    "target_storage_id": 1,
+    "target_path":       "restored/"
   }
 }
 ```
 
 | params field | Type | Required | Description |
 |---|---|---|---|
-| `source_storage` | string | Yes | Source storage name |
+| `source_storage_id` | uint | Yes | Source storage ID |
 | `source_path` | string | Yes | Path within the source storage; must contain at least one file |
-| `target_storage` | string | Yes | Target storage name |
+| `target_storage_id` | uint | Yes | Target storage ID |
 | `target_path` | string | Yes | Destination path within the target storage |
 
 ---
 
 ### GET /api/v1/tasks — List All Tasks
 
-Returns all tasks created via the API, newest first (by creation time). Task records are stored in memory only and are cleared on restart. Tasks that have reached a terminal state are also evicted 24 hours after their last update; the sweep runs every 10 minutes.
+Returns tasks newest first (by creation time). Task records and their creation parameters are persisted in SQLite; queued and interrupted tasks are resumed after a restart. Terminal records remain until deleted through the API.
 
 **Response `200 OK`:**
 
@@ -378,7 +395,8 @@ Returns all tasks created via the API, newest first (by creation time). Task rec
       "type":       "directlinks",
       "status":     "running",
       "title":      "file.zip",
-      "storage":    "local",
+      "storage_id":   1,
+      "storage_name": "local",
       "path":       "downloads",
       "error":      "",
       "created_at": "2026-03-11T10:00:00Z",
@@ -411,22 +429,110 @@ The `progress` field is included when either `total_bytes` or `total_files` is g
 - `400 invalid_request` — no task ID in path
 - `404 task_not_found` — task does not exist
 
+Task objects include `metadata_available` when at least one item has stored message metadata.
+
 ---
 
-### DELETE /api/v1/tasks/{task_id} — Cancel Task
+### GET /api/v1/tasks/{task_id}/metadata — Get Message Metadata
 
-**Path parameter:** `task_id`
+Returns the normalized Telegram message metadata recorded for every saved file in a Telegram file task. Enable **Settings → Message metadata** before creating the task. Metadata is always stored in the local database. The optional **Write sidecar JSON** setting also writes `<actual-file-path>.meta.json` beside the saved file; Telegram storage skips sidecars.
+
+**Path parameter:** `task_id` — the task whose metadata should be returned.
 
 **Response `200 OK`:**
 
 ```json
-{ "message": "task cancelled successfully" }
+{
+  "task_id": "abc123xyz",
+  "items": [
+    {
+      "index": 1,
+      "name": "saved-video.mp4",
+      "path": "downloads/saved-video.mp4",
+      "metadata": {
+        "version": 1,
+        "message": {
+          "id": 123,
+          "chat": { "id": -1001234567890, "title": "Channel" },
+          "sender": { "id": 123456789, "name": "Alice" },
+          "text": "caption",
+          "grouped_id": 999
+        },
+        "file": {
+          "name": "saved-video.mp4",
+          "media_type": "document",
+          "mime_type": "video/mp4",
+          "size": 12345678,
+          "width": 1920,
+          "height": 1080,
+          "duration": 123.4
+        }
+      }
+    }
+  ]
+}
 ```
+
+Message text is omitted when **Store message text** is disabled. Access hashes, tokens, and raw Telegram objects are never stored.
 
 **Error responses:**
 - `400 invalid_request` — no task ID in path
 - `404 task_not_found` — task does not exist
+- `404 metadata_not_found` — the task has no recorded metadata
+
+---
+
+### POST /api/v1/tasks/{task_id}/retry — Retry Failed Files
+
+Creates a new task from the failed files of a terminal task. The bot fetches the original messages again, which also refreshes their file references. Supported for Telegram file tasks (`tgfiles`).
+
+**Path parameter:** `task_id` — the task to retry.
+
+**Response `202 Accepted`:**
+
+```json
+{ "task_id": "d4f7u1crvimcs4n4j8e1", "status": "queued", "file_count": 2 }
+```
+
+**Error responses:**
+- `409 task_active` — the task is still queued or running
+- `409 nothing_to_retry` — the task has no failed or unfinished files
+- `409 storage_missing` / `409 source_unavailable`
+- `400 retry_unsupported` — the task type cannot be retried
+- `503 client_unavailable` — no Telegram client is running
+
+Task responses include per-file outcomes: list responses carry the total in `failed_count` plus up to five failed items per task in `failed_items`, and the single-task response carries every recorded file in `items`.
+
+---
+
+### POST /api/v1/tasks/{task_id}/cancel — Cancel Task
+
+Cancels a queued or running task.
+
+**Path parameter:** `task_id` — the task to cancel.
+
+**Response `202 Accepted`:**
+
+```json
+{ "task_id": "abc123xyz", "status": "cancelled" }
+```
+
+**Error responses:**
+- `409 task_not_active` — the task is already terminal
+- `404 task_not_found` — task does not exist
 - `500 cancel_failed` — cancellation failed
+
+---
+
+### DELETE /api/v1/tasks/{task_id} — Delete Task
+
+Deletes a terminal task and its recorded items. Use `POST /api/v1/tasks/{task_id}/cancel` to cancel a queued or running task.
+
+**Path parameter:** `task_id`
+
+**Response `204 No Content`:**
+- `409 task_active` — cancel the task before deleting it
+- `404 task_not_found` — task does not exist
 
 ---
 
@@ -437,17 +543,20 @@ The `progress` field is included when either `total_bytes` or `total_files` is g
 | `queued` | Task is queued and waiting to run |
 | `running` | Task is currently executing |
 | `completed` | Task finished successfully |
+| `partial` | Task finished, but one or more files failed |
 | `failed` | Task encountered an error |
-| `cancelled` | Task was cancelled via the DELETE endpoint |
+| `cancelled` | Task was cancelled through the cancel endpoint |
+
+Queued tasks and tasks interrupted while running keep their creation parameters and are re-enqueued after a restart. Telegram downloads resume from the partial cache; files whose upload already completed are skipped.
 
 ---
 
 ## Webhook Callbacks
 
-When a `webhook` URL is provided in the create request, SaveAny-Bot sends a `POST` request to that URL once the task reaches `completed` or `failed`.
+When a `webhook` URL is provided in the create request, SaveAny-Bot sends a `POST` request to that URL once the task reaches `completed`, `partial`, or `failed`.
 
 {{< hint info >}}
-Cancelled tasks do **not** trigger a webhook — cancellation is already known to whoever issued the DELETE. Each task fires at most one callback.
+Cancelled tasks do **not** trigger a webhook — cancellation is already known to whoever requested it. Each task fires at most one callback.
 {{< /hint >}}
 
 The callback is sent asynchronously, so the task is not delayed by a slow or unreachable endpoint.
@@ -466,13 +575,14 @@ User-Agent: SaveAny-Bot/1.0
   "task_id":      "abc123xyz",
   "type":         "directlinks",
   "status":       "completed",
-  "storage":      "local",
+  "storage_id":   1,
+  "storage_name": "local",
   "path":         "downloads",
   "completed_at": "2026-03-11T10:01:00Z",
   "error":        ""
 }
 ```
 
-`completed_at` is only present when status is `completed` or `failed`. `error` is only present when non-empty.
+`completed_at` is only present when status is `completed`, `partial`, or `failed`. `error` is only present when non-empty.
 
 **Retry policy:** Up to 3 attempts. A non-2xx response or a transport error triggers a retry after 100ms, then 400ms. Each request has a 30-second timeout.

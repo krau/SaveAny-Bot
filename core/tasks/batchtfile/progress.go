@@ -123,9 +123,7 @@ func buildBatchEditMessageRequest(messageID int, taskID string, message rendered
 		req.SetEntities(message.Entities)
 	}
 	if cancellable {
-		req.SetReplyMarkup(&tg.ReplyInlineMarkup{Rows: []tg.KeyboardButtonRow{{
-			Buttons: []tg.KeyboardButtonClass{tgutil.BuildCancelButton(taskID)},
-		}}})
+		req.SetReplyMarkup(tgutil.BuildCancelMarkup(taskID))
 	}
 	return req
 }
@@ -191,12 +189,21 @@ func buildBatchDoneMarkup(ctx context.Context, info TaskInfo, skipped []string, 
 	}
 	if err == nil {
 		completed, _, _, failed := itemCounts(items)
-		// Report per-element failures instead of full completion.
-		totalSkipped := len(skipped) + failed
-		if totalSkipped > 0 {
+		// Keep real failures out of the skipped bucket so partial results are
+		// never reported as a full success.
+		if failed > 0 {
+			return localizedProgressMarkup(i18nk.BotMsgProgressBatchDoneWithFailed, map[string]any{
+				"Success": completed,
+				"Failed":  failed,
+				"Skipped": len(skipped),
+				"Size":    dlutil.FormatSize(totalSize),
+				"List":    failedItemsList(items, 5),
+			})
+		}
+		if len(skipped) > 0 {
 			return localizedProgressMarkup(i18nk.BotMsgProgressBatchDoneWithSkipped, map[string]any{
 				"Success": completed,
-				"Skipped": totalSkipped,
+				"Skipped": len(skipped),
 				"Size":    dlutil.FormatSize(totalSize),
 			})
 		}
@@ -448,6 +455,38 @@ func firstError(items []TaskItemProgress) string {
 		}
 	}
 	return ""
+}
+
+func failedItemsList(items []TaskItemProgress, limit int) string {
+	failed := make([]TaskItemProgress, 0, len(items))
+	for _, item := range items {
+		if item.Phase == ItemPhaseFailed {
+			failed = append(failed, item)
+		}
+	}
+	if len(failed) == 0 {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString("\n\n")
+	for i, item := range failed {
+		if i >= limit {
+			builder.WriteString(fmt.Sprintf("\n… +%d", len(failed)-limit))
+			break
+		}
+		builder.WriteString("\n❌ ")
+		builder.WriteString(item.Name)
+		if stage := failureStageLabel(item.FailureStage); stage != "" {
+			builder.WriteString(" (")
+			builder.WriteString(stage)
+			builder.WriteString(")")
+		}
+		if reason := truncateRunes(item.Error, 60); reason != "" {
+			builder.WriteString(": ")
+			builder.WriteString(reason)
+		}
+	}
+	return builder.String()
 }
 
 func failureStageLabel(stage FailureStage) string {

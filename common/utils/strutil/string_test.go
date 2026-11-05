@@ -107,13 +107,13 @@ func TestParseArgsRespectQuotes(t *testing.T) {
 	}{
 		{
 			name:  "simple split",
-			input: `/rule add FILENAME-REGEX (?i)\.(mp4|mkv)$ "我的 Alist" /视频`,
-			want:  []string{"/rule", "add", "FILENAME-REGEX", "(?i)\\.(mp4|mkv)$", "我的 Alist", "/视频"},
+			input: `/rules add FILENAME-REGEX (?i)\.(mp4|mkv)$ "我的 Alist" /视频`,
+			want:  []string{"/rules", "add", "FILENAME-REGEX", "(?i)\\.(mp4|mkv)$", "我的 Alist", "/视频"},
 		},
 		{
 			name:  "escaped quotes",
-			input: `/rule add "My \"Awesome\" Folder"`,
-			want:  []string{"/rule", "add", `My "Awesome" Folder`},
+			input: `/rules add "My \"Awesome\" Folder"`,
+			want:  []string{"/rules", "add", `My "Awesome" Folder`},
 		},
 		{
 			name:  "escaped backslash",

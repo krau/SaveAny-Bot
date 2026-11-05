@@ -1,20 +1,20 @@
 package handlers
 
 import (
-	"errors"
 	"regexp"
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/telegram/message/html"
+	"github.com/gotd/td/telegram/message/markup"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/config"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"github.com/unvgo/ghselfupdate"
 )
 
@@ -51,7 +51,7 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	indocker := config.Docker == "true"
-	ctx.Sender.To(u.GetUserChat().AsInputPeer()).StyledText(ctx, html.String(nil, func() string {
+	ctx.Sender.To(u.EffectiveChat().GetInputPeer()).StyledText(ctx, html.String(nil, func() string {
 		md := latest.ReleaseNotes
 		md = regexp.MustCompile(`(?m)^###\s+&nbsp;&nbsp;&nbsp;(.+)$`).ReplaceAllString(md, "<b>$1</b>")
 		md = regexp.MustCompile(`(?m)^#####\s+&nbsp;&nbsp;&nbsp;&nbsp;(.+)$`).ReplaceAllString(md, "<i>$1</i>")
@@ -83,18 +83,12 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 		"PublishedAt": latest.PublishedAt.Format("2006-01-02 15:04:05"),
 	})
 	ctx.Reply(u, ext.ReplyTextString(text), &ext.ReplyOpts{
-		Markup: &tg.ReplyInlineMarkup{
-			Rows: []tg.KeyboardButtonRow{
-				{
-					Buttons: []tg.KeyboardButtonClass{
-						&tg.KeyboardButtonCallback{
-							Text: i18n.T(i18nk.BotMsgUpdateButtonUpgrade, nil),
-							Data: []byte("update"),
-						},
-					},
-				},
-			},
-		},
+		Markup: markup.InlineKeyboard(markup.InlineButtonRow(
+			markup.Callback(
+				i18n.T(i18nk.BotMsgUpdateButtonUpgrade, nil),
+				[]byte("update"),
+			),
+		)),
 	})
 	return dispatcher.EndGroups
 }
@@ -107,7 +101,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 		})))
 		return dispatcher.EndGroups
 	}
-	ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(u), &tg.MessagesEditMessageRequest{
 		ID: u.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgUpdateInfoUpgradingWithVersion, map[string]any{
 			"Current": config.Version,
@@ -115,7 +109,7 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 	})
 	latest, err := selfupdate.Update(currentV)
 	if err != nil {
-		ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID(u), &tg.MessagesEditMessageRequest{
 			ID: u.CallbackQuery.GetMsgID(),
 			Message: i18n.T(i18nk.BotMsgUpdateErrorUpgradeFailed, map[string]any{
 				"Error": err.Error(),
@@ -123,12 +117,12 @@ func handleUpdateCallback(ctx *ext.Context, u *ext.Update) error {
 		})
 		return dispatcher.EndGroups
 	}
-	ctx.EditMessage(u.GetUserChat().GetID(), &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(u), &tg.MessagesEditMessageRequest{
 		ID: u.CallbackQuery.GetMsgID(),
 		Message: i18n.T(i18nk.BotMsgUpdateInfoUpgradeSuccess, map[string]any{
 			"Version": latest.Version.String(),
 		}),
 	})
 	selfupdate.RequestRestart()
-	return errors.New("SAVEANTBOT-RESTART")
+	return selfupdate.ErrRestart
 }

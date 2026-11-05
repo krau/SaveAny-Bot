@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - v1-dev
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27.x"
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: API end-to-end tests
+        run: go test -tags=e2e ./e2e -count=1
+
+      - name: Telegram end-to-end tests
+        run: go test -tags=e2e ./e2e/telegram -count=1
+
+  web:
+    name: Web checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: web/ui/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm --dir web/ui install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm --dir web/ui run typecheck
+
+      - name: Build
+        run: pnpm --dir web/ui run build
+
+  web-e2e:
+    name: Browser end-to-end tests
+    needs: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27.x"
+          cache: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: web/ui/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm --dir web/ui install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm --dir web/ui exec playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: make e2e-web

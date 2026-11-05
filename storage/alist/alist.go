@@ -32,6 +32,7 @@ type Alist struct {
 	loginInfo   *loginRequest
 	config      config.AlistStorageConfig
 	logger      *log.Logger
+	cancel      context.CancelFunc
 }
 
 // authHeader returns the current token for use in API requests.
@@ -102,8 +103,16 @@ func (a *Alist) Init(ctx context.Context, cfg config.StorageConfig) error {
 	a.tokenMu.Unlock()
 	a.logger.Debug("Logged in to Alist")
 
-	go a.refreshToken(ctx, *alistConfig)
+	runCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	a.cancel = cancel
+	go a.refreshToken(runCtx, *alistConfig)
 	return nil
+}
+
+func (a *Alist) Close() {
+	if a.cancel != nil {
+		a.cancel()
+	}
 }
 
 func (a *Alist) Type() storenum.StorageType {
@@ -116,11 +125,17 @@ func (a *Alist) Name() string {
 
 func (a *Alist) Save(ctx context.Context, reader io.Reader, storagePath string) error {
 	a.logger.Infof("Saving file to %s", storagePath)
-	candidate := a.JoinStoragePath(storagePath)
+	candidate, err := a.JoinStoragePath(storagePath)
+	if err != nil {
+		return err
+	}
 	if overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool); !overwrite {
-		candidate = fsutil.UniquePath(a.config.BasePath, storagePath, func(c string) bool {
-			return a.existsPath(ctx, c)
+		candidate, err = fsutil.UniquePath(a.config.BasePath, storagePath, func(c string) (bool, error) {
+			return a.existsPathE(ctx, c)
 		}, 1000)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := a.mkdirAll(ctx, path.Dir(candidate)); err != nil {
@@ -200,8 +215,15 @@ func (a *Alist) putFile(ctx context.Context, reader io.Reader, storagePath strin
 	return resp, nil
 }
 
-func (a *Alist) JoinStoragePath(p string) string {
-	return path.Join(a.config.BasePath, p)
+func (a *Alist) JoinStoragePath(p string) (string, error) {
+	fullPath, err := storagetypes.SecureJoin(a.config.BasePath, p)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasPrefix(fullPath, "/") {
+		fullPath = "/" + fullPath
+	}
+	return fullPath, nil
 }
 
 // mkdirAll creates the directory and any missing parents. Alist's upload API
@@ -215,7 +237,11 @@ func (a *Alist) mkdirAll(ctx context.Context, dirPath string) error {
 	tokenRefreshed := false
 	for i := range segments {
 		current := "/" + strings.Join(segments[:i+1], "/")
-		if a.existsPath(ctx, current) {
+		exists, err := a.existsPathE(ctx, current)
+		if err != nil {
+			return err
+		}
+		if exists {
 			continue
 		}
 		status, code, message, err := a.mkdirRequest(ctx, current)
@@ -233,7 +259,11 @@ func (a *Alist) mkdirAll(ctx context.Context, dirPath string) error {
 				return fmt.Errorf("failed to refresh alist token: %w", err)
 			}
 			tokenRefreshed = true
-			if a.existsPath(ctx, current) {
+			exists, err := a.existsPathE(ctx, current)
+			if err != nil {
+				return err
+			}
+			if exists {
 				continue
 			}
 			status, code, message, err = a.mkdirRequest(ctx, current)
@@ -247,7 +277,11 @@ func (a *Alist) mkdirAll(ctx context.Context, dirPath string) error {
 		if code != http.StatusOK {
 			// The directory may have been created by a concurrent upload
 			// between the probe and the request.
-			if a.existsPath(ctx, current) {
+			exists, err := a.existsPathE(ctx, current)
+			if err != nil {
+				return err
+			}
+			if exists {
 				continue
 			}
 			return fmt.Errorf("failed to create directory %s: %d, %s", current, code, message)
@@ -288,11 +322,15 @@ func (a *Alist) mkdirRequest(ctx context.Context, p string) (int, int, string, e
 	return resp.StatusCode, mkResp.Code, mkResp.Message, nil
 }
 
-func (a *Alist) Exists(ctx context.Context, storagePath string) bool {
-	return a.existsPath(ctx, a.JoinStoragePath(storagePath))
+func (a *Alist) Exists(ctx context.Context, storagePath string) (bool, error) {
+	fullPath, err := a.JoinStoragePath(storagePath)
+	if err != nil {
+		return false, err
+	}
+	return a.existsPathE(ctx, fullPath)
 }
 
-func (a *Alist) existsPath(ctx context.Context, storagePath string) bool {
+func (a *Alist) existsPathE(ctx context.Context, storagePath string) (bool, error) {
 	// POST  /api/fs/get
 	/*
 		body:
@@ -310,41 +348,40 @@ func (a *Alist) existsPath(ctx context.Context, storagePath string) bool {
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		a.logger.Errorf("Failed to marshal request body: %v", err)
-		return false
+		return false, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.baseURL+"/api/fs/get", bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		a.logger.Errorf("Failed to create request: %v", err)
-		return false
+		return false, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Authorization", a.authHeader())
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := a.client.Do(req)
 	if err != nil {
-		a.logger.Errorf("Failed to send request: %v", err)
-		return false
+		return false, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
 	if resp.StatusCode != http.StatusOK {
-		return false
+		return false, fmt.Errorf("failed to get file info: %s", resp.Status)
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		a.logger.Errorf("Failed to read response body: %v", err)
-		return false
+		return false, fmt.Errorf("failed to read response body: %w", err)
 	}
 	var fsGetResp fsGetResponse
 	if err := json.Unmarshal(data, &fsGetResp); err != nil {
-		a.logger.Errorf("Failed to unmarshal fs get response: %v", err)
-		return false
+		return false, fmt.Errorf("failed to unmarshal fs get response: %w", err)
+	}
+	if fsGetResp.Code == http.StatusNotFound {
+		return false, nil
 	}
 	if fsGetResp.Code != http.StatusOK {
-		a.logger.Errorf("Failed to get file info from Alist: %d, %s", fsGetResp.Code, fsGetResp.Message)
-		return false
+		return false, fmt.Errorf("failed to get file info from Alist: %d, %s", fsGetResp.Code, fsGetResp.Message)
 	}
-	return true
-
+	return true, nil
 }
 
 // Impl StorageCannotStream interface
@@ -356,8 +393,12 @@ func (a *Alist) CannotStream() string {
 func (a *Alist) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.FileInfo, error) {
 	a.logger.Debugf("Listing files in directory: %s", dirPath)
 
+	fullDirPath, err := a.JoinStoragePath(dirPath)
+	if err != nil {
+		return nil, err
+	}
 	reqBody := fsListRequest{
-		Path:     dirPath,
+		Path:     fullDirPath,
 		Password: "",
 		Page:     1,
 		PerPage:  0, // 0 means all files
@@ -433,8 +474,12 @@ func (a *Alist) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.F
 func (a *Alist) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
 	a.logger.Debugf("Opening file: %s", filePath)
 
+	fullFilePath, err := a.JoinStoragePath(filePath)
+	if err != nil {
+		return nil, 0, err
+	}
 	reqBody := map[string]any{
-		"path":     filePath,
+		"path":     fullFilePath,
 		"password": "",
 	}
 

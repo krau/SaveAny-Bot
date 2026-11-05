@@ -4,9 +4,9 @@ import (
 	"regexp"
 	"slices"
 
-	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
-	"github.com/celestix/gotgproto/types"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
+	"github.com/krau/mygotg/dispatcher/handlers/filters"
+	"github.com/krau/mygotg/types"
 )
 
 func RegexUrl(r *regexp.Regexp) filters.MessageFilter {

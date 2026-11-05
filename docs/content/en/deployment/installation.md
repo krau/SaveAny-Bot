@@ -1,30 +1,55 @@
 ---
-title: "Installation and Updates"
+title: "Installation and updates"
+weight: 10
 ---
 
-# Installation and Updates
+# Installation and updates
 
-## Deploy from Pre-compiled Binary (Recommended)
+Start with an empty data directory, then configure the bot, storage, and users in the web console.
 
-Download the binary file for your platform from the [Release](https://github.com/krau/SaveAny-Bot/releases) page.
+## Binary deployment
 
-Create a `config.toml` file in the extracted directory, refer to the [Configuration Guide](../configuration) to edit the configuration file.
-
-Run:
+Download and extract a release for your platform:
 
 ```bash
 chmod +x saveany-bot
 ./saveany-bot
 ```
 
-### Daemon
+The default data directory is `data/` under the current working directory. The web UI listens on `127.0.0.1:28080` by default. At startup it prints a direct URL with an access token:
+
+```text
+Web UI available at http://127.0.0.1:28080/?token=...
+```
+
+Open that URL; the token creates an authenticated session. Unless an access token is set under **Settings → Web**, a new token is generated on every start.
+
+To expose the web UI on another interface or port, pass the listen address on the command line:
+
+```bash
+./saveany-bot --listen 0.0.0.0:28080
+```
+
+The equivalent environment variable is `SAVEANY_LISTEN`:
+
+```bash
+SAVEANY_LISTEN='0.0.0.0:28080' ./saveany-bot
+```
+
+The generated admin password remains available for password login; set `SAVEANY_ADMIN_PASSWORD` to choose it. It is printed only on the first start. After signing in, change it from the sidebar **Change password** dialog. Open the logged URL and follow the **Guide** page:
+
+1. Enter the bot token on the Telegram page.
+2. Add at least one storage on the Storages page.
+3. Add your Telegram user ID on the Users page.
+
+### Process supervision
 
 {{< tabs "daemon" >}}
-{{< tab "systemd (Regular Linux)" >}}
+{{< tab "systemd (Linux)" >}}
 
-Create a file <code>/etc/systemd/system/saveany-bot.service</code> and write the following content:
+Create `/etc/systemd/system/saveany-bot.service`:
 
-{{< codeblock >}}
+```ini
 [Unit]
 Description=SaveAnyBot
 After=systemd-user-sessions.service
@@ -37,135 +62,97 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
-{{< /codeblock >}}
+```
 
-Enable startup on boot and start the service:
-
-{{< codeblock >}}
+```bash
 systemctl enable --now saveany-bot
-{{< /codeblock >}}
+```
 
 {{< /tab >}}
-
 {{< tab "procd (OpenWrt)" >}}
 
-<h4>Add Boot Autostart Service</h4>
+Create `/etc/init.d/saveanybot`, based on [wrt_init](https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init), and adjust the working directory and executable path:
 
-Create a file <code>/etc/init.d/saveanybot</code>, refer to <a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_init" target="_blank">wrt_init</a> and modify as needed:
-
-{{< codeblock >}}
+```sh
 #!/bin/sh /etc/rc.common
-
-#This is the OpenWRT init.d script for SaveAnyBot
-
-START=99 
+START=99
 STOP=10
 description="SaveAnyBot"
-
 WORKING_DIR="/mnt/mmc1-1/SaveAnyBot"
 EXEC_PATH="$WORKING_DIR/saveany-bot"
-start() {
-    echo "Starting SaveAnyBot..."
-    cd $WORKING_DIR
-    $EXEC_PATH &
-}
-stop() {
-    echo "Stopping SaveAnyBot..."
-    killall saveany-bot
-}
-reload() {
-    stop
-    start
-}
+start() { cd $WORKING_DIR && $EXEC_PATH & }
+stop() { killall saveany-bot; }
+```
 
-{{< /codeblock >}}
-
-Set permissions:
-
-{{< codeblock >}}
+```bash
 chmod +x /etc/init.d/saveanybot
-{{< /codeblock >}}
-
-Then copy the file to <code>/etc/rc.d</code> and rename it to <code>S99saveanybot</code>, also set permissions:
-
-{{< codeblock >}}
-chmod +x /etc/rc.d/S99saveanybot
-{{< /codeblock >}}
-
-<h4>Add Shortcut Commands</h4>
-
-Create a file <code>/usr/bin/sabot</code>, refer to <a href="https://github.com/krau/SaveAny-Bot/blob/main/docs/confs/wrt_bin" target="_blank">wrt_bin</a> and modify as needed. Note that the file encoding here only supports ANSI 936.
-
-Then set permissions:
-
-{{< codeblock >}}
-chmod +x /usr/bin/sabot
-{{< /codeblock >}}
-
-Usage: <code>sudo sabot start|stop|restart|status|enable|disable</code>
+ln -s /etc/init.d/saveanybot /etc/rc.d/S99saveanybot
+```
 
 {{< /tab >}}
 {{< /tabs >}}
 
-
-## Deploy Using Docker
+## Docker deployment
 
 ### Docker Compose
 
-Download the [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml) file, create a new `config.toml` file in the same directory, refer to [config.example.toml](https://github.com/krau/SaveAny-Bot/blob/main/config.example.toml) to edit the configuration file.
-
-Start:
+Download [docker-compose.yml](https://github.com/krau/SaveAny-Bot/blob/main/docker-compose.yml), adjust ports and paths if needed, then start:
 
 ```bash
 docker compose up -d
+docker compose logs -f saveany-bot
+```
+
+Default mounts:
+
+- `./data:/app/data` — settings, task history, and sessions
+- `./downloads:/app/downloads` — default local storage
+- `./cache:/app/cache` — download cache
+
+Set an admin password, or read the generated one from the log. Set the listen address for bridge networking:
+
+```yaml
+environment:
+  SAVEANY_ADMIN_PASSWORD: change-me
+  SAVEANY_LISTEN: 0.0.0.0:28080
 ```
 
 ### Docker
 
-```shell
+```bash
 docker run -d --name saveany-bot \
-    -v /path/to/config.toml:/app/config.toml \
-    -v /path/to/downloads:/app/downloads \
+    -p 28080:28080 \
+    -e SAVEANY_LISTEN=0.0.0.0:28080 \
+    -v ./data:/app/data \
+    -v ./downloads:/app/downloads \
+    -v ./cache:/app/cache \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-{{< hint info >}}
-About Docker image variants
-<br />
-<ul>
-<li>Default: Includes all features and dependencies, larger in size. Use this if you don't have special requirements.</li>
-<li>micro: Slimmed-down image with some optional dependencies removed, smaller in size.</li>
-<li>pico: Minimal image containing only core features, smallest in size.</li>
-</ul>
-You can pull different variants by specifying tags, for example: <code>ghcr.io/krau/saveany-bot:micro</code>
-<br />
-For more details about the variants, see the Dockerfile in the project root.
-{{< /hint >}}
+Read the tokenized URL from the logs and open it. For local storage in Docker, use `/app/downloads` as the base path.
 
 ## Updates
 
-If you deployed from pre-compiled binaries, use the following CLI command to update:
+### Binary
 
 ```bash
 ./saveany-bot up
 ```
 
-(`upgrade` is also available as an alias.)
+You can also send `/update` in Telegram. The updated process restarts itself; on Windows, restart it from your service manager.
 
-The command replaces the binary in place; a running bot keeps the old version until it is restarted. You can also send `/update` to the bot: it downloads the new version, replaces its own binary and restarts itself in place (on Windows it exits instead, and the service manager starts the new version).
-
-If you deployed with Docker, use the following commands to update:
-
-docker:
+### Docker
 
 ```bash
 docker pull ghcr.io/krau/saveany-bot:latest
 docker restart saveany-bot
 ```
 
-docker compose:
+### Docker Compose
 
 ```bash
 docker compose pull
-docker compose restart
+docker compose up -d
 ```
+
+Back up `data/` before updating and keep the Docker volume.

@@ -16,15 +16,37 @@ type ProgressSender func(ctx context.Context, chatID int64, req *tg.MessagesEdit
 
 const progressEditInterval = time.Second
 
-var progressEditLimiter = rate.NewLimiter(rate.Every(progressEditInterval), 1)
+var progressEditLimiters = struct {
+	sync.Mutex
+	byChat map[int64]*rate.Limiter
+}{byChat: make(map[int64]*rate.Limiter)}
+
+func progressEditLimiter(chatID int64) *rate.Limiter {
+	progressEditLimiters.Lock()
+	defer progressEditLimiters.Unlock()
+	limiter := progressEditLimiters.byChat[chatID]
+	if limiter == nil {
+		limiter = rate.NewLimiter(rate.Every(progressEditInterval), 1)
+		progressEditLimiters.byChat[chatID] = limiter
+	}
+	return limiter
+}
 
 func SendProgressEdit(ctx context.Context, chatID int64, req *tg.MessagesEditMessageRequest) error {
-	if err := progressEditLimiter.Wait(context.Background()); err != nil {
+	if err := progressEditLimiter(chatID).Wait(ctx); err != nil {
 		return err
 	}
 	ext := ExtFromContext(ctx)
 	if ext == nil {
 		return nil
+	}
+	if ext.Context != nil && ext.Context.Err() != nil {
+		// The final progress edit can run after the task context is canceled.
+		// Keep the Telegram client and other context values, but detach the
+		// cancellation signal so EditMessage can still be sent.
+		clone := *ext
+		clone.Context = context.WithoutCancel(ext.Context)
+		ext = &clone
 	}
 	if _, err := ext.EditMessage(chatID, req); err != nil {
 		return err
@@ -53,6 +75,12 @@ func NewProgressEditQueue(sender ProgressSender) *ProgressEditQueue {
 }
 
 func (q *ProgressEditQueue) Submit(ctx context.Context, chatID int64, req *tg.MessagesEditMessageRequest, final bool) {
+	if final {
+		// The final edit may run after the task context is canceled by the
+		// queue. Keep its values (including the Telegram client) but not the
+		// cancellation signal, otherwise the message stays in an old phase.
+		ctx = context.WithoutCancel(ctx)
+	}
 	job := progressEditJob{ctx: ctx, chatID: chatID, req: req, final: final}
 	q.start.Do(func() { go q.run() })
 	for {

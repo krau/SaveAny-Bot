@@ -5,12 +5,10 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/krau/SaveAny-Bot/boot"
 	"github.com/krau/SaveAny-Bot/client/bot"
-	"github.com/krau/SaveAny-Bot/common/cache"
-	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
-	"github.com/krau/SaveAny-Bot/database"
 	stortype "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/storage"
 	"github.com/spf13/cobra"
@@ -84,13 +82,11 @@ func runWatch(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 	logger := log.FromContext(ctx)
 
-	configFile := config.GetConfigFile(cmd)
-	if err := config.Init(ctx, configFile); err != nil {
+	opts := boot.Parse(cmd)
+	opts.InitWeb = false
+	if _, err := boot.Init(ctx, opts); err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
-	i18n.Init(config.C().Lang)
-	cache.Init()
-	database.Init(ctx)
 
 	stor, err := storage.GetStorageByName(ctx, storName)
 	if err != nil {
@@ -99,7 +95,10 @@ func runWatch(cmd *cobra.Command, _ []string) error {
 
 	// Telegram storage needs the bot client and its ext context injected into ctx.
 	if stor.Type() == stortype.Telegram {
-		bot.Init(ctx)
+		if err := bot.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start bot: %w", err)
+		}
+		defer bot.Stop()
 		ctx = tgutil.ExtWithContext(ctx, bot.ExtContext())
 	}
 

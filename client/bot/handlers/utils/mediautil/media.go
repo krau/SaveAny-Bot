@@ -49,36 +49,117 @@ func (f FilenameTemplateData) ToMap() map[string]string {
 
 func TfileOptions(ctx context.Context, user *database.User, message *tg.Message) []tfile.TGFileOption {
 	opts := make([]tfile.TGFileOption, 0)
-	var fnameOpt tfile.TGFileOption
+	opts = append(opts, tfile.WithName(FilenameFor(ctx, user, message)), tfile.WithMessage(message))
+	return opts
+}
+
+// FilenameFor resolves the configured filename strategy for one message.
+func FilenameFor(ctx context.Context, user *database.User, message *tg.Message) string {
 	switch user.FilenameStrategy {
 	case fnamest.Message.String():
-		fnameOpt = tfile.WithName(tgutil.GenFileNameFromMessage(*message))
+		return tgutil.GenFileNameFromMessage(*message)
 	case fnamest.Template.String():
 		if user.FilenameTemplate == "" {
 			log.FromContext(ctx).Warnf("empty filename template")
-			fnameOpt = tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message))
-			break
+			return tgutil.GenFileNameFromMessage(*message)
 		}
 		tmpl, err := template.New("filename").Parse(user.FilenameTemplate)
 		if err != nil {
 			log.FromContext(ctx).Errorf("failed to parse filename template: %s", err)
-			fnameOpt = tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message))
-			break
+			return tgutil.GenFileNameFromMessage(*message)
 		}
 		data := BuildFilenameTemplateData(message)
 		var sb strings.Builder
-		err = tmpl.Execute(&sb, data)
-		if err != nil {
+		if err := tmpl.Execute(&sb, data); err != nil {
 			log.FromContext(ctx).Errorf("failed to execute filename template: %s", err)
-			fnameOpt = tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message))
-			break
+			return tgutil.GenFileNameFromMessage(*message)
 		}
-		fnameOpt = tfile.WithName(sb.String())
+		if sb.String() == "" {
+			return tgutil.GenFileNameFromMessage(*message)
+		}
+		return sb.String()
 	default:
-		fnameOpt = tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*message))
+		if name := tgutil.GetOriginalFileName(message.Media); name != "" {
+			return name
+		}
+		return tgutil.GenFileNameFromMessage(*message)
 	}
-	opts = append(opts, fnameOpt, tfile.WithMessage(message))
-	return opts
+}
+
+// ApplyAlbumCaptions shares one album caption with the items that carry none,
+// so filename templates and message rules see the same text for every file in
+// the group.
+func ApplyAlbumCaptions(ctx context.Context, user *database.User, files []tfile.TGFileMessage) []tfile.TGFileMessage {
+	captions := make(map[int64]string)
+	for _, file := range files {
+		message := file.Message()
+		if message == nil {
+			continue
+		}
+		groupID, grouped := message.GetGroupedID()
+		if !grouped || groupID == 0 {
+			continue
+		}
+		if captions[groupID] == "" && strings.TrimSpace(message.GetMessage()) != "" {
+			captions[groupID] = message.GetMessage()
+		}
+	}
+	if len(captions) == 0 {
+		return files
+	}
+	// Track names already used in each group so a template without a unique
+	// field cannot collapse several album items onto the same path.
+	usedNames := make(map[int64]map[string]struct{})
+	for _, file := range files {
+		message := file.Message()
+		if message == nil {
+			continue
+		}
+		groupID, grouped := message.GetGroupedID()
+		if !grouped || groupID == 0 {
+			continue
+		}
+		if usedNames[groupID] == nil {
+			usedNames[groupID] = make(map[string]struct{})
+		}
+		usedNames[groupID][file.Name()] = struct{}{}
+	}
+
+	result := make([]tfile.TGFileMessage, 0, len(files))
+	for _, file := range files {
+		message := file.Message()
+		if message != nil {
+			if groupID, grouped := message.GetGroupedID(); grouped && groupID != 0 {
+				if caption := captions[groupID]; caption != "" && strings.TrimSpace(message.GetMessage()) == "" {
+					file = applyAlbumCaption(ctx, user, file, caption, usedNames[groupID])
+				}
+			}
+		}
+		result = append(result, file)
+	}
+	return result
+}
+
+type captionOverride struct {
+	tfile.TGFileMessage
+	message *tg.Message
+}
+
+func (f *captionOverride) Message() *tg.Message {
+	return f.message
+}
+
+func applyAlbumCaption(ctx context.Context, user *database.User, file tfile.TGFileMessage, caption string, used map[string]struct{}) tfile.TGFileMessage {
+	message := file.Message()
+	copied := *message
+	copied.Message = caption
+	if name := FilenameFor(ctx, user, &copied); name != "" {
+		if _, exists := used[name]; !exists {
+			used[name] = struct{}{}
+			file.SetName(name)
+		}
+	}
+	return &captionOverride{TGFileMessage: file, message: &copied}
 }
 
 func BuildFilenameTemplateData(message *tg.Message) map[string]string {
@@ -99,7 +180,10 @@ func BuildFilenameTemplateData(message *tg.Message) map[string]string {
 		}(),
 		MsgGen: tgutil.GenFileNameFromMessage(*message),
 		OrigName: func() string {
-			f, _ := tgutil.GetMediaFileName(message.Media)
+			f, err := tgutil.GetMediaFileName(message.Media)
+			if err != nil {
+				log.FromContext(context.Background()).Debugf("Failed to derive media filename: %v", err)
+			}
 			return f
 		}(),
 		MsgDate: func() string {
@@ -112,26 +196,17 @@ func BuildFilenameTemplateData(message *tg.Message) map[string]string {
 		}(),
 		MsgRaw: message.GetMessage(),
 		ChatID: func() string {
-			// 如果消息是频道的(从消息链接中fetch的) 直接使用其chat id,
-			// 无论它是否是从其他来源转发的
-			if message.GetPost() {
-				peer := message.GetPeerID()
-				switch p := peer.(type) {
-				case *tg.PeerChannel:
-					return intToStringOmitZero(p.ChannelID)
-				default: // impossible case
-					return intToStringOmitZero(tgutil.ChatIdFromPeer(peer))
+			// For channel posts use the channel itself, regardless of the
+			// original forward source. Otherwise prefer the forward source.
+			peer := message.GetPeerID()
+			if !message.GetPost() {
+				if fwdHeader, ok := message.GetFwdFrom(); ok {
+					if fwdFrom, ok := fwdHeader.GetFromID(); ok {
+						peer = fwdFrom
+					}
 				}
 			}
-			fwdHeader, ok := message.GetFwdFrom()
-			if !ok {
-				return intToStringOmitZero(tgutil.ChatIdFromPeer(message.GetPeerID()))
-			}
-			fwdFrom, ok := fwdHeader.GetFromID()
-			if !ok {
-				return intToStringOmitZero(tgutil.ChatIdFromPeer(message.GetPeerID()))
-			}
-			return intToStringOmitZero(tgutil.ChatIdFromPeer(fwdFrom))
+			return intToStringOmitZero(tgutil.ChatIdFromPeer(peer))
 		}(),
 	}.ToMap()
 	return data

@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/dirutil"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
@@ -12,6 +10,8 @@ import (
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
 
 func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
@@ -22,7 +22,7 @@ func handleMediaMessage(ctx *ext.Context, update *ext.Update) error {
 		return handleGroupMediaMessage(ctx, update, message, groupID)
 	}
 	logger.Debugf("Got media: %s", message.Media.TypeName())
-	userId := update.GetUserChat().GetID()
+	userId := responsibleUserID(update)
 	userDB, err := database.GetUserByChatID(ctx, userId)
 	if err != nil {
 		return err
@@ -55,7 +55,7 @@ func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 		return handleGroupMediaMessage(ctx, update, message, groupID)
 	}
 	logger.Debugf("Got media: %s", message.Media.TypeName())
-	userID := update.GetUserChat().GetID()
+	userID := responsibleUserID(update)
 	userDB, err := database.GetUserByChatID(ctx, userID)
 	if err != nil {
 		return err
@@ -65,5 +65,5 @@ func handleSilentSaveMedia(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, stor, dirutil.PathFromContext(ctx), file, msg.ID)
+	return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, chatID(update), stor, dirutil.PathFromContext(ctx), file, msg.ID)
 }

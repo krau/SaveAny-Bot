@@ -1,30 +1,37 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
 	"time"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
+	"github.com/gotd/td/telegram/message/markup"
+	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/ruleutil"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/mediafilter"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	coretfile "github.com/krau/SaveAny-Bot/core/tasks/tfile"
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/enums/fnamest"
+	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 )
 
@@ -32,20 +39,17 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 	logger := log.FromContext(ctx)
 	args := strings.Split(update.EffectiveMessage.Text, " ")
 	if len(args) < 2 {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchHelpText)), nil)
+		ctx.Reply(update, ext.ReplyTextString(watchMenuText("")), &ext.ReplyOpts{Markup: watchMenuMarkup()})
 		return dispatcher.EndGroups
 	}
-	userChatID := update.GetUserChat().GetID()
+	userChatID := responsibleUserID(update)
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
 		logger.Errorf("Failed to get user: %s", err)
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserFailed)), nil)
 		return dispatcher.EndGroups
 	}
-	if args[1] == "notify" {
-		return handleWatchNotifyCmd(ctx, update, user, args[2:])
-	}
-	if user.DefaultStorage == "" {
+	if user.DefaultStorageID == 0 {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorDefaultStorageNotSet)), nil)
 		return dispatcher.EndGroups
 	}
@@ -67,9 +71,8 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 	filter := ""
 	if len(args) > 2 {
 		filterArg := strings.Join(args[2:], " ")
-		filterType, _, _ := strings.Cut(filterArg, ":")
-		filterData := strings.Split(filterArg, ":")[1]
-		if filterType == "" || filterData == "" {
+		filterType, filterData, ok := strings.Cut(filterArg, ":")
+		if !ok || filterType == "" || filterData == "" {
 			ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorFilterFormatInvalid)), nil)
 			return dispatcher.EndGroups
 		}
@@ -87,9 +90,9 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 		}
 	}
 	if err := user.WatchChat(ctx, database.WatchChat{
-		UserID: user.ID,
-		ChatID: chatID,
-		Filter: filter,
+		UserID:        user.ID,
+		ChatID:        chatID,
+		MessageFilter: filter,
 	}); err != nil {
 		logger.Errorf("Failed to watch chat %d: %s", chatID, err)
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorWatchChatFailed, map[string]any{"Error": err.Error()})), nil)
@@ -99,63 +102,171 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 	return dispatcher.EndGroups
 }
 
-func handleLswatchCmd(ctx *ext.Context, update *ext.Update) error {
-	logger := log.FromContext(ctx)
-	userChatID := update.GetUserChat().GetID()
-	user, err := database.GetUserByChatID(ctx, userChatID)
-	if err != nil {
-		logger.Errorf("Failed to get user: %s", err)
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserFailed)), nil)
-		return dispatcher.EndGroups
+func watchMenuText(extra string) string {
+	text := i18n.T(i18nk.BotMsgWatchMenuTitle) + "\n\n" + i18n.T(i18nk.BotMsgWatchMenuHint)
+	if extra != "" {
+		text += "\n\n" + extra
 	}
-	chats := user.WatchChats
-	if len(chats) == 0 {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchInfoWatchListEmpty)), nil)
-		return dispatcher.EndGroups
+	return text
+}
+
+func watchMenuMarkup() *tg.ReplyInlineMarkup {
+	return &tg.ReplyInlineMarkup{Rows: []tg.KeyboardInlineButtonRow{
+		{Buttons: []tg.KeyboardInlineButton{
+			markup.Callback(i18n.T(i18nk.BotMsgWatchMenuAdd), fmt.Appendf(nil, "%s add", tcbdata.TypeWatch)),
+			markup.Callback(i18n.T(i18nk.BotMsgWatchMenuList), fmt.Appendf(nil, "%s list", tcbdata.TypeWatch)),
+		}},
+		{Buttons: []tg.KeyboardInlineButton{
+			markup.Callback(i18n.T(i18nk.BotMsgWatchMenuNotify), fmt.Appendf(nil, "%s notify", tcbdata.TypeWatch)),
+			markup.Callback(i18n.T(i18nk.BotMsgWatchMenuSync), fmt.Appendf(nil, "%s sync", tcbdata.TypeWatch)),
+		}},
+	}}
+}
+
+func watchBackMarkup() *tg.ReplyInlineMarkup {
+	return &tg.ReplyInlineMarkup{Rows: []tg.KeyboardInlineButtonRow{{
+		Buttons: []tg.KeyboardInlineButton{
+			markup.Callback(i18n.T(i18nk.BotMsgWatchMenuBack), fmt.Appendf(nil, "%s menu", tcbdata.TypeWatch)),
+		},
+	}}}
+}
+
+func handleWatchCallback(ctx *ext.Context, update *ext.Update) error {
+	args := strings.Fields(string(update.CallbackQuery.Data))
+	if len(args) < 2 {
+		return fmt.Errorf("invalid callback data: %q", update.CallbackQuery.Data)
 	}
-	var sb strings.Builder
-	sb.WriteString(i18n.T(i18nk.BotMsgWatchInfoWatchListHeader))
-	for _, chat := range chats {
-		sb.WriteString("- ")
-		sb.WriteString(fmt.Sprintf("%d", chat.ChatID))
-		if chat.Filter != "" {
-			sb.WriteString(i18n.T(i18nk.BotMsgWatchInfoWatchListFilterPrefix))
-			sb.WriteString(chat.Filter)
-			sb.WriteString(")")
-		}
-		sb.WriteString("\n")
+	switch args[1] {
+	case "menu":
+		return editWatchMenu(ctx, update)
+	case "add":
+		return editWatchAdd(ctx, update)
+	case "list":
+		return editWatchList(ctx, update)
+	case "notify":
+		return editWatchNotify(ctx, update)
+	case "sync":
+		return editWatchSync(ctx, update)
+	case "rm":
+		return editWatchRemove(ctx, update, args)
+	default:
+		return editWatchMenu(ctx, update)
 	}
-	ctx.Reply(update, ext.ReplyTextString(sb.String()), nil)
+}
+
+func editWatchMenu(ctx *ext.Context, update *ext.Update) error {
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+		ID:          update.CallbackQuery.GetMsgID(),
+		Message:     watchMenuText(""),
+		ReplyMarkup: watchMenuMarkup(),
+	})
 	return dispatcher.EndGroups
 }
 
-func handleUnwatchCmd(ctx *ext.Context, update *ext.Update) error {
-	logger := log.FromContext(ctx)
-	args := strings.Split(update.EffectiveMessage.Text, " ")
-	if len(args) < 2 {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorUnwatchNoChatProvided)), nil)
+func editWatchAdd(ctx *ext.Context, update *ext.Update) error {
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+		ID:          update.CallbackQuery.GetMsgID(),
+		Message:     watchMenuText(i18n.T(i18nk.BotMsgWatchMenuAddHelp)),
+		ReplyMarkup: watchBackMarkup(),
+	})
+	return dispatcher.EndGroups
+}
+
+func watchListText(chats []database.WatchChat) string {
+	if len(chats) == 0 {
+		return i18n.T(i18nk.BotMsgWatchInfoWatchListEmpty)
+	}
+	var b strings.Builder
+	b.WriteString(i18n.T(i18nk.BotMsgWatchInfoWatchListHeader))
+	for _, chat := range chats {
+		fmt.Fprintf(&b, "\n- %d", chat.ChatID)
+		if chat.MessageFilter != "" {
+			b.WriteString(i18n.T(i18nk.BotMsgWatchInfoWatchListFilterPrefix))
+			b.WriteString(chat.MessageFilter)
+			b.WriteString(")")
+		}
+	}
+	return b.String()
+}
+
+func watchListMarkup(chats []database.WatchChat) *tg.ReplyInlineMarkup {
+	rows := make([]tg.KeyboardInlineButtonRow, 0, len(chats)+1)
+	for _, chat := range chats {
+		rows = append(rows, tg.KeyboardInlineButtonRow{Buttons: []tg.KeyboardInlineButton{
+			markup.Callback(i18n.T(i18nk.BotMsgWatchMenuStop), fmt.Appendf(nil, "%s rm %d", tcbdata.TypeWatch, chat.ChatID)),
+		}})
+	}
+	rows = append(rows, watchBackMarkup().Rows...)
+	return &tg.ReplyInlineMarkup{Rows: rows}
+}
+
+func editWatchList(ctx *ext.Context, update *ext.Update) error {
+	userID := update.CallbackQuery.GetUserID()
+	user, err := database.GetUserByChatID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+		ID:          update.CallbackQuery.GetMsgID(),
+		Message:     watchListText(user.WatchChats),
+		ReplyMarkup: watchListMarkup(user.WatchChats),
+	})
+	return dispatcher.EndGroups
+}
+
+func editWatchNotify(ctx *ext.Context, update *ext.Update) error {
+	userID := update.CallbackQuery.GetUserID()
+	user, err := database.GetUserByChatID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	user.WatchNotify = !user.WatchNotify
+	if err := database.UpdateUser(ctx, user); err != nil {
+		return err
+	}
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+		ID:          update.CallbackQuery.GetMsgID(),
+		Message:     watchMenuText(i18n.T(watchNotifyStateKey(user.WatchNotify))),
+		ReplyMarkup: watchMenuMarkup(),
+	})
+	return dispatcher.EndGroups
+}
+
+func editWatchSync(ctx *ext.Context, update *ext.Update) error {
+	count, err := syncPeers(ctx)
+	if err != nil {
+		ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+			ID:      update.CallbackQuery.GetMsgID(),
+			Message: i18n.T(i18nk.BotMsgSyncpeersFailed, map[string]any{"Error": err.Error()}),
+		})
 		return dispatcher.EndGroups
 	}
-	userChatID := update.GetUserChat().GetID()
-	user, err := database.GetUserByChatID(ctx, userChatID)
-	if err != nil {
-		logger.Errorf("Failed to get user: %s", err)
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserFailed)), nil)
-		return dispatcher.EndGroups
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+		ID:          update.CallbackQuery.GetMsgID(),
+		Message:     watchMenuText(i18n.T(i18nk.BotMsgSyncpeersSuccess, map[string]any{"Count": count})),
+		ReplyMarkup: watchMenuMarkup(),
+	})
+	return dispatcher.EndGroups
+}
+
+func editWatchRemove(ctx *ext.Context, update *ext.Update, args []string) error {
+	if len(args) < 3 {
+		return fmt.Errorf("invalid callback data: %q", update.CallbackQuery.Data)
 	}
-	chatArg := args[1]
-	chatID, err := tgutil.ParseChatID(ctx, chatArg)
+	chatID, err := strconv.ParseInt(args[2], 10, 64)
 	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidIdOrUsername, map[string]any{"Error": err.Error()})), nil)
-		return dispatcher.EndGroups
+		return err
+	}
+	userID := update.CallbackQuery.GetUserID()
+	user, err := database.GetUserByChatID(ctx, userID)
+	if err != nil {
+		return err
 	}
 	if err := user.UnwatchChat(ctx, chatID); err != nil {
-		logger.Errorf("Failed to unwatch chat %d: %s", chatID, err)
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchErrorUnwatchChatFailed, map[string]any{"Error": err.Error()})), nil)
+		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(update.CallbackQuery.GetQueryID(), i18n.T(i18nk.BotMsgWatchErrorUnwatchChatFailed, map[string]any{"Error": err.Error()})))
 		return dispatcher.EndGroups
 	}
-	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchInfoWatchChatStopped, map[string]any{"Chat": chatArg})), nil)
-	return dispatcher.EndGroups
+	return editWatchList(ctx, update)
 }
 
 type watchMediaGroupHandler struct {
@@ -205,13 +316,24 @@ func (w *watchMediaGroupHandler) addFile(chatID int64, userID uint, file tfile.T
 	})
 }
 
-func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent, botCtx *ext.Context) {
-	if userclient.GetCtx() == nil {
-		return
-	}
-	logger := log.FromContext(userclient.GetCtx())
-	for event := range ch {
+// ListenUserbotMediaEvents consumes userbot media events until the channel is
+// closed. resolve returns the client context used for notifications.
+func ListenUserbotMediaEvents(runCtx context.Context, resolve func() *ext.Context) {
+	logger := log.FromContext(runCtx)
+	for event := range userclient.GetMediaMessageCh() {
+		if event.File == nil || event.Ctx == nil {
+			continue
+		}
+		botCtx := resolve()
+		if botCtx == nil {
+			continue
+		}
 		logger.Debug("Received media message event", "chat_id", event.ChatID, "file_name", event.File.Name())
+		message := event.File.Message()
+		if message == nil || !mediafilter.Allowed(message.Media) {
+			logger.Debug("Skipping filtered media message", "chat_id", event.ChatID, "file_name", event.File.Name())
+			continue
+		}
 		ctx := event.Ctx
 		file := event.File
 		chats, err := database.GetWatchChatsByChatID(ctx, event.ChatID)
@@ -219,10 +341,10 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent, botCtx *ext.C
 			logger.Errorf("Failed to get watch chats for chat ID %d: %v", event.ChatID, err)
 			continue
 		}
-		msgText := event.File.Message().GetMessage()
+		msgText := message.GetMessage()
 		for _, chat := range chats {
-			if chat.Filter != "" {
-				filter := strings.Split(chat.Filter, ":")
+			if chat.MessageFilter != "" {
+				filter := strings.Split(chat.MessageFilter, ":")
 				if len(filter) != 2 {
 					logger.Warnf("Invalid filter format in chat %d, skipping", chat.ChatID)
 					continue
@@ -246,18 +368,18 @@ func listenMediaMessageEvent(ch chan userclient.MediaMessageEvent, botCtx *ext.C
 				logger.Errorf("Failed to get user by ID %d: %v", chat.UserID, err)
 				continue
 			}
-			if user.DefaultStorage == "" {
+			if user.DefaultStorageID == 0 {
 				logger.Warnf("User %d has no default storage set, skipping media message handling", chat.UserID)
 				continue
 			}
-			stor, err := storage.GetStorageByUserIDAndName(ctx, user.ChatID, user.DefaultStorage)
+			stor, err := storage.GetStorageByUserIDAndID(ctx, user.ChatID, user.DefaultStorageID)
 			if err != nil {
-				logger.Errorf("Failed to get storage by user ID %d and name %s: %v", user.ChatID, user.DefaultStorage, err)
+				logger.Errorf("Failed to get storage ID %d for user %d: %v", user.DefaultStorageID, user.ChatID, err)
 				continue
 			}
 			var defaultDirPath string
-			if user.DefaultDir != 0 {
-				dir, err := database.GetDirByID(ctx, user.DefaultDir)
+			if user.DefaultDirID != 0 {
+				dir, err := database.GetDirByID(ctx, user.DefaultDirID)
 				if err != nil {
 					logger.Warnf("Failed to get default dir for user %d: %v, using root", user.ChatID, err)
 				} else {
@@ -343,6 +465,7 @@ func processWatchMediaGroup(ctx *ext.Context, botCtx *ext.Context, user *databas
 	}
 
 	useRule := user.ApplyRule && user.Rules != nil
+	files = mediautil.ApplyAlbumCaptions(ctx, user, files)
 
 	applyRule := func(file tfile.TGFileMessage) (string, ruleutil.MatchedDirPath) {
 		if !useRule {
@@ -404,7 +527,19 @@ func processWatchMediaGroup(ctx *ext.Context, botCtx *ext.Context, user *databas
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 	totalTasks := 0
 	for groupID, afiles := range albumFiles {
-		if len(afiles) <= 1 {
+		if len(afiles) == 1 {
+			af := afiles[0]
+			taskid := xid.New().String()
+			task, err := coretfile.NewTGFileTask(taskid, injectCtx, af.file, af.storage, path.Join(af.dirPath, af.file.Name()), newWatchNotifyProgress(ctx, botCtx, user))
+			if err != nil {
+				logger.Errorf("create task failed for album file: %s", err)
+				continue
+			}
+			if err := core.AddTask(injectCtx, task); err != nil {
+				logger.Errorf("add task failed: %s", err)
+				continue
+			}
+			totalTasks++
 			continue
 		}
 

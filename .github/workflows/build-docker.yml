@@ -14,7 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
   prepare:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -47,7 +51,6 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, arm64]
-        type: [default, micro, pico]
       fail-fast: false
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
 
@@ -70,7 +73,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.type == 'default' && './Dockerfile' || format('./Dockerfile.{0}', matrix.type) }}
+          file: ./Dockerfile
           platforms: ${{ matrix.arch == 'amd64' && 'linux/amd64' || 'linux/arm64' }}
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           build-args: |
@@ -93,7 +96,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v6
         with:
-          name: digest-${{ matrix.type }}-${{ matrix.arch }}
+          name: digest-${{ matrix.arch }}
           path: /tmp/digests/digest
           if-no-files-found: error
           retention-days: 1
@@ -103,9 +106,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
-    strategy:
-      matrix:
-        type: [default, micro, pico]
     steps:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -118,43 +118,40 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           path: /tmp/digests
-          pattern: digest-${{ matrix.type }}-*
+          pattern: digest-*
           merge-multiple: false
 
-      - name: Create and push manifest lists
+      - name: Create and push manifest list
         run: |
           REPO="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           VERSION="${{ needs.prepare.outputs.version }}"
           MAJOR_MINOR="${{ needs.prepare.outputs.major_minor }}"
           SHA="${{ needs.prepare.outputs.short_sha }}"
-          TYPE="${{ matrix.type }}"
 
-          DIGEST_AMD64=$(cat /tmp/digests/digest-${TYPE}-amd64/digest)
-          DIGEST_ARM64=$(cat /tmp/digests/digest-${TYPE}-arm64/digest)
+          DIGEST_AMD64=$(cat /tmp/digests/digest-amd64/digest)
+          DIGEST_ARM64=$(cat /tmp/digests/digest-arm64/digest)
 
-          echo "Found digests for $TYPE:"
           echo "AMD64: $DIGEST_AMD64"
           echo "ARM64: $DIGEST_ARM64"
-
-          TAGS=()
-
-          if [ "$TYPE" == "default" ]; then
-            TAGS+=("$REPO:latest")
-            TAGS+=("$REPO:$VERSION")
-            TAGS+=("$REPO:$MAJOR_MINOR")
-            TAGS+=("$REPO:sha-$SHA")
-          else
-            TAGS+=("$REPO:$TYPE")
-            TAGS+=("$REPO:$TYPE-latest")
-            TAGS+=("$REPO:$TYPE-$VERSION")
-          fi
 
           SRC_AMD64="${REPO}@${DIGEST_AMD64}"
           SRC_ARM64="${REPO}@${DIGEST_ARM64}"
 
-          echo "Creating manifest list with sources:"
-          echo "  $SRC_AMD64"
-          echo "  $SRC_ARM64"
+          if [[ "$VERSION" == *-* ]]; then
+            # Prereleases must not move stable channels such as latest or 1.0.
+            echo "Prerelease $VERSION: publishing exact and commit tags only"
+            TAGS=(
+              "$REPO:$VERSION"
+              "$REPO:sha-$SHA"
+            )
+          else
+            TAGS=(
+              "$REPO:latest"
+              "$REPO:$VERSION"
+              "$REPO:$MAJOR_MINOR"
+              "$REPO:sha-$SHA"
+            )
+          fi
 
           for TAG in "${TAGS[@]}"; do
             echo "Pushing tag: $TAG"

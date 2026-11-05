@@ -56,23 +56,27 @@ func (p *Progress) OnStart(ctx context.Context, task *Task) {
 	}
 	req.SetMessage(text)
 	req.SetEntities(entities)
-	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
-		Rows: []tg.KeyboardButtonRow{
-			{
-				Buttons: []tg.KeyboardButtonClass{
-					tgutil.BuildCancelButton(task.TaskID()),
-				},
-			},
-		}},
-	)
+	req.SetReplyMarkup(tgutil.BuildCancelMarkup(task.TaskID()))
 	ext.EditMessage(p.chatID, req)
 }
 
 // OnProgress implements ProgressTracker.
 func (p *Progress) OnProgress(ctx context.Context, task *Task, status *aria2.Status) {
-	totalLength, _ := strconv.ParseInt(status.TotalLength, 10, 64)
-	completedLength, _ := strconv.ParseInt(status.CompletedLength, 10, 64)
-	downloadSpeed, _ := strconv.ParseInt(status.DownloadSpeed, 10, 64)
+	totalLength, err := strconv.ParseInt(status.TotalLength, 10, 64)
+	if err != nil {
+		log.FromContext(ctx).Warnf("Invalid aria2 total length %q: %v", status.TotalLength, err)
+		return
+	}
+	completedLength, err := strconv.ParseInt(status.CompletedLength, 10, 64)
+	if err != nil {
+		log.FromContext(ctx).Warnf("Invalid aria2 completed length %q: %v", status.CompletedLength, err)
+		return
+	}
+	downloadSpeed, err := strconv.ParseInt(status.DownloadSpeed, 10, 64)
+	if err != nil {
+		log.FromContext(ctx).Warnf("Invalid aria2 download speed %q: %v", status.DownloadSpeed, err)
+		return
+	}
 
 	if totalLength == 0 {
 		return
@@ -109,15 +113,7 @@ func (p *Progress) OnProgress(ctx context.Context, task *Task, status *aria2.Sta
 	}
 	req.SetMessage(text)
 	req.SetEntities(entities)
-	req.SetReplyMarkup(&tg.ReplyInlineMarkup{
-		Rows: []tg.KeyboardButtonRow{
-			{
-				Buttons: []tg.KeyboardButtonClass{
-					tgutil.BuildCancelButton(task.TaskID()),
-				},
-			},
-		}},
-	)
+	req.SetReplyMarkup(tgutil.BuildCancelMarkup(task.TaskID()))
 	ext := tgutil.ExtFromContext(ctx)
 	if ext != nil {
 		ext.EditMessage(p.chatID, req)

@@ -1,8 +1,6 @@
 package shortcut
 
 import (
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/i18n"
@@ -12,10 +10,12 @@ import (
 	"github.com/krau/SaveAny-Bot/core/tasks/aria2dl"
 	"github.com/krau/SaveAny-Bot/pkg/aria2"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 )
 
-func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, uris []string, aria2Client *aria2.Client, msgID int, userID int64) error {
+func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPath string, uris []string, aria2Client *aria2.Client, msgID int, chatID int64) error {
 	logger := log.FromContext(ctx)
 	injectCtx := tgutil.ExtWithContext(ctx.Context, ctx)
 
@@ -24,9 +24,9 @@ func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 
 	if len(uris) == 0 {
 		logger.Error("URIs list is empty")
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      msgID,
-			Message: i18n.T(i18nk.BotMsgDlErrorNoValidLinks, nil),
+			Message: i18n.T(i18nk.BotMsgDownloadErrorNoValidLinks, nil),
 		})
 		return dispatcher.EndGroups
 	}
@@ -34,7 +34,7 @@ func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 	gid, err := aria2Client.AddURI(ctx, uris, nil)
 	if err != nil {
 		logger.Errorf("Failed to add aria2 download: %s", err)
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID: msgID,
 			Message: i18n.T(i18nk.BotMsgAria2ErrorAddingAria2Download, map[string]any{
 				"Error": err.Error(),
@@ -44,10 +44,10 @@ func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 	}
 	logger.Infof("Aria2 download added with GID: %s", gid)
 
-	task := aria2dl.NewTask(xid.New().String(), injectCtx, gid, uris, aria2Client, stor, dirPath, aria2dl.NewProgress(msgID, userID))
+	task := aria2dl.NewTask(xid.New().String(), injectCtx, gid, uris, aria2Client, stor, dirPath, aria2dl.NewProgress(msgID, chatID))
 	if err := core.AddTask(injectCtx, task); err != nil {
 		logger.Errorf("Failed to add task: %s", err)
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID: msgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
 				"Error": err.Error(),
@@ -55,7 +55,7 @@ func CreateAndAddAria2TaskWithEdit(ctx *ext.Context, stor storage.Storage, dirPa
 		})
 		return dispatcher.EndGroups
 	}
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 		ID:      msgID,
 		Message: i18n.T(i18nk.BotMsgCommonInfoTaskAdded, nil),
 	})

@@ -258,8 +258,7 @@ func TestClient_RPCError(t *testing.T) {
 		t.Error("Expected RPC error, got nil")
 	}
 
-	var rpcErr *rpcError
-	if !errors.As(err, &rpcErr) {
+	if _, ok := errors.AsType[*rpcError](err); !ok {
 		t.Errorf("Expected rpcError, got %T", err)
 	}
 }

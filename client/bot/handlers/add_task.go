@@ -6,8 +6,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
@@ -19,6 +17,8 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"gorm.io/gorm"
 )
 
@@ -36,7 +36,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	msgID := update.CallbackQuery.GetMsgID()
 	userID := update.CallbackQuery.GetUserID()
 
-	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, data.SelectedStorName)
+	selectedStorage, err := storage.GetStorageByUserIDAndID(ctx, userID, data.SelectedStorageID)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Failed to get storage: %s", err)
 		ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
@@ -44,7 +44,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		})))
 		return dispatcher.EndGroups
 	}
-	dirs, err := database.GetDirsByUserChatIDAndStorageName(ctx, userID, data.SelectedStorName)
+	dirs, err := database.GetDirsByUserChatIDAndStorageID(ctx, userID, storage.ID(selectedStorage))
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("failed to get user directories: %w", err)
 	}
@@ -58,7 +58,7 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 			})))
 			return dispatcher.EndGroups
 		}
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 			ID:          update.CallbackQuery.GetMsgID(),
 			Message:     i18n.T(i18nk.BotMsgCommonPromptSelectDir, nil),
 			ReplyMarkup: markup,
@@ -83,31 +83,31 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 	switch data.TaskType {
 	case tasktype.TaskTypeTgfiles:
 		if data.AsBatch {
-			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files, msgID, data.ConflictStrategy)
+			return shortcut.CreateAndAddBatchTGFileTaskWithEdit(ctx, userID, chatID(update), selectedStorage, dirPath, data.Files, msgID, data.ConflictStrategy)
 		}
-		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.Files[0], msgID, data.ConflictStrategy)
+		return shortcut.CreateAndAddTGFileTaskWithEdit(ctx, userID, chatID(update), selectedStorage, dirPath, data.Files[0], msgID, data.ConflictStrategy)
 	case tasktype.TaskTypeTphpics:
-		return shortcut.CreateAndAddtelegraphWithEdit(ctx, userID, data.TphPageNode, data.TphDirPath, data.TphPics, selectedStorage, msgID)
+		return shortcut.CreateAndAddtelegraphWithEdit(ctx, chatID(update), data.TphPageNode, data.TphDirPath, data.TphPics, selectedStorage, msgID)
 	case tasktype.TaskTypeParseditem:
 		if len(data.ParsedItem.Resources) > 1 {
 			dirPath = path.Join(dirPath, fsutil.NormalizePathname(data.ParsedItem.Title))
 		}
-		shortcut.CreateAndAddParsedTaskWithEdit(ctx, selectedStorage, dirPath, data.ParsedItem, msgID, userID)
+		shortcut.CreateAndAddParsedTaskWithEdit(ctx, selectedStorage, dirPath, data.ParsedItem, msgID, chatID(update))
 	case tasktype.TaskTypeDirectlinks:
-		shortcut.CreateAndAddDirectTaskWithEdit(ctx, selectedStorage, dirPath, data.DirectLinks, msgID, userID)
+		shortcut.CreateAndAddDirectTaskWithEdit(ctx, selectedStorage, dirPath, data.DirectLinks, msgID, chatID(update))
 	case tasktype.TaskTypeAria2:
-		client := GetAria2Client()
-		if client == nil {
+		client, err := GetAria2Client()
+		if err != nil {
 			ctx.AnswerCallback(msgelem.AlertCallbackAnswer(queryID, i18n.T(i18nk.BotMsgAria2ErrorAria2ClientInitFailed, map[string]any{
-				"Error": "aria2 client not initialized",
+				"Error": err.Error(),
 			})))
 			return dispatcher.EndGroups
 		}
-		shortcut.CreateAndAddAria2TaskWithEdit(ctx, selectedStorage, dirPath, data.Aria2URIs, client, msgID, userID)
+		shortcut.CreateAndAddAria2TaskWithEdit(ctx, selectedStorage, dirPath, data.Aria2URIs, client, msgID, chatID(update))
 	case tasktype.TaskTypeYtdlp:
-		shortcut.CreateAndAddYtdlpTaskWithEdit(ctx, selectedStorage, dirPath, data.YtdlpURLs, data.YtdlpFlags, msgID, userID)
+		shortcut.CreateAndAddYtdlpTaskWithEdit(ctx, selectedStorage, dirPath, data.YtdlpURLs, data.YtdlpFlags, msgID, chatID(update))
 	case tasktype.TaskTypeTransfer:
-		return handleTransferCallback(ctx, userID, selectedStorage, dirPath, data, msgID)
+		return handleTransferCallback(ctx, userID, chatID(update), selectedStorage, dirPath, data, msgID)
 	default:
 		return fmt.Errorf("unexcept task type: %s", data.TaskType)
 	}

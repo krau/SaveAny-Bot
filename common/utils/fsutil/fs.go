@@ -3,6 +3,7 @@ package fsutil
 import (
 	"errors"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -58,6 +59,18 @@ func CreateFile(fp string) (*File, error) {
 		return nil, err
 	}
 	return &File{File: file}, nil
+}
+
+// SafeBaseName reduces a remote-provided name to one safe filename component.
+func SafeBaseName(name string) string {
+	name = strings.ReplaceAll(name, "\\", "/")
+	name = path.Base(name)
+	name = NormalizePathname(name)
+	switch name {
+	case "", ".", "..":
+		return "file"
+	}
+	return name
 }
 
 func NormalizePathname(s string) string {

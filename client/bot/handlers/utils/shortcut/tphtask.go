@@ -1,8 +1,6 @@
 package shortcut
 
 import (
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
@@ -14,12 +12,14 @@ import (
 	tphtask "github.com/krau/SaveAny-Bot/core/tasks/telegraph"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 )
 
 func CreateAndAddtelegraphWithEdit(
 	ctx *ext.Context,
-	userID int64,
+	chatID int64,
 	tphpage *telegraph.Page,
 	dirPath string, // unescaped ph path for file storage
 	pics []string,
@@ -34,11 +34,11 @@ func CreateAndAddtelegraphWithEdit(
 		stor,
 		dirPath,
 		tphutil.DefaultClient(),
-		tphtask.NewProgress(trackMsgID, userID),
+		tphtask.NewProgress(trackMsgID, chatID),
 	)
 	if err := core.AddTask(injectCtx, task); err != nil {
 		log.FromContext(ctx).Errorf("Failed to add task: %s", err)
-		ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID: trackMsgID,
 			Message: i18n.T(i18nk.BotMsgCommonErrorTaskAddFailed, map[string]any{
 				"Error": err.Error(),
@@ -47,7 +47,7 @@ func CreateAndAddtelegraphWithEdit(
 		return dispatcher.EndGroups
 	}
 	text, entities := msgelem.BuildTaskAddedEntities(ctx, tphpage.Title, core.GetLength(ctx))
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 		ID:       trackMsgID,
 		Message:  text,
 		Entities: entities,

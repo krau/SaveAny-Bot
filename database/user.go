@@ -4,13 +4,15 @@ import (
 	"context"
 
 	"gorm.io/gorm/clause"
+
+	"github.com/krau/SaveAny-Bot/pkg/enums/storagefilter"
 )
 
 func CreateUser(ctx context.Context, chatID int64) error {
 	if _, err := GetUserByChatID(ctx, chatID); err == nil {
 		return nil
 	}
-	return db.Create(&User{ChatID: chatID}).Error
+	return db.Create(&User{ChatID: chatID, StorageFilterMode: storagefilter.Blacklist}).Error
 }
 
 func GetAllUsers(ctx context.Context) ([]User, error) {

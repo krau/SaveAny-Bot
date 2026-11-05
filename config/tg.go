@@ -1,21 +1,24 @@
 package config
 
 type telegramConfig struct {
-	Token             string        `toml:"token" mapstructure:"token"`
+	Token             string        `toml:"token" mapstructure:"token" json:"token"`
 	AppID             int           `toml:"app_id" mapstructure:"app_id" json:"app_id"`
 	AppHash           string        `toml:"app_hash" mapstructure:"app_hash" json:"app_hash"`
-	Proxy             tgProxyConfig `toml:"proxy" mapstructure:"proxy"`
+	Proxy             tgProxyConfig `toml:"proxy" mapstructure:"proxy" json:"proxy"`
 	RpcRetry          int           `toml:"rpc_retry" mapstructure:"rpc_retry" json:"rpc_retry"`
 	Userbot           userbotConfig `toml:"userbot" mapstructure:"userbot" json:"userbot"`
 	MediaGroupTimeout int           `toml:"media_group_timeout" mapstructure:"media_group_timeout" json:"media_group_timeout"`
+	RelayChatID       int64         `toml:"relay_chat_id" mapstructure:"relay_chat_id" json:"relay_chat_id"`
+	RelayKeepMessages bool          `toml:"relay_keep_messages" mapstructure:"relay_keep_messages" json:"relay_keep_messages"`
 }
 
 type userbotConfig struct {
-	Enable  bool   `toml:"enable" mapstructure:"enable"`
-	Session string `toml:"session" mapstructure:"session"`
+	Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	Session string `toml:"session" mapstructure:"session" json:"session"`
+	Phone   string `toml:"phone" mapstructure:"phone" json:"phone"`
 }
 
 type tgProxyConfig struct {
-	Enable bool   `toml:"enable" mapstructure:"enable"`
-	URL    string `toml:"url" mapstructure:"url"`
+	Enable bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	URL    string `toml:"url" mapstructure:"url" json:"url"`
 }

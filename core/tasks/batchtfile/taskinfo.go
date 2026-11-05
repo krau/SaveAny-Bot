@@ -50,9 +50,25 @@ func (t *Task) Count() int {
 }
 
 func (t *Task) Processing() []TaskElementInfo {
+	t.processingMu.RLock()
+	defer t.processingMu.RUnlock()
 	processing := make([]TaskElementInfo, 0, len(t.elems))
 	for _, elem := range t.processing {
 		processing = append(processing, elem)
 	}
 	return processing
+}
+
+func (t *Task) StorageName() string {
+	if len(t.elems) == 0 {
+		return ""
+	}
+	return t.elems[0].Storage.Name()
+}
+
+func (t *Task) StoragePath() string {
+	if len(t.elems) == 0 {
+		return ""
+	}
+	return t.elems[0].Path
 }

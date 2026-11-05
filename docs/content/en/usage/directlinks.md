@@ -1,21 +1,25 @@
 ---
-title: "Direct Download Links"
+title: "URL Downloads"
 weight: 5
 ---
 
-# Direct Download Links
+# URL Downloads
 
-Use the `/dl` command to directly download one or more HTTP/HTTPS files to storage.
+Use the `/download` command with one or more links and select an engine:
+
+- **Direct** — plain HTTP/HTTPS download, best for ordinary file links
+- **Aria2** — when Aria2 is enabled, including magnet and torrent links
+- **Video** — when yt-dlp is available, for supported video sites
 
 ```bash
-/dl <url1> [url2] [url3] ...
+/download <url1> [url2] [url3] ...
 ```
 
 Examples:
 
 ```bash
-/dl https://example.com/file.zip
-/dl https://example.com/file1.zip https://example.com/file2.zip
+/download https://example.com/file.zip
+/download https://example.com/file1.zip https://example.com/file2.zip
 ```
 
-The bot will validate the link format and then ask you to select the target storage location.
+Choose the engine, then select the target storage. For video sites, yt-dlp options such as `-f best` or `--extract-audio` can be appended to the same command.

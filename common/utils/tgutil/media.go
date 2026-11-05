@@ -2,10 +2,28 @@ package tgutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/tg"
 )
+
+func GetOriginalFileName(media tg.MessageMediaClass) string {
+	v, ok := media.(*tg.MessageMediaDocument)
+	if !ok {
+		return ""
+	}
+	f, ok := v.Document.AsNotEmpty()
+	if !ok {
+		return ""
+	}
+	for _, attribute := range f.Attributes {
+		if name, ok := attribute.(*tg.DocumentAttributeFilename); ok {
+			return strings.TrimSpace(name.GetFileName())
+		}
+	}
+	return ""
+}
 
 func GetMediaFileName(media tg.MessageMediaClass) (string, error) {
 	switch v := media.(type) {

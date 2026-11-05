@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/ext"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/msgelem"
 	"github.com/krau/SaveAny-Bot/common/cache"
@@ -14,34 +12,9 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/tcbdata"
 	"github.com/krau/SaveAny-Bot/storage"
+	"github.com/krau/mygotg/dispatcher"
+	"github.com/krau/mygotg/ext"
 )
-
-func handleSilentCmd(ctx *ext.Context, update *ext.Update) error {
-	user, err := database.GetUserByChatID(ctx, update.GetUserChat().GetID())
-	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetUserInfoFailed, map[string]any{
-			"Error": err.Error(),
-		})), nil)
-		return nil
-	}
-	if !user.Silent && user.DefaultStorage == "" {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorDefaultStorageNotSet, nil)), nil)
-		return nil
-	}
-	user.Silent = !user.Silent
-	if err := database.UpdateUser(ctx, user); err != nil {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorUpdateUserInfoFailed, map[string]any{
-			"Error": err.Error(),
-		})), nil)
-		return nil
-	}
-	if user.Silent {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoSilentModeOn, nil)), nil)
-	} else {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonInfoSilentModeOff, nil)), nil)
-	}
-	return dispatcher.EndGroups
-}
 
 func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 	dataParts := strings.Split(string(update.CallbackQuery.Data), " ")
@@ -66,8 +39,8 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 	}
 	userID := update.CallbackQuery.GetUserID()
 
-	storageName := data.StorageName
-	selectedStorage, err := storage.GetStorageByUserIDAndName(ctx, userID, storageName)
+	storageID := data.StorageID
+	selectedStorage, err := storage.GetStorageByUserIDAndID(ctx, userID, storageID)
 	if err != nil {
 		return failedAnswer(i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
 			"Error": err.Error(),
@@ -86,22 +59,22 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 		if err != nil {
 			return failedAnswer(i18n.T(i18nk.BotMsgDirErrorGetUserDirsFailed, nil))
 		}
-		user.DefaultDir = dir.ID
+		user.DefaultDirID = dir.ID
 	} else {
-		dirs, err := database.GetDirsByUserIDAndStorageName(ctx, user.ID, storageName)
+		dirs, err := database.GetDirsByUserIDAndStorageID(ctx, user.ID, storageID)
 		if err != nil {
 			return failedAnswer(i18n.T(i18nk.BotMsgCommonErrorGetDirFailed, map[string]any{
 				"Error": err.Error(),
 			}))
 		}
 		if len(dirs) > 0 {
-			markup, err := msgelem.BuildSetDefaultDirMarkup(ctx, storageName, dirs)
+			markup, err := msgelem.BuildSetDefaultDirMarkup(ctx, storageID, dirs)
 			if err != nil {
 				return failedAnswer(i18n.T(i18nk.BotMsgCommonErrorBuildDirSelectKeyboardFailed, map[string]any{
 					"Error": err.Error(),
 				}))
 			}
-			ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+			ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 				ID:          update.CallbackQuery.GetMsgID(),
 				Message:     i18n.T(i18nk.BotMsgCommonPromptSelectDefaultDir, nil),
 				ReplyMarkup: markup,
@@ -109,7 +82,7 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 			return dispatcher.EndGroups
 		}
 	}
-	user.DefaultStorage = selectedStorage.Name()
+	user.DefaultStorageID = storageID
 	if err := database.UpdateUser(ctx, user); err != nil {
 		return failedAnswer(i18n.T(i18nk.BotMsgCommonErrorUpdateUserInfoFailed, map[string]any{
 			"Error": err.Error(),
@@ -124,29 +97,9 @@ func handleSetDefaultCallback(ctx *ext.Context, update *ext.Update) error {
 			"Dir":  strings.TrimPrefix(dir.Path, "/"),
 		})
 	}
-	ctx.EditMessage(userID, &tg.MessagesEditMessageRequest{
+	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 		ID:      update.CallbackQuery.GetMsgID(),
 		Message: msg,
-	})
-	return dispatcher.EndGroups
-}
-
-func handleStorageCmd(ctx *ext.Context, update *ext.Update) error {
-	userID := update.GetUserChat().GetID()
-	storages := storage.GetUserStorages(ctx, userID)
-	if len(storages) == 0 {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorNoAvailableStorage, nil)), nil)
-		return nil
-	}
-	markup, err := msgelem.BuildSetDefaultStorageMarkup(ctx, storages)
-	if err != nil {
-		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorGetStorageFailed, map[string]any{
-			"Error": err.Error(),
-		})), nil)
-		return nil
-	}
-	ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonPromptSelectDefaultStorage, nil)), &ext.ReplyOpts{
-		Markup: markup,
 	})
 	return dispatcher.EndGroups
 }

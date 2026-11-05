@@ -8,7 +8,6 @@ import (
 	"unicode"
 	"unicode/utf16"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/mathutil"
 	"github.com/duke-git/lancet/v2/slice"
@@ -16,11 +15,13 @@ import (
 	"github.com/duke-git/lancet/v2/validator"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/constant"
+	"github.com/gotd/td/telegram/message/markup"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
+	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
 )
 
@@ -95,10 +96,18 @@ func GenFileNameFromMessage(message tg.Message) string {
 	return filename + ext
 }
 
-func BuildCancelButton(taskID string) tg.KeyboardButtonClass {
-	return &tg.KeyboardButtonCallback{
-		Text: i18n.T(i18nk.BotMsgCommonCancelButtonText, nil),
-		Data: fmt.Appendf(nil, "cancel %s", taskID),
+func BuildCancelButton(taskID string) tg.KeyboardInlineButton {
+	return markup.Callback(
+		i18n.T(i18nk.BotMsgCommonCancelButtonText, nil),
+		fmt.Appendf(nil, "cancel %s", taskID),
+	)
+}
+
+func BuildCancelMarkup(taskID string) *tg.ReplyInlineMarkup {
+	return &tg.ReplyInlineMarkup{
+		Rows: []tg.KeyboardInlineButtonRow{{
+			Buttons: []tg.KeyboardInlineButton{BuildCancelButton(taskID)},
+		}},
 	}
 }
 
@@ -192,10 +201,12 @@ func getMessagesRange(ctx *ext.Context, chatID int64, minId, maxId int) ([]*tg.M
 	return result, nil
 }
 
-func getMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, error) {
+func getMessageByID(ctx *ext.Context, chatID int64, msgID int, useCache bool) (*tg.Message, error) {
 	key := fmt.Sprintf("tgmsg:%d:%d:%d", ctx.Self.ID, chatID, msgID)
-	if msg, ok := cache.Get[*tg.Message](key); ok {
-		return msg, nil
+	if useCache {
+		if msg, ok := cache.Get[*tg.Message](key); ok {
+			return msg, nil
+		}
 	}
 	msgs, err := ctx.GetMessages(chatID, []tg.InputMessageClass{
 		&tg.InputMessageID{ID: msgID},
@@ -216,25 +227,57 @@ func getMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, err
 }
 
 func GetMessageByID(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, error) {
-	// we don't know what the input chatID is bot api style(e.g. channel with -100 prefix) or plain tdlib style(no any prefix and every id is positive)
-	if msg, err := getMessageByID(ctx, chatID, msgID); err == nil {
+	return lookupMessageByID(ctx, chatID, msgID, true)
+}
+
+// GetMessageByIDFresh fetches the message from Telegram instead of the cache.
+// Use it when the caller needs current file references, for example when
+// retrying a failed download.
+func GetMessageByIDFresh(ctx *ext.Context, chatID int64, msgID int) (*tg.Message, error) {
+	return lookupMessageByID(ctx, chatID, msgID, false)
+}
+
+// GetMessageByIDFreshAny tries each client context in order and returns the
+// message with the client that fetched it. It bypasses the message cache so
+// file references are current.
+func GetMessageByIDFreshAny(ctxs []*ext.Context, chatID int64, msgID int) (*tg.Message, *ext.Context, error) {
+	var lastErr error
+	for _, ctx := range ctxs {
+		if ctx == nil {
+			continue
+		}
+		msg, err := GetMessageByIDFresh(ctx, chatID, msgID)
+		if err == nil {
+			return msg, ctx, nil
+		}
+		lastErr = err
+	}
+	if lastErr == nil {
+		lastErr = fmt.Errorf("no telegram client available")
+	}
+	return nil, nil, lastErr
+}
+
+func lookupMessageByID(ctx *ext.Context, chatID int64, msgID int, useCache bool) (*tg.Message, error) {
+	// we don't know if the input chatID is bot api style(e.g. channel with -100 prefix) or plain tdlib style(no any prefix and every id is positive)
+	if msg, err := getMessageByID(ctx, chatID, msgID, useCache); err == nil {
 		return msg, nil
 	}
 	in := constant.TDLibPeerID(chatID)
 	plain := in.ToPlain()
 	var channel constant.TDLibPeerID
 	channel.Channel(plain)
-	if msg, err := getMessageByID(ctx, int64(channel), msgID); err == nil {
+	if msg, err := getMessageByID(ctx, int64(channel), msgID, useCache); err == nil {
 		return msg, nil
 	}
 	var chat constant.TDLibPeerID
 	chat.Chat(plain)
-	if msg, err := getMessageByID(ctx, int64(chat), msgID); err == nil {
+	if msg, err := getMessageByID(ctx, int64(chat), msgID, useCache); err == nil {
 		return msg, nil
 	}
 	var userID constant.TDLibPeerID
 	userID.User(plain)
-	if msg, err := getMessageByID(ctx, int64(userID), msgID); err == nil {
+	if msg, err := getMessageByID(ctx, int64(userID), msgID, useCache); err == nil {
 		return msg, nil
 	}
 

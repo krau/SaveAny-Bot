@@ -1,0 +1,200 @@
+/* Telegram */
+
+.connection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.connection-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.connection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.connection-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.connection-title svg {
+  color: var(--text-3);
+}
+
+.connection-identity {
+  min-width: 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.connection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 2px;
+  margin-top: auto;
+}
+
+.telegram-panel {
+  scroll-margin-top: 80px;
+}
+
+.telegram-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.relay-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 16px 24px;
+  align-items: start;
+}
+
+.relay-toggle {
+  padding-top: 26px;
+}
+
+.proxy-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proxy-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.proxy-row .checkbox {
+  min-height: auto;
+  flex: none;
+  padding-top: 0;
+}
+
+.userbot-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.userbot-auth {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.userbot-settings {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.userbot-settings-head h3 {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.userbot-settings .checkbox {
+  min-height: 32px;
+  padding-top: 0;
+}
+
+.userbot-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.userbot-session-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--success-soft);
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.userbot-session-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  place-items: center;
+  color: var(--success);
+  background: var(--surface);
+  border-radius: 50%;
+}
+
+.userbot-session-state strong {
+  display: block;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.userbot-cancel {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.flow-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.flow-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 4px 0 2px;
+}
+
+.flow-step {
+  padding-top: 9px;
+  border-top: 2px solid var(--line);
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.flow-step.active {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.flow-step.done {
+  border-color: var(--success);
+  color: var(--success);
+}
+

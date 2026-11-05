@@ -8,5 +8,5 @@ import (
 )
 
 func GetDialect(dsn string) gorm.Dialector {
-	return sqlite.Open(dsn)
+	return sqlite.Open(dsnWithPragmas(dsn))
 }

@@ -4,16 +4,19 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/celestix/gotgproto/ext"
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
 	"github.com/krau/SaveAny-Bot/client/bot"
+	"github.com/krau/SaveAny-Bot/client/bot/handlers/utils/mediautil"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
+	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
+	"github.com/krau/mygotg/ext"
 )
 
 type MessageContext struct {
@@ -35,10 +38,9 @@ func getClientContext() (*ext.Context, error) {
 }
 
 func resolveChatID(_ context.Context, idOrUsername string) (int64, error) {
-	if id, err := strconv.ParseInt(idOrUsername, 10, 64); err == nil {
-		// 私有频道 ID 需要加上 -100 前缀
-		if id > 0 {
-			return -1000000000000 - id, nil
+	if id, err := strconv.ParseInt(strings.TrimPrefix(idOrUsername, "@"), 10, 64); err == nil {
+		if id == 0 {
+			return 0, fmt.Errorf("chat ID must not be zero")
 		}
 		return id, nil
 	}
@@ -89,7 +91,13 @@ func ParseMessageLink(ctx context.Context, link string) (int64, int, error) {
 		if paths[0] != "c" {
 			chatPart = paths[0]
 		}
-		chatID, err := resolveChatID(ctx, chatPart)
+		var chatID int64
+		var err error
+		if paths[0] == "c" {
+			chatID, err = tgutil.ParseChannelID(nil, chatPart)
+		} else {
+			chatID, err = resolveChatID(ctx, chatPart)
+		}
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to resolve chat ID: %w", err)
 		}
@@ -103,7 +111,7 @@ func ParseMessageLink(ctx context.Context, link string) (int64, int, error) {
 		if paths[0] != "c" {
 			return 0, 0, fmt.Errorf("invalid message link format: %s", link)
 		}
-		chatID, err := resolveChatID(ctx, paths[1])
+		chatID, err := tgutil.ParseChannelID(nil, paths[1])
 		if err != nil {
 			return 0, 0, fmt.Errorf("failed to resolve chat ID: %w", err)
 		}
@@ -178,8 +186,12 @@ func ExtractFilesFromLinks(ctx context.Context, links []string) ([]tfile.TGFileM
 			continue
 		}
 
-		u, _ := url.Parse(link)
-		single := u != nil && u.Query().Has("single")
+		u, err := url.Parse(link)
+		if err != nil {
+			logger.Warnf("Invalid message link %s: %v", link, err)
+			continue
+		}
+		single := u.Query().Has("single")
 
 		msgCtx, err := getMessageWithContext(ctx, chatID, msgID)
 		if err != nil {
@@ -253,4 +265,74 @@ func isValidMessageLink(link string) bool {
 		}
 	}
 	return false
+}
+
+// ExtractFilesFromRange resolves a chat and message ID range and returns the
+// supported media messages as files. It is the web equivalent of the bot's
+// batch /save syntax.
+func ExtractFilesFromRange(ctx context.Context, chatRef, rangeRef, filterRef string) ([]tfile.TGFileMessage, error) {
+	logger := log.FromContext(ctx)
+	chatRef = strings.TrimSpace(chatRef)
+	rangeRef = strings.TrimSpace(rangeRef)
+	if chatRef == "" {
+		return nil, fmt.Errorf("chat_id is required")
+	}
+	start, end, err := strutil.ParseIntStrRange(rangeRef, "-")
+	if err != nil {
+		return nil, fmt.Errorf("invalid message range: %w", err)
+	}
+
+	clientCtx, err := getClientContext()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := strconv.ParseInt(strings.TrimPrefix(chatRef, "@"), 10, 64); err == nil {
+		if uc := userclient.GetCtx(); uc != nil {
+			clientCtx = uc
+		}
+	}
+	chatID, err := tgutil.ParseChatID(clientCtx, chatRef)
+	if err != nil {
+		return nil, fmt.Errorf("invalid chat: %w", err)
+	}
+	msgs, err := tgutil.GetMessagesRange(clientCtx, chatID, int(start), int(end))
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch messages: %w", err)
+	}
+	if len(msgs) == 0 {
+		return nil, fmt.Errorf("no messages found in the specified range")
+	}
+
+	var filter *regexp.Regexp
+	if strings.TrimSpace(filterRef) != "" {
+		filter, err = regexp.Compile(strings.TrimSpace(filterRef))
+		if err != nil {
+			return nil, fmt.Errorf("invalid filter: %w", err)
+		}
+	}
+	files := make([]tfile.TGFileMessage, 0, len(msgs))
+	for _, msg := range msgs {
+		if msg == nil || msg.Media == nil || !mediautil.IsSupported(msg.Media) {
+			continue
+		}
+		if filter != nil {
+			text := msg.GetMessage()
+			if name, err := tgutil.GetMediaFileName(msg.Media); err == nil {
+				text += " " + name
+			}
+			if !filter.MatchString(text) {
+				continue
+			}
+		}
+		file, err := tfile.FromMediaMessage(msg.Media, clientCtx.Raw, msg, tfile.WithNameIfEmpty(tgutil.GenFileNameFromMessage(*msg)))
+		if err != nil {
+			logger.Warnf("Failed to create file from message %d: %v", msg.ID, err)
+			continue
+		}
+		files = append(files, file)
+	}
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no savable files found in the specified range")
+	}
+	return files, nil
 }

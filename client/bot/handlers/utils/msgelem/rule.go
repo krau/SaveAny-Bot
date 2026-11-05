@@ -7,7 +7,9 @@ import (
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/database"
+	rulepkg "github.com/krau/SaveAny-Bot/pkg/rule"
 )
 
 func BuildRuleHelpStyling(enabled bool, rules []database.Rule) []styling.StyledTextOption {
@@ -32,7 +34,14 @@ func BuildRuleHelpStyling(enabled bool, rules []database.Rule) []styling.StyledT
 		styling.Blockquote(func() string {
 			var sb strings.Builder
 			for _, rule := range rules {
-				ruleText := fmt.Sprintf("%s %s %s %s", rule.Type, rule.Data, rule.StorageName, rule.DirPath)
+				storageName := rulepkg.RuleStorNameChosen
+				if rule.StorageID != 0 {
+					storageName = config.C().GetStorageNameByID(rule.StorageID)
+					if storageName == "" {
+						storageName = fmt.Sprintf("#%d", rule.StorageID)
+					}
+				}
+				ruleText := fmt.Sprintf("%s %s %s %s", rule.Type, rule.Content, storageName, rule.DirPath)
 				sb.WriteString(fmt.Sprintf("%d: %s\n", rule.ID, ruleText))
 			}
 			return sb.String()

@@ -1,41 +1,37 @@
 ---
-title: "Aria2 Download"
+title: "Aria2 Downloads"
 weight: 6
 ---
 
-# Aria2 Download
+# Aria2 Downloads
 
 {{< hint warning >}}
-This feature requires enabling Aria2 in the configuration file and configuring the RPC connection.
+This feature requires enabling Aria2 under **Settings → Aria2** and configuring the RPC connection.
 {{< /hint >}}
 
-Use the `/aria2dl` command to download files via the Aria2 download manager, supporting HTTP/HTTPS, FTP, BitTorrent, and other protocols.
+Aria2 downloads are available through `/download`. Send links, then choose **Aria2**. It supports HTTP/HTTPS, FTP, BitTorrent, and magnet links.
 
 ```bash
-/aria2dl <uri1> [uri2] [uri3] ...
+/download <uri1> [uri2] [uri3] ...
 ```
 
 Examples:
 
 ```bash
-# Download HTTP link
-/aria2dl https://example.com/file.zip
+# Download an HTTP link
+/download https://example.com/file.zip
 
-# Download magnet link
-/aria2dl magnet:?xt=urn:btih:...
+# Download a magnet link
+/download magnet:?xt=urn:btih:...
 
-# Download torrent file (need to upload .torrent file first)
-/aria2dl https://example.com/file.torrent
+# Download a torrent file
+/download https://example.com/file.torrent
 ```
 
-Configure Aria2:
+Choose **Aria2**, then select the target storage. When only Aria2 supports the supplied links, it is the only engine available.
 
-Add to `config.toml`:
+Configure Aria2 under **Settings → Aria2** in the web console:
 
-```toml
-[aria2]
-enable = true
-url = "http://localhost:6800/jsonrpc"
-secret = "your-rpc-secret"  # If rpc-secret is configured
-remove_after_transfer = true  # Remove local files after transfer
-```
+- `URL`: Aria2 RPC address, for example `http://localhost:6800/jsonrpc`
+- `Secret`: required when `rpc-secret` is configured
+- `Keep file`: keep the local file downloaded by Aria2 after the transfer

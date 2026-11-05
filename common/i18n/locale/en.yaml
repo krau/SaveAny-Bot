@@ -24,48 +24,33 @@ bot:
       Version: %s , Commit: %s
 
       Commands:
-      /start - Start using the bot
-      /help - Show help
-      /silent - Toggle silent mode
-      /storage - Set default storage
-      /save [custom filename] - Save file
-      /import <storage_name> <dir_path> [channel_id] [filter] - Import files from storage to Telegram
-      /dir - Manage storage directories
-      /rule - Manage rules
-      /config - Modify configuration
-      /fnametmpl - Set custom filename template
+      /start - Open help and command list
+      /save - Save replied media or batch messages
+      /download - Download links (direct, Aria2, or video)
+      /transfer - Transfer files between storages
+      /tasks - Manage tasks
+      /config - User settings (storage, silent mode, naming)
+      /template - Set filename template
+      /dirs - Manage storage directories
+      /rules - Manage storage rules
+      /watch - Watch chats and notifications (UserBot)
       /parser - Manage parser plugins
-      /task - Manage task queue
-      /watch - Watch chats and auto save (UserBot)
-      /unwatch - Stop watching chats (UserBot)
-      /lswatch - List watched chats (UserBot)
-      /syncpeers - Sync peer chats (UserBot)
-      /update - Check and upgrade to latest version
+      /update - Check for updates
 
       Usage guide: https://sabot.unv.app/usage
     cmd:
-      start: "Start using"
-      silent: "Toggle silent mode"
-      storage: "Set default storage"
-      dir: "Manage storage directories"
-      rule: "Manage auto-save rules"
+      start: "Open help"
       save: "Save files"
-      dl: "Download files from given links"
-      aria2dl: "Download files using Aria2"
-      ytdlp: "Download video/audio using yt-dlp"
-      import: "Import files from storage to Telegram"
+      download: "Download links (direct, Aria2, video)"
       transfer: "Transfer files between storages"
-      task: "Manage task queue"
-      cancel: "Cancel task"
-      watch: "Watch chats (UserBot)"
-      unwatch: "Stop watching chats (UserBot)"
-      lswatch: "List watched chats (UserBot)"
-      config: "Modify configuration"
-      fnametmpl: "Set filename template"
-      help: "Show help"
+      tasks: "Manage tasks"
+      config: "User settings"
+      template: "Set filename template"
+      dirs: "Manage storage directories"
+      rules: "Manage auto-save rules"
+      watch: "Watch chats and notifications (UserBot)"
       parser: "Manage parsers"
       update: "Check for updates"
-      syncpeers: "Sync peer chats (UserBot)"
     save_help_text: |
       Usage:
 
@@ -76,22 +61,6 @@ bot:
       2. After setting default storage, send /save <channel_id/username> <message_id_range> to batch save files. Rules will be applied; if no rule matches, default storage will be used.
       Example:
       /save @acherkrau 114-514
-    watch_help_text: |
-      Use /watch to watch messages in a chat and automatically save them to the default storage, following storage rules.
-
-      Syntax:
-      /watch <chat_id> [filter]
-
-      Parameters:
-      - <chat_id>: Chat ID or username
-      - [filter]: Optional, format is filter_type:expression , see docs for all supported filters
-
-      Example:
-      /watch -1002229835658 msgre:.*plana.*
-
-      This will watch chat with ID -1002229835658 and save all media messages containing "plana".
-
-      Notifications for saved messages are off by default, toggle them with /watch notify on|off.
     common:
       cancel_button_text: "Cancel"
       error_invalid_regex: "Invalid regex: {{.Error}}"
@@ -106,7 +75,7 @@ bot:
       info_found_files_select_storage: "Found {{.Count}} files, please select storage"
       error_get_user_failed: "Failed to get user"
       error_get_user_with_err_failed: "Failed to get user: {{.Error}}"
-      error_default_storage_not_set: "Please set a default storage first with /storage"
+      error_default_storage_not_set: "Please set a default storage first in /config"
       error_no_available_storage: "No available storage"
       error_get_storage_failed: "Failed to get storage: {{.Error}}"
       prompt_select_default_storage: "Please select a storage to set as default"
@@ -146,6 +115,18 @@ bot:
     save:
       error_invalid_id_or_username: "Invalid ID or username: {{.Error}}"
     watch:
+      menu_title: "Watch manager"
+      menu_hint: "Manage watched chats, notifications, and peer sync."
+      menu_add: "Add watch"
+      menu_list: "Watched chats"
+      menu_notify: "Notifications"
+      menu_sync: "Sync peers"
+      menu_stop: "Stop"
+      menu_back: "Back"
+      menu_add_help: |
+        Send /watch <chat_id/username> [filter] to start watching.
+        Example:
+        /watch -1002229835658 msgre:.*plana.*
       error_filter_format_invalid: "Invalid filter format, please use <type>:<expression>"
       error_filter_type_unsupported: "Unsupported filter type, please see the docs"
       error_watch_chat_failed: "Failed to watch chat: {{.Error}}"
@@ -154,16 +135,22 @@ bot:
       info_watch_list_empty: "No chats are being watched currently"
       info_watch_list_header: "Currently watched chats:\n"
       info_watch_list_filter_prefix: " (filter: "
-      error_unwatch_no_chat_provided: "Please provide a chat ID or username to unwatch"
       error_unwatch_chat_failed: "Failed to unwatch chat: {{.Error}}"
       info_watch_chat_stopped: "Stopped watching chat: {{.Chat}}"
-      error_notify_arg_invalid: "Invalid argument, usage: /watch notify on|off"
-      info_notify_enabled: "Task notifications are enabled for every chat you watch: each saved message and its result is reported here.\n\nUsage: /watch notify on|off"
-      info_notify_disabled: "Task notifications are disabled for every chat you watch.\n\nUsage: /watch notify on|off"
+      info_notify_enabled: "Task notifications are enabled for every chat you watch: each saved message and its result is reported here."
+      info_notify_disabled: "Task notifications are disabled for every chat you watch."
       notify_detected: "<b>🔔 Watched message detected</b>\n<code>{{.Name}}</code>\nProgress will be reported here."
     tasks:
-      usage_cancel: "Usage: /tasks cancel <task_id>"
-      usage: "Usage: /tasks [running|queued|cancel <task_id>]"
+      menu_title: "Task manager"
+      menu_hint: "Inspect running, queued, and failed tasks."
+      menu_running: "Running"
+      menu_queued: "Queued"
+      menu_failed: "Failed"
+      menu_back: "Back"
+      failed_title: "Failed tasks"
+      failed_empty: "No failed tasks"
+      retry_button: "Retry"
+      cancel_button: "Cancel"
       cancel_failed: "Failed to cancel task: {{.Error}}"
       cancel_requested_prefix: "Cancel requested for task: "
       running_empty: "No running tasks"
@@ -184,6 +171,12 @@ bot:
       info_filename_prefix: "Filename: "
       info_queue_length_prefix: "\nCurrent queued tasks: "
     rule:
+      menu_title: "Storage rules"
+      menu_hint: "Use /rules add <type> <data> <storage> <path> to add a rule."
+      menu_empty: "No rules configured"
+      button_enable: "Enable rules"
+      button_disable: "Disable rules"
+      button_delete: "Delete"
       error_get_user_rules_failed: "Failed to get user rules"
       error_update_user_failed: "Failed to update user"
       info_rule_mode_enabled: "Rule mode enabled"
@@ -195,19 +188,23 @@ bot:
       error_invalid_rule_id: "Invalid rule ID"
       error_delete_rule_failed: "Failed to delete rule"
       info_delete_rule_success: "Rule deleted successfully"
-      help_usage: "Usage: /rule <op> <args...>"
+      help_usage: "Usage: /rules <op> <args...>"
       help_current_mode_enabled: "\nRule mode is currently enabled"
       help_current_mode_disabled: "\nRule mode is currently disabled"
       help_available_ops: "\n\nAvailable operations:\n"
       help_switch_suffix: " - Toggle rule mode\n"
-      help_add_suffix: " <type> <data> <storage_name> <path> - Add rule\n"
+      help_add_suffix: " <type> <data> <storage_id|name> <path> - Add rule\n"
       help_del_suffix: " <rule_id> - Delete rule\n"
-      help_preset_suffix: " <storage_name> [base_path] - Import built-in filetype rules (video/image/audio/document/archive)\n"
+      help_preset_suffix: " <storage_id|name> [base_path] - Import built-in filetype rules (video/image/audio/document/archive)\n"
       help_existing_rules_prefix: "\nCurrent rules:\n"
       prompt_provide_storage_name: "Please provide a storage name"
       error_storage_not_found: "Storage not found: {{.Storage}}"
       info_preset_imported: "Imported {{.Count}} built-in classification rules into storage {{.Storage}}"
     dir:
+      menu_title: "Storage directories"
+      menu_hint: "Use /dirs add <storage> <path> to add a directory."
+      menu_empty: "No directories configured"
+      button_delete: "Delete"
       error_get_user_dirs_failed: "Failed to get user directories"
       error_get_user_failed: "Failed to get user"
       error_create_dir_failed: "Failed to create directory"
@@ -216,14 +213,14 @@ bot:
       error_delete_dir_failed: "Failed to delete directory"
       info_delete_dir_success: "Directory deleted successfully"
       error_unknown_operation: "Unknown operation"
-      help_usage: "Usage: /dir <op> <args...>"
+      help_usage: "Usage: /dirs <op> <args...>"
       help_available_ops: "\n\nAvailable operations:\n"
       help_add_suffix: " <storage_name> <path> - Add path\n"
       help_del_suffix: " <path_id> - Delete path\n"
       help_add_example_prefix: "\nAdd path example:\n"
-      help_add_example_cmd: "/dir add local1 path/to/dir"
+      help_add_example_cmd: "/dirs add local1 path/to/dir"
       help_del_example_prefix: "\n\nDelete path example:\n"
-      help_del_example_cmd: "/dir del 3"
+      help_del_example_cmd: "/dirs del 3"
       help_existing_dirs_prefix: "\n\nCurrent paths:\n"
       button_default: "Default"
     parser:
@@ -282,7 +279,13 @@ bot:
       info_upgrade_success: "Upgraded to version {{.Version}}\nIf the bot did not restart automatically, please start it manually"
       button_upgrade: "Upgrade"
     config:
+      menu_title: "User configuration"
+      menu_hint: "Choose a setting to change."
       prompt_select_option: "Please select an option to configure"
+      button_silent: "Silent mode"
+      button_default_storage: "Default storage"
+      button_template: "Filename template"
+      button_back: "Back"
       button_filename_strategy: "Filename strategy"
       button_conflict_strategy: "Duplicate file strategy"
       error_invalid_callback_data: "Invalid callback data"
@@ -295,9 +298,9 @@ bot:
       conflict_strategy_ask: "Ask every time"
       conflict_strategy_overwrite: "Always overwrite"
       conflict_strategy_skip: "Always skip"
-      fnametmpl_help: |-
-        Use this command to set filename template, for example:
-        /fnametmpl Image_{{"{{.msgid}}"}}_{{"{{.msgdate}}"}}.jpg
+      template_help: |-
+        Use /template to set a filename template, for example:
+        /template Image_{{"{{.msgid}}"}}_{{"{{.msgdate}}"}}.jpg
 
         Available variables:
         - {{"{{.msgid}}"}}: Message ID
@@ -312,16 +315,21 @@ bot:
         If template parsing fails, it will fall back to default filename.
       info_template_updated: "Filename template updated"
       info_current_template_prefix: "Current template: {{.Template}}"
-    dl:
-      usage: "Usage: /dl <url1> <url2> ..."
+    download:
+      usage: |
+        Usage: /download <url...> [yt-dlp options]
+        Choose direct download, Aria2, or video extraction.
+        Examples:
+        /download https://example.com/file.zip
+        /download https://www.youtube.com/watch?v=...
+        /download --format best https://www.youtube.com/watch?v=...
+      prompt_select_engine: "Found {{.Count}} link(s), choose a download engine"
+      button_direct: "Direct"
+      button_aria2: "Aria2"
+      button_video: "Video (yt-dlp)"
+      info_select_storage: "Choose storage for {{.Count}} link(s)"
       error_no_valid_links: "No valid links to download"
-      info_files_select_storage: "Total {{.Count}} files, please select storage"
-    ytdlp:
-      usage: "Usage: /ytdlp [OPTIONS] <URL1> [URL2] ...\nExamples:\n  /ytdlp https://example.com/video\n  /ytdlp --format best https://example.com/video\n  /ytdlp --extract-audio --audio-format mp3 https://example.com/video"
-      error_no_valid_urls: "No valid URLs"
-      info_urls_select_storage: "Found {{.Count}} links, please select storage"
-      info_downloading: "Downloading via yt-dlp..."
-      error_download_failed: "yt-dlp download failed: {{.Error}}"
+      error_no_engine: "No available download engine for these links"
     transfer:
       usage: |
         Usage: /transfer <source_storage>:/<source_path> [filter]
@@ -344,10 +352,11 @@ bot:
       start_stats: "Total files: {{.Count}}\nTotal size: {{.SizeMB}} MB"
       info_files_select_storage: "Total {{.Count}} files ({{.SizeMB}} MB), please select target storage"
       error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
+    retry:
+      info_started: "Retry task created: {{.TaskID}} ({{.Count}} files)"
+      error_failed: "Failed to retry task: {{.Error}}"
     cancel:
-      usage: "Usage: /cancel <task_id>"
       error_cancel_failed: "Failed to cancel task: {{.Error}}"
-      info_cancel_requested: "Cancel requested for task: {{.TaskID}}"
       info_cancelling_task: "Cancelling task..."
     media_group:
       info_saving_files: "Saving files..."
@@ -371,6 +380,7 @@ bot:
       batch_summary_skipped: "⏭️ Skipped: <code>{{.Count}}</code>"
       batch_done: "<b>✅ Completed</b>\n\nFiles: <code>{{.Count}}</code>\nTotal size: <code>{{.Size}}</code>"
       batch_done_with_skipped: "<b>⚠️ Completed</b>\n\nSucceeded: <code>{{.Success}}</code>\nSkipped: <code>{{.Skipped}}</code>\nTotal size: <code>{{.Size}}</code>"
+      batch_done_with_failed: "<b>⚠️ Completed with failures</b>\n\nSucceeded: <code>{{.Success}}</code>\nFailed: <code>{{.Failed}}</code>\nSkipped: <code>{{.Skipped}}</code>\nTotal size: <code>{{.Size}}</code>{{.List}}"
       batch_canceled: "<b>🚫 Task canceled</b>\n\nFiles: <code>{{.Total}}</code>\nCompleted: <code>{{.Completed}}</code>\nIncomplete: <code>{{.Incomplete}}</code>\nSkipped: <code>{{.Skipped}}</code>"
       batch_failed_item: "<b>❌ Processing failed</b>\n\nFailed file: <code>{{.Index}}. {{.Name}}</code>\nStage: <code>{{.Stage}}</code>\nProgress: <code>{{.Progress}}</code>\nSpeed before failure: <code>{{.Speed}}</code>\nReason: <code>{{.Reason}}</code>\n\n✅ Completed: <code>{{.Completed}}</code>\n❌ Failed: <code>{{.Failed}}</code>\n⏹️ Incomplete: <code>{{.Incomplete}}</code>"
       batch_failed_group: "<b>❌ Batch upload failed</b>\n\nAffected files: <code>{{.Affected}}</code>\nReason: <code>{{.Reason}}</code>\n\n✅ Completed: <code>{{.Completed}}</code>\n❌ Batch failed: <code>{{.Failed}}</code>\n⏹️ Incomplete: <code>{{.Incomplete}}</code>"
