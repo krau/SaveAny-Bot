@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 
@@ -37,17 +38,22 @@ func handleUpdateCmd(ctx *ext.Context, u *ext.Update) error {
 		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateErrorNoReleaseFound, nil)), nil)
 		return dispatcher.EndGroups
 	}
-	if latest.Version.Major != currentV.Major {
-		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateInfoMajorUpgradeRequired, map[string]any{
-			"Current": currentV.String(),
-			"Latest":  latest.Version.String(),
-		})), nil)
-		return dispatcher.EndGroups
-	}
-	if latest.Version.LT(currentV) || latest.Version.Equals(currentV) {
-		ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateInfoAlreadyLatest, map[string]any{
-			"Version": config.Version,
-		})), nil)
+	if err := selfupdate.CheckTarget(currentV, latest.Version); err != nil {
+		switch {
+		case errors.Is(err, selfupdate.ErrMajorUpgrade):
+			ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateInfoMajorUpgradeRequired, map[string]any{
+				"Current": currentV.String(),
+				"Latest":  latest.Version.String(),
+			})), nil)
+		case errors.Is(err, selfupdate.ErrAlreadyLatest):
+			ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateInfoAlreadyLatest, map[string]any{
+				"Version": config.Version,
+			})), nil)
+		default:
+			ctx.Reply(u, ext.ReplyTextString(i18n.T(i18nk.BotMsgUpdateErrorCheckLatestFailed, map[string]any{
+				"Error": err.Error(),
+			})), nil)
+		}
 		return dispatcher.EndGroups
 	}
 	indocker := config.Docker == "true"

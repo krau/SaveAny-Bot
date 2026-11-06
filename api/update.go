@@ -69,13 +69,17 @@ func checkUpdate() (*updateInfoResponse, error) {
 	info.URL = latest.AssetURL
 	info.Size = int64(latest.AssetByteSize)
 	info.PublishedAt = latest.PublishedAt
-	info.Available = latest.Version.Major == current.Major && latest.Version.GT(current)
-	if latest.Version.Major > current.Major {
+	if err := selfupdate.CheckTarget(current, latest.Version); err == nil {
+		info.Available = true
+	} else if errors.Is(err, selfupdate.ErrMajorUpgrade) {
 		info.Reason = "major upgrade required"
 		info.ReasonCode = "major_upgrade_required"
-	} else if !latest.Version.GT(current) {
+	} else if errors.Is(err, selfupdate.ErrAlreadyLatest) {
 		info.Reason = "already on the latest version"
 		info.ReasonCode = "already_latest"
+	} else {
+		info.Reason = err.Error()
+		info.ReasonCode = "not_updatable"
 	}
 	return info, nil
 }

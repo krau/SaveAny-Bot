@@ -42,12 +42,16 @@ var upgradeCmd = &cobra.Command{
 		if !found {
 			return errors.New("no releases found")
 		}
-		if latest.Version.Major != v.Major {
-			return fmt.Errorf("major upgrade %s -> %s requires a manual download and migration review", v, latest.Version)
-		}
-		if latest.Version.Equals(v) || latest.Version.LT(v) {
-			fmt.Println("Current binary is the latest version", config.Version)
-			return nil
+		if err := selfupdate.CheckTarget(v, latest.Version); err != nil {
+			switch {
+			case errors.Is(err, selfupdate.ErrMajorUpgrade):
+				return fmt.Errorf("major upgrade %s -> %s requires a manual download and migration review", v, latest.Version)
+			case errors.Is(err, selfupdate.ErrAlreadyLatest):
+				fmt.Println("Current binary is the latest version", config.Version)
+				return nil
+			default:
+				return err
+			}
 		}
 		fmt.Printf("Updating to version %s...\n", latest.Version)
 		latest, err = selfupdate.Update(v)
