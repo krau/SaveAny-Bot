@@ -47,7 +47,7 @@ docker run -d --name saveany-bot \
     -v ./data:/app/data \
     -v ./downloads:/app/downloads \
     -v ./cache:/app/cache \
-    ghcr.io/krau/saveany-bot:latest
+    ghcr.io/krau/saveany-bot:v1-beta
 ```
 
 Web 界面默认监听 `127.0.0.1:28080`。启动日志会输出带访问 Token 的直达地址：
@@ -57,6 +57,8 @@ docker logs saveany-bot | grep -E "Web UI available at|Generated web admin passw
 ```
 
 通过 Docker 端口映射访问时，日志中的 `127.0.0.1` 指宿主机；如果 Docker 运行在另一台机器上，请将 `127.0.0.1` 替换为那台机器的 IP。
+
+`v1-beta` 是持续指向最新 v1 Beta 的移动 tag；需要可复现部署时，请改用具体的 beta 版本 tag。
 
 直接运行二进制文件时，可通过命令行指定监听地址：
 

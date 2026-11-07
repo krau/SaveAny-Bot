@@ -49,7 +49,7 @@ docker run -d --name saveany-bot \
     -v ./data:/app/data \
     -v ./downloads:/app/downloads \
     -v ./cache:/app/cache \
-    ghcr.io/krau/saveany-bot:latest
+    ghcr.io/krau/saveany-bot:v1-beta
 ```
 
 The web UI listens on `127.0.0.1:28080` by default. The startup log prints a direct URL with an access token:
@@ -59,6 +59,8 @@ docker logs saveany-bot | grep -E "Web UI available at|Generated web admin passw
 ```
 
 The logged `127.0.0.1` URL is the host-side address when the port is published. If Docker runs on another machine, replace `127.0.0.1` with that machine's IP.
+
+`v1-beta` is the moving beta channel. Pin an exact image tag when you need a reproducible deployment.
 
 For a binary deployment, pass the address directly:
 

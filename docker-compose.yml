@@ -1,6 +1,6 @@
 services:
   saveany-bot:
-    image: ghcr.io/krau/saveany-bot:latest
+    image: ghcr.io/krau/saveany-bot:v1-beta
     container_name: saveany-bot
     restart: unless-stopped
     # Web UI 默认仅监听 127.0.0.1:28080；带访问 Token 的地址会打印在日志中

@@ -48,7 +48,7 @@ Bot 使用当前 Token 重新登录。启用 Userbot 时，请稍后在 Telegram
 ```yaml
 services:
   saveany-bot:
-    image: ghcr.io/krau/saveany-bot:latest
+    image: ghcr.io/krau/saveany-bot:v1-beta
     restart: unless-stopped
     ports:
       - "28080:28080"

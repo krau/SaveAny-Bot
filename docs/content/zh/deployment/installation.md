@@ -126,10 +126,12 @@ docker run -d --name saveany-bot \
     -v ./data:/app/data \
     -v ./downloads:/app/downloads \
     -v ./cache:/app/cache \
-    ghcr.io/krau/saveany-bot:latest
+    ghcr.io/krau/saveany-bot:v1-beta
 ```
 
 打开日志中输出的直达链接。Docker 部署时，链接中的 `127.0.0.1` 指宿主机；若从其他设备访问，请替换为宿主机 IP。若使用本地存储，容器内路径可设为 `/app/downloads`。
+
+`v1-beta` 是持续指向最新 v1 Beta 的移动 tag；需要可复现部署时，请改用具体的 beta 版本 tag。
 
 ## 更新
 
@@ -144,7 +146,7 @@ docker run -d --name saveany-bot \
 ### Docker
 
 ```bash
-docker pull ghcr.io/krau/saveany-bot:latest
+docker pull ghcr.io/krau/saveany-bot:v1-beta
 docker restart saveany-bot
 ```
 

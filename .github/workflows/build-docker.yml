@@ -139,10 +139,12 @@ jobs:
 
           if [[ "$VERSION" == *-* ]]; then
             # Prereleases must not move stable channels such as latest or 1.0.
-            echo "Prerelease $VERSION: publishing exact and commit tags only"
+            BETA_TAG="v${VERSION%%.*}-beta"
+            echo "Prerelease $VERSION: publishing exact, commit, and channel tags"
             TAGS=(
               "$REPO:$VERSION"
               "$REPO:sha-$SHA"
+              "$REPO:$BETA_TAG"
             )
           else
             TAGS=(

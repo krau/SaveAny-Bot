@@ -126,10 +126,12 @@ docker run -d --name saveany-bot \
     -v ./data:/app/data \
     -v ./downloads:/app/downloads \
     -v ./cache:/app/cache \
-    ghcr.io/krau/saveany-bot:latest
+    ghcr.io/krau/saveany-bot:v1-beta
 ```
 
 Read the tokenized URL from the logs and open it. With Docker, `127.0.0.1` means the Docker host; replace it with the host IP when opening the URL from another machine. For local storage in Docker, use `/app/downloads` as the base path.
+
+`v1-beta` is the moving beta channel. Pin an exact image tag when you need a reproducible deployment.
 
 ## Updates
 
@@ -144,7 +146,7 @@ You can also send `/update` in Telegram. The updated process restarts itself; on
 ### Docker
 
 ```bash
-docker pull ghcr.io/krau/saveany-bot:latest
+docker pull ghcr.io/krau/saveany-bot:v1-beta
 docker restart saveany-bot
 ```
 

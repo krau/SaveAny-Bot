@@ -48,7 +48,7 @@ v1 must be able to read the legacy `config.toml` during its first startup. In Do
 ```yaml
 services:
   saveany-bot:
-    image: ghcr.io/krau/saveany-bot:latest
+    image: ghcr.io/krau/saveany-bot:v1-beta
     restart: unless-stopped
     ports:
       - "28080:28080"
