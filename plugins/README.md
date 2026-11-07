@@ -40,7 +40,7 @@ type Item struct {
 
 ### Write a Parser Plugin
 
-解析器插件可使用 JavaScript 编写, SaveAnyBot 使用 [goja](https://github.com/dop251/goja) 提供运行时, 并向其中注入了以下全局函数或对象:
+解析器插件可使用 JavaScript 编写, SaveAnyBot 使用 [moejs](https://github.com/MoeForge/moejs) 提供运行时, 并向其中注入了以下全局函数或对象:
 
 - **registerParser**: 用于注册解析器, 每个插件必须调用此函数以注册
 - **console.log**: 调用 go 端的 logger 打印日志

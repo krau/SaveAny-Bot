@@ -9,96 +9,93 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/MoeForge/moejs"
 	"github.com/blang/semver"
 	"github.com/charmbracelet/log"
-	"github.com/dop251/goja"
 	"github.com/krau/SaveAny-Bot/common/utils/netutil"
 	"github.com/krau/SaveAny-Bot/parsers/parsers"
 )
 
-func jsRegisterParser(vm *goja.Runtime) func(call goja.FunctionCall) goja.Value {
-	return func(call goja.FunctionCall) goja.Value {
-		throw := func(err error) {
-			panic(vm.NewGoError(err))
-		}
-		jsObj := call.Argument(0)
-		if jsObj == nil || goja.IsUndefined(jsObj) || goja.IsNull(jsObj) {
-			throw(errors.New("registerParser expects an object { canHandle, parse }"))
+func jsRegisterParser(vm *moejs.Runtime) moejs.NativeFunc {
+	return func(_ *moejs.Realm, _ moejs.Value, args []moejs.Value) (moejs.Value, error) {
+		jsObj := moejs.Arg(args, 0)
+		if !jsObj.IsObject() {
+			return moejs.Undefined(), errors.New("registerParser expects an object { canHandle, parse }")
 		}
 
-		obj := jsObj.ToObject(vm)
-		if obj == nil {
-			throw(errors.New("registerParser expects an object { canHandle, parse }"))
+		metaValue, err := vm.Get(jsObj, "metadata")
+		if err != nil {
+			return moejs.Undefined(), err
 		}
-		metaValue := obj.Get("metadata")
-		if metaValue == nil || goja.IsUndefined(metaValue) {
-			throw(errors.New("parser must provide metadata"))
+		if metaValue.IsNullish() {
+			return moejs.Undefined(), errors.New("parser must provide metadata")
 		}
 		var metadata PluginMeta
-		if exported := metaValue.Export(); exported != nil {
-			data, err := json.Marshal(exported)
-			if err != nil {
-				throw(fmt.Errorf("failed to marshal metadata to JSON: %w", err))
-			}
-			if err := json.Unmarshal(data, &metadata); err != nil {
-				throw(fmt.Errorf("failed to unmarshal JSON to PluginMeta: %w", err))
-			}
-		} else {
-			throw(errors.New("metadata cannot be null or undefined"))
+		if err := vm.Unmarshal(metaValue, &metadata); err != nil {
+			return moejs.Undefined(), fmt.Errorf("failed to unmarshal metadata: %w", err)
 		}
 
 		if metadata.APIVersion == "" {
 			metadata.APIVersion = SupportedAPIVersion
 		}
 		if metadata.APIVersion != SupportedAPIVersion {
-			throw(fmt.Errorf("parser apiVersion %s is not supported, expected %s", metadata.APIVersion, SupportedAPIVersion))
+			return moejs.Undefined(), fmt.Errorf("parser apiVersion %s is not supported, expected %s", metadata.APIVersion, SupportedAPIVersion)
 		}
 		pluginV, err := semver.Parse(metadata.Version)
 		if err != nil {
-			throw(fmt.Errorf("invalid parser version %q: %w", metadata.Version, err))
+			return moejs.Undefined(), fmt.Errorf("invalid parser version %q: %w", metadata.Version, err)
 		}
 		if pluginV.LT(MinimumParserVersion) {
-			throw(fmt.Errorf("parser version %s is not supported, must be at least %s", metadata.Version, MinimumParserVersion))
+			return moejs.Undefined(), fmt.Errorf("parser version %s is not supported, must be at least %s", metadata.Version, MinimumParserVersion)
 		}
 		if pluginV.Major > LatestParserVersion.Major {
 			log.Printf("warning: parser major version %d is newer than latest supported major version %d", pluginV.Major, LatestParserVersion.Major)
 		}
 
-		handleFn := obj.Get("canHandle")
-		parseFn := obj.Get("parse")
-		if parseFn == nil || goja.IsUndefined(parseFn) {
-			throw(errors.New("parser must provide a parse function"))
+		handleFn, err := vm.Get(jsObj, "canHandle")
+		if err != nil {
+			return moejs.Undefined(), err
 		}
-		if handleFn == nil || goja.IsUndefined(handleFn) {
-			throw(errors.New("parser must provide a canHandle function"))
+		parseFn, err := vm.Get(jsObj, "parse")
+		if err != nil {
+			return moejs.Undefined(), err
+		}
+		if handleFn.IsNullish() {
+			return moejs.Undefined(), errors.New("parser must provide a canHandle function")
+		}
+		if parseFn.IsNullish() {
+			return moejs.Undefined(), errors.New("parser must provide a parse function")
 		}
 		parsers.Add(newJSParser(vm, handleFn, parseFn, metadata))
-		return goja.Undefined()
+		return moejs.Undefined(), nil
 	}
 }
 
 var jsConsole = func(logger *log.Logger) map[string]any {
+	format := func(args []moejs.Value) []any {
+		out := make([]any, len(args))
+		for i, arg := range args {
+			out[i] = arg.String()
+		}
+		return out
+	}
 	return map[string]any{
-		"log": func(args ...any) {
+		"log": moejs.NativeFunc(func(_ *moejs.Realm, _ moejs.Value, args []moejs.Value) (moejs.Value, error) {
 			if len(args) == 0 {
-				return
+				return moejs.Undefined(), nil
 			}
-			if len(args) > 1 {
-				logger.Info(args[0], args[1:]...)
-			} else {
-				logger.Info(args[0])
-			}
-		},
-		"error": func(args ...any) {
+			values := format(args)
+			logger.Info(values[0], values[1:]...)
+			return moejs.Undefined(), nil
+		}),
+		"error": moejs.NativeFunc(func(_ *moejs.Realm, _ moejs.Value, args []moejs.Value) (moejs.Value, error) {
 			if len(args) == 0 {
-				return
+				return moejs.Undefined(), nil
 			}
-			if len(args) > 1 {
-				logger.Error(fmt.Sprint(args[0]), args[1:]...)
-			} else {
-				logger.Error(fmt.Sprint(args[0]))
-			}
-		},
+			values := format(args)
+			logger.Error(values[0], values[1:]...)
+			return moejs.Undefined(), nil
+		}),
 	}
 }
 
@@ -110,81 +107,81 @@ It provides the following functions:
   - getJSON(url): performs a GET request and returns the response body parsed as JSON
   - head(url): performs a HEAD request and returns the response headers and status code
 */
-var jsGhttp = func(vm *goja.Runtime) *goja.Object {
-	ghttp := vm.NewObject()
+var jsGhttp = func(vm *moejs.Runtime) map[string]any {
 	client := netutil.DefaultParserHTTPClient()
-	ghttp.Set("get", func(call goja.FunctionCall) goja.Value {
-		url := call.Argument(0).String()
-		resp, err := client.Get(url)
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
-			})
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return vm.ToValue(map[string]any{
-				"error":  fmt.Sprintf("failed to fetch %s: %s", url, resp.Status),
-				"status": resp.StatusCode,
-			})
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Errorf("failed to read response body: %w", err).Error(),
-			})
-		}
-		return vm.ToValue(string(body))
-	})
-	ghttp.Set("getJSON", func(call goja.FunctionCall) goja.Value {
-		url := call.Argument(0).String()
+	return map[string]any{
+		"get": moejs.NativeFunc(func(_ *moejs.Realm, _ moejs.Value, args []moejs.Value) (moejs.Value, error) {
+			url := moejs.Arg(args, 0).String()
+			resp, err := client.Get(url)
+			if err != nil {
+				return vm.FromGo(map[string]any{
+					"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
+				})
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return vm.FromGo(map[string]any{
+					"error":  fmt.Sprintf("failed to fetch %s: %s", url, resp.Status),
+					"status": resp.StatusCode,
+				})
+			}
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return vm.FromGo(map[string]any{
+					"error": fmt.Errorf("failed to read response body: %w", err).Error(),
+				})
+			}
+			return moejs.String(string(body)), nil
+		}),
+		"getJSON": moejs.NativeFunc(func(_ *moejs.Realm, _ moejs.Value, args []moejs.Value) (moejs.Value, error) {
+			url := moejs.Arg(args, 0).String()
 
-		resp, err := client.Get(url)
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
+			resp, err := client.Get(url)
+			if err != nil {
+				return vm.FromGo(map[string]any{
+					"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
+				})
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return vm.FromGo(map[string]any{
+					"error":  fmt.Sprintf("failed to fetch %s: %s", url, resp.Status),
+					"status": resp.StatusCode,
+				})
+			}
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return vm.FromGo(map[string]any{
+					"error": fmt.Errorf("failed to read response body: %w", err).Error(),
+				})
+			}
+			var jsonData map[string]any
+			if err := json.Unmarshal(body, &jsonData); err != nil {
+				return vm.FromGo(map[string]any{
+					"error": fmt.Errorf("failed to unmarshal JSON: %w", err).Error(),
+				})
+			}
+			return vm.FromGo(map[string]any{
+				"data": jsonData,
 			})
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return vm.ToValue(map[string]any{
-				"error":  fmt.Sprintf("failed to fetch %s: %s", url, resp.Status),
-				"status": resp.StatusCode,
+		}),
+		"head": moejs.NativeFunc(func(_ *moejs.Realm, _ moejs.Value, args []moejs.Value) (moejs.Value, error) {
+			url := moejs.Arg(args, 0).String()
+			resp, err := client.Head(url)
+			if err != nil {
+				return vm.FromGo(map[string]any{
+					"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
+				})
+			}
+			defer resp.Body.Close()
+			headers := make(map[string]string)
+			for k, v := range resp.Header {
+				headers[k] = v[0]
+			}
+			return vm.FromGo(map[string]any{
+				"status":  resp.StatusCode,
+				"headers": headers,
 			})
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Errorf("failed to read response body: %w", err).Error(),
-			})
-		}
-		var jsonData map[string]any
-		if err := json.Unmarshal(body, &jsonData); err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Errorf("failed to unmarshal JSON: %w", err).Error(),
-			})
-		}
-		return vm.ToValue(map[string]any{
-			"data": jsonData,
-		})
-	})
-	ghttp.Set("head", func(call goja.FunctionCall) goja.Value {
-		url := call.Argument(0).String()
-		resp, err := client.Head(url)
-		if err != nil {
-			return vm.ToValue(map[string]any{
-				"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
-			})
-		}
-		defer resp.Body.Close()
-		headers := make(map[string]string)
-		for k, v := range resp.Header {
-			headers[k] = v[0]
-		}
-		return vm.ToValue(map[string]any{
-			"status":  resp.StatusCode,
-			"headers": headers,
-		})
-	})
-	return ghttp
+		}),
+	}
 }

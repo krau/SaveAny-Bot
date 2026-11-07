@@ -4,7 +4,6 @@ package js
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -12,15 +11,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MoeForge/moejs"
+	"github.com/MoeForge/moejs/engine"
 	"github.com/charmbracelet/log"
-	"github.com/dop251/goja"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/pkg/parser"
 )
 
 type jsParser struct {
 	meta  PluginMeta
-	vm    *goja.Runtime
+	vm    *moejs.Runtime
 	reqCh chan jsParserReq
 }
 
@@ -73,7 +73,7 @@ func (p *jsParser) request(ctx context.Context, method ParserMethod, url string)
 	}
 }
 
-func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata PluginMeta) *jsParser {
+func newJSParser(vm *moejs.Runtime, canHandleFunc, parseFunc moejs.Value, metadata PluginMeta) *jsParser {
 	p := &jsParser{
 		vm:    vm,
 		reqCh: make(chan jsParserReq, 10),
@@ -91,7 +91,7 @@ func newJSParser(vm *goja.Runtime, canHandleFunc, parseFunc goja.Value, metadata
 	return p
 }
 
-func (p *jsParser) handle(req jsParserReq, canHandleFunc, parseFunc goja.Value) (resp jsParserResp) {
+func (p *jsParser) handle(req jsParserReq, canHandleFunc, parseFunc moejs.Value) (resp jsParserResp) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			log.Errorf("JS parser %q panicked while handling method %d: %v", p.meta.Name, req.method, recovered)
@@ -112,37 +112,29 @@ func (p *jsParser) handle(req jsParserReq, canHandleFunc, parseFunc goja.Value) 
 		}
 	}()
 
+	arg, err := p.vm.FromGo(req.url)
+	if err != nil {
+		return jsParserResp{err: fmt.Errorf("failed to convert URL: %w", err)}
+	}
+
 	switch req.method {
 	case ParserMethodCanHandle:
-		fn, ok := goja.AssertFunction(canHandleFunc)
-		if !ok {
-			return jsParserResp{err: errors.New("canHandle is not a function")}
-		}
-		result, err := fn(goja.Undefined(), p.vm.ToValue(req.url))
+		result, err := p.vm.CallFunction(canHandleFunc, moejs.Undefined(), arg)
 		if err != nil {
 			return jsParserResp{ok: false, err: jsCallError(execCtx, p.meta.Name, err)}
 		}
-		return jsParserResp{ok: result.ToBoolean()}
+		return jsParserResp{ok: engine.ToBoolean(result)}
 	case ParserMethodParse:
-		fn, ok := goja.AssertFunction(parseFunc)
-		if !ok {
-			return jsParserResp{err: errors.New("parse is not a function")}
-		}
-		result, err := fn(goja.Undefined(), p.vm.ToValue(req.url))
+		result, err := p.vm.CallFunction(parseFunc, moejs.Undefined(), arg)
 		if err != nil {
 			return jsParserResp{err: jsCallError(execCtx, p.meta.Name, err)}
 		}
-		exported := result.Export()
-		if exported == nil {
+		if result.IsNullish() {
 			return jsParserResp{err: errors.New("JS function returned null or undefined")}
 		}
-		data, err := json.Marshal(exported)
-		if err != nil {
-			return jsParserResp{err: fmt.Errorf("failed to marshal result to JSON: %w", err)}
-		}
 		var item parser.Item
-		if err := json.Unmarshal(data, &item); err != nil {
-			return jsParserResp{err: fmt.Errorf("failed to unmarshal JSON to Item: %w", err)}
+		if err := p.vm.Unmarshal(result, &item); err != nil {
+			return jsParserResp{err: jsCallError(execCtx, p.meta.Name, fmt.Errorf("failed to unmarshal JS result to Item: %w", err))}
 		}
 		return jsParserResp{item: &item}
 	default:
@@ -174,14 +166,18 @@ func LoadPlugins(ctx context.Context, dir string) error {
 			continue
 		}
 
-		vm := goja.New()
-		vm.Set("registerParser", jsRegisterParser(vm))
 		logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("[plugin|parser]/%s", e.Name()))
-		vm.Set("console", jsConsole(logger))
-		vm.Set("ghttp", jsGhttp(vm))
-		vm.Set("playwright", jsPlaywright(vm, logger))
-
-		if _, err := vm.RunString(string(code)); err != nil {
+		script, err := moejs.CompileScript(e.Name(), string(code))
+		if err != nil {
+			logger.Warnf("Failed to compile plugin %s: %v", e.Name(), err)
+			continue
+		}
+		vm := moejs.NewRuntime(moejs.Options{})
+		if err := installPluginGlobals(vm, logger); err != nil {
+			logger.Warnf("Failed to initialize plugin %s: %v", e.Name(), err)
+			continue
+		}
+		if _, err := vm.RunScript(script); err != nil {
 			logger.Warnf("Failed to load plugin %s: %v", e.Name(), err)
 			continue
 		}
@@ -204,12 +200,15 @@ func AddPlugin(ctx context.Context, code string, name string) error {
 
 func addPlugin(ctx context.Context, code string, name string) error {
 	logger := log.FromContext(ctx).WithPrefix(fmt.Sprintf("[plugin|parser]/%s", name))
-	vm := goja.New()
-	vm.Set("registerParser", jsRegisterParser(vm))
-	vm.Set("console", jsConsole(logger))
-	vm.Set("ghttp", jsGhttp(vm))
-	vm.Set("playwright", jsPlaywright(vm, logger))
-	if _, err := vm.RunString(code); err != nil {
+	script, err := moejs.CompileScript(name, code)
+	if err != nil {
+		return fmt.Errorf("error compiling plugin %s: %w", name, err)
+	}
+	vm := moejs.NewRuntime(moejs.Options{})
+	if err := installPluginGlobals(vm, logger); err != nil {
+		return fmt.Errorf("error initializing plugin %s: %w", name, err)
+	}
+	if _, err := vm.RunScript(script); err != nil {
 		return fmt.Errorf("error loading plugin %s: %w", name, err)
 	}
 	dir := "plugins"
@@ -226,6 +225,22 @@ func addPlugin(ctx context.Context, code string, name string) error {
 		if err := os.WriteFile(pluginPath, []byte(code), 0644); err != nil {
 			logger.Warn("Failed to save plugin file: " + err.Error())
 		}
+	}
+	return nil
+}
+
+func installPluginGlobals(vm *moejs.Runtime, logger *log.Logger) error {
+	if err := vm.SetGlobal("registerParser", jsRegisterParser(vm)); err != nil {
+		return err
+	}
+	if err := vm.SetGlobal("console", jsConsole(logger)); err != nil {
+		return err
+	}
+	if err := vm.SetGlobal("ghttp", jsGhttp(vm)); err != nil {
+		return err
+	}
+	if err := vm.SetGlobal("playwright", jsPlaywright(vm, logger)); err != nil {
+		return err
 	}
 	return nil
 }
