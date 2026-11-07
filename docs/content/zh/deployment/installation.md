@@ -129,7 +129,7 @@ docker run -d --name saveany-bot \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-打开日志中输出的直达链接。若使用本地存储，容器内路径可设为 `/app/downloads`。
+打开日志中输出的直达链接。Docker 部署时，链接中的 `127.0.0.1` 指宿主机；若从其他设备访问，请替换为宿主机 IP。若使用本地存储，容器内路径可设为 `/app/downloads`。
 
 ## 更新
 

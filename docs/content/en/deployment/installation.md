@@ -129,7 +129,7 @@ docker run -d --name saveany-bot \
     ghcr.io/krau/saveany-bot:latest
 ```
 
-Read the tokenized URL from the logs and open it. For local storage in Docker, use `/app/downloads` as the base path.
+Read the tokenized URL from the logs and open it. With Docker, `127.0.0.1` means the Docker host; replace it with the host IP when opening the URL from another machine. For local storage in Docker, use `/app/downloads` as the base path.
 
 ## Updates
 

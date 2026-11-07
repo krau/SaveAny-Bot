@@ -51,7 +51,7 @@ func (s *Server) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to listen on %s: %w", s.listen, err)
 	}
 	log.FromContext(ctx).Infof("Starting web server on %s", ln.Addr())
-	if uiURL := webURL(ln.Addr(), s.authToken); uiURL != "" {
+	if uiURL := webURL(ln.Addr(), s.listen, s.authToken); uiURL != "" {
 		log.FromContext(ctx).Infof("Web UI available at %s", uiURL)
 	}
 	go func() {
@@ -74,7 +74,7 @@ func (s *Server) Stop(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
 }
 
-func webURL(addr net.Addr, token string) string {
+func webURL(addr net.Addr, listen, token string) string {
 	if addr == nil {
 		return ""
 	}
@@ -83,11 +83,7 @@ func webURL(addr net.Addr, token string) string {
 		return ""
 	}
 	if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
-		if ip.To4() != nil {
-			host = "127.0.0.1"
-		} else {
-			host = "::1"
-		}
+		host = loopbackForListen(listen)
 	}
 	u := url.URL{Scheme: "http", Host: net.JoinHostPort(host, port), Path: "/"}
 	if token != "" {
@@ -96,6 +92,29 @@ func webURL(addr net.Addr, token string) string {
 		u.RawQuery = query.Encode()
 	}
 	return u.String()
+}
+
+// loopbackForListen returns a loopback host that matches the address the
+// operator asked to bind. net.Listen reports an IPv4 wildcard as the
+// dual-stack [::], so the listener address alone cannot distinguish
+// 0.0.0.0 from [::]; the configured address can.
+func loopbackForListen(listen string) string {
+	host, _, err := net.SplitHostPort(listen)
+	if err != nil {
+		return "127.0.0.1"
+	}
+	switch strings.ToLower(host) {
+	case "", "0.0.0.0":
+		return "127.0.0.1"
+	case "::":
+		return "::1"
+	case "localhost":
+		return "localhost"
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.To4() == nil {
+		return "::1"
+	}
+	return "127.0.0.1"
 }
 
 func (s *Server) serveUI(w http.ResponseWriter, r *http.Request) {
