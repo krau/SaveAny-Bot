@@ -21,5 +21,12 @@ func dsnWithPragmas(dsn string) string {
 	values.Add("_pragma", "foreign_keys(1)")
 	values.Add("_pragma", "journal_mode(WAL)")
 	values.Add("_pragma", "busy_timeout(5000)")
-	return (&url.URL{Scheme: "file", Path: filepath.ToSlash(absolute), RawQuery: values.Encode()}).String()
+	// A Windows drive path must be represented as file:///D:/...; without the
+	// leading slash net/url emits file://D:/..., which SQLite treats as a UNC
+	// path on host "D:".
+	slashPath := filepath.ToSlash(absolute)
+	if filepath.VolumeName(absolute) != "" && !strings.HasPrefix(slashPath, "/") {
+		slashPath = "/" + slashPath
+	}
+	return (&url.URL{Scheme: "file", Path: slashPath, RawQuery: values.Encode()}).String()
 }
