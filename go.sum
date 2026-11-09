@@ -2,8 +2,10 @@ github.com/AnimeKaizoku/cacher v1.0.3 h1:foNAmLfY/DXfA4yEy4uP6WK2Ni7JC+s3QhZv72D
 github.com/AnimeKaizoku/cacher v1.0.3/go.mod h1:jw0de/b0K6W7Y3T9rHCMGVKUf6oG7hENNcssxYcZTCc=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/MoeForge/moejs v0.1.0-alpha.11 h1:VVDuqn14Dzlhcs17gDp3X43uvKkxi7OK7SZvkd0moEc=
-github.com/MoeForge/moejs v0.1.0-alpha.11/go.mod h1:YG2Y3bZuThN7hkSBext9MHPUPSrAIdpiE+6v+QO+LX0=
+github.com/MoeForge/moego v0.1.0-alpha.1 h1:d+asBZu+2oKnBj1kzdvdANMStbIKw9BLCpknuWjiR28=
+github.com/MoeForge/moego v0.1.0-alpha.1/go.mod h1:SBNiQjCpWC3IEBMKFBOwOyhhQ3jywMrISqCwJTdr4aA=
+github.com/MoeForge/moejs v0.1.0 h1:w5/bM4wVRrnMdLbQG32BM+yVcoA9wjQqdGlX3XekzG4=
+github.com/MoeForge/moejs v0.1.0/go.mod h1:GDaH0vQSxKDN7FCyBaLEZgqsGKRyIYBfje/p74aZQ3k=
 github.com/ProtonMail/go-crypto v1.4.1 h1:9RfcZHqEQUvP8RzecWEUafnZVtEvrBVL9BiF67IQOfM=
 github.com/ProtonMail/go-crypto v1.4.1/go.mod h1:e1OaTyu5SYVrO9gKOEhTc+5UcXtTUa+P3uLudwcgPqo=
 github.com/andybalholm/brotli v1.2.2 h1:HzTuoo2ErYQqf5qvcJInB8uvqSVxRttzkFexPWtnceM=

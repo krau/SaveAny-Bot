@@ -3,7 +3,7 @@ module github.com/krau/SaveAny-Bot
 go 1.27.0
 
 require (
-	github.com/MoeForge/moejs v0.1.0-alpha.11
+	github.com/MoeForge/moejs v0.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/charmbracelet/log v1.0.0
@@ -37,6 +37,7 @@ require (
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.3 // indirect
+	github.com/MoeForge/moego v0.1.0-alpha.1 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/aws/smithy-go v1.24.0 // indirect
