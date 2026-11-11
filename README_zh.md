@@ -84,11 +84,11 @@ docker logs saveany-bot | grep -E "Web UI available at|Generated web admin passw
 
 ## 赞助
 
-本项目受到 [YxVM](https://yxvm.com/) 与 [NodeSupport](https://github.com/NodeSeekDev/NodeSupport) 的支持.
-
 如果这个项目对你有帮助, 你可以考虑通过以下方式赞助我:
 
 - [爱发电](https://afdian.com/a/unvapp)
+- TRON: `TDyuEkV6qChgFbMRtveLiLcGWrF5hEYLap`
+- EVM: `0xAB77832Ed3E17A5967A8bA3618A7c9bD022f548c`
 
 ## 鸣谢
 

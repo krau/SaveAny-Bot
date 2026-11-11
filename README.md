@@ -86,11 +86,11 @@ Please [**read the docs**](https://sabot.unv.app/en/) for storage backends and u
 
 ## Sponsors
 
-This project is supported by [YxVM](https://yxvm.com/) and [NodeSupport](https://github.com/NodeSeekDev/NodeSupport).
-
 If this project is helpful to you, consider sponsoring me via:
 
 - [Afdian](https://afdian.com/a/unvapp)
+- TRON: `TDyuEkV6qChgFbMRtveLiLcGWrF5hEYLap`
+- EVM: `0xAB77832Ed3E17A5967A8bA3618A7c9bD022f548c`
 
 ## Thanks To
 
