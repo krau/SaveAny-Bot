@@ -2,6 +2,7 @@ package recovery
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -61,6 +62,13 @@ func (r *recovery) shouldRecover(ctx context.Context, err error) bool {
 	case <-ctx.Done():
 		return false
 	default:
+	}
+
+	// gotd reports an acknowledged request whose response was lost during
+	// engine close as a wrapped context cancellation. Replaying it may execute
+	// the request twice.
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
 	}
 
 	// we try recover when encountered any error that is not telegram business error
