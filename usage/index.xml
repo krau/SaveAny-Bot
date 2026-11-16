@@ -155,9 +155,7 @@
  文件命名
  &lt;a class="anchor" href="#%e6%96%87%e4%bb%b6%e5%91%bd%e5%90%8d">#&lt;/a>
 &lt;/h2>
-&lt;p>下载文件默认按视频标题命名（&lt;code>%(title)s.%(ext)s&lt;/code>），保存到你选择的存储目录。可以传入 yt-dlp 输出模板自定义文件名：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>/download https://www.youtube.com/watch?v&lt;span style="color:#f92672">=&lt;/span>dQw4w9WgXcQ -o &lt;span style="color:#e6db74">&amp;#34;%(uploader)s - %(title)s.%(ext)s&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>只使用 &lt;code>-o/--output&lt;/code> 的模板部分：下载目录始终由 Bot 管理，模板中的相对路径会创建在该目录下，并保留到存储路径中。如需修改所有下载的默认命名，请在 &lt;a href="../deployment/configuration">&lt;code>[ytdlp]&lt;/code> 配置&lt;/a>中设置 &lt;code>filename_template&lt;/code>；其中的 &lt;code>restrict_filenames&lt;/code> 会将文件名限制为 ASCII，去掉非拉丁字符、空格和 &lt;code>&amp;amp;&lt;/code>。&lt;/p></description></item><item><title>存储间传输</title><link>https://sabot.unv.app/usage/transfer/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/transfer/</guid><description>&lt;h1 id="存储间传输">
+&lt;p>下载文件默认按视频标题命名，标题截断至 200 字节以免超出文件名长度限制（&lt;code>%(title).200B.%(ext)s&lt;/code>），保存到你选择的存储目录。可以传入 yt-dlp 输出模板自定义文件名：&lt;/p></description></item><item><title>存储间传输</title><link>https://sabot.unv.app/usage/transfer/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://sabot.unv.app/usage/transfer/</guid><description>&lt;h1 id="存储间传输">
  存储间传输
  &lt;a class="anchor" href="#%e5%ad%98%e5%82%a8%e9%97%b4%e4%bc%a0%e8%be%93">#&lt;/a>
 &lt;/h1>
