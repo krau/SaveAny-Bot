@@ -176,7 +176,14 @@ func applyGroup(cfg *config.Config, group string, raw []byte) error {
 	case GroupTemp:
 		return json.Unmarshal(raw, &cfg.Temp)
 	case GroupYtdlp:
-		return json.Unmarshal(raw, &cfg.Ytdlp)
+		if err := json.Unmarshal(raw, &cfg.Ytdlp); err != nil {
+			return err
+		}
+		// Configs written before the title cap still carry the old default.
+		if cfg.Ytdlp.FilenameTemplate == config.LegacyYtdlpFilenameTemplate {
+			cfg.Ytdlp.FilenameTemplate = config.DefaultYtdlpFilenameTemplate
+		}
+		return nil
 	case GroupParser:
 		// The group payload is complete; reset the map so decoding cannot
 		// mutate the map still referenced by the live config snapshot.

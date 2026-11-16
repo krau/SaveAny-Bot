@@ -11,6 +11,10 @@ import (
 // limit, with room for suffixes such as ".f140.m4a.part".
 const DefaultYtdlpFilenameTemplate = "%(title).200B.%(ext)s"
 
+// LegacyYtdlpFilenameTemplate is the uncapped default still stored by configs
+// created before the title cap; it is treated as unset when settings load.
+const LegacyYtdlpFilenameTemplate = "%(title)s.%(ext)s"
+
 type YtdlpConfig struct {
 	// MaxHeight limits the video resolution by height in pixels (e.g. 1080, 720).
 	// 0 means no limit (best available). Ignored when Format is set.
