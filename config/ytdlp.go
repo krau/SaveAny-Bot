@@ -1,5 +1,11 @@
 package config
 
+import (
+	"fmt"
+	"net/url"
+	"strings"
+)
+
 // DefaultYtdlpFilenameTemplate is used when ytdlp.filename_template is not set.
 // The title is capped at 200 bytes so names stay under the 255-byte NAME_MAX
 // limit, with room for suffixes such as ".f140.m4a.part".
@@ -21,4 +27,32 @@ type YtdlpConfig struct {
 	// RestrictFilenames keeps file names ASCII-only (yt-dlp --restrict-filenames),
 	// dropping non-latin characters from titles. Disabled by default.
 	RestrictFilenames bool `toml:"restrict_filenames" mapstructure:"restrict_filenames" json:"restrict_filenames"`
+	// Proxies are HTTP/HTTPS/SOCKS proxy URLs for yt-dlp's own requests. They
+	// are tried in order until one succeeds, so put the preferred proxy first.
+	// Empty means yt-dlp connects directly.
+	Proxies []string `toml:"proxies" mapstructure:"proxies" json:"proxies"`
+}
+
+// ValidateProxies reports the first entry in Proxies that yt-dlp cannot use.
+// Blank entries are ignored.
+func (c YtdlpConfig) ValidateProxies() error {
+	for _, raw := range c.Proxies {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+		u, err := url.Parse(raw)
+		if err != nil {
+			return fmt.Errorf("invalid yt-dlp proxy: %w", err)
+		}
+		switch u.Scheme {
+		case "http", "https", "socks4", "socks4a", "socks5", "socks5h":
+		default:
+			return fmt.Errorf("invalid yt-dlp proxy %q: scheme must be http, https, socks4, socks4a, socks5 or socks5h", u.Redacted())
+		}
+		if u.Host == "" {
+			return fmt.Errorf("invalid yt-dlp proxy %q: missing host", u.Redacted())
+		}
+	}
+	return nil
 }

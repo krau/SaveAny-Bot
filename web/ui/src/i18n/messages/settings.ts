@@ -79,6 +79,8 @@ export const zhHans = {
       recode: '转码容器',
       filenameTemplate: '文件名模板',
       restrictFilenames: '限制文件名（仅 ASCII）',
+      proxies: 'yt-dlp 代理',
+      proxiesHint: '每行一个，按顺序尝试直到成功；留空则直连',
     },
     parser: {
       pluginEnable: '启用插件',
@@ -221,6 +223,8 @@ export const en = {
       recode: 'Transcode container',
       filenameTemplate: 'Filename template',
       restrictFilenames: 'Restrict filenames (ASCII only)',
+      proxies: 'yt-dlp proxies',
+      proxiesHint: 'One per line, tried in order until one works; empty connects directly',
     },
     parser: {
       pluginEnable: 'Enable plugins',
