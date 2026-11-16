@@ -199,6 +199,14 @@ export const settingsGroups: SettingsGroupDef[] = [
         label: 'settings.ytdlp.restrictFilenames',
         kind: 'bool',
       },
+      {
+        path: 'proxies',
+        label: 'settings.ytdlp.proxies',
+        kind: 'list',
+        hint: 'settings.ytdlp.proxiesHint',
+        placeholder: 'socks5://127.0.0.1:1080',
+        wide: true,
+      },
     ],
   },
   {

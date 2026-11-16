@@ -509,6 +509,10 @@ func validateGroup(cfg *config.Config, group string) error {
 		if _, err := log.ParseLevel(strings.TrimSpace(cfg.Log.Level)); err != nil {
 			return fmt.Errorf("invalid log level: %w", err)
 		}
+	case GroupYtdlp:
+		if err := cfg.Ytdlp.ValidateProxies(); err != nil {
+			return err
+		}
 	case GroupWeb:
 		if _, _, err := net.SplitHostPort(cfg.Web.Listen); err != nil {
 			return fmt.Errorf("invalid listen address: %w", err)

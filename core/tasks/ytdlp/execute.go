@@ -116,7 +116,8 @@ func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string
 func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, error) {
 	logger := log.FromContext(ctx)
 
-	cmd, flags, err := buildDownloadCommand(config.C().Ytdlp, tempDir, t.Flags)
+	cfg := config.C().Ytdlp
+	cmd, flags, err := buildDownloadCommand(cfg, tempDir, t.Flags)
 	if err != nil {
 		return nil, err
 	}
@@ -130,17 +131,11 @@ func (t *Task) downloadFiles(ctx context.Context, tempDir string) ([]string, err
 	// yt-dlp accepts: yt-dlp [OPTIONS] URL [URL...]
 	args := append(flags, t.URLs...)
 
-	// Run with context for cancellation support
-	result, err := cmd.Run(ctx, args...)
-	if err != nil {
+	if _, err := RunWithProxyFailover(ctx, cmd, cfg, args...); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return nil, err
 		}
 		return nil, fmt.Errorf("yt-dlp execution failed: %w", err)
-	}
-
-	if result.ExitCode != 0 {
-		return nil, fmt.Errorf("yt-dlp exited with code %d: %s", result.ExitCode, result.Stderr)
 	}
 
 	files, err := collectDownloadedFiles(tempDir)
@@ -165,6 +160,10 @@ func collectDownloadedFiles(dir string) ([]string, error) {
 		if entry.IsDir() {
 			return nil
 		}
+		// A failed proxy attempt can leave partial downloads behind.
+		if isYtdlpTempFile(entry.Name()) {
+			return nil
+		}
 		rel, err := filepath.Rel(dir, path)
 		if err != nil {
 			return err
@@ -175,6 +174,17 @@ func collectDownloadedFiles(dir string) ([]string, error) {
 		return nil, fmt.Errorf("failed to read temp directory: %w", err)
 	}
 	return files, nil
+}
+
+// isYtdlpTempFile reports whether name is one of yt-dlp's in-progress files
+// rather than a finished download.
+func isYtdlpTempFile(name string) bool {
+	for _, suffix := range []string{".part", ".ytdl", ".temp"} {
+		if strings.HasSuffix(name, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 // transferFile transfers the file at relPath below tempDir to storage, keeping

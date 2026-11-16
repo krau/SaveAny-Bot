@@ -12,6 +12,9 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/krau/ffmpeg-go"
 	ytdlp "github.com/lrstanley/go-ytdlp"
+
+	"github.com/krau/SaveAny-Bot/config"
+	ytdlptask "github.com/krau/SaveAny-Bot/core/tasks/ytdlp"
 )
 
 var (
@@ -185,13 +188,11 @@ func extractDirectMediaMetadata(ctx context.Context, url string) (*MediaMetadata
 
 func extractYTDLPMediaMetadata(ctx context.Context, url string) (*MediaMetadataResponse, error) {
 	cmd := ytdlp.New().DumpSingleJSON()
-	result, err := cmd.Run(ctx, url)
+	// Use the same proxies as downloads, so a lookup cannot report a URL
+	// unreachable that a download would fetch.
+	result, err := ytdlptask.RunWithProxyFailover(ctx, cmd, config.C().Ytdlp, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to inspect media: %w", err)
-	}
-
-	if result.ExitCode != 0 {
-		return nil, fmt.Errorf("failed to inspect media: %s", result.Stderr)
 	}
 
 	var e *ytdlp.ExtractedInfo
