@@ -192,7 +192,7 @@ export const settingsGroups: SettingsGroupDef[] = [
         path: 'filename_template',
         label: 'settings.ytdlp.filenameTemplate',
         kind: 'text',
-        placeholder: '%(title)s.%(ext)s',
+        placeholder: '%(title).200B.%(ext)s',
       },
       {
         path: 'restrict_filenames',
