@@ -150,7 +150,7 @@
 &lt;li>&lt;code>--write-sub&lt;/code>: 下载字幕&lt;/li>
 &lt;li>&lt;code>--write-thumbnail&lt;/code>: 下载缩略图&lt;/li>
 &lt;/ul>
-&lt;p>出于安全考虑，以下会执行程序、加载外部配置或读写任意文件的参数会被拒绝：&lt;code>--exec&lt;/code>、&lt;code>--exec-before-download&lt;/code>、&lt;code>--config-location&lt;/code>、&lt;code>--load-info-json&lt;/code>、&lt;code>--batch-file&lt;/code>、&lt;code>--downloader&lt;/code>、&lt;code>--external-downloader&lt;/code>、&lt;code>--paths&lt;/code>、&lt;code>--cache-dir&lt;/code>、&lt;code>--postprocessor-args&lt;/code>、&lt;code>--netrc-cmd&lt;/code>、&lt;code>--plugin-dirs&lt;/code>、&lt;code>--update&lt;/code> 等。&lt;/p>
+&lt;p>出于安全考虑，以下会执行程序、加载外部配置或读写任意文件的参数会被拒绝：&lt;code>--exec&lt;/code>、&lt;code>--exec-before-download&lt;/code>、&lt;code>--config-location&lt;/code>、&lt;code>--load-info-json&lt;/code>、&lt;code>--batch-file&lt;/code>、&lt;code>--downloader&lt;/code>、&lt;code>--external-downloader&lt;/code>、&lt;code>--paths&lt;/code>、&lt;code>--cache-dir&lt;/code>、&lt;code>--postprocessor-args&lt;/code>、&lt;code>--netrc-cmd&lt;/code>、&lt;code>--plugin-dirs&lt;/code>、&lt;code>--update&lt;/code> 等。&lt;code>--proxy&lt;/code>、&lt;code>--cookies&lt;/code> 和 &lt;code>--netrc&lt;/code> 同样会被拒绝；代理请在设置中配置（见下文）。&lt;/p>
 &lt;h2 id="文件命名">
  文件命名
  &lt;a class="anchor" href="#%e6%96%87%e4%bb%b6%e5%91%bd%e5%90%8d">#&lt;/a>
