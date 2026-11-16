@@ -42,7 +42,7 @@ weight: 7
 
 ## 文件命名
 
-下载文件默认按视频标题命名（`%(title)s.%(ext)s`），保存到你选择的存储目录。可以传入 yt-dlp 输出模板自定义文件名：
+下载文件默认按视频标题命名，标题截断至 200 字节以免超出文件名长度限制（`%(title).200B.%(ext)s`），保存到你选择的存储目录。可以传入 yt-dlp 输出模板自定义文件名：
 
 ```bash
 /download https://www.youtube.com/watch?v=dQw4w9WgXcQ -o "%(uploader)s - %(title)s.%(ext)s"

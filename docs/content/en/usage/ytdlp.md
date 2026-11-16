@@ -42,7 +42,7 @@ For safety, flags that execute programs, load external configuration, or read an
 
 ## File names
 
-Downloaded files are named after the video title (`%(title)s.%(ext)s`) and saved into the storage directory you selected. Pass a yt-dlp output template to customize the name:
+Downloaded files are named after the video title, cut to 200 bytes so long titles stay within file name limits (`%(title).200B.%(ext)s`), and saved into the storage directory you selected. Pass a yt-dlp output template to customize the name:
 
 ```bash
 /download https://www.youtube.com/watch?v=dQw4w9WgXcQ -o "%(uploader)s - %(title)s.%(ext)s"

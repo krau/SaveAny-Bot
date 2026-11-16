@@ -1,7 +1,9 @@
 package config
 
 // DefaultYtdlpFilenameTemplate is used when ytdlp.filename_template is not set.
-const DefaultYtdlpFilenameTemplate = "%(title)s.%(ext)s"
+// The title is capped at 200 bytes so names stay under the 255-byte NAME_MAX
+// limit, with room for suffixes such as ".f140.m4a.part".
+const DefaultYtdlpFilenameTemplate = "%(title).200B.%(ext)s"
 
 type YtdlpConfig struct {
 	// MaxHeight limits the video resolution by height in pixels (e.g. 1080, 720).
