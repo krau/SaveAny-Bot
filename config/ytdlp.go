@@ -38,24 +38,25 @@ type YtdlpConfig struct {
 }
 
 // ValidateProxies reports the first entry in Proxies that yt-dlp cannot use.
-// Blank entries are ignored.
+// Blank entries are ignored. Errors never echo the entry, since it may contain
+// a password.
 func (c YtdlpConfig) ValidateProxies() error {
-	for _, raw := range c.Proxies {
+	for i, raw := range c.Proxies {
 		raw = strings.TrimSpace(raw)
 		if raw == "" {
 			continue
 		}
 		u, err := url.Parse(raw)
 		if err != nil {
-			return fmt.Errorf("invalid yt-dlp proxy: %w", err)
+			return fmt.Errorf("invalid yt-dlp proxy %d: malformed URL", i+1)
 		}
 		switch u.Scheme {
 		case "http", "https", "socks4", "socks4a", "socks5", "socks5h":
 		default:
-			return fmt.Errorf("invalid yt-dlp proxy %q: scheme must be http, https, socks4, socks4a, socks5 or socks5h", u.Redacted())
+			return fmt.Errorf("invalid yt-dlp proxy %d: scheme %q must be http, https, socks4, socks4a, socks5 or socks5h", i+1, u.Scheme)
 		}
 		if u.Host == "" {
-			return fmt.Errorf("invalid yt-dlp proxy %q: missing host", u.Redacted())
+			return fmt.Errorf("invalid yt-dlp proxy %d: missing host", i+1)
 		}
 	}
 	return nil
