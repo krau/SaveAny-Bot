@@ -250,7 +250,9 @@ async function save(group: string) {
       if (field.kind === 'json' && (value === undefined || value === null)) {
         continue
       }
-      writePath(patch, field.path, (value ?? (field.kind === 'bool' ? false : field.kind === 'number' ? 0 : '')) as never)
+      const emptyValue =
+        field.kind === 'bool' ? false : field.kind === 'number' ? 0 : field.kind === 'list' ? [] : ''
+      writePath(patch, field.path, (value ?? emptyValue) as never)
     }
     const result = await settingsApi.updateGroup(group, patch)
     toast.push(t('settings.toast.saved', { group: def.title }), 'success')

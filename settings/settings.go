@@ -111,6 +111,9 @@ func groupValue(cfg config.Config, group string) (any, error) {
 	case GroupTemp:
 		return cfg.Temp, nil
 	case GroupYtdlp:
+		if cfg.Ytdlp.Proxies == nil {
+			cfg.Ytdlp.Proxies = []string{}
+		}
 		return cfg.Ytdlp, nil
 	case GroupParser:
 		return cfg.Parser, nil
