@@ -22,7 +22,6 @@ func newTestLocal(t *testing.T) *Local {
 	}); err != nil {
 		t.Fatalf("Init: %v", err)
 	}
-	t.Cleanup(l.Close)
 	return l
 }
 
@@ -42,6 +41,20 @@ func TestLocalSaveDoesNotOverwrite(t *testing.T) {
 	}
 	if string(got) != "second" {
 		t.Fatalf("renamed file = %q, want second", got)
+	}
+}
+
+func TestLocalSaveRecreatesRemovedRoot(t *testing.T) {
+	l := newTestLocal(t)
+	if err := os.RemoveAll(l.config.BasePath); err != nil {
+		t.Fatalf("remove local storage root: %v", err)
+	}
+
+	if err := l.Save(context.Background(), strings.NewReader("x"), "file.txt"); err != nil {
+		t.Fatalf("Save after root removal: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(l.config.BasePath, "file.txt")); err != nil {
+		t.Fatalf("stat saved file: %v", err)
 	}
 }
 

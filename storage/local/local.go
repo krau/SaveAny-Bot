@@ -20,7 +20,6 @@ import (
 type Local struct {
 	config config.LocalStorageConfig
 	logger *log.Logger
-	root   *os.Root
 }
 
 func (l *Local) Init(ctx context.Context, cfg config.StorageConfig) error {
@@ -36,11 +35,6 @@ func (l *Local) Init(ctx context.Context, cfg config.StorageConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to create local storage directory: %w", err)
 	}
-	root, err := os.OpenRoot(localConfig.BasePath)
-	if err != nil {
-		return fmt.Errorf("failed to open local storage root: %w", err)
-	}
-	l.root = root
 	l.logger = log.FromContext(ctx).WithPrefix(fmt.Sprintf("local[%s]", l.config.Name))
 	return nil
 }
@@ -68,6 +62,19 @@ func (l *Local) cleanStoragePath(storagePath string) (string, error) {
 	return clean, nil
 }
 
+func (l *Local) openRoot(create bool) (*os.Root, error) {
+	if create {
+		if err := os.MkdirAll(l.config.BasePath, os.ModePerm); err != nil {
+			return nil, fmt.Errorf("failed to create local storage directory: %w", err)
+		}
+	}
+	root, err := os.OpenRoot(l.config.BasePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open local storage root: %w", err)
+	}
+	return root, nil
+}
+
 func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error {
 	_, err := l.SaveWithPath(ctx, r, storagePath)
 	return err
@@ -84,26 +91,33 @@ func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath strin
 	if clean == "" {
 		return "", fmt.Errorf("local: storage path is empty")
 	}
+	root, err := l.openRoot(true)
+	if err != nil {
+		return "", err
+	}
+	defer root.Close()
 	overwrite, _ := ctx.Value(ctxkey.OverwriteExisting).(bool)
 	if !overwrite {
-		clean, err = fsutil.UniquePath("", clean, l.existsPathE, 1000)
+		clean, err = fsutil.UniquePath("", clean, func(candidate string) (bool, error) {
+			return l.existsPathE(root, candidate)
+		}, 1000)
 		if err != nil {
 			return "", err
 		}
 	}
-	if err := l.root.MkdirAll(filepath.Dir(clean), os.ModePerm); err != nil {
+	if err := root.MkdirAll(filepath.Dir(clean), os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 	// Write beside the target and rename, so a failed copy never leaves a
 	// truncated file under the final name.
-	tempFile, tempPath, err := l.createTempFile(filepath.Dir(clean), filepath.Base(clean))
+	tempFile, tempPath, err := l.createTempFile(root, filepath.Dir(clean), filepath.Base(clean))
 	if err != nil {
 		return "", fmt.Errorf("failed to create file: %w", err)
 	}
 	removeTemp := true
 	defer func() {
 		if removeTemp {
-			if err := l.root.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			if err := root.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
 				l.logger.Warnf("Failed to remove temporary file %s: %v", tempPath, err)
 			}
 		}
@@ -120,29 +134,29 @@ func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath strin
 	if !overwrite {
 		// Link refuses to replace an existing file, closing the check-then-write
 		// race in UniquePath.
-		if err := l.root.Link(tempPath, clean); err != nil {
+		if err := root.Link(tempPath, clean); err != nil {
 			if errors.Is(err, os.ErrExist) {
 				return "", storagetypes.ErrAlreadyExists
 			}
 			return "", err
 		}
-		if err := l.root.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		if err := root.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return "", err
 		}
 		removeTemp = false
 		return clean, nil
 	}
-	if err := l.root.Rename(tempPath, clean); err != nil {
+	if err := root.Rename(tempPath, clean); err != nil {
 		return "", err
 	}
 	removeTemp = false
 	return clean, nil
 }
 
-func (l *Local) createTempFile(dir, name string) (*os.File, string, error) {
+func (l *Local) createTempFile(root *os.Root, dir, name string) (*os.File, string, error) {
 	for range 3 {
 		tempPath := filepath.Join(dir, "."+name+".part-"+xid.New().String())
-		file, err := l.root.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		file, err := root.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 		if err == nil {
 			return file, tempPath, nil
 		}
@@ -158,10 +172,18 @@ func (l *Local) Exists(ctx context.Context, storagePath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return l.existsPathE(clean)
+	root, err := l.openRoot(false)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
+	}
+	defer root.Close()
+	return l.existsPathE(root, clean)
 }
 
-func (l *Local) existsPathE(storagePath string) (bool, error) {
+func (l *Local) existsPathE(root *os.Root, storagePath string) (bool, error) {
 	clean, err := l.cleanStoragePath(storagePath)
 	if err != nil {
 		return false, err
@@ -169,7 +191,7 @@ func (l *Local) existsPathE(storagePath string) (bool, error) {
 	if clean == "" {
 		clean = "."
 	}
-	_, err = l.root.Stat(clean)
+	_, err = root.Stat(clean)
 	if err == nil {
 		return true, nil
 	}
@@ -188,7 +210,12 @@ func (l *Local) ListFiles(ctx context.Context, dirPath string) ([]storagetypes.F
 	if clean == "" {
 		clean = "."
 	}
-	dir, err := l.root.Open(clean)
+	root, err := l.openRoot(false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open local storage root: %w", err)
+	}
+	defer root.Close()
+	dir, err := root.Open(clean)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read directory %s: %w", dirPath, err)
 	}
@@ -231,7 +258,12 @@ func (l *Local) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, i
 		return nil, 0, err
 	}
 
-	file, err := l.root.Open(clean)
+	root, err := l.openRoot(false)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer root.Close()
+	file, err := root.Open(clean)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to open file %s: %w", filePath, err)
 	}
@@ -243,14 +275,4 @@ func (l *Local) OpenFile(ctx context.Context, filePath string) (io.ReadCloser, i
 	}
 
 	return file, stat.Size(), nil
-}
-
-func (l *Local) Close() {
-	if l.root == nil {
-		return
-	}
-	if err := l.root.Close(); err != nil && l.logger != nil {
-		l.logger.Warnf("Failed to close local storage root: %v", err)
-	}
-	l.root = nil
 }
