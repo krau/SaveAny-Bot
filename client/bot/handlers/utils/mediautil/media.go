@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/database"
@@ -183,8 +184,12 @@ func BuildFilenameTemplateData(message *tg.Message) map[string]string {
 			f, err := tgutil.GetMediaFileName(message.Media)
 			if err != nil {
 				log.FromContext(context.Background()).Debugf("Failed to derive media filename: %v", err)
+				return ""
 			}
-			return f
+			if f == "" {
+				return ""
+			}
+			return fsutil.SafeBaseName(f)
 		}(),
 		MsgDate: func() string {
 			date := message.GetDate()

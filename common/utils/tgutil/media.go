@@ -6,8 +6,11 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 )
 
+// GetOriginalFileName returns a Telegram-provided filename as one safe path
+// component.
 func GetOriginalFileName(media tg.MessageMediaClass) string {
 	v, ok := media.(*tg.MessageMediaDocument)
 	if !ok {
@@ -19,7 +22,11 @@ func GetOriginalFileName(media tg.MessageMediaClass) string {
 	}
 	for _, attribute := range f.Attributes {
 		if name, ok := attribute.(*tg.DocumentAttributeFilename); ok {
-			return strings.TrimSpace(name.GetFileName())
+			name := strings.TrimSpace(name.GetFileName())
+			if name == "" {
+				return ""
+			}
+			return fsutil.SafeBaseName(name)
 		}
 	}
 	return ""

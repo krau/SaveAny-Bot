@@ -20,6 +20,7 @@ import (
 	"github.com/krau/SaveAny-Bot/common/cache"
 	"github.com/krau/SaveAny-Bot/common/i18n"
 	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/SaveAny-Bot/common/utils/strutil"
 	"github.com/krau/mygotg/ext"
 	"github.com/rs/xid"
@@ -89,7 +90,7 @@ func GenFileNameFromMessage(message tg.Message) string {
 		if err != nil {
 			filename = fmt.Sprintf("%d_%s", message.GetID(), xid.New().String())
 		} else {
-			filename = mname
+			filename = fsutil.SafeBaseName(mname)
 		}
 
 	}

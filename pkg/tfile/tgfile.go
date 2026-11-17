@@ -3,9 +3,11 @@ package tfile
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/common/utils/fsutil"
 	"github.com/krau/mygotg/functions"
 )
 
@@ -86,6 +88,9 @@ func FromMedia(media tg.MessageMediaClass, client downloader.Client, opts ...TGF
 				fileName = name.GetFileName()
 				break
 			}
+		}
+		if fileName = strings.TrimSpace(fileName); fileName != "" {
+			fileName = fsutil.SafeBaseName(fileName)
 		}
 		file := NewTGFile(
 			document.AsInputDocumentFileLocation(""),
