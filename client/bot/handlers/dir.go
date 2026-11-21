@@ -103,7 +103,7 @@ func dirMenuText(dirs []database.Dir) string {
 	return b.String()
 }
 
-func dirMenuMarkup(dirs []database.Dir) *tg.ReplyInlineMarkup {
+func dirMenuMarkup(dirs []database.Dir) tg.ReplyMarkupClass {
 	if len(dirs) == 0 {
 		return nil
 	}
@@ -139,10 +139,16 @@ func handleDirCallback(ctx *ext.Context, update *ext.Update) error {
 	if err != nil {
 		return err
 	}
-	ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
+	replyMarkup := dirMenuMarkup(dirs)
+	if replyMarkup == nil {
+		replyMarkup = &tg.ReplyInlineMarkup{}
+	}
+	if _, err := ctx.EditMessage(chatID(update), &tg.MessagesEditMessageRequest{
 		ID:          update.CallbackQuery.GetMsgID(),
 		Message:     dirMenuText(dirs),
-		ReplyMarkup: dirMenuMarkup(dirs),
-	})
+		ReplyMarkup: replyMarkup,
+	}); err != nil {
+		return err
+	}
 	return dispatcher.EndGroups
 }
