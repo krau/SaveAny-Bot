@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cenkalti/backoff/v4"
+	"github.com/gotd/td/bin"
+	"github.com/gotd/td/telegram"
+	"github.com/gotd/td/tg"
 	"github.com/gotd/td/tgerr"
 )
 
@@ -78,4 +82,29 @@ func TestShouldRecoverStoppedContexts(t *testing.T) {
 			t.Fatal("shouldRecover() = true, want false")
 		}
 	})
+}
+
+func TestRecoveryDoesNotRetryEncodingErrors(t *testing.T) {
+	for _, operation := range []string{"encode payload", "encode inner message"} {
+		t.Run(operation, func(t *testing.T) {
+			var markup *tg.ReplyInlineMarkup
+			request := &tg.MessagesSendMessageRequest{Peer: &tg.InputPeerSelf{}, ReplyMarkup: markup}
+			encodeErr := request.Encode(new(bin.Buffer))
+			if encodeErr == nil {
+				t.Fatal("expected typed-nil reply markup to fail encoding")
+			}
+			rpcErr := fmt.Errorf("rpcDoRequest: retryUntilAck: send: %w", fmt.Errorf("%s: %w", operation, encodeErr))
+			calls := 0
+			next := telegram.InvokeFunc(func(context.Context, bin.Encoder, bin.Decoder) error {
+				calls++
+				return rpcErr
+			})
+			middleware := New(t.Context(), func() backoff.BackOff {
+				return backoff.WithMaxRetries(&backoff.ZeroBackOff{}, 1)
+			})
+			if err := middleware.Handle(next)(t.Context(), request, nil); err != rpcErr || calls != 1 {
+				t.Fatalf("request attempted %d times, got error %v; want 1 attempt and %v", calls, err, rpcErr)
+			}
+		})
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -69,6 +70,14 @@ func (r *recovery) shouldRecover(ctx context.Context, err error) bool {
 	// the request twice.
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return false
+	}
+
+	// gotd labels local encoding failures without exporting an error type.
+	for cause := err; cause != nil; cause = errors.Unwrap(cause) {
+		msg := cause.Error()
+		if strings.HasPrefix(msg, "encode payload: ") || strings.HasPrefix(msg, "encode inner message: ") {
+			return false
+		}
 	}
 
 	// we try recover when encountered any error that is not telegram business error
