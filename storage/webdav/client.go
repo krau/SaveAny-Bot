@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path"
 	"strings"
 
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
@@ -62,9 +61,6 @@ func (rt ResourceType) IsCollection() bool {
 }
 
 func NewClient(baseURL, username, password string, httpClient *http.Client) *Client {
-	if !strings.HasSuffix(baseURL, "/") {
-		baseURL += "/"
-	}
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
@@ -76,8 +72,20 @@ func NewClient(baseURL, username, password string, httpClient *http.Client) *Cli
 	}
 }
 
-func (c *Client) doRequest(ctx context.Context, method WebdavMethod, url string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, string(method), url, body)
+func (c *Client) newRequest(ctx context.Context, method WebdavMethod, remotePath string, body io.Reader) (*http.Request, error) {
+	u, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return nil, err
+	}
+	if u.Path == "" {
+		u.Path = "/"
+	}
+	if remotePath == "" {
+		remotePath = "/"
+	}
+	escapedPath := (&url.URL{Path: remotePath}).EscapedPath()
+	u = u.JoinPath(escapedPath)
+	req, err := http.NewRequestWithContext(ctx, string(method), u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -87,19 +95,20 @@ func (c *Client) doRequest(ctx context.Context, method WebdavMethod, url string,
 	if method == WebdavMethodPropfind {
 		req.Header.Set("Depth", "1")
 	}
-	if method == WebdavMethodPut && ctx != nil {
-		if length := ctx.Value(ctxkey.ContentLength); length != nil {
-			if l, ok := length.(int64); ok {
-				req.ContentLength = l
-			}
+	if method == WebdavMethodPut {
+		if length, ok := ctx.Value(ctxkey.ContentLength).(int64); ok {
+			req.ContentLength = length
 		}
 	}
-	return c.httpClient.Do(req)
+	return req, nil
 }
 
 func (c *Client) Exists(ctx context.Context, remotePath string) (bool, error) {
-	url := c.BaseURL + remotePath
-	resp, err := c.doRequest(ctx, WebdavMethodPropfind, url, nil)
+	req, err := c.newRequest(ctx, WebdavMethodPropfind, remotePath, nil)
+	if err != nil {
+		return false, err
+	}
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return false, err
 	}
@@ -116,7 +125,7 @@ func (c *Client) Exists(ctx context.Context, remotePath string) (bool, error) {
 
 func (c *Client) MkDir(ctx context.Context, dirPath string) error {
 	dirPath = strings.Trim(dirPath, "/")
-	if dirPath == "" {
+	if dirPath == "" || dirPath == "." {
 		return nil
 	}
 	parts := strings.Split(dirPath, "/")
@@ -126,23 +135,27 @@ func (c *Client) MkDir(ctx context.Context, dirPath string) error {
 			currentPath.WriteString("/")
 		}
 		currentPath.WriteString(part)
+		current := currentPath.String()
 
-		exists, err := c.Exists(ctx, currentPath.String())
+		exists, err := c.Exists(ctx, current)
 		if err != nil {
 			return err
 		}
 		if exists {
 			continue
 		}
-		url := c.BaseURL + currentPath.String()
-		resp, err := c.doRequest(ctx, WebdavMethodMkcol, url, nil)
+		req, err := c.newRequest(ctx, WebdavMethodMkcol, current, nil)
+		if err != nil {
+			return err
+		}
+		resp, err := c.httpClient.Do(req)
 		if err != nil {
 			return err
 		}
 		resp.Body.Close()
 
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return fmt.Errorf("MKCOL %s: %s", currentPath.String(), resp.Status)
+			return fmt.Errorf("MKCOL %s: %s", current, resp.Status)
 		}
 	}
 	return nil
@@ -158,23 +171,9 @@ func (c *Client) WriteFileIfAbsent(ctx context.Context, remotePath string, conte
 }
 
 func (c *Client) writeFile(ctx context.Context, remotePath string, content io.Reader, ifAbsent bool) error {
-	u, err := url.Parse(c.BaseURL)
+	req, err := c.newRequest(ctx, WebdavMethodPut, strings.Trim(remotePath, "/"), content)
 	if err != nil {
 		return err
-	}
-	parts := strings.Split(strings.Trim(remotePath, "/"), "/")
-	u.Path = path.Join(u.Path, strings.Join(parts, "/"))
-	req, err := http.NewRequestWithContext(ctx, string(WebdavMethodPut), u.String(), content)
-	if err != nil {
-		return err
-	}
-	if c.Username != "" && c.Password != "" {
-		req.SetBasicAuth(c.Username, c.Password)
-	}
-	if length := ctx.Value(ctxkey.ContentLength); length != nil {
-		if l, ok := length.(int64); ok {
-			req.ContentLength = l
-		}
 	}
 	if ifAbsent {
 		req.Header.Set("If-None-Match", "*")
@@ -195,17 +194,11 @@ func (c *Client) writeFile(ctx context.Context, remotePath string, content io.Re
 }
 
 func (c *Client) ListDir(ctx context.Context, dirPath string) ([]Response, error) {
-	dirPath = strings.Trim(dirPath, "/")
-	u, err := url.Parse(c.BaseURL)
+	req, err := c.newRequest(ctx, WebdavMethodPropfind, dirPath+"/", nil)
 	if err != nil {
 		return nil, err
 	}
-	u.Path = path.Join(u.Path, dirPath)
-	if !strings.HasSuffix(u.Path, "/") {
-		u.Path += "/"
-	}
-
-	resp, err := c.doRequest(ctx, WebdavMethodPropfind, u.String(), nil)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +214,7 @@ func (c *Client) ListDir(ctx context.Context, dirPath string) ([]Response, error
 	}
 
 	var results []Response
-	basePath := u.Path
+	basePath := req.URL.Path
 	for _, r := range multistatus.Responses {
 		decodedHref, err := url.PathUnescape(r.Href)
 		if err != nil {
@@ -237,19 +230,9 @@ func (c *Client) ListDir(ctx context.Context, dirPath string) ([]Response, error
 }
 
 func (c *Client) ReadFile(ctx context.Context, filePath string) (io.ReadCloser, int64, error) {
-	filePath = strings.Trim(filePath, "/")
-	u, err := url.Parse(c.BaseURL)
+	req, err := c.newRequest(ctx, WebdavMethodGet, strings.Trim(filePath, "/"), nil)
 	if err != nil {
 		return nil, 0, err
-	}
-	u.Path = path.Join(u.Path, filePath)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
-	if err != nil {
-		return nil, 0, err
-	}
-	if c.Username != "" && c.Password != "" {
-		req.SetBasicAuth(c.Username, c.Password)
 	}
 
 	resp, err := c.httpClient.Do(req)

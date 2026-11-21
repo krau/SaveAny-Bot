@@ -2,6 +2,7 @@ package webdav
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
@@ -60,6 +61,51 @@ func TestMkDirAndExists(t *testing.T) {
 		}
 	}
 
+}
+
+func TestSpecialCharsInPaths(t *testing.T) {
+	fs := webdav.NewMemFS()
+	server := httptest.NewServer(&webdav.Handler{Prefix: "/dav", FileSystem: fs, LockSystem: webdav.NewMemLS()})
+	t.Cleanup(server.Close)
+	client := NewClient(server.URL+"/dav", "", "", server.Client())
+
+	for _, file := range []string{"one\ntwo.txt", "one#two.txt", "one?two.txt", "one%20two.txt"} {
+		t.Run(file, func(t *testing.T) {
+			if err := client.WriteFile(t.Context(), file, strings.NewReader("content")); err != nil {
+				t.Fatal(err)
+			}
+			if exists, err := client.Exists(t.Context(), file); err != nil || !exists {
+				t.Fatalf("Exists(%q) = %v, %v; want true, nil", file, exists, err)
+			}
+		})
+	}
+
+	t.Run("mkdir", func(t *testing.T) {
+		const dir = "/album#1/subdir?%20"
+		if err := client.MkDir(t.Context(), dir); err != nil {
+			t.Fatal(err)
+		}
+		if info, err := fs.Stat(t.Context(), dir); err != nil || !info.IsDir() {
+			t.Fatalf("Stat(%q) = %v, %v; want a directory", dir, info, err)
+		}
+	})
+}
+
+func TestExistsKeepsEscapedBaseURLAndQuery(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		const want = "/dav%2Fmount/file%23name?key=a%2Fb"
+		if r.RequestURI != want {
+			t.Errorf("request URI = %q, want %q", r.RequestURI, want)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusMultiStatus)
+	}))
+	t.Cleanup(server.Close)
+	client := NewClient(server.URL+"/dav%2Fmount?key=a%2Fb", "", "", server.Client())
+	if exists, err := client.Exists(t.Context(), "file#name"); err != nil || !exists {
+		t.Fatalf("Exists() = %v, %v; want true, nil", exists, err)
+	}
 }
 
 func TestWriteFile(t *testing.T) {
