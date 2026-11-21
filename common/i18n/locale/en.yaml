@@ -80,6 +80,7 @@ bot:
       error_get_storage_failed: "Failed to get storage: {{.Error}}"
       prompt_select_default_storage: "Please select a storage to set as default"
       error_data_expired: "Data has expired or is invalid"
+      error_action_failed: "Action failed. Please try again later."
       error_task_add_failed: "Failed to add task: {{.Error}}"
       info_task_added: "Task added"
       info_batch_tasks_added: "Batch tasks added, total {{.Count}} files"

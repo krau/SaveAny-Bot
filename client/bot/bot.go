@@ -16,6 +16,7 @@ import (
 	"github.com/krau/SaveAny-Bot/client/bot/handlers"
 	"github.com/krau/SaveAny-Bot/client/middleware"
 	"github.com/krau/SaveAny-Bot/common/i18n"
+	"github.com/krau/SaveAny-Bot/common/i18n/i18nk"
 	"github.com/krau/SaveAny-Bot/common/selfupdate"
 	"github.com/krau/SaveAny-Bot/common/utils/tgutil"
 	"github.com/krau/SaveAny-Bot/config"
@@ -60,6 +61,30 @@ func ExtContext() *ext.Context {
 	mgr.mu.RLock()
 	defer mgr.mu.RUnlock()
 	return mgr.ectx
+}
+
+func handleUpdateError(ctx *ext.Context, update *ext.Update, message string) error {
+	if message == selfupdate.RestartSignal {
+		mgr.mu.RLock()
+		handler := mgr.restartHandler
+		mgr.mu.RUnlock()
+		if handler != nil {
+			handler()
+		}
+		return dispatcher.EndGroups
+	}
+	logger := log.FromContext(ctx)
+	logger.Errorf("unhandled error: %s", message)
+	if update != nil && update.CallbackQuery != nil {
+		if _, err := ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+			QueryID: update.CallbackQuery.GetQueryID(),
+			Alert:   true,
+			Message: i18n.T(i18nk.BotMsgCommonErrorActionFailed),
+		}); err != nil {
+			logger.Warnf("Failed to send callback error alert: %v", err)
+		}
+	}
+	return dispatcher.EndGroups
 }
 
 // Start connects the bot using the current configuration. It is idempotent
@@ -110,19 +135,7 @@ func Start(ctx context.Context) error {
 				Context:             startCtx,
 				MaxRetries:          config.C().Telegram.RpcRetry,
 				AutoFetchReply:      true,
-				ErrorHandler: func(ctx *ext.Context, u *ext.Update, s string) error {
-					if s == selfupdate.RestartSignal {
-						mgr.mu.RLock()
-						handler := mgr.restartHandler
-						mgr.mu.RUnlock()
-						if handler != nil {
-							handler()
-						}
-						return dispatcher.EndGroups
-					}
-					log.FromContext(ctx).Errorf("unhandled error: %s", s)
-					return dispatcher.EndGroups
-				},
+				ErrorHandler:        handleUpdateError,
 			},
 		)
 		resultChan <- result{client, err}

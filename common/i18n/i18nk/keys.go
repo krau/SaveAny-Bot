@@ -28,6 +28,7 @@ const (
 	BotMsgCommonButtonConflictRename                      Key = "bot.msg.common.button_conflict_rename"
 	BotMsgCommonButtonConflictSkip                        Key = "bot.msg.common.button_conflict_skip"
 	BotMsgCommonCancelButtonText                          Key = "bot.msg.common.cancel_button_text"
+	BotMsgCommonErrorActionFailed                         Key = "bot.msg.common.error_action_failed"
 	BotMsgCommonErrorBuildDirSelectKeyboardFailed         Key = "bot.msg.common.error_build_dir_select_keyboard_failed"
 	BotMsgCommonErrorBuildStorageSelectKeyboardFailed     Key = "bot.msg.common.error_build_storage_select_keyboard_failed"
 	BotMsgCommonErrorBuildStorageSelectMessageFailed      Key = "bot.msg.common.error_build_storage_select_message_failed"

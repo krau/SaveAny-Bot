@@ -80,6 +80,7 @@ bot:
       error_get_storage_failed: "获取存储失败: {{.Error}}"
       prompt_select_default_storage: "请选择要设为默认的存储位置"
       error_data_expired: "数据已过期或无效"
+      error_action_failed: "操作失败，请稍后重试。"
       error_task_add_failed: "任务添加失败: {{.Error}}"
       info_task_added: "任务已添加"
       info_batch_tasks_added: "已添加批量任务, 共 {{.Count}} 个文件"
