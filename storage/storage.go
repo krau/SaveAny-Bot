@@ -7,6 +7,7 @@ import (
 	"io"
 
 	storcfg "github.com/krau/SaveAny-Bot/config/storage"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/metadata"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
@@ -90,6 +91,7 @@ type StorageSidecarWriter interface {
 // WriteMetadataSidecar writes a normalized metadata sidecar using the backend
 // policy, defaulting to a sidecar file next to the actual saved path.
 func WriteMetadataSidecar(ctx context.Context, st Storage, actualPath string, data []byte) error {
+	ctx = context.WithValue(ctx, ctxkey.ContentLength, int64(len(data)))
 	if writer, ok := st.(StorageSidecarWriter); ok {
 		return writer.WriteMetadataSidecar(ctx, actualPath, data)
 	}
