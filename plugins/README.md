@@ -143,6 +143,18 @@ if (response.status) {
 }
 ```
 
+**ghttp.postJSON(url: string, body?: any)** 发起 POST 请求, 将 `body` 序列化为 JSON 并设置 `Content-Type: application/json`, 返回值结构与 `getJSON` 相同:
+
+```js
+const response = ghttp.postJSON("https://example.com/api/parse", {
+    url: "https://example.com/item/123",
+});
+if (response.error) {
+    throw new Error(response.error);
+}
+console.log(response.data);
+```
+
 #### Playwright
 
 使用 `playwright` 对象以发起基于浏览器的请求.

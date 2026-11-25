@@ -3,6 +3,7 @@
 package js
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -105,6 +106,7 @@ jsGhttp provides a http helper for js plugins
 It provides the following functions:
   - get(url): performs a GET request and returns the response body as string
   - getJSON(url): performs a GET request and returns the response body parsed as JSON
+  - postJSON(url, body): performs a POST request with a JSON body and returns the response body parsed as JSON
   - head(url): performs a HEAD request and returns the response headers and status code
 */
 var jsGhttp = func(vm *moejs.Runtime) map[string]any {
@@ -165,6 +167,10 @@ var jsGhttp = func(vm *moejs.Runtime) map[string]any {
 				"data": jsonData,
 			})
 		}),
+		"postJSON": moejs.NativeFunc(func(_ *moejs.Realm, _ moejs.Value, args []moejs.Value) (moejs.Value, error) {
+			url := moejs.Arg(args, 0).String()
+			return postJSON(vm, client, url, moejs.Arg(args, 1))
+		}),
 		"head": moejs.NativeFunc(func(_ *moejs.Realm, _ moejs.Value, args []moejs.Value) (moejs.Value, error) {
 			url := moejs.Arg(args, 0).String()
 			resp, err := client.Head(url)
@@ -184,4 +190,59 @@ var jsGhttp = func(vm *moejs.Runtime) map[string]any {
 			})
 		}),
 	}
+}
+
+func postJSON(vm *moejs.Runtime, client *http.Client, url string, bodyValue moejs.Value) (moejs.Value, error) {
+	var body io.Reader
+	if !bodyValue.IsUndefined() && !bodyValue.IsNull() {
+		bodyGo, err := vm.ToGo(bodyValue)
+		if err != nil {
+			return vm.FromGo(map[string]any{
+				"error": fmt.Sprintf("failed to serialize request body: %v", err),
+			})
+		}
+		data, err := json.Marshal(bodyGo)
+		if err != nil {
+			return vm.FromGo(map[string]any{
+				"error": fmt.Sprintf("failed to serialize request body: %v", err),
+			})
+		}
+		body = bytes.NewReader(data)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return vm.FromGo(map[string]any{
+			"error": fmt.Sprintf("failed to create request to %s: %v", url, err),
+		})
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return vm.FromGo(map[string]any{
+			"error": fmt.Sprintf("failed to fetch %s: %v", url, err),
+		})
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return vm.FromGo(map[string]any{
+			"error":  fmt.Sprintf("failed to fetch %s: %s", url, resp.Status),
+			"status": resp.StatusCode,
+		})
+	}
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return vm.FromGo(map[string]any{
+			"error": fmt.Errorf("failed to read response body: %w", err).Error(),
+		})
+	}
+	var jsonData map[string]any
+	if err := json.Unmarshal(bodyBytes, &jsonData); err != nil {
+		return vm.FromGo(map[string]any{
+			"error": fmt.Errorf("failed to unmarshal JSON: %w", err).Error(),
+		})
+	}
+	return vm.FromGo(map[string]any{
+		"data": jsonData,
+	})
 }
