@@ -132,12 +132,7 @@ func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath strin
 		return "", err
 	}
 	if !overwrite {
-		// Link refuses to replace an existing file, closing the check-then-write
-		// race in UniquePath.
-		if err := root.Link(tempPath, clean); err != nil {
-			if errors.Is(err, os.ErrExist) {
-				return "", storagetypes.ErrAlreadyExists
-			}
+		if err := l.publishNoReplace(root, tempPath, clean, root.Link); err != nil {
 			return "", err
 		}
 		if err := root.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -151,6 +146,33 @@ func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath strin
 	}
 	removeTemp = false
 	return clean, nil
+}
+
+func (l *Local) publishNoReplace(root *os.Root, tempPath, storagePath string, link func(string, string) error) error {
+	err := link(tempPath, storagePath)
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, os.ErrExist) {
+		return storagetypes.ErrAlreadyExists
+	}
+
+	// Hard links are unavailable on some FUSE filesystems, including rclone
+	// mounts. Same-directory rename remains supported there, so use it after
+	// confirming the target did not appear after UniquePath ran.
+	if _, statErr := root.Lstat(storagePath); statErr == nil {
+		return storagetypes.ErrAlreadyExists
+	} else if !errors.Is(statErr, os.ErrNotExist) {
+		return errors.Join(err, statErr)
+	}
+	l.logger.Debugf("Hard link publish failed for %s, falling back to rename: %v", storagePath, err)
+	if renameErr := root.Rename(tempPath, storagePath); renameErr != nil {
+		if errors.Is(renameErr, os.ErrExist) {
+			return storagetypes.ErrAlreadyExists
+		}
+		return errors.Join(err, renameErr)
+	}
+	return nil
 }
 
 func (l *Local) createTempFile(root *os.Root, dir, name string) (*os.File, string, error) {

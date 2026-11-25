@@ -10,6 +10,7 @@ import (
 
 	configstorage "github.com/krau/SaveAny-Bot/config/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
+	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 )
 
 func newTestLocal(t *testing.T) *Local {
@@ -135,5 +136,72 @@ func TestLocalAllowsSymlinkedParentInsideRoot(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(inside, "file.txt")); err != nil {
 		t.Fatalf("stat saved file: %v", err)
+	}
+}
+
+func TestLocalPublishFallsBackWhenHardLinksAreUnsupported(t *testing.T) {
+	l := newTestLocal(t)
+	root, err := l.openRoot(true)
+	if err != nil {
+		t.Fatalf("open root: %v", err)
+	}
+	defer root.Close()
+
+	const tempPath = ".file.txt.part-test"
+	const storagePath = "file.txt"
+	if err := os.WriteFile(filepath.Join(l.config.BasePath, tempPath), []byte("payload"), 0o600); err != nil {
+		t.Fatalf("write temporary file: %v", err)
+	}
+
+	linkUnsupported := func(string, string) error {
+		return errors.New("operation not permitted")
+	}
+	if err := l.publishNoReplace(root, tempPath, storagePath, linkUnsupported); err != nil {
+		t.Fatalf("publishNoReplace: %v", err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(l.config.BasePath, storagePath))
+	if err != nil {
+		t.Fatalf("read published file: %v", err)
+	}
+	if string(got) != "payload" {
+		t.Fatalf("published file = %q, want payload", got)
+	}
+	if _, err := os.Stat(filepath.Join(l.config.BasePath, tempPath)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("temporary file still exists or stat failed: %v", err)
+	}
+}
+
+func TestLocalPublishFallbackDoesNotOverwrite(t *testing.T) {
+	l := newTestLocal(t)
+	root, err := l.openRoot(true)
+	if err != nil {
+		t.Fatalf("open root: %v", err)
+	}
+	defer root.Close()
+
+	const tempPath = ".file.txt.part-test"
+	const storagePath = "file.txt"
+	if err := os.WriteFile(filepath.Join(l.config.BasePath, tempPath), []byte("replacement"), 0o600); err != nil {
+		t.Fatalf("write temporary file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(l.config.BasePath, storagePath), []byte("original"), 0o600); err != nil {
+		t.Fatalf("write existing file: %v", err)
+	}
+
+	linkUnsupported := func(string, string) error {
+		return errors.New("operation not permitted")
+	}
+	err = l.publishNoReplace(root, tempPath, storagePath, linkUnsupported)
+	if !errors.Is(err, storagetypes.ErrAlreadyExists) {
+		t.Fatalf("publishNoReplace error = %v, want ErrAlreadyExists", err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(l.config.BasePath, storagePath))
+	if err != nil {
+		t.Fatalf("read existing file: %v", err)
+	}
+	if string(got) != "original" {
+		t.Fatalf("existing file = %q, want original", got)
 	}
 }
