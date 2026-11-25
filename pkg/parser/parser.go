@@ -13,10 +13,14 @@ type Parser interface {
 	Parse(ctx context.Context, url string) (*Item, error)
 }
 
-type ConfigurableParser interface {
+type NamedParser interface {
 	Parser
-	Configure(config map[string]any) error
 	Name() string
+}
+
+type ConfigurableParser interface {
+	NamedParser
+	Configure(config map[string]any) error
 }
 
 type Resource struct {

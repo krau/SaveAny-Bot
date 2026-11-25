@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,6 +42,13 @@ const (
 	canHandleTimeout = 10 * time.Second
 	parseTimeout     = 2 * time.Minute
 )
+
+func (p *jsParser) Name() string {
+	if name := strings.TrimSpace(p.meta.Name); name != "" {
+		return name
+	}
+	return "js-parser"
+}
 
 func (p *jsParser) CanHandle(url string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), canHandleTimeout)

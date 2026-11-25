@@ -46,7 +46,7 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 		processedLines = append(processedLines, line)
 	}
 	source := strings.TrimSpace(strings.Join(processedLines, "\n"))
-	ok, pser := parsers.CanHandle(source)
+	ok, _ := parsers.CanHandle(source)
 	if !ok {
 		return dispatcher.EndGroups
 	}
@@ -55,7 +55,7 @@ func handleTextMessage(ctx *ext.Context, u *ext.Update) error {
 		return err
 	}
 
-	item, err := pser.Parse(ctx, source)
+	item, err := parsers.ParseWithContext(ctx, source)
 	if errors.Is(err, parsers.ErrNoParserFound) {
 		return dispatcher.EndGroups
 	}

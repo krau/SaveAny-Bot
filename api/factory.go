@@ -22,11 +22,10 @@ import (
 	"github.com/krau/SaveAny-Bot/core/tasks/tfile"
 	"github.com/krau/SaveAny-Bot/core/tasks/transfer"
 	"github.com/krau/SaveAny-Bot/core/tasks/ytdlp"
-	"github.com/krau/SaveAny-Bot/parsers/parsers"
+	"github.com/krau/SaveAny-Bot/parsers"
 	"github.com/krau/SaveAny-Bot/pkg/aria2"
 	storenum "github.com/krau/SaveAny-Bot/pkg/enums/storage"
 	"github.com/krau/SaveAny-Bot/pkg/enums/tasktype"
-	"github.com/krau/SaveAny-Bot/pkg/parser"
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	tfilepkg "github.com/krau/SaveAny-Bot/pkg/tfile"
@@ -219,19 +218,10 @@ func (f *TaskFactory) createParsedTask(taskID string, createdAt time.Time, req *
 		return nil, fmt.Errorf("no URL provided")
 	}
 
-	var p parser.Parser
-	for _, parserItem := range parsers.Get() {
-		if parserItem.CanHandle(params.URL) {
-			p = parserItem
-			break
-		}
-	}
-
-	if p == nil {
+	item, err := parsers.ParseWithContext(f.ctx, params.URL)
+	if errors.Is(err, parsers.ErrNoParserFound) {
 		return nil, fmt.Errorf("no parser found for URL: %s", params.URL)
 	}
-
-	item, err := p.Parse(f.ctx, params.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL: %w", err)
 	}
