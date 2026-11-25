@@ -16,6 +16,9 @@ const DefaultYtdlpFilenameTemplate = "%(title).200B.%(ext)s"
 const LegacyYtdlpFilenameTemplate = "%(title)s.%(ext)s"
 
 type YtdlpConfig struct {
+	// Path is the yt-dlp executable. Empty uses the library's normal executable
+	// discovery; an absolute path or a command name is passed through unchanged.
+	Path string `toml:"path" mapstructure:"path" json:"path"`
 	// MaxHeight limits the video resolution by height in pixels (e.g. 1080, 720).
 	// 0 means no limit (best available). Ignored when Format is set.
 	MaxHeight int `toml:"max_height" mapstructure:"max_height" json:"max_height"`
@@ -31,6 +34,9 @@ type YtdlpConfig struct {
 	// RestrictFilenames keeps file names ASCII-only (yt-dlp --restrict-filenames),
 	// dropping non-latin characters from titles. Disabled by default.
 	RestrictFilenames bool `toml:"restrict_filenames" mapstructure:"restrict_filenames" json:"restrict_filenames"`
+	// CookiesFile is a Netscape-format cookies file passed to yt-dlp via
+	// --cookies. Empty disables cookies.
+	CookiesFile string `toml:"cookies_file" mapstructure:"cookies_file" json:"cookies_file"`
 	// Proxies are HTTP/HTTPS/SOCKS proxy URLs for yt-dlp's own requests. They
 	// are tried in order until one succeeds, so put the preferred proxy first.
 	// Empty means yt-dlp connects directly.

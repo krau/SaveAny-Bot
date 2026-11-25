@@ -76,6 +76,18 @@ Bot Token 在 [@BotFather](https://t.me/BotFather) 创建。`API ID` 和 `API Ha
 
 “写入旁车 JSON”会在实际文件旁写入 `<文件路径>.meta.json`，默认关闭。Telegram 存储不会上传旁车文件，而是可用存储配置中的选项消费元数据来还原 caption 或媒体组。
 
+### yt-dlp
+
+在 **设置 → yt-dlp** 中可以配置文件下载和媒体信息查询共用的选项。
+
+| 设置 | 默认值 | 说明 |
+|---|---|---|
+| `yt-dlp 路径` | 自动检测 | 可填写 `PATH` 中的命令名或绝对路径 |
+| `Cookies 文件` | 空 | Netscape 格式的 cookies 文件，用于登录或年龄限制内容；留空则不传 `--cookies` |
+| `yt-dlp 代理` | 空 | 每行一个 HTTP/HTTPS/SOCKS 代理，按顺序尝试 |
+
+路径和 Cookies 设置同时作用于下载任务与媒体信息查询。Docker 镜像已包含 `yt-dlp`，通常无需填写路径。
+
 ### 存储
 
 存储端在 **存储** 页面添加并启用。本地磁盘只需要一个基础路径：

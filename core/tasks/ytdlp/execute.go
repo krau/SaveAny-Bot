@@ -101,7 +101,7 @@ func buildDownloadCommand(cfg config.YtdlpConfig, tempDir string, flags []string
 		return nil, nil, err
 	}
 
-	cmd := ytdlp.New().Output(base)
+	cmd := NewCommand(cfg).Output(base)
 	if cfg.RestrictFilenames {
 		cmd = cmd.RestrictFilenames()
 	}

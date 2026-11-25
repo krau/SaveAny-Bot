@@ -175,6 +175,14 @@ export const settingsGroups: SettingsGroupDef[] = [
     title: 'settings.groups.ytdlp',
     fields: [
       {
+        path: 'path',
+        label: 'settings.ytdlp.path',
+        kind: 'text',
+        placeholder: 'yt-dlp',
+        hint: 'settings.ytdlp.pathHint',
+        pathKind: 'file',
+      },
+      {
         path: 'max_height',
         label: 'settings.ytdlp.maxHeight',
         kind: 'number',
@@ -198,6 +206,14 @@ export const settingsGroups: SettingsGroupDef[] = [
         path: 'restrict_filenames',
         label: 'settings.ytdlp.restrictFilenames',
         kind: 'bool',
+      },
+      {
+        path: 'cookies_file',
+        label: 'settings.ytdlp.cookiesFile',
+        kind: 'text',
+        placeholder: '/app/cookies.txt',
+        hint: 'settings.ytdlp.cookiesFileHint',
+        pathKind: 'file',
       },
       {
         path: 'proxies',

@@ -76,6 +76,18 @@ Enable **Settings → Message metadata** to store normalized Telegram message da
 
 **Write sidecar JSON** writes `<actual-file-path>.meta.json` next to each saved file. It is off by default. Telegram storage does not upload the sidecar; it can instead consume the metadata to restore captions or media groups using the Telegram storage options.
 
+### yt-dlp
+
+The **Settings → yt-dlp** section configures options shared by downloads and media metadata lookups.
+
+| Setting | Default | Description |
+|---|---|---|
+| `yt-dlp path` | Automatic detection | A command name on `PATH` or an absolute path |
+| `Cookies file` | Empty | Netscape-format cookies for login-gated or age-restricted content; empty omits `--cookies` |
+| `yt-dlp proxies` | Empty | One HTTP/HTTPS/SOCKS proxy per line, tried in order |
+
+The path and cookies settings apply to both download tasks and media metadata lookups. The Docker image already includes `yt-dlp`, so the path can usually stay empty.
+
 ### Storages
 
 Add and enable storages on the **Storages** page. Local disk needs only a base path:

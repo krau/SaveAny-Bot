@@ -148,10 +148,12 @@ func DefaultsMap(dataDir string) map[string]any {
 		"web.secure_cookie": false,
 
 		"ytdlp.recode":             "mp4",
+		"ytdlp.path":               "",
 		"ytdlp.filename_template":  DefaultYtdlpFilenameTemplate,
 		"ytdlp.max_height":         0,
 		"ytdlp.format":             "",
 		"ytdlp.restrict_filenames": false,
+		"ytdlp.cookies_file":       "",
 
 		"metadata.enabled":          false,
 		"metadata.include_text":     true,

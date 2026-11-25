@@ -187,7 +187,7 @@ func extractDirectMediaMetadata(ctx context.Context, url string) (*MediaMetadata
 }
 
 func extractYTDLPMediaMetadata(ctx context.Context, url string) (*MediaMetadataResponse, error) {
-	cmd := ytdlp.New().DumpSingleJSON()
+	cmd := ytdlptask.NewCommand(config.C().Ytdlp).DumpSingleJSON()
 	// Use the same proxies as downloads, so a lookup cannot report a URL
 	// unreachable that a download would fetch.
 	result, err := ytdlptask.RunWithProxyFailover(ctx, cmd, config.C().Ytdlp, url)
