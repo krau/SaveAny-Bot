@@ -190,6 +190,9 @@ func (t *Telegram) saveWithContext(ctx context.Context, tctx *ext.Context, r io.
 	size := contentLength(ctx)
 	maxUploadSize := maxUploadFileSize(tctx)
 	if t.config.SkipLarge && size > maxUploadSize {
+		if storagetypes.UploadRequired(ctx) {
+			return fmt.Errorf("%w: %d bytes exceeds the Telegram limit of %d bytes (skip_large enabled)", storagetypes.ErrUploadSkipped, size, maxUploadSize)
+		}
 		log.FromContext(ctx).Warnf("Skipping file larger than Telegram limit (%d bytes): %d bytes", maxUploadSize, size)
 		return nil
 	}
@@ -838,7 +841,7 @@ func (t *Telegram) splitUpload(
 		_, err = tctx.Sender.
 			WithUploader(upler).
 			To(peer).
-			Media(tctx, doc)
+			Media(ctx, doc)
 		return err
 	}
 
@@ -859,7 +862,7 @@ func (t *Telegram) splitUpload(
 	if len(multiMedia) <= tglimit.MaxAlbumItems {
 		_, err = sender.WithUploader(upler).
 			To(peer).
-			Album(tctx, multiMedia[0], multiMedia[1:]...)
+			Album(ctx, multiMedia[0], multiMedia[1:]...)
 		return err
 	}
 
@@ -868,7 +871,7 @@ func (t *Telegram) splitUpload(
 		batch := multiMedia[i:end]
 		_, err = sender.WithUploader(upler).
 			To(peer).
-			Album(tctx, batch[0], batch[1:]...)
+			Album(ctx, batch[0], batch[1:]...)
 		if err != nil {
 			return fmt.Errorf("failed to send album batch: %w", err)
 		}

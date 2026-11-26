@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { errorMessage, storagesApi, tasksApi } from '../api'
+import { ApiError, errorMessage, storagesApi, tasksApi, uploadsApi } from '../api'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import AppSelect from '../components/AppSelect.vue'
@@ -13,7 +13,14 @@ import TaskTable from '../components/TaskTable.vue'
 import { useModalHeightTransition } from '../composables/useModalHeightTransition'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toasts'
-import type { CreateTaskRequest, StorageRecord, TaskItem, TaskMetadataResponse } from '../types'
+import type {
+  CreateTaskRequest,
+  StorageRecord,
+  TaskItem,
+  TaskMetadataResponse,
+  UploadProgress,
+  UploadTaskFormPayload,
+} from '../types'
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -29,6 +36,9 @@ const busyId = ref('')
 const loaded = ref(false)
 const createOpen = ref(false)
 const creating = ref(false)
+const uploadProgress = ref<UploadProgress | null>(null)
+let uploadAbort: AbortController | null = null
+let confirmingUploadDismissal = false
 const metadataOpen = ref(false)
 const metadataTaskId = ref('')
 const metadataData = ref<TaskMetadataResponse | null>(null)
@@ -57,6 +67,7 @@ const typeOptions = computed(() => [
   { value: 'tgfiles', label: t('tasks.types.tgfiles') },
   { value: 'tphpics', label: t('tasks.types.tphpics') },
   { value: 'transfer', label: t('tasks.types.transfer') },
+  { value: 'upload', label: t('tasks.types.upload') },
 ])
 
 async function load() {
@@ -111,13 +122,80 @@ async function create(payload: CreateTaskRequest) {
   try {
     await tasksApi.create(payload)
     toast.push(t('tasks.toast.created'), 'success')
-    createOpen.value = false
+    closeCreate()
     await load()
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
   } finally {
     creating.value = false
   }
+}
+
+async function createUpload(payload: UploadTaskFormPayload) {
+  uploadAbort?.abort()
+  const controller = new AbortController()
+  uploadAbort = controller
+  uploadProgress.value = {
+    loaded: 0,
+    total: payload.file.size,
+    percent: 0,
+  }
+  creating.value = true
+  try {
+    await uploadsApi.upload(
+      payload.file,
+      {
+        storage_id: payload.storage_id,
+        path: payload.path,
+        filename: payload.file.name,
+        webhook: payload.webhook,
+      },
+      (progress) => {
+        if (uploadAbort === controller) uploadProgress.value = progress
+      },
+      controller.signal,
+    )
+    toast.push(t('tasks.toast.uploaded'), 'success')
+    closeCreate()
+    await load()
+  } catch (err) {
+    if (!(err instanceof ApiError && err.code === 'upload_cancelled')) {
+      toast.push(errorMessage(err), 'error', 6000)
+    }
+  } finally {
+    if (uploadAbort === controller) {
+      uploadAbort = null
+      uploadProgress.value = null
+      creating.value = false
+    }
+  }
+}
+
+function openCreate() {
+  uploadProgress.value = null
+  createOpen.value = true
+}
+
+function closeCreate() {
+  createOpen.value = false
+}
+
+async function dismissCreate() {
+  const controller = uploadAbort
+  if (controller) {
+    if (confirmingUploadDismissal) return
+    confirmingUploadDismissal = true
+    const confirmed = await confirm.ask({
+      title: t('tasks.confirm.discardUploadTitle'),
+      message: t('tasks.confirm.discardUploadMessage'),
+      confirmText: t('tasks.confirm.discardUploadConfirm'),
+      danger: true,
+    })
+    confirmingUploadDismissal = false
+    if (!confirmed || uploadAbort !== controller) return
+    controller.abort()
+  }
+  closeCreate()
 }
 
 async function cancel(taskId: string) {
@@ -232,7 +310,7 @@ async function remove(taskId: string) {
           <AppIcon name="refresh" :size="15" />
           {{ t('common.actions.refresh') }}
         </button>
-        <button class="btn primary small" type="button" @click="createOpen = true">
+        <button class="btn primary small" type="button" :disabled="creating" @click="openCreate">
           <AppIcon name="plus" :size="15" />
           {{ t('common.actions.createTask') }}
         </button>
@@ -265,7 +343,7 @@ async function remove(taskId: string) {
 
     <Teleport to="body">
       <Transition name="modal">
-        <div v-if="createOpen" class="modal-overlay" @click.self="createOpen = false">
+        <div v-if="createOpen" class="modal-overlay" @click.self="dismissCreate()">
           <div
             ref="taskModal"
             class="modal wide auto-height-modal"
@@ -275,15 +353,17 @@ async function remove(taskId: string) {
           >
             <div class="modal-head">
               <h3 id="create-task-title" class="modal-title">{{ t('tasks.createTitle') }}</h3>
-              <button class="btn ghost icon small" type="button" :aria-label="t('common.close')" @click="createOpen = false">
+              <button class="btn ghost icon small" type="button" :aria-label="t('common.close')" @click="dismissCreate()">
                 <AppIcon name="close" :size="17" />
               </button>
             </div>
             <TaskForm
               :storages="storages"
               :busy="creating"
+              :upload-progress="uploadProgress"
               @submit="create"
-              @cancel="createOpen = false"
+              @upload="createUpload"
+              @cancel="dismissCreate()"
               @resize-start="startTaskModalResize"
               @resize-end="endTaskModalResize"
             />

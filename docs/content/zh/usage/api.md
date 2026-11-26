@@ -105,7 +105,7 @@ Authorization: Bearer <your-token>
   "version": "1.0.0",
   "schema_version": 1,
   "chat_id_format": "bot_api",
-  "task_types": ["tgfiles", "tphpics", "parseditem", "directlinks", "aria2", "ytdlp", "transfer"],
+  "task_types": ["tgfiles", "tphpics", "parseditem", "directlinks", "aria2", "ytdlp", "transfer", "upload"],
   "task_statuses": ["queued", "running", "completed", "partial", "failed", "cancelled"],
   "task_item_statuses": ["completed", "failed", "skipped", "cancelled"],
   "storage_types": ["local", "webdav", "alist", "telegram", "s3", "rclone"],
@@ -131,6 +131,8 @@ Authorization: Bearer <your-token>
   ]
 }
 ```
+
+`upload` 类型通过 `POST /api/v1/uploads` 创建，不使用 `POST /api/v1/tasks`。
 
 ---
 
@@ -378,6 +380,58 @@ Authorization: Bearer <token>
 | `source_path` | string | 是 | 源存储中的路径，须包含至少一个文件 |
 | `target_storage_id` | uint | 是 | 目标存储 ID |
 | `target_path` | string | 是 | 目标存储中的路径 |
+
+---
+
+### POST /api/v1/uploads — 上传本地文件
+
+将浏览器或本机的原始文件上传到服务端，创建 `upload` 任务，再异步写入任意已配置的存储后端。Telegram、本地、WebDAV、Alist、S3 和 rclone 存储都使用同一接口。
+
+**请求头：**
+
+```
+Content-Type: application/octet-stream
+Authorization: Bearer <token>
+```
+
+可选请求头 `X-Webhook-URL` 用于指定任务完成或失败时的回调地址。
+
+**查询参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `storage_id` | uint | 是 | 目标存储 ID |
+| `filename` | string | 是 | 目标文件名；只保留最后一段并清理不安全字符 |
+| `path` | string | 否 | 目标存储中的子目录 |
+| `overwrite` | bool | 否 | 是否覆盖目标文件，默认 `false` |
+
+请求体就是文件的原始字节，不要使用 base64 或 JSON 包装：
+
+```bash
+curl -X POST "http://127.0.0.1:28080/api/v1/uploads?storage_id=1&path=uploads&filename=movie.mkv" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @movie.mkv
+```
+
+使用 Web 控制台 Cookie 登录时，还需携带 `X-CSRF-Token`。
+
+**响应 `201 Created`：**
+
+```json
+{
+  "task_id": "abc123xyz",
+  "type": "upload",
+  "status": "queued",
+  "storage_id": 1,
+  "storage_name": "local",
+  "created_at": "2026-11-26T10:00:00Z"
+}
+```
+
+文件完整保存到服务端临时目录后才会创建任务。超过 `web.max_upload_size_mb` 时返回 `413 upload_too_large`；临时目录空间不足时返回 `507 insufficient_storage`。读取请求体连续等待 30 秒后会中止（`408 upload_timeout`）。上传中断后需要从头重传。
+
+如果存储后端因文件名冲突而重命名，已完成的任务会显示实际保存路径。如果 Telegram 因 `skip_large` 跳过文件，任务标记为失败，而不是已完成。
 
 ---
 

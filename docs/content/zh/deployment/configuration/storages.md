@@ -20,6 +20,7 @@ username = "your_username"  # Alist 的用户名
 password = "your_password" # Alist 的密码
 base_path = "/path/saveanybot" # Alist 中的基础路径, 所有文件将存储在此路径下
 token_exp = 3600 # Alist 访问令牌的自动刷新时间, 单位秒
+upload_response_header_timeout = 0 # 上传请求体发送完成后等待响应头的秒数, 0 表示不限制
 token = "your_token" 
 # Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. 
 # 使用 token 验证时无法自动刷新 token
@@ -41,7 +42,10 @@ url = "https://webdav.example.com" # WebDAV 的 URL
 username = "your_username"  # WebDAV
 password = "your_password" # WebDAV 的密码
 base_path = "/path/to/webdav" # WebDAV 中的基础路径, 所有文件将存储在此路径下
+upload_response_header_timeout = 0 # 上传请求体发送完成后等待响应头的秒数, 0 表示不限制
 ```
+
+写穿型 WebDAV/Alist 后端可能在接收完请求体后继续上传或落盘，再返回响应头。若大文件上传稳定在 30 秒后超时，可保持默认值 `0` 或设置更大的秒数。
 
 ## S3
 

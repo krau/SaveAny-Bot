@@ -1,6 +1,43 @@
 package storagetypes
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+var ErrUploadSkipped = errors.New("storage skipped upload")
+
+type requiredUploadContextKey struct{}
+
+// WithRequiredUpload requests an explicit error if the backend skips the file.
+func WithRequiredUpload(ctx context.Context) context.Context {
+	return context.WithValue(ctx, requiredUploadContextKey{}, true)
+}
+
+func UploadRequired(ctx context.Context) bool {
+	required, _ := ctx.Value(requiredUploadContextKey{}).(bool)
+	return required
+}
+
+type publishGuardContextKey struct{}
+
+// WithPublishGuard lets the queue serialize publication with explicit cancellation.
+func WithPublishGuard(ctx context.Context, guard func(func() error) error) context.Context {
+	return context.WithValue(ctx, publishGuardContextKey{}, guard)
+}
+
+func Publish(ctx context.Context, publish func() error) error {
+	checked := func() error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return publish()
+	}
+	if guard, ok := ctx.Value(publishGuardContextKey{}).(func(func() error) error); ok {
+		return guard(checked)
+	}
+	return checked()
+}
 
 type sourceCaptionContextKey struct{}
 

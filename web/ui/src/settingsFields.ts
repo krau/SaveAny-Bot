@@ -329,6 +329,13 @@ export const settingsGroups: SettingsGroupDef[] = [
         hint: 'settings.web.listenHint',
       },
       {
+        path: 'max_upload_size_mb',
+        label: 'settings.web.maxUploadSizeMb',
+        kind: 'number',
+        hint: 'settings.web.maxUploadSizeMbHint',
+        min: 1,
+      },
+      {
         path: 'api_token',
         label: 'settings.web.apiToken',
         kind: 'password',

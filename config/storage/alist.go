@@ -14,6 +14,9 @@ type AlistStorageConfig struct {
 	Token    string `toml:"token" mapstructure:"token" json:"token"`
 	BasePath string `toml:"base_path" mapstructure:"base_path" json:"base_path"`
 	TokenExp int64  `toml:"token_exp" mapstructure:"token_exp" json:"token_exp"`
+	// UploadResponseHeaderTimeout is the number of seconds to wait for response
+	// headers after a PUT body has been fully written. Zero disables the limit.
+	UploadResponseHeaderTimeout int `toml:"upload_response_header_timeout" mapstructure:"upload_response_header_timeout" json:"upload_response_header_timeout"`
 }
 
 func (a *AlistStorageConfig) Validate() error {
@@ -25,6 +28,9 @@ func (a *AlistStorageConfig) Validate() error {
 	}
 	if a.BasePath == "" {
 		return fmt.Errorf("base_path is required for alist storage")
+	}
+	if a.UploadResponseHeaderTimeout < 0 {
+		return fmt.Errorf("upload_response_header_timeout must not be negative for alist storage")
 	}
 	return nil
 }

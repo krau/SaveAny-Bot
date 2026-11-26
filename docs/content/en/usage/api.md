@@ -105,7 +105,7 @@ Returns the frozen v1 capability vocabulary and the database schema version.
   "version": "1.0.0",
   "schema_version": 1,
   "chat_id_format": "bot_api",
-  "task_types": ["tgfiles", "tphpics", "parseditem", "directlinks", "aria2", "ytdlp", "transfer"],
+  "task_types": ["tgfiles", "tphpics", "parseditem", "directlinks", "aria2", "ytdlp", "transfer", "upload"],
   "task_statuses": ["queued", "running", "completed", "partial", "failed", "cancelled"],
   "task_item_statuses": ["completed", "failed", "skipped", "cancelled"],
   "storage_types": ["local", "webdav", "alist", "telegram", "s3", "rclone"],
@@ -131,6 +131,8 @@ Chat IDs use the Bot API form: positive IDs for users, negative IDs for basic gr
   ]
 }
 ```
+
+The `upload` type is created through `POST /api/v1/uploads`, not `POST /api/v1/tasks`.
 
 ---
 
@@ -378,6 +380,58 @@ For `transfer` tasks, the top-level `storage_id` field is still required for val
 | `source_path` | string | Yes | Path within the source storage; must contain at least one file |
 | `target_storage_id` | uint | Yes | Target storage ID |
 | `target_path` | string | Yes | Destination path within the target storage |
+
+---
+
+### POST /api/v1/uploads — Upload a Local File
+
+Uploads raw file bytes to the server, creates an `upload` task, and then writes the staged file to any configured storage backend asynchronously. Telegram, local, WebDAV, Alist, S3, and rclone targets use the same endpoint.
+
+**Request headers:**
+
+```
+Content-Type: application/octet-stream
+Authorization: Bearer <token>
+```
+
+The optional `X-Webhook-URL` header sets the completion or failure callback.
+
+**Query parameters:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `storage_id` | uint | Yes | Target storage ID |
+| `filename` | string | Yes | Destination file name; reduced to one safe path component |
+| `path` | string | No | Destination directory within the storage |
+| `overwrite` | bool | No | Overwrite an existing file; defaults to `false` |
+
+The request body is the file itself, not base64 or JSON:
+
+```bash
+curl -X POST "http://127.0.0.1:28080/api/v1/uploads?storage_id=1&path=uploads&filename=movie.mkv" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @movie.mkv
+```
+
+Cookie-authenticated console requests must also send `X-CSRF-Token`.
+
+**Response `201 Created`:**
+
+```json
+{
+  "task_id": "abc123xyz",
+  "type": "upload",
+  "status": "queued",
+  "storage_id": 1,
+  "storage_name": "local",
+  "created_at": "2026-11-26T10:00:00Z"
+}
+```
+
+The task is created only after the full file is staged on the server. Exceeding `web.max_upload_size_mb` returns `413 upload_too_large`; insufficient staging disk space returns `507 insufficient_storage`. The server aborts reads that stall for 30 seconds (`408 upload_timeout`). An interrupted request must be retried from the beginning.
+
+The completed task reports the final destination when the backend renames the file to avoid a conflict. If Telegram skips a file because of `skip_large`, the task fails instead of reporting completion.
 
 ---
 

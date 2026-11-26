@@ -302,6 +302,9 @@ func Load(ctx context.Context, dataDir string) (config.Config, error) {
 	if cfg.ChunkRetries < 1 {
 		cfg.ChunkRetries = 20
 	}
+	if cfg.Web.MaxUploadSizeMB < 1 {
+		cfg.Web.MaxUploadSizeMB = config.DefaultMaxUploadSizeMB
+	}
 	return cfg, nil
 }
 
@@ -526,6 +529,9 @@ func validateGroup(cfg *config.Config, group string) error {
 	case GroupWeb:
 		if _, _, err := net.SplitHostPort(cfg.Web.Listen); err != nil {
 			return fmt.Errorf("invalid listen address: %w", err)
+		}
+		if cfg.Web.MaxUploadSizeMB < 1 {
+			return errors.New("max_upload_size_mb must be at least 1")
 		}
 	case GroupTelegram:
 		if cfg.Telegram.AppID < 0 {

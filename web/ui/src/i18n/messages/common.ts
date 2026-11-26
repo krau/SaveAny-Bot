@@ -39,6 +39,7 @@ export const zhHans = {
     tgfiles: 'Telegram 文件',
     tphpics: 'Telegraph 图集',
     transfer: '存储迁移',
+    upload: '本地上传',
   },
   common: {
     adminConnected: '管理界面已连接',
@@ -143,6 +144,8 @@ export const zhHans = {
   },
   errors: {
     network: '网络请求失败',
+    invalidResponse: '服务器返回了无效响应',
+    uploadCancelled: '上传已取消',
     requestFailed: '请求失败 (HTTP {status})',
   },
 }
@@ -188,6 +191,7 @@ export const en = {
     tgfiles: 'Telegram files',
     tphpics: 'Telegraph gallery',
     transfer: 'Storage transfer',
+    upload: 'Local upload',
   },
   common: {
     adminConnected: 'Admin connected',
@@ -292,6 +296,8 @@ export const en = {
   },
   errors: {
     network: 'Network request failed',
+    invalidResponse: 'The server returned an invalid response',
+    uploadCancelled: 'Upload cancelled',
     requestFailed: 'Request failed (HTTP {status})',
   },
 }

@@ -14,10 +14,11 @@ import (
 )
 
 type Client struct {
-	BaseURL    string
-	Username   string
-	Password   string
-	httpClient *http.Client
+	BaseURL          string
+	Username         string
+	Password         string
+	httpClient       *http.Client
+	uploadHTTPClient *http.Client
 }
 
 type WebdavMethod string
@@ -61,14 +62,27 @@ func (rt ResourceType) IsCollection() bool {
 }
 
 func NewClient(baseURL, username, password string, httpClient *http.Client) *Client {
+	return NewClientWithUploadHTTPClient(baseURL, username, password, httpClient, httpClient)
+}
+
+// NewClientWithUploadHTTPClient uses a separate client for PUT requests so
+// uploads can tolerate a backend that finalizes data after receiving the body.
+func NewClientWithUploadHTTPClient(
+	baseURL, username, password string,
+	httpClient, uploadHTTPClient *http.Client,
+) *Client {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
+	if uploadHTTPClient == nil {
+		uploadHTTPClient = httpClient
+	}
 	return &Client{
-		BaseURL:    baseURL,
-		Username:   username,
-		Password:   password,
-		httpClient: httpClient,
+		BaseURL:          baseURL,
+		Username:         username,
+		Password:         password,
+		httpClient:       httpClient,
+		uploadHTTPClient: uploadHTTPClient,
 	}
 }
 
@@ -178,7 +192,7 @@ func (c *Client) writeFile(ctx context.Context, remotePath string, content io.Re
 	if ifAbsent {
 		req.Header.Set("If-None-Match", "*")
 	}
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.uploadHTTPClient.Do(req)
 	if err != nil {
 		return err
 	}

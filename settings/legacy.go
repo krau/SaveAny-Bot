@@ -112,10 +112,11 @@ func ImportLegacy(ctx context.Context, src, dataDir string) error {
 	if _, ok := existing[GroupWeb]; !ok {
 		listen := cfgListenFromAPI(v)
 		web := map[string]any{
-			"enable":        true,
-			"listen":        listen,
-			"api_token":     v.GetString("api.token"),
-			"secure_cookie": false,
+			"enable":             true,
+			"listen":             listen,
+			"api_token":          v.GetString("api.token"),
+			"secure_cookie":      false,
+			"max_upload_size_mb": config.DefaultMaxUploadSizeMB,
 		}
 		raw, err := json.Marshal(web)
 		if err != nil {

@@ -2,11 +2,10 @@ package api
 
 import (
 	"context"
-
-	"github.com/krau/SaveAny-Bot/config"
 	"sync"
 	"time"
 
+	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/pkg/taskevent"
 )
@@ -27,10 +26,8 @@ type TaskProgressInfo struct {
 	StorageID       uint
 	Storage         string
 	Path            string
-	Error           string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
-	StartedAt       time.Time
 	Webhook         string
 	webhookNotified bool
 }
@@ -140,31 +137,12 @@ func StartCleanupLoop(ctx interface{ Done() <-chan struct{} }) {
 	}()
 }
 
-func (t *TaskProgressInfo) UpdateStatus(status TaskStatus) {
-	t.mu.Lock()
-	t.Status = status
-	t.UpdatedAt = time.Now()
-	if status == TaskStatusRunning && t.StartedAt.IsZero() {
-		t.StartedAt = t.UpdatedAt
-	}
-	t.mu.Unlock()
-}
-
-// SetError marks the task failed with an error message.
-func (t *TaskProgressInfo) SetError(err string) {
-	t.mu.Lock()
-	t.Error = err
-	t.Status = TaskStatusFailed
-	t.UpdatedAt = time.Now()
-	t.mu.Unlock()
-}
-
 // snapshot returns a point-in-time copy of the fields needed to render a
 // response, so callers never touch the mutex directly.
-func (t *TaskProgressInfo) snapshot() (status TaskStatus, total, downloaded int64, totalFiles, downloadedFiles int, startedAt time.Time, err string, updatedAt time.Time) {
+func (t *TaskProgressInfo) snapshot() (total, downloaded int64, totalFiles, downloadedFiles int, updatedAt time.Time) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	return t.Status, t.TotalBytes, t.DownloadedBytes, t.TotalFiles, t.DownloadedFiles, t.StartedAt, t.Error, t.UpdatedAt
+	return t.TotalBytes, t.DownloadedBytes, t.TotalFiles, t.DownloadedFiles, t.UpdatedAt
 }
 
 // Emit implements taskevent.Sink. It translates task lifecycle events into
@@ -178,11 +156,11 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 	switch e.Phase {
 	case taskevent.PhaseStart:
 		t.Status = TaskStatusRunning
-		if t.StartedAt.IsZero() {
-			t.StartedAt = time.Now()
-		}
 		if e.TotalBytes > 0 {
 			t.TotalBytes = e.TotalBytes
+		}
+		if e.TotalFiles > 0 {
+			t.TotalFiles = e.TotalFiles
 		}
 	case taskevent.PhaseProgress:
 		t.Status = TaskStatusRunning
@@ -197,30 +175,31 @@ func (t *TaskProgressInfo) Emit(e taskevent.Event) {
 			t.DownloadedFiles = e.DownloadedFiles
 		}
 	case taskevent.PhaseDone:
-		if t.Status != TaskStatusCancelled {
-			switch {
-			case e.Cancelled:
-				t.Status = TaskStatusCancelled
-			case e.Err != nil:
-				t.Status = TaskStatusFailed
-				t.Error = e.Err.Error()
-			case e.Partial:
-				t.Status = TaskStatusPartial
-			default:
-				t.Status = TaskStatusCompleted
-			}
+		if e.Path != "" {
+			t.Path = e.Path
+		}
+		switch {
+		case e.Cancelled:
+			t.Status = TaskStatusCancelled
+		case e.Err != nil:
+			t.Status = TaskStatusFailed
+		case e.Partial:
+			t.Status = TaskStatusPartial
+		default:
+			t.Status = TaskStatusCompleted
 		}
 	}
 	t.UpdatedAt = time.Now()
 	notify := t.Webhook != "" && !t.webhookNotified && t.Status.IsTerminal() && t.Status != TaskStatusCancelled
 	status := t.Status
+	path := t.Path
 	if notify {
 		t.webhookNotified = true
 	}
 	t.mu.Unlock()
 
 	if notify {
-		payload := CreateWebhookPayload(t.TaskID, t.Type, status, t.StorageID, t.Storage, t.Path, e.Err)
+		payload := CreateWebhookPayload(t.TaskID, t.Type, status, t.StorageID, t.Storage, path, e.Err)
 		SendWebhook(context.Background(), payload)
 	}
 }

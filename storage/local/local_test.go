@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,6 +45,57 @@ func TestLocalSaveDoesNotOverwrite(t *testing.T) {
 		t.Fatalf("renamed file = %q, want second", got)
 	}
 }
+
+func TestLocalSaveCancellationDoesNotPublish(t *testing.T) {
+	for _, overwrite := range []bool{false, true} {
+		t.Run(map[bool]string{false: "new file", true: "overwrite"}[overwrite], func(t *testing.T) {
+			l := newTestLocal(t)
+			parent := context.Background()
+			const filename = "file.txt"
+			if overwrite {
+				if err := l.Save(parent, strings.NewReader("original"), filename); err != nil {
+					t.Fatal(err)
+				}
+				parent = context.WithValue(parent, ctxkey.OverwriteExisting, true)
+			}
+			ctx, cancel := context.WithCancel(parent)
+			defer cancel()
+			reads := 0
+			reader := readerFunc(func(p []byte) (int, error) {
+				reads++
+				cancel()
+				if overwrite {
+					// EOF in the same read bypasses the next context check in the copy.
+					return copy(p, "replacement"), io.EOF
+				}
+				if reads > 1 {
+					return 0, io.EOF
+				}
+				return copy(p, "partial"), nil
+			})
+			if _, err := l.SaveWithPath(ctx, reader, filename); !errors.Is(err, context.Canceled) {
+				t.Fatalf("SaveWithPath error = %v, want context.Canceled", err)
+			}
+			entries, err := os.ReadDir(l.config.BasePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if reads != 1 || len(entries) != map[bool]int{false: 0, true: 1}[overwrite] {
+				t.Fatalf("reads = %d, destination entries = %v", reads, entries)
+			}
+			if overwrite {
+				got, err := os.ReadFile(filepath.Join(l.config.BasePath, filename))
+				if err != nil || string(got) != "original" {
+					t.Fatalf("original = %q, %v", got, err)
+				}
+			}
+		})
+	}
+}
+
+type readerFunc func([]byte) (int, error)
+
+func (f readerFunc) Read(p []byte) (int, error) { return f(p) }
 
 func TestLocalSaveRecreatesRemovedRoot(t *testing.T) {
 	l := newTestLocal(t)

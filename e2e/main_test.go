@@ -282,3 +282,34 @@ func (c *apiClient) do(method, path string, body any, withCSRF bool, out any) in
 	}
 	return status
 }
+
+func (c *apiClient) doRaw(method, path string, body []byte, contentType string, withCSRF bool, out any) int {
+	c.t.Helper()
+	req, err := http.NewRequest(method, c.base+path, bytes.NewReader(body))
+	if err != nil {
+		c.t.Fatalf("create raw request: %v", err)
+	}
+	req.Header.Set("Content-Type", contentType)
+	if withCSRF {
+		req.Header.Set("X-CSRF-Token", c.csrf)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		c.t.Fatalf("%s %s: %v", method, path, err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.t.Errorf("close response body: %v", err)
+		}
+	}()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.t.Fatalf("read %s %s response: %v", method, path, err)
+	}
+	if out != nil && len(data) > 0 {
+		if err := json.Unmarshal(data, out); err != nil {
+			c.t.Fatalf("%s %s returned invalid JSON: %v\n%s", method, path, err, data)
+		}
+	}
+	return resp.StatusCode
+}

@@ -20,6 +20,7 @@ username = "your_username"  # Username for Alist
 password = "your_password" # Password for Alist
 base_path = "/path/saveanybot" # Base path in Alist, all files will be stored under this path
 token_exp = 3600 # Auto-refresh time for Alist access token, in seconds
+upload_response_header_timeout = 0 # Seconds to wait for response headers after the upload body is sent; 0 disables the limit
 token = "your_token" 
 # Access token for Alist, optional, if not set, username and password will be used for authentication.
 # When using token authentication, the token cannot be automatically refreshed
@@ -41,7 +42,10 @@ url = "https://webdav.example.com" # URL of WebDAV
 username = "your_username"  # Username for WebDAV
 password = "your_password" # Password for WebDAV
 base_path = "/path/to/webdav" # Base path in WebDAV, all files will be stored under this path
+upload_response_header_timeout = 0 # Seconds to wait for response headers after the upload body is sent; 0 disables the limit
 ```
+
+Write-through WebDAV/Alist backends may receive the request body and continue uploading or finalizing before returning response headers. If large uploads consistently time out after 30 seconds, keep the default `0` or configure a larger value.
 
 ## S3
 

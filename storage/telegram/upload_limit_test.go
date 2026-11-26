@@ -2,9 +2,12 @@ package telegram
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/gotd/td/tg"
+	"github.com/krau/SaveAny-Bot/pkg/enums/ctxkey"
 	"github.com/krau/SaveAny-Bot/pkg/storagetypes"
 	"github.com/krau/mygotg/ext"
 )
@@ -45,6 +48,20 @@ func TestMaxUploadFileSize(t *testing.T) {
 				t.Fatalf("maxUploadFileSize() = %d, want %d", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRequiredUploadReportsSkippedLargeFile(t *testing.T) {
+	stor := Telegram{}
+	stor.config.SkipLarge = true
+	tctx := uploadAccountContext(true, false)
+	ctx := context.WithValue(context.Background(), ctxkey.ContentLength, int64(MaxUploadFileSize+1))
+	if err := stor.saveWithContext(ctx, tctx, bytes.NewReader(nil), "file.bin", nil); err != nil {
+		t.Fatalf("legacy skip policy: %v", err)
+	}
+	ctx = storagetypes.WithRequiredUpload(ctx)
+	if err := stor.saveWithContext(ctx, tctx, bytes.NewReader(nil), "file.bin", nil); !errors.Is(err, storagetypes.ErrUploadSkipped) {
+		t.Fatalf("required upload error = %v, want ErrUploadSkipped", err)
 	}
 }
 

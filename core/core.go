@@ -64,128 +64,17 @@ type ParamSource interface {
 func worker(ctx context.Context, qe *queue.TaskQueue[Executable], semaphore chan struct{}) {
 	defer workerWG.Done()
 	logger := log.FromContext(ctx)
-	execHooks := config.C().Hook.Exec
 	for {
 		semaphore <- struct{}{}
 		qtask, err := qe.Get()
 		if err != nil {
+			<-semaphore
 			if !errors.Is(err, queue.ErrQueueClosed) {
 				logger.Error("Failed to get task from queue:", err)
 			}
-			break // queue closed and empty
+			return
 		}
-		exe := qtask.Data
-		taskCtx := qtask.Context()
-		recordCtx := context.WithoutCancel(taskCtx)
-		logger.Infof("Processing task: %s", exe.TaskID())
-		taskevent.Emit(taskCtx, taskevent.Event{TaskID: exe.TaskID(), Phase: taskevent.PhaseStart})
-		if err := ExecCommandString(taskCtx, execHooks.TaskBeforeStart); err != nil {
-			logger.Errorf("Failed to execute before start hook for task %s: %v", exe.TaskID(), err)
-		}
-		startedAt := time.Now()
-		if dbErr := database.UpdateTaskRecord(recordCtx, exe.TaskID(), map[string]any{
-			"status":     taskstatus.Running.String(),
-			"started_at": startedAt,
-		}); dbErr != nil {
-			logger.Errorf("Failed to update task record for %s: %v", exe.TaskID(), dbErr)
-		}
-		err = exe.Execute(taskCtx)
-		items := collectItemResults(exe)
-		failedItems := countItems(items, ItemStatusFailed)
-		status := taskstatus.Completed.String()
-		if err != nil {
-			if errors.Is(taskCtx.Err(), context.Canceled) {
-				current, dbErr := database.GetTaskRecord(recordCtx, exe.TaskID())
-				if dbErr == nil && current.Status == taskstatus.Cancelled.String() {
-					status = taskstatus.Cancelled.String()
-					logger.Infof("Task %s was canceled", exe.TaskID())
-					if err := ExecCommandString(ctx, execHooks.TaskCancel); err != nil {
-						logger.Errorf("Failed to execute cancel hook for task %s: %v", exe.TaskID(), err)
-					}
-				} else {
-					// Process shutdown cancels task contexts; leave the record queued
-					// so the next start can resume it from persisted cache.
-					status = taskstatus.Queued.String()
-					logger.Infof("Task %s interrupted; it will resume after restart", exe.TaskID())
-				}
-			} else {
-				status = taskstatus.Failed.String()
-				logger.Errorf("Failed to execute task %s: %v", exe.TaskID(), err)
-				if err := ExecCommandString(ctx, execHooks.TaskFail); err != nil {
-					logger.Errorf("Failed to execute fail hook for task %s: %v", exe.TaskID(), err)
-				}
-			}
-		} else if failedItems > 0 {
-			status = taskstatus.Partial.String()
-			logger.Warnf("Task %s finished with %d failed files", exe.TaskID(), failedItems)
-			if err := ExecCommandString(ctx, execHooks.TaskFail); err != nil {
-				logger.Errorf("Failed to execute fail hook for task %s: %v", exe.TaskID(), err)
-			}
-		} else {
-			logger.Infof("Task %s completed successfully", exe.TaskID())
-			if err := ExecCommandString(ctx, execHooks.TaskSuccess); err != nil {
-				logger.Errorf("Failed to execute success hook for task %s: %v", exe.TaskID(), err)
-			}
-		}
-		if len(items) > 0 && status != taskstatus.Queued.String() {
-			records := make([]database.TaskItemRecord, 0, len(items))
-			for _, item := range items {
-				records = append(records, database.TaskItemRecord{
-					Index:        item.Index,
-					Name:         item.Name,
-					Path:         item.Path,
-					StorageName:  item.StorageName,
-					StorageID:    item.StorageID,
-					Status:       string(item.Status),
-					Error:        item.Error,
-					Size:         item.Size,
-					SourceChatID: item.SourceChatID,
-					SourceMsgID:  item.SourceMessageID,
-				})
-			}
-			if dbErr := database.ReplaceTaskItems(recordCtx, exe.TaskID(), records); dbErr != nil {
-				logger.Errorf("Failed to store task items for %s: %v", exe.TaskID(), dbErr)
-			}
-			metadataRecords := make([]database.TaskItemMetadata, 0, len(items))
-			for _, item := range items {
-				if item.MetadataJSON == "" {
-					continue
-				}
-				metadataRecords = append(metadataRecords, database.TaskItemMetadata{
-					ItemIndex:       item.Index,
-					Version:         item.MetadataVersion,
-					SourceChatID:    item.SourceChatID,
-					SourceMessageID: item.SourceMessageID,
-					JSON:            item.MetadataJSON,
-				})
-			}
-			if dbErr := database.ReplaceTaskItemMetadata(recordCtx, exe.TaskID(), metadataRecords); dbErr != nil {
-				logger.Errorf("Failed to store task metadata for %s: %v", exe.TaskID(), dbErr)
-			}
-		}
-		recordFields := map[string]any{"status": status}
-		if status == taskstatus.Queued.String() {
-			recordFields["started_at"] = nil
-			recordFields["finished_at"] = nil
-			recordFields["error"] = ""
-		} else {
-			recordFields["finished_at"] = time.Now()
-		}
-		if status == taskstatus.Partial.String() {
-			recordFields["error"] = partialError(items)
-		} else if err != nil && status != taskstatus.Cancelled.String() {
-			recordFields["error"] = err.Error()
-		}
-		if dbErr := database.UpdateTaskRecord(recordCtx, exe.TaskID(), recordFields); dbErr != nil {
-			logger.Errorf("Failed to finish task record for %s: %v", exe.TaskID(), dbErr)
-		}
-		taskevent.Emit(taskCtx, taskevent.Event{
-			TaskID:    exe.TaskID(),
-			Phase:     taskevent.PhaseDone,
-			Err:       err,
-			Partial:   failedItems > 0 && err == nil,
-			Cancelled: status == taskstatus.Cancelled.String(),
-		})
+		runTask(ctx, qtask)
 		qe.Done(qtask.ID)
 		<-semaphore
 	}
@@ -279,7 +168,7 @@ func AddTaskWithSource(ctx context.Context, task Executable, source string) erro
 		}
 	}
 	if err := database.CreateTaskRecord(ctx, record); err != nil {
-		logger.Errorf("Failed to create task record for %s: %v", task.TaskID(), err)
+		return fmt.Errorf("create task record for %s: %w", task.TaskID(), err)
 	}
 	if err := initQueue().Add(queue.NewTask(ctx, task.TaskID(), task.Title(), task)); err != nil {
 		if sink != nil {
@@ -319,53 +208,6 @@ func EnqueueExisting(ctx context.Context, task Executable) error {
 		ctx = taskevent.WithSink(ctx, sink)
 	}
 	return initQueue().Add(queue.NewTask(ctx, task.TaskID(), task.Title(), task))
-}
-
-func CancelTask(ctx context.Context, id string) error {
-	q := initQueue()
-	if q.Has(id) {
-		task, _ := q.GetTask(id)
-		// Persist the cancellation before canceling the context so the worker
-		// can distinguish it from a process shutdown and does not requeue it.
-		if dbErr := database.UpdateTaskRecord(context.WithoutCancel(ctx), id, map[string]any{
-			"status":      taskstatus.Cancelled.String(),
-			"finished_at": time.Now(),
-		}); dbErr != nil {
-			log.FromContext(ctx).Errorf("Failed to cancel task record for %s: %v", id, dbErr)
-		}
-		err := q.CancelTask(id)
-		if err == nil && task != nil {
-			taskevent.Emit(task.Context(), taskevent.Event{
-				TaskID:    id,
-				Phase:     taskevent.PhaseDone,
-				Cancelled: true,
-			})
-		}
-		return err
-	}
-	// A queued record may not be in the queue yet while restart recovery waits
-	// for a Telegram client.
-	record, err := database.GetTaskRecord(ctx, id)
-	if err != nil {
-		return fmt.Errorf("task %s does not exist", id)
-	}
-	if isTerminalTaskStatus(record.Status) {
-		return fmt.Errorf("task %s is not active", id)
-	}
-	if dbErr := database.UpdateTaskRecord(context.WithoutCancel(ctx), id, map[string]any{
-		"status":      taskstatus.Cancelled.String(),
-		"finished_at": time.Now(),
-	}); dbErr != nil {
-		return dbErr
-	}
-	if q.Has(id) {
-		return q.CancelTask(id)
-	}
-	return nil
-}
-
-func isTerminalTaskStatus(status string) bool {
-	return taskstatus.Status(status).IsTerminal()
 }
 
 func GetLength(ctx context.Context) int {

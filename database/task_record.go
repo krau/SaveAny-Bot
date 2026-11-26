@@ -16,6 +16,33 @@ func UpdateTaskRecord(ctx context.Context, taskID string, fields map[string]any)
 	return db.WithContext(ctx).Model(&TaskRecord{}).Where("task_id = ?", taskID).Updates(fields).Error
 }
 
+func TransitionTaskRecord(ctx context.Context, taskID string, from []taskstatus.Status, fields map[string]any) (bool, error) {
+	result := db.WithContext(ctx).Model(&TaskRecord{}).
+		Where("task_id = ? AND status IN ?", taskID, from).Updates(fields)
+	return result.RowsAffected > 0, result.Error
+}
+
+// FinishTaskRecord commits the outcome and its items together; a concurrent
+// cancellation or deletion must not leave partial or orphaned results.
+func FinishTaskRecord(ctx context.Context, taskID string, from []taskstatus.Status, fields map[string]any, items []TaskItemRecord, metadata []TaskItemMetadata) (bool, error) {
+	var updated bool
+	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&TaskRecord{}).Where("task_id = ? AND status IN ?", taskID, from).Updates(fields)
+		if result.Error != nil || result.RowsAffected == 0 {
+			return result.Error
+		}
+		updated = true
+		if len(items) == 0 {
+			return nil
+		}
+		if err := replaceTaskItems(tx, taskID, items); err != nil {
+			return err
+		}
+		return replaceTaskItemMetadata(tx, taskID, metadata)
+	})
+	return updated && err == nil, err
+}
+
 func GetTaskRecord(ctx context.Context, taskID string) (*TaskRecord, error) {
 	var record TaskRecord
 	if err := db.WithContext(ctx).Where("task_id = ?", taskID).First(&record).Error; err != nil {
@@ -77,21 +104,14 @@ func DeleteTaskRecord(ctx context.Context, taskID string) error {
 	})
 }
 
-// ReplaceTaskItems stores the final outcome of every file in a task,
-// replacing any previous rows for the same task.
-func ReplaceTaskItems(ctx context.Context, taskID string, items []TaskItemRecord) error {
-	if len(items) == 0 {
-		return nil
+func replaceTaskItems(tx *gorm.DB, taskID string, items []TaskItemRecord) error {
+	if err := tx.Unscoped().Where("task_id = ?", taskID).Delete(&TaskItemRecord{}).Error; err != nil {
+		return err
 	}
-	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Unscoped().Where("task_id = ?", taskID).Delete(&TaskItemRecord{}).Error; err != nil {
-			return err
-		}
-		for i := range items {
-			items[i].TaskID = taskID
-		}
-		return tx.CreateInBatches(items, 100).Error
-	})
+	for i := range items {
+		items[i].TaskID = taskID
+	}
+	return tx.CreateInBatches(items, 100).Error
 }
 
 func CountFailedTaskItems(ctx context.Context, taskIDs []string) (map[string]int, error) {

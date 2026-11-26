@@ -24,6 +24,20 @@ type Webdav struct {
 	logger *log.Logger
 }
 
+const metadataResponseHeaderTimeout = 30 * time.Second
+
+func newHTTPClient(responseHeaderTimeout time.Duration) *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: responseHeaderTimeout,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConns:          100,
+		},
+	}
+}
+
 func (w *Webdav) Init(ctx context.Context, cfg config.StorageConfig) error {
 	webdavConfig, ok := cfg.(*config.WebdavStorageConfig)
 	if !ok {
@@ -34,15 +48,14 @@ func (w *Webdav) Init(ctx context.Context, cfg config.StorageConfig) error {
 	}
 	w.config = *webdavConfig
 	w.logger = log.FromContext(ctx).WithPrefix(fmt.Sprintf("webdav[%s]", w.config.Name))
-	w.client = NewClient(w.config.URL, w.config.Username, w.config.Password, &http.Client{
-		Transport: &http.Transport{
-			Proxy:                 http.ProxyFromEnvironment,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ResponseHeaderTimeout: 30 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
-			MaxIdleConns:          100,
-		},
-	})
+	uploadResponseHeaderTimeout := time.Duration(w.config.UploadResponseHeaderTimeout) * time.Second
+	w.client = NewClientWithUploadHTTPClient(
+		w.config.URL,
+		w.config.Username,
+		w.config.Password,
+		newHTTPClient(metadataResponseHeaderTimeout),
+		newHTTPClient(uploadResponseHeaderTimeout),
+	)
 	return nil
 }
 
