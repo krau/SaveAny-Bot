@@ -23,16 +23,17 @@ import (
 )
 
 type Alist struct {
-	client      *http.Client
-	tokenMu     sync.RWMutex
-	token       string
-	lastLoginAt time.Time
-	tokenFlight singleflight.Group
-	baseURL     string
-	loginInfo   *loginRequest
-	config      config.AlistStorageConfig
-	logger      *log.Logger
-	cancel      context.CancelFunc
+	client       *http.Client
+	uploadClient *http.Client
+	tokenMu      sync.RWMutex
+	token        string
+	lastLoginAt  time.Time
+	tokenFlight  singleflight.Group
+	baseURL      string
+	loginInfo    *loginRequest
+	config       config.AlistStorageConfig
+	logger       *log.Logger
+	cancel       context.CancelFunc
 }
 
 // authHeader returns the current token for use in API requests.
@@ -52,7 +53,8 @@ func (a *Alist) Init(ctx context.Context, cfg config.StorageConfig) error {
 	}
 	a.config = *alistConfig
 	a.baseURL = alistConfig.URL
-	a.client = getHttpClient()
+	a.client = getHTTPClient(metadataResponseHeaderTimeout)
+	a.uploadClient = getHTTPClient(time.Duration(alistConfig.UploadResponseHeaderTimeout) * time.Second)
 	a.logger = log.FromContext(ctx).WithPrefix(fmt.Sprintf("alist[%s]", alistConfig.Name))
 
 	if alistConfig.Token != "" {
@@ -208,7 +210,11 @@ func (a *Alist) putFile(ctx context.Context, reader io.Reader, storagePath strin
 		}
 	}
 
-	resp, err := a.client.Do(req)
+	uploadClient := a.uploadClient
+	if uploadClient == nil {
+		uploadClient = a.client
+	}
+	resp, err := uploadClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}

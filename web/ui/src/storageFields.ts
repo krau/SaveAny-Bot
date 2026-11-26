@@ -54,6 +54,12 @@ export const storageTypeDefs: StorageTypeDef[] = [
         placeholder: 'storages.fields.placeholders.basePath',
         required: true,
       },
+      {
+        name: 'upload_response_header_timeout',
+        label: 'storages.fields.uploadResponseHeaderTimeout',
+        kind: 'number',
+        hint: 'storages.fields.uploadResponseHeaderTimeoutHint',
+      },
     ],
   },
   {
@@ -81,6 +87,12 @@ export const storageTypeDefs: StorageTypeDef[] = [
         kind: 'text',
         placeholder: 'storages.fields.placeholders.basePath',
         required: true,
+      },
+      {
+        name: 'upload_response_header_timeout',
+        label: 'storages.fields.uploadResponseHeaderTimeout',
+        kind: 'number',
+        hint: 'storages.fields.uploadResponseHeaderTimeoutHint',
       },
       {
         name: 'token_exp',
