@@ -38,6 +38,7 @@ const createOpen = ref(false)
 const creating = ref(false)
 const uploadProgress = ref<UploadProgress | null>(null)
 let uploadAbort: AbortController | null = null
+let confirmingUploadDismissal = false
 const metadataOpen = ref(false)
 const metadataTaskId = ref('')
 const metadataData = ref<TaskMetadataResponse | null>(null)
@@ -121,7 +122,7 @@ async function create(payload: CreateTaskRequest) {
   try {
     await tasksApi.create(payload)
     toast.push(t('tasks.toast.created'), 'success')
-    closeCreate(false)
+    closeCreate()
     await load()
   } catch (err) {
     toast.push(errorMessage(err), 'error', 6000)
@@ -150,12 +151,12 @@ async function createUpload(payload: UploadTaskFormPayload) {
         webhook: payload.webhook,
       },
       (progress) => {
-        uploadProgress.value = progress
+        if (uploadAbort === controller) uploadProgress.value = progress
       },
       controller.signal,
     )
     toast.push(t('tasks.toast.uploaded'), 'success')
-    closeCreate(false)
+    closeCreate()
     await load()
   } catch (err) {
     if (!(err instanceof ApiError && err.code === 'upload_cancelled')) {
@@ -164,9 +165,9 @@ async function createUpload(payload: UploadTaskFormPayload) {
   } finally {
     if (uploadAbort === controller) {
       uploadAbort = null
+      uploadProgress.value = null
+      creating.value = false
     }
-    uploadProgress.value = null
-    creating.value = false
   }
 }
 
@@ -175,13 +176,26 @@ function openCreate() {
   createOpen.value = true
 }
 
-function closeCreate(abort = true) {
-  if (abort) {
-    uploadAbort?.abort()
-  }
-  uploadAbort = null
-  uploadProgress.value = null
+function closeCreate() {
   createOpen.value = false
+}
+
+async function dismissCreate() {
+  const controller = uploadAbort
+  if (controller) {
+    if (confirmingUploadDismissal) return
+    confirmingUploadDismissal = true
+    const confirmed = await confirm.ask({
+      title: t('tasks.confirm.discardUploadTitle'),
+      message: t('tasks.confirm.discardUploadMessage'),
+      confirmText: t('tasks.confirm.discardUploadConfirm'),
+      danger: true,
+    })
+    confirmingUploadDismissal = false
+    if (!confirmed || uploadAbort !== controller) return
+    controller.abort()
+  }
+  closeCreate()
 }
 
 async function cancel(taskId: string) {
@@ -329,7 +343,7 @@ async function remove(taskId: string) {
 
     <Teleport to="body">
       <Transition name="modal">
-        <div v-if="createOpen" class="modal-overlay" @click.self="closeCreate()">
+        <div v-if="createOpen" class="modal-overlay" @click.self="dismissCreate()">
           <div
             ref="taskModal"
             class="modal wide auto-height-modal"
@@ -339,7 +353,7 @@ async function remove(taskId: string) {
           >
             <div class="modal-head">
               <h3 id="create-task-title" class="modal-title">{{ t('tasks.createTitle') }}</h3>
-              <button class="btn ghost icon small" type="button" :aria-label="t('common.close')" @click="closeCreate()">
+              <button class="btn ghost icon small" type="button" :aria-label="t('common.close')" @click="dismissCreate()">
                 <AppIcon name="close" :size="17" />
               </button>
             </div>
@@ -349,7 +363,7 @@ async function remove(taskId: string) {
               :upload-progress="uploadProgress"
               @submit="create"
               @upload="createUpload"
-              @cancel="closeCreate()"
+              @cancel="dismissCreate()"
               @resize-start="startTaskModalResize"
               @resize-end="endTaskModalResize"
             />

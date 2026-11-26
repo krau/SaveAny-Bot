@@ -50,6 +50,7 @@ const { t } = useI18n()
 const fields = computed(() => taskTypeDefs.find((item) => item.type === type.value)?.fields ?? [])
 const isTransfer = computed(() => type.value === 'transfer')
 const isUpload = computed(() => type.value === 'upload')
+const showUploadProgress = computed(() => isUpload.value && !!(props.uploadProgress && props.busy))
 const typeOptions = computed(() => taskTypeDefs.map((item) => ({ value: item.type, label: t(item.label) })))
 const storageOptions = computed(() => [
   { value: '', label: t('tasks.form.storagePlaceholder') },
@@ -81,6 +82,11 @@ watch(
 
 watch(storage, () => {
   pathPickerOpen.value = false
+})
+
+watch(showUploadProgress, () => {
+  emit('resize-start')
+  void nextTick(() => emit('resize-end'))
 })
 
 watch(
@@ -372,7 +378,7 @@ function submit() {
           @change="selectUploadFile"
         />
         <span id="task-upload-file-hint" class="hint">{{ t('tasks.form.fileHint') }}</span>
-        <div v-if="props.uploadProgress && props.busy" class="upload-progress">
+        <div v-if="showUploadProgress && props.uploadProgress" class="upload-progress">
           <div class="progress" aria-hidden="true">
             <div class="progress-bar" :style="{ width: `${props.uploadProgress.percent}%` }"></div>
           </div>
