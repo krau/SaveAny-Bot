@@ -581,6 +581,7 @@ ln -s /etc/init.d/saveanybot /etc/rc.d/S99saveanybot
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>password = &amp;#34;your_password&amp;#34; # Alist 的密码
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>base_path = &amp;#34;/path/saveanybot&amp;#34; # Alist 中的基础路径, 所有文件将存储在此路径下
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>token_exp = 3600 # Alist 访问令牌的自动刷新时间, 单位秒
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>upload_response_header_timeout = 0 # 上传请求体发送完成后等待响应头的秒数, 0 表示不限制
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>token = &amp;#34;your_token&amp;#34; 
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span># Alist 的访问令牌, 可选, 如果不设置则使用用户名和密码进行身份验证. 
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span># 使用 token 验证时无法自动刷新 token
