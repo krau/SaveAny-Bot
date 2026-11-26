@@ -26,6 +26,7 @@
 - Multi-user support
 - Auto organize files based on storage rules
 - Watch specified chats and auto-save messages, with filters
+- Upload local files from the web console to any configured storage
 - Transfer files between different storage backends
 - Integrate with yt-dlp to download and save media from 1000+ websites
 - Aria2 integration to download files from URLs/magnets and save to storages

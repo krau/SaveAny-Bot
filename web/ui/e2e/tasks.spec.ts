@@ -40,3 +40,23 @@ test('creates a direct-links task from the UI', async ({ page }) => {
   await expect(row).toBeVisible()
   await expect(row).toContainText('Completed')
 })
+
+test('uploads a local file from the UI', async ({ page }) => {
+  await page.goto('/tasks')
+  const target = `ui-upload-${Date.now()}`
+
+  await page.getByRole('button', { name: 'Create task' }).first().click()
+  await page.locator('#task-type').click()
+  await page.getByRole('option', { name: 'Local upload' }).click()
+  await page.locator('#task-upload-file').setInputFiles({
+    name: 'browser-upload.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('SaveAny-Bot browser upload\n'),
+  })
+  await page.locator('#task-path').fill(target)
+  await page.getByRole('dialog').getByRole('button', { name: 'Create task' }).click()
+
+  const row = page.locator('.task-table tbody tr', { hasText: target })
+  await expect(row).toBeVisible()
+  await expect(row).toContainText('Completed')
+})

@@ -5,20 +5,106 @@ package e2e
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 )
 
 type taskInfo struct {
 	TaskID string `json:"task_id"`
+	Type   string `json:"type"`
 	Status string `json:"status"`
 	Items  []struct {
 		Name   string `json:"name"`
 		Path   string `json:"path"`
 		Status string `json:"status"`
 	} `json:"items"`
+}
+
+func TestUploadTask(t *testing.T) {
+	content := []byte("SaveAny-Bot web upload E2E\n")
+	client := sharedClient(t)
+	storageID := storageIDByName(t, client, "e2e-local")
+	query := url.Values{
+		"storage_id": {strconv.FormatUint(uint64(storageID), 10)},
+		"path":       {"e2e-upload"},
+		"filename":   {"../uploaded.txt"},
+	}
+	var created struct {
+		TaskID string `json:"task_id"`
+		Type   string `json:"type"`
+		Status string `json:"status"`
+	}
+	status := client.doRaw(
+		http.MethodPost,
+		"/api/v1/uploads?"+query.Encode(),
+		content,
+		"application/octet-stream",
+		true,
+		&created,
+	)
+	if status != http.StatusCreated || created.TaskID == "" || created.Type != "upload" {
+		t.Fatalf("create upload = %d %+v", status, created)
+	}
+
+	info := waitForTask(t, client, created.TaskID)
+	if info.Status != "completed" || info.Type != "upload" {
+		t.Fatalf("upload task = %+v", info)
+	}
+	got, err := os.ReadFile(filepath.Join(dataDir, "downloads", "e2e-upload", "uploaded.txt"))
+	if err != nil {
+		t.Fatalf("read uploaded file: %v", err)
+	}
+	if string(got) != string(content) {
+		t.Fatalf("uploaded content = %q, want %q", got, content)
+	}
+	if status := client.do(http.MethodDelete, "/api/v1/tasks/"+created.TaskID, nil, true, nil); status != http.StatusNoContent {
+		t.Fatalf("delete upload task = %d", status)
+	}
+}
+
+func TestUploadSizeLimit(t *testing.T) {
+	client := sharedClient(t)
+	storageID := storageIDByName(t, client, "e2e-local")
+
+	var settings map[string]map[string]any
+	if status := client.do(http.MethodGet, "/api/v1/settings", nil, false, &settings); status != http.StatusOK {
+		t.Fatalf("get settings = %d", status)
+	}
+	original, ok := settings["web"]["max_upload_size_mb"].(float64)
+	if !ok || original < 1 {
+		t.Fatalf("web.max_upload_size_mb = %#v", settings["web"]["max_upload_size_mb"])
+	}
+	defer func() {
+		client.do(http.MethodPut, "/api/v1/settings/web", map[string]any{
+			"max_upload_size_mb": original,
+		}, true, nil)
+	}()
+	if status := client.do(http.MethodPut, "/api/v1/settings/web", map[string]any{
+		"max_upload_size_mb": 1,
+	}, true, nil); status != http.StatusOK {
+		t.Fatalf("set upload limit = %d", status)
+	}
+
+	query := url.Values{
+		"storage_id": {strconv.FormatUint(uint64(storageID), 10)},
+		"path":       {"e2e-upload-limit"},
+		"filename":   {"too-large.bin"},
+	}
+	status := client.doRaw(
+		http.MethodPost,
+		"/api/v1/uploads?"+query.Encode(),
+		make([]byte, (1<<20)+1),
+		"application/octet-stream",
+		true,
+		nil,
+	)
+	if status != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized upload = %d, want 413", status)
+	}
 }
 
 func TestDirectLinksTask(t *testing.T) {

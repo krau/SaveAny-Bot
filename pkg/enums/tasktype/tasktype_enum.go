@@ -26,6 +26,8 @@ const (
 	TaskTypeYtdlp TaskType = "ytdlp"
 	// TaskTypeTransfer is a TaskType of type transfer.
 	TaskTypeTransfer TaskType = "transfer"
+	// TaskTypeUpload is a TaskType of type upload.
+	TaskTypeUpload TaskType = "upload"
 )
 
 var ErrInvalidTaskType = fmt.Errorf("not a valid TaskType, try [%s]", strings.Join(_TaskTypeNames, ", "))
@@ -38,6 +40,7 @@ var _TaskTypeNames = []string{
 	string(TaskTypeAria2),
 	string(TaskTypeYtdlp),
 	string(TaskTypeTransfer),
+	string(TaskTypeUpload),
 }
 
 // TaskTypeNames returns a list of possible string values of TaskType.
@@ -57,6 +60,7 @@ func TaskTypeValues() []TaskType {
 		TaskTypeAria2,
 		TaskTypeYtdlp,
 		TaskTypeTransfer,
+		TaskTypeUpload,
 	}
 }
 
@@ -80,6 +84,7 @@ var _TaskTypeValue = map[string]TaskType{
 	"aria2":       TaskTypeAria2,
 	"ytdlp":       TaskTypeYtdlp,
 	"transfer":    TaskTypeTransfer,
+	"upload":      TaskTypeUpload,
 }
 
 // ParseTaskType attempts to convert a string to a TaskType.

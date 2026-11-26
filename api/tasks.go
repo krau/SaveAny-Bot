@@ -8,8 +8,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
+	"github.com/krau/SaveAny-Bot/common/upload"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/retry"
 	"github.com/krau/SaveAny-Bot/database"
@@ -261,6 +263,11 @@ func (s *server) deleteTask(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
+	if record.Type == tasktype.TaskTypeUpload.String() {
+		if err := upload.RemoveStaging(taskID); err != nil {
+			log.Warnf("Failed to remove staging for task %s: %v", taskID, err)
+		}
+	}
 	DeleteTask(taskID)
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -274,6 +281,7 @@ func (s *server) taskTypes(w http.ResponseWriter, r *http.Request) {
 		tasktype.TaskTypeTgfiles,
 		tasktype.TaskTypeTphpics,
 		tasktype.TaskTypeTransfer,
+		tasktype.TaskTypeUpload,
 	}
 	out := make([]map[string]string, 0, len(types))
 	for _, t := range types {

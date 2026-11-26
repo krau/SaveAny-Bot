@@ -161,6 +161,7 @@ const taskTypeKeys: Record<string, string> = {
   tgfiles: 'taskTypes.tgfiles',
   tphpics: 'taskTypes.tphpics',
   transfer: 'taskTypes.transfer',
+  upload: 'taskTypes.upload',
 }
 
 export function taskTypeLabel(type: string): string {

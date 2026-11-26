@@ -21,6 +21,7 @@ import (
 	"github.com/krau/SaveAny-Bot/core/tasks/aria2dl"
 	"github.com/krau/SaveAny-Bot/core/tasks/batchtfile"
 	"github.com/krau/SaveAny-Bot/core/tasks/directlinks"
+	"github.com/krau/SaveAny-Bot/core/tasks/localupload"
 	"github.com/krau/SaveAny-Bot/core/tasks/parsed"
 	"github.com/krau/SaveAny-Bot/core/tasks/telegraph"
 	"github.com/krau/SaveAny-Bot/core/tasks/tfile"
@@ -272,6 +273,20 @@ func rebuild(ctx context.Context, record *database.TaskRecord) (core.Executable,
 			return nil, ctx, err
 		}
 		return transfer.NewTransferTask(record.TaskID, taskCtx, elems, nil, true), taskCtx, nil
+	case tasktype.TaskTypeUpload:
+		var spec taskspec.Upload
+		if err := json.Unmarshal([]byte(record.Params), &spec); err != nil {
+			return nil, ctx, fmt.Errorf("invalid parameters: %w", err)
+		}
+		targetStor, err := resolveStorage(ctx, spec.Storage, spec.StorageID)
+		if err != nil {
+			return nil, ctx, err
+		}
+		taskCtx, err := attachTelegramClient(ctx, targetStor)
+		if err != nil {
+			return nil, ctx, err
+		}
+		return localupload.NewTask(record.TaskID, spec.Name, spec.Size, targetStor, spec.Path, spec.Overwrite), taskCtx, nil
 	case tasktype.TaskTypeTgfiles:
 		return rebuildTG(ctx, record)
 	default:

@@ -266,6 +266,29 @@
   padding: 0 12px;
 }
 
+.field input[type='file'] {
+  height: auto;
+  padding: 8px 10px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.field input[type='file']::file-selector-button {
+  min-height: 28px;
+  margin-right: 10px;
+  padding: 0 11px;
+  color: var(--text);
+  background: var(--surface-muted);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.field input[type='file']:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .field textarea {
   min-height: 108px;
   padding: 10px 12px;
@@ -294,6 +317,13 @@
 .field.is-invalid .select-trigger {
   border-color: var(--danger);
   animation: field-shake 280ms linear;
+}
+
+.upload-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 @keyframes field-shake {

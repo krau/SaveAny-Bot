@@ -33,6 +33,7 @@ export const zhHans = {
     },
     toast: {
       created: '任务已创建',
+      uploaded: '上传任务已创建',
       retried: '已创建重试任务，仅包含失败的文件',
       metadataDownloaded: '元数据已下载',
     },
@@ -101,6 +102,10 @@ export const zhHans = {
       jsonObject: '{field} 必须是 JSON 对象',
       notNumber: '{field} 必须为数字',
       storageRequired: '请选择存储',
+      file: '文件',
+      fileHint: '文件会先上传到服务器，再写入目标存储',
+      fileRequired: '请选择要上传的文件',
+      uploadingServer: '正在上传到服务器',
       pathOutsideStorage: '所选目录不在该存储中',
       tgfilesSourceRequired: '请填写消息链接，或填写聊天 ID 和消息范围',
     },
@@ -112,6 +117,7 @@ export const zhHans = {
       tgfiles: 'Telegram 文件',
       tphpics: 'Telegraph 图集',
       transfer: '存储迁移',
+      upload: '本地上传',
     },
     fields: {
       directlinks: {
@@ -214,6 +220,7 @@ export const en = {
     },
     toast: {
       created: 'Task created',
+      uploaded: 'Upload task created',
       retried: 'Retry task created for the failed files',
       metadataDownloaded: 'Metadata downloaded',
     },
@@ -282,6 +289,10 @@ export const en = {
       jsonObject: '{field} must be a JSON object',
       notNumber: '{field} must be a number',
       storageRequired: 'Select storage',
+      file: 'File',
+      fileHint: 'The file is uploaded to the server first, then written to the target storage',
+      fileRequired: 'Select a file to upload',
+      uploadingServer: 'Uploading to server',
       pathOutsideStorage: 'The selected folder is outside this storage.',
       tgfilesSourceRequired: 'Enter message links, or a chat ID and message range',
     },
@@ -293,6 +304,7 @@ export const en = {
       tgfiles: 'Telegram files',
       tphpics: 'Telegraph gallery',
       transfer: 'Storage transfer',
+      upload: 'Local upload',
     },
     fields: {
       directlinks: {

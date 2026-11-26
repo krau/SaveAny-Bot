@@ -160,6 +160,11 @@ export const taskTypeDefs: TaskTypeDef[] = [
       },
     ],
   },
+  {
+    type: 'upload',
+    label: 'tasks.types.upload',
+    fields: [],
+  },
 ]
 
 export function taskTypeDef(type: string): TaskTypeDef | undefined {

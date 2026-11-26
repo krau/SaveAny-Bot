@@ -4,19 +4,28 @@ import { useI18n } from 'vue-i18n'
 import { errorMessage, filesystemApi } from '../api'
 import { useFormFeedback } from '../composables/useFormFeedback'
 import { taskTypeDefs } from '../taskFields'
+import { formatBytes } from '../utils'
 import AppIcon from './AppIcon.vue'
 import AppSelect from './AppSelect.vue'
 import LoadingButton from './LoadingButton.vue'
 import ServerPathPicker from './ServerPathPicker.vue'
-import type { CreateTaskRequest, JsonObject, StorageRecord } from '../types'
+import type {
+  CreateTaskRequest,
+  JsonObject,
+  StorageRecord,
+  UploadProgress,
+  UploadTaskFormPayload,
+} from '../types'
 
 const props = defineProps<{
   storages: StorageRecord[]
   busy?: boolean
+  uploadProgress?: UploadProgress | null
 }>()
 
 const emit = defineEmits<{
   submit: [payload: CreateTaskRequest]
+  upload: [payload: UploadTaskFormPayload]
   cancel: []
   'resize-start': []
   'resize-end': []
@@ -26,6 +35,8 @@ const type = ref(taskTypeDefs[0].type)
 const storage = ref('')
 const path = ref('')
 const webhook = ref('')
+const uploadFile = ref<File | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 const body = ref<HTMLElement | null>(null)
 const values = reactive<Record<string, string>>({})
 const boolValues = reactive<Record<string, boolean>>({})
@@ -38,6 +49,7 @@ const { t } = useI18n()
 
 const fields = computed(() => taskTypeDefs.find((item) => item.type === type.value)?.fields ?? [])
 const isTransfer = computed(() => type.value === 'transfer')
+const isUpload = computed(() => type.value === 'upload')
 const typeOptions = computed(() => taskTypeDefs.map((item) => ({ value: item.type, label: t(item.label) })))
 const storageOptions = computed(() => [
   { value: '', label: t('tasks.form.storagePlaceholder') },
@@ -87,6 +99,10 @@ watch(
       } else {
         values[field.name] = ''
       }
+    }
+    uploadFile.value = null
+    if (fileInput.value) {
+      fileInput.value.value = ''
     }
     void nextTick(() => body.value?.scrollTo({ top: 0 }))
   },
@@ -213,9 +229,38 @@ function selectTaskPath(selected: string) {
   pathPickerOpen.value = false
 }
 
+function selectUploadFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  uploadFile.value = input.files?.[0] ?? null
+  clear('task-upload-file')
+}
+
 function submit() {
   clear()
   try {
+    const baseStorageID = Number(storage.value)
+    const basePath = path.value.trim()
+    if (isUpload.value) {
+      if (!baseStorageID) {
+        invalidField.value = 'task-storage'
+        throw new Error(t('tasks.form.storageRequired'))
+      }
+      if (!uploadFile.value) {
+        invalidField.value = 'task-upload-file'
+        throw new Error(t('tasks.form.fileRequired'))
+      }
+      const payload: UploadTaskFormPayload = {
+        file: uploadFile.value,
+        storage_id: baseStorageID,
+        path: basePath,
+      }
+      if (webhook.value.trim()) {
+        payload.webhook = webhook.value.trim()
+      }
+      emit('upload', payload)
+      return
+    }
+
     const params = buildParams()
     if (type.value === 'tgfiles') {
       const links = (values.message_links ?? '').trim()
@@ -226,22 +271,22 @@ function submit() {
         throw new Error(t('tasks.form.tgfilesSourceRequired'))
       }
     }
-    let targetStorageID = Number(storage.value)
-    let targetPath = path.value.trim()
+    let resolvedStorageID = baseStorageID
+    let resolvedPath = basePath
     if (isTransfer.value) {
       const target = params.target_storage_id
-      targetStorageID = typeof target === 'number' ? target : 0
+      resolvedStorageID = typeof target === 'number' ? target : 0
       const transferPath = params.target_path
-      targetPath = typeof transferPath === 'string' ? transferPath : ''
+      resolvedPath = typeof transferPath === 'string' ? transferPath : ''
     }
-    if (!targetStorageID) {
+    if (!resolvedStorageID) {
       invalidField.value = isTransfer.value ? 'task-field-target_storage_id' : 'task-storage'
       throw new Error(t('tasks.form.storageRequired'))
     }
     const payload: CreateTaskRequest = {
       type: type.value,
-      storage_id: targetStorageID,
-      path: targetPath,
+      storage_id: resolvedStorageID,
+      path: resolvedPath,
       params,
     }
     if (webhook.value.trim()) {
@@ -264,6 +309,7 @@ function submit() {
             id="task-type"
             :model-value="type"
             :options="typeOptions"
+            :disabled="props.busy"
             @update:model-value="changeType"
           />
         </div>
@@ -273,17 +319,24 @@ function submit() {
             id="task-storage"
             v-model="storage"
             :options="storageOptions"
+            :disabled="props.busy"
             @update:model-value="clear('task-storage')"
           />
         </div>
         <div v-if="!isTransfer" class="field">
           <label for="task-path">{{ t('tasks.form.targetPath') }}</label>
           <div class="path-input-row">
-            <input id="task-path" v-model="path" :placeholder="t('tasks.form.targetPathPlaceholder')" />
+            <input
+              id="task-path"
+              v-model="path"
+              :placeholder="t('tasks.form.targetPathPlaceholder')"
+              :disabled="props.busy"
+            />
             <LoadingButton
               v-if="localStorageRoot"
               class="small"
               :loading="pathPickerLoading"
+              :disabled="props.busy"
               @click="openTaskPathPicker"
             >
               <AppIcon name="folder" :size="14" />
@@ -293,7 +346,43 @@ function submit() {
         </div>
         <div class="field">
           <label for="task-webhook">{{ t('tasks.form.webhook') }}</label>
-          <input id="task-webhook" v-model="webhook" :placeholder="t('tasks.form.webhookPlaceholder')" />
+          <input
+            id="task-webhook"
+            v-model="webhook"
+            :placeholder="t('tasks.form.webhookPlaceholder')"
+            :disabled="props.busy"
+          />
+        </div>
+      </div>
+
+      <div
+        v-if="isUpload"
+        class="field"
+        :class="{ 'is-invalid': invalidField === 'task-upload-file' }"
+      >
+        <label for="task-upload-file">{{ t('tasks.form.file') }} *</label>
+        <input
+          id="task-upload-file"
+          ref="fileInput"
+          class="file-input"
+          type="file"
+          :disabled="props.busy"
+          aria-describedby="task-upload-file-hint"
+          :aria-invalid="invalidField === 'task-upload-file' ? 'true' : undefined"
+          @change="selectUploadFile"
+        />
+        <span id="task-upload-file-hint" class="hint">{{ t('tasks.form.fileHint') }}</span>
+        <div v-if="props.uploadProgress && props.busy" class="upload-progress">
+          <div class="progress" aria-hidden="true">
+            <div class="progress-bar" :style="{ width: `${props.uploadProgress.percent}%` }"></div>
+          </div>
+          <span class="hint" role="status" aria-live="polite">
+            {{ t('tasks.form.uploadingServer') }}
+            {{ props.uploadProgress.percent.toFixed(0) }}%
+            <template v-if="props.uploadProgress.total > 0">
+              · {{ formatBytes(props.uploadProgress.loaded) }} / {{ formatBytes(props.uploadProgress.total) }}
+            </template>
+          </span>
         </div>
       </div>
 

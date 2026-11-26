@@ -22,6 +22,8 @@ import type {
   TaskTypeInfo,
   TelegramStatus,
   UpdateInfo,
+  UploadProgress,
+  UploadTaskRequest,
   UserDir,
   UserItem,
   UserPatch,
@@ -108,18 +110,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (!response.ok) {
-    let payload: ApiErrorBody = {}
-    try {
-      payload = (await response.json()) as ApiErrorBody
-    } catch {
-      payload = {}
-    }
-    throw new ApiError(
-      response.status,
-      payload.error ?? 'http_error',
-      payload.message ?? translate('errors.requestFailed', { status: response.status }),
-      payload.fields ?? {},
-    )
+    throw apiErrorFromResponse(response.status, await response.text())
   }
 
   if (response.status === 204) {
@@ -130,6 +121,21 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     return undefined as T
   }
   return JSON.parse(text) as T
+}
+
+function apiErrorFromResponse(status: number, raw: string): ApiError {
+  let payload: ApiErrorBody = {}
+  try {
+    payload = JSON.parse(raw) as ApiErrorBody
+  } catch {
+    payload = {}
+  }
+  return new ApiError(
+    status,
+    payload.error ?? 'http_error',
+    payload.message ?? translate('errors.requestFailed', { status }),
+    payload.fields ?? {},
+  )
 }
 
 function query(params: Record<string, string | number | undefined | null>): string {
@@ -384,6 +390,89 @@ export const tasksApi = {
   async types(): Promise<TaskTypeInfo[]> {
     const data = await request<{ types: TaskTypeInfo[] }>('/task-types')
     return data.types ?? []
+  },
+}
+
+export const uploadsApi = {
+  upload(
+    file: File,
+    input: UploadTaskRequest,
+    onProgress?: (progress: UploadProgress) => void,
+    signal?: AbortSignal,
+  ): Promise<TaskCreated> {
+    return new Promise<TaskCreated>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      let settled = false
+      const cleanup = () => {
+        signal?.removeEventListener('abort', abort)
+      }
+      const fail = (error: ApiError) => {
+        if (settled) return
+        settled = true
+        cleanup()
+        reject(error)
+      }
+      const abort = () => xhr.abort()
+
+      xhr.open(
+        'POST',
+        `/api/v1/uploads${query({
+          storage_id: input.storage_id,
+          path: input.path,
+          filename: input.filename,
+          overwrite: input.overwrite ? 'true' : undefined,
+        })}`,
+      )
+      xhr.setRequestHeader('Accept', 'application/json')
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+      const csrf = csrfProvider()
+      if (csrf) {
+        xhr.setRequestHeader('X-CSRF-Token', csrf)
+      }
+      if (input.webhook) {
+        xhr.setRequestHeader('X-Webhook-URL', input.webhook)
+      }
+      xhr.upload.onprogress = (event) => {
+        if (!onProgress) return
+        const total = event.lengthComputable ? event.total : file.size
+        const loaded = total > 0 ? Math.min(event.loaded, total) : event.loaded
+        onProgress({
+          loaded,
+          total,
+          percent: total > 0 ? Math.min(100, (loaded * 100) / total) : 0,
+        })
+      }
+      xhr.onload = () => {
+        if (settled) return
+        if (xhr.status === 401) {
+          unauthorizedHandler()
+        }
+        if (xhr.status < 200 || xhr.status >= 300) {
+          fail(apiErrorFromResponse(xhr.status, xhr.responseText))
+          return
+        }
+        try {
+          const created = JSON.parse(xhr.responseText) as TaskCreated
+          settled = true
+          cleanup()
+          resolve(created)
+        } catch {
+          fail(new ApiError(xhr.status, 'invalid_response', translate('errors.invalidResponse')))
+        }
+      }
+      xhr.onerror = () => {
+        fail(new ApiError(0, 'network_error', translate('errors.network')))
+      }
+      xhr.onabort = () => {
+        fail(new ApiError(0, 'upload_cancelled', translate('errors.uploadCancelled')))
+      }
+      signal?.addEventListener('abort', abort, { once: true })
+      if (signal?.aborted) {
+        abort()
+        return
+      }
+      xhr.send(file)
+    })
   },
 }
 

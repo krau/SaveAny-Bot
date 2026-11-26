@@ -67,6 +67,27 @@ export interface CreateTaskRequest {
   params: JsonObject
 }
 
+export interface UploadTaskRequest {
+  storage_id: number
+  path: string
+  filename: string
+  webhook?: string
+  overwrite?: boolean
+}
+
+export interface UploadTaskFormPayload {
+  file: File
+  storage_id: number
+  path: string
+  webhook?: string
+}
+
+export interface UploadProgress {
+  loaded: number
+  total: number
+  percent: number
+}
+
 export interface TaskCreated {
   task_id: string
   type: string

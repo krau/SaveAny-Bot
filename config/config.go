@@ -62,16 +62,18 @@ type mediaConfig struct {
 }
 
 type webConfig struct {
-	Enable       bool   `toml:"enable" mapstructure:"enable" json:"enable"`
-	Listen       string `toml:"listen" mapstructure:"listen" json:"listen"`
-	APIToken     string `toml:"api_token" mapstructure:"api_token" json:"api_token"`
-	SecureCookie bool   `toml:"secure_cookie" mapstructure:"secure_cookie" json:"secure_cookie"`
+	Enable          bool   `toml:"enable" mapstructure:"enable" json:"enable"`
+	Listen          string `toml:"listen" mapstructure:"listen" json:"listen"`
+	APIToken        string `toml:"api_token" mapstructure:"api_token" json:"api_token"`
+	SecureCookie    bool   `toml:"secure_cookie" mapstructure:"secure_cookie" json:"secure_cookie"`
+	MaxUploadSizeMB int64  `toml:"max_upload_size_mb" mapstructure:"max_upload_size_mb" json:"max_upload_size_mb"`
 }
 
 const (
 	defaultBotSessionFile     = "bot_session.db"
 	defaultUserbotSessionFile = "userbot_session.db"
 	defaultWebListen          = "127.0.0.1:28080"
+	DefaultMaxUploadSizeMB    = int64(4096)
 )
 
 var current atomic.Pointer[Config]
@@ -142,10 +144,11 @@ func DefaultsMap(dataDir string) map[string]any {
 
 		"db.session": DefaultBotSessionPath(dataDir),
 
-		"web.enable":        true,
-		"web.listen":        defaultWebListen,
-		"web.api_token":     "",
-		"web.secure_cookie": false,
+		"web.enable":             true,
+		"web.listen":             defaultWebListen,
+		"web.api_token":          "",
+		"web.secure_cookie":      false,
+		"web.max_upload_size_mb": DefaultMaxUploadSizeMB,
 
 		"ytdlp.recode":             "mp4",
 		"ytdlp.path":               "",
@@ -193,8 +196,9 @@ func Default(dataDir string) Config {
 			FilenameTemplate: DefaultYtdlpFilenameTemplate,
 		},
 		Web: webConfig{
-			Enable: true,
-			Listen: defaultWebListen,
+			Enable:          true,
+			Listen:          defaultWebListen,
+			MaxUploadSizeMB: DefaultMaxUploadSizeMB,
 		},
 		Metadata: metadataConfig{IncludeText: true},
 		Media:    mediaConfig{},

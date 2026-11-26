@@ -1,6 +1,6 @@
-// Package upload provides the shared local-file upload path used by the CLI
-// commands. It keeps retries, cancellation, and confirmed progress consistent
-// across one-shot and watch uploads.
+// Package upload provides the shared local-file upload path used by the CLI,
+// watcher, and web upload task. It keeps retries, cancellation, and confirmed
+// progress consistent across callers.
 package upload
 
 import (

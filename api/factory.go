@@ -17,6 +17,7 @@ import (
 	"github.com/krau/SaveAny-Bot/core/tasks/aria2dl"
 	"github.com/krau/SaveAny-Bot/core/tasks/batchtfile"
 	"github.com/krau/SaveAny-Bot/core/tasks/directlinks"
+	"github.com/krau/SaveAny-Bot/core/tasks/localupload"
 	"github.com/krau/SaveAny-Bot/core/tasks/parsed"
 	tphtask "github.com/krau/SaveAny-Bot/core/tasks/telegraph"
 	"github.com/krau/SaveAny-Bot/core/tasks/tfile"
@@ -41,6 +42,47 @@ type TaskFactory struct {
 
 func NewTaskFactory(ctx context.Context) *TaskFactory {
 	return &TaskFactory{ctx: ctx}
+}
+
+// ResolveUploadTarget validates a web-upload destination before the request
+// body is consumed.
+func (f *TaskFactory) ResolveUploadTarget(storageID uint) (storage.Storage, error) {
+	if storageID == 0 {
+		return nil, errors.New("storage_id is required")
+	}
+	target, err := storage.GetStorageByID(f.ctx, storageID)
+	if err != nil {
+		return nil, fmt.Errorf("storage_id %d not found: %w", storageID, err)
+	}
+	if target.Type() == storenum.Telegram && bot.ExtContext() == nil && userclient.GetCtx() == nil {
+		return nil, ErrClientUnavailable
+	}
+	return target, nil
+}
+
+func (f *TaskFactory) CreateUploadTask(
+	taskID string,
+	createdAt time.Time,
+	target storage.Storage,
+	filename string,
+	targetPath string,
+	size int64,
+	overwrite bool,
+	webhook string,
+) (*CreateTaskResponse, error) {
+	task := localupload.NewTask(taskID, filename, size, target, targetPath, overwrite)
+	storagePath := path.Join(targetPath, filename)
+	if err := f.registerAndEnqueueTask(task, tasktype.TaskTypeUpload, target.Name(), storagePath, webhook); err != nil {
+		return nil, err
+	}
+	return &CreateTaskResponse{
+		TaskID:      taskID,
+		Type:        tasktype.TaskTypeUpload,
+		Status:      TaskStatusQueued,
+		StorageID:   storage.ID(target),
+		StorageName: target.Name(),
+		CreatedAt:   createdAt,
+	}, nil
 }
 
 func (f *TaskFactory) CreateTask(req *CreateTaskRequest) (*CreateTaskResponse, error) {
