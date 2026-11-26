@@ -76,10 +76,11 @@ type Transfer struct {
 
 // Upload describes one browser-uploaded file staged on the server.
 type Upload struct {
-	Name      string `json:"name"`
-	Size      int64  `json:"size"`
-	Storage   string `json:"storage"`
-	StorageID uint   `json:"storage_id,omitempty"`
-	Path      string `json:"path"`
-	Overwrite bool   `json:"overwrite,omitempty"`
+	Name        string `json:"name"`
+	Size        int64  `json:"size"`
+	Storage     string `json:"storage"`
+	StorageID   uint   `json:"storage_id,omitempty"`
+	Path        string `json:"path"`
+	Overwrite   bool   `json:"overwrite,omitempty"`
+	StagingRoot string `json:"staging_root,omitempty"`
 }

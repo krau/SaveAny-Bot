@@ -6,21 +6,17 @@ import (
 	"gorm.io/gorm"
 )
 
-// ReplaceTaskItemMetadata stores normalized metadata for a task, replacing any
-// rows left by an earlier execution of the same task.
-func ReplaceTaskItemMetadata(ctx context.Context, taskID string, records []TaskItemMetadata) error {
-	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Unscoped().Where("task_id = ?", taskID).Delete(&TaskItemMetadata{}).Error; err != nil {
-			return err
-		}
-		if len(records) == 0 {
-			return nil
-		}
-		for i := range records {
-			records[i].TaskID = taskID
-		}
-		return tx.CreateInBatches(records, 100).Error
-	})
+func replaceTaskItemMetadata(tx *gorm.DB, taskID string, records []TaskItemMetadata) error {
+	if err := tx.Unscoped().Where("task_id = ?", taskID).Delete(&TaskItemMetadata{}).Error; err != nil {
+		return err
+	}
+	if len(records) == 0 {
+		return nil
+	}
+	for i := range records {
+		records[i].TaskID = taskID
+	}
+	return tx.CreateInBatches(records, 100).Error
 }
 
 func ListTaskItemMetadata(ctx context.Context, taskID string) ([]TaskItemMetadata, error) {

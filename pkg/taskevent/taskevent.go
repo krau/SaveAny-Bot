@@ -40,6 +40,7 @@ type Event struct {
 	DownloadedBytes int64
 	TotalFiles      int
 	DownloadedFiles int
+	Path            string
 	Err             error
 	// Partial marks a successful run where some files failed.
 	Partial bool

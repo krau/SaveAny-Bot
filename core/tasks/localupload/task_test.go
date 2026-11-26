@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"os"
 	"path"
@@ -20,15 +19,16 @@ import (
 	"github.com/krau/SaveAny-Bot/pkg/taskspec"
 )
 
-func TestExecuteUploadsAndRemovesStaging(t *testing.T) {
-	stageTask(t, "upload-task", []byte("payload"))
+func TestExecuteUsesOriginalStagingRoot(t *testing.T) {
+	root, payload := stageTask(t, "upload-task", []byte("payload"))
+	setUploadTestConfig(t)
 
 	target := &memoryStorage{name: "target"}
 	var events []taskevent.Event
 	ctx := taskevent.WithSink(context.Background(), taskevent.SinkFunc(func(event taskevent.Event) {
 		events = append(events, event)
 	}))
-	task := NewTask("upload-task", "movie.mkv", 7, target, "movies", false)
+	task := NewTask("upload-task", root, "movie.mkv", 7, target, "movies", false)
 	if err := task.Execute(ctx); err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
@@ -38,12 +38,8 @@ func TestExecuteUploadsAndRemovesStaging(t *testing.T) {
 	if !bytes.Equal(target.data, []byte("payload")) {
 		t.Fatalf("target data = %q", target.data)
 	}
-	payload, err := upload.StagingPayloadPath("upload-task")
-	if err != nil {
-		t.Fatalf("StagingPayloadPath: %v", err)
-	}
-	if _, err := os.Stat(payload); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("staged payload still exists: %v", err)
+	if _, err := os.Stat(payload); err != nil {
+		t.Fatalf("staged payload removed before completion was persisted: %v", err)
 	}
 	if len(events) == 0 {
 		t.Fatal("no progress events emitted")
@@ -56,7 +52,7 @@ func TestExecuteUploadsAndRemovesStaging(t *testing.T) {
 
 func TestExecuteFailsWhenStagingIsMissing(t *testing.T) {
 	setUploadTestConfig(t)
-	task := NewTask("missing-task", "missing.txt", 1, &memoryStorage{name: "target"}, "", false)
+	task := NewTask("missing-task", "", "missing.txt", 1, &memoryStorage{name: "target"}, "", false)
 	if err := task.Execute(context.Background()); err == nil {
 		t.Fatal("Execute succeeded without staged payload")
 	}
@@ -67,22 +63,18 @@ func TestExecuteFailsWhenStagingIsMissing(t *testing.T) {
 }
 
 func TestExecuteRejectsSizeMismatch(t *testing.T) {
-	stageTask(t, "size-task", []byte("payload"))
-	task := NewTask("size-task", "file.bin", 99, &memoryStorage{name: "target"}, "", false)
+	root, payload := stageTask(t, "size-task", []byte("payload"))
+	task := NewTask("size-task", root, "file.bin", 99, &memoryStorage{name: "target"}, "", false)
 	if err := task.Execute(context.Background()); err == nil {
 		t.Fatal("Execute accepted a size mismatch")
 	}
-	payload, err := upload.StagingPayloadPath("size-task")
-	if err != nil {
-		t.Fatalf("StagingPayloadPath: %v", err)
-	}
-	if _, err := os.Stat(payload); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("failed staged payload still exists: %v", err)
+	if _, err := os.Stat(payload); err != nil {
+		t.Fatalf("staged payload removed before failure was persisted: %v", err)
 	}
 }
 
 func TestTaskParams(t *testing.T) {
-	task := NewTask("params-task", "file.txt", 42, &memoryStorage{name: "target"}, "archive", true)
+	task := NewTask("params-task", "staging-root", "file.txt", 42, &memoryStorage{name: "target"}, "archive", true)
 	raw, err := task.TaskParams()
 	if err != nil {
 		t.Fatalf("TaskParams: %v", err)
@@ -91,15 +83,19 @@ func TestTaskParams(t *testing.T) {
 	if err := json.Unmarshal(raw, &spec); err != nil {
 		t.Fatalf("decode task params: %v", err)
 	}
-	if spec.Name != "file.txt" || spec.Size != 42 || spec.Storage != "target" || spec.Path != "archive" || !spec.Overwrite {
+	if spec.Name != "file.txt" || spec.Size != 42 || spec.Storage != "target" || spec.Path != "archive" || !spec.Overwrite || spec.StagingRoot != "staging-root" {
 		t.Fatalf("task params = %+v", spec)
 	}
 }
 
-func stageTask(t *testing.T, taskID string, data []byte) {
+func stageTask(t *testing.T, taskID string, data []byte) (string, string) {
 	t.Helper()
 	setUploadTestConfig(t)
-	payload, err := upload.StagingPayloadPath(taskID)
+	root, err := upload.StagingRoot()
+	if err != nil {
+		t.Fatalf("StagingRoot: %v", err)
+	}
+	payload, err := upload.StagingPayloadPath(root, taskID)
 	if err != nil {
 		t.Fatalf("StagingPayloadPath: %v", err)
 	}
@@ -109,6 +105,7 @@ func stageTask(t *testing.T, taskID string, data []byte) {
 	if err := os.WriteFile(payload, data, 0o600); err != nil {
 		t.Fatalf("write staging payload: %v", err)
 	}
+	return root, payload
 }
 
 func setUploadTestConfig(t *testing.T) {

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -20,19 +22,14 @@ import (
 	"github.com/rs/xid"
 )
 
-const bytesPerMB = int64(1 << 20)
+const (
+	bytesPerMB            = int64(1 << 20)
+	uploadReadIdleTimeout = 30 * time.Second
+)
 
 var errIncompleteUpload = errors.New("upload body ended before Content-Length")
 
 func (s *server) createUpload(w http.ResponseWriter, r *http.Request) {
-	controller := http.NewResponseController(w)
-	if err := controller.SetReadDeadline(time.Time{}); err != nil {
-		log.Warnf("Failed to clear upload read deadline: %v", err)
-	}
-	if err := controller.SetWriteDeadline(time.Time{}); err != nil {
-		log.Warnf("Failed to clear upload write deadline: %v", err)
-	}
-
 	storageID, err := strconv.ParseUint(strings.TrimSpace(r.URL.Query().Get("storage_id")), 10, 64)
 	if err != nil || storageID == 0 {
 		WriteError(w, http.StatusBadRequest, "invalid_request", "storage_id is required")
@@ -87,40 +84,53 @@ func (s *server) createUpload(w http.ResponseWriter, r *http.Request) {
 
 	taskID := xid.New().String()
 	createdAt := time.Now()
-	stagingDir, err := upload.StagingDir(taskID)
+	stagingRoot, err := upload.StagingRoot()
 	if err != nil {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	payloadPath, err := upload.StagingPayloadPath(taskID)
+	payloadPath, err := upload.StagingPayloadPath(stagingRoot, taskID)
 	if err != nil {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	if err := os.MkdirAll(stagingDir, 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(payloadPath), 0o700); err != nil {
 		writeUploadStorageError(w, err)
 		return
 	}
 	keepStaging := false
 	defer func() {
 		if !keepStaging {
-			if err := upload.RemoveStaging(taskID); err != nil {
+			if err := upload.RemoveStaging(stagingRoot, taskID); err != nil {
 				log.Warnf("Failed to clean staged upload %s: %v", taskID, err)
 			}
 		}
 	}()
 
-	size, err := receiveUpload(w, r, payloadPath, maxBytes)
+	controller := http.NewResponseController(w)
+	if err := controller.SetWriteDeadline(time.Time{}); err != nil {
+		log.Warnf("Failed to clear upload write deadline: %v", err)
+	}
+	size, err := receiveUpload(w, r, payloadPath, maxBytes, uploadReadIdleTimeout)
+	if err := controller.SetWriteDeadline(time.Now().Add(30 * time.Second)); err != nil {
+		log.Warnf("Failed to set upload response deadline: %v", err)
+	}
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			return
 		}
+		if r.ProtoMajor == 1 {
+			w.Header().Set("Connection", "close")
+		}
 		var maxErr *http.MaxBytesError
+		var netErr net.Error
 		switch {
 		case errors.As(err, &maxErr):
 			WriteError(w, http.StatusRequestEntityTooLarge, "upload_too_large", fmt.Sprintf("upload exceeds %d MB", maxSizeMB))
 		case errors.Is(err, errIncompleteUpload):
 			WriteError(w, http.StatusBadRequest, "incomplete_upload", err.Error())
+		case errors.As(err, &netErr) && netErr.Timeout():
+			WriteError(w, http.StatusRequestTimeout, "upload_timeout", "upload stalled while waiting for data")
 		case errors.Is(err, syscall.ENOSPC):
 			WriteError(w, http.StatusInsufficientStorage, "insufficient_storage", "not enough disk space for upload")
 		default:
@@ -133,6 +143,7 @@ func (s *server) createUpload(w http.ResponseWriter, r *http.Request) {
 	resp, err := s.factory.CreateUploadTask(
 		taskID,
 		createdAt,
+		stagingRoot,
 		target,
 		filename,
 		targetPath,
@@ -148,32 +159,44 @@ func (s *server) createUpload(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusCreated, resp)
 }
 
-func receiveUpload(w http.ResponseWriter, r *http.Request, payloadPath string, maxBytes int64) (int64, error) {
+type uploadIdleReader struct {
+	body       io.Reader
+	controller *http.ResponseController
+	timeout    time.Duration
+}
+
+func (r uploadIdleReader) Read(p []byte) (int, error) {
+	if err := r.controller.SetReadDeadline(time.Now().Add(r.timeout)); err != nil {
+		return 0, err
+	}
+	return r.body.Read(p)
+}
+
+func receiveUpload(w http.ResponseWriter, r *http.Request, payloadPath string, maxBytes int64, idleTimeout time.Duration) (int64, error) {
 	partPath := payloadPath + ".part"
 	file, err := os.OpenFile(partPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return 0, err
 	}
-	closeWithError := func() error {
-		if err := file.Sync(); err != nil {
-			return errors.Join(err, file.Close())
-		}
-		return file.Close()
-	}
-
-	size, copyErr := io.Copy(file, http.MaxBytesReader(w, r.Body, maxBytes))
-	closeErr := closeWithError()
+	size, copyErr := io.Copy(file, uploadIdleReader{
+		body:       http.MaxBytesReader(w, r.Body, maxBytes),
+		controller: http.NewResponseController(w),
+		timeout:    idleTimeout,
+	})
 	if copyErr != nil {
 		if errors.Is(copyErr, io.ErrUnexpectedEOF) {
 			copyErr = errIncompleteUpload
 		}
-		return 0, errors.Join(copyErr, closeErr)
+		return 0, errors.Join(copyErr, file.Close())
 	}
-	if closeErr != nil {
-		return 0, closeErr
+	if err := errors.Join(file.Sync(), file.Close()); err != nil {
+		return 0, err
 	}
-	if (size == 0 && r.ContentLength > 0) || (r.ContentLength >= 0 && size != r.ContentLength) {
+	if r.ContentLength >= 0 && size != r.ContentLength {
 		return 0, fmt.Errorf("%w: received %d of %d bytes", errIncompleteUpload, size, r.ContentLength)
+	}
+	if err := r.Context().Err(); err != nil {
+		return 0, err
 	}
 	if err := os.Rename(partPath, payloadPath); err != nil {
 		return 0, err

@@ -63,6 +63,7 @@ func (f *TaskFactory) ResolveUploadTarget(storageID uint) (storage.Storage, erro
 func (f *TaskFactory) CreateUploadTask(
 	taskID string,
 	createdAt time.Time,
+	stagingRoot string,
 	target storage.Storage,
 	filename string,
 	targetPath string,
@@ -70,7 +71,7 @@ func (f *TaskFactory) CreateUploadTask(
 	overwrite bool,
 	webhook string,
 ) (*CreateTaskResponse, error) {
-	task := localupload.NewTask(taskID, filename, size, target, targetPath, overwrite)
+	task := localupload.NewTask(taskID, stagingRoot, filename, size, target, targetPath, overwrite)
 	storagePath := path.Join(targetPath, filename)
 	if err := f.registerAndEnqueueTask(task, tasktype.TaskTypeUpload, target.Name(), storagePath, webhook); err != nil {
 		return nil, err
@@ -147,8 +148,10 @@ func (f *TaskFactory) registerAndEnqueueTask(task core.Executable, taskType task
 		DeleteTask(taskID)
 		return fmt.Errorf("failed to add task: %w", err)
 	}
-	if err := core.EnrichTaskRecord(f.ctx, taskID, storageName, path); err != nil {
-		log.Errorf("Failed to enrich task record %s: %v", taskID, err)
+	if taskType != tasktype.TaskTypeUpload {
+		if err := core.EnrichTaskRecord(f.ctx, taskID, storageName, path); err != nil {
+			log.Errorf("Failed to enrich task record %s: %v", taskID, err)
+		}
 	}
 
 	return nil

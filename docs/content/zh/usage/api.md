@@ -429,7 +429,9 @@ curl -X POST "http://127.0.0.1:28080/api/v1/uploads?storage_id=1&path=uploads&fi
 }
 ```
 
-文件会先保存到服务端临时目录，完整接收后才创建任务。超过 `web.max_upload_size_mb` 时返回 `413 upload_too_large`；临时目录空间不足时返回 `507 insufficient_storage`。浏览器到服务端的断点续传暂不支持，网络中断后需要重新上传。
+文件完整保存到服务端临时目录后才会创建任务。超过 `web.max_upload_size_mb` 时返回 `413 upload_too_large`；临时目录空间不足时返回 `507 insufficient_storage`。读取请求体连续等待 30 秒后会中止（`408 upload_timeout`）。上传中断后需要从头重传。
+
+如果存储后端因文件名冲突而重命名，已完成的任务会显示实际保存路径。如果 Telegram 因 `skip_large` 跳过文件，任务标记为失败，而不是已完成。
 
 ---
 

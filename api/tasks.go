@@ -8,10 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/charmbracelet/log"
 	"github.com/krau/SaveAny-Bot/client/bot"
 	userclient "github.com/krau/SaveAny-Bot/client/user"
-	"github.com/krau/SaveAny-Bot/common/upload"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/retry"
 	"github.com/krau/SaveAny-Bot/database"
@@ -235,12 +233,10 @@ func (s *server) cancelTask(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusConflict, "task_not_active", "task is not active")
 		return
 	}
-	if task, ok := GetTask(record.TaskID); ok {
-		task.UpdateStatus(TaskStatusCancelled)
-	}
 	if err := core.CancelTask(r.Context(), record.TaskID); err != nil {
-		if task, ok := GetTask(record.TaskID); ok {
-			task.UpdateStatus(TaskStatus(record.Status))
+		if errors.Is(err, core.ErrTaskNotActive) {
+			WriteError(w, http.StatusConflict, "task_not_active", err.Error())
+			return
 		}
 		WriteError(w, http.StatusInternalServerError, "cancel_failed", err.Error())
 		return
@@ -259,15 +255,15 @@ func (s *server) deleteTask(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusConflict, "task_active", "cancel the task before deleting it")
 		return
 	}
+	if record.Type == tasktype.TaskTypeUpload.String() && record.Status == string(TaskStatusCancelled) && core.IsTaskRunning(taskID) {
+		WriteError(w, http.StatusConflict, "task_active", "wait for upload cancellation to finish before deleting it")
+		return
+	}
 	if err := database.DeleteTaskRecord(r.Context(), taskID); err != nil {
 		WriteError(w, http.StatusInternalServerError, "internal_error", err.Error())
 		return
 	}
-	if record.Type == tasktype.TaskTypeUpload.String() {
-		if err := upload.RemoveStaging(taskID); err != nil {
-			log.Warnf("Failed to remove staging for task %s: %v", taskID, err)
-		}
-	}
+	core.CleanupTaskArtifacts(r.Context(), record)
 	DeleteTask(taskID)
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -327,12 +323,9 @@ func taskResponse(record *database.TaskRecord) TaskInfoResponse {
 		UpdatedAt:   record.UpdatedAt,
 	}
 	if info, ok := GetTask(record.TaskID); ok {
-		status, total, downloaded, totalFiles, downloadedFiles, startedAt, errMsg, updatedAt := info.snapshot()
-		resp.Status = status
-		resp.Error = errMsg
-		resp.UpdatedAt = updatedAt
-		if resp.StartedAt == nil && !startedAt.IsZero() {
-			resp.StartedAt = &startedAt
+		total, downloaded, totalFiles, downloadedFiles, updatedAt := info.snapshot()
+		if resp.Status == TaskStatusRunning && updatedAt.After(resp.UpdatedAt) {
+			resp.UpdatedAt = updatedAt
 		}
 		var percent, speedMBPS float64
 		if total > 0 {
@@ -340,8 +333,8 @@ func taskResponse(record *database.TaskRecord) TaskInfoResponse {
 		} else if totalFiles > 0 {
 			percent = float64(downloadedFiles) * 100 / float64(totalFiles)
 		}
-		if !startedAt.IsZero() {
-			if elapsed := time.Since(startedAt).Seconds(); elapsed > 0 {
+		if resp.StartedAt != nil {
+			if elapsed := time.Since(*resp.StartedAt).Seconds(); elapsed > 0 {
 				speedMBPS = float64(downloaded) / elapsed / (1024 * 1024)
 			}
 		}

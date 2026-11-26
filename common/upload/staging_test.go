@@ -15,7 +15,13 @@ func TestStagingPaths(t *testing.T) {
 	config.Set(cfg)
 	t.Cleanup(func() { config.Set(previous) })
 
-	dir, err := StagingDir("task123")
+	root, err := StagingRoot()
+	if err != nil {
+		t.Fatalf("StagingRoot: %v", err)
+	}
+	cfg.Temp.BasePath = t.TempDir()
+	config.Set(cfg)
+	dir, err := StagingDir(root, "task123")
 	if err != nil {
 		t.Fatalf("StagingDir: %v", err)
 	}
@@ -23,7 +29,7 @@ func TestStagingPaths(t *testing.T) {
 	if dir != wantDir {
 		t.Fatalf("StagingDir = %q, want %q", dir, wantDir)
 	}
-	payload, err := StagingPayloadPath("task123")
+	payload, err := StagingPayloadPath(root, "task123")
 	if err != nil {
 		t.Fatalf("StagingPayloadPath: %v", err)
 	}
@@ -34,7 +40,7 @@ func TestStagingPaths(t *testing.T) {
 
 func TestStagingRejectsInvalidIDs(t *testing.T) {
 	for _, id := range []string{"", ".", "..", "../escape", "sub/task", `sub\task`} {
-		if _, err := StagingDir(id); err == nil {
+		if _, err := StagingDir("", id); err == nil {
 			t.Fatalf("StagingDir(%q) succeeded", id)
 		}
 	}

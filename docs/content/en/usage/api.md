@@ -429,7 +429,9 @@ Cookie-authenticated console requests must also send `X-CSRF-Token`.
 }
 ```
 
-The file is written to the server's staging directory and the task is created only after the complete body is received. Exceeding `web.max_upload_size_mb` returns `413 upload_too_large`; insufficient staging disk space returns `507 insufficient_storage`. Browser-to-server resumable uploads are not supported yet, so an interrupted request must be retried from the beginning.
+The task is created only after the full file is staged on the server. Exceeding `web.max_upload_size_mb` returns `413 upload_too_large`; insufficient staging disk space returns `507 insufficient_storage`. The server aborts reads that stall for 30 seconds (`408 upload_timeout`). An interrupted request must be retried from the beginning.
+
+The completed task reports the final destination when the backend renames the file to avoid a conflict. If Telegram skips a file because of `skip_large`, the task fails instead of reporting completion.
 
 ---
 

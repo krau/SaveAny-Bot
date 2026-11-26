@@ -11,7 +11,6 @@ import (
 
 const webUploadDir = "web-upload"
 
-// StagingRoot is the parent directory for files uploaded through the web API.
 func StagingRoot() (string, error) {
 	base := strings.TrimSpace(config.C().Temp.BasePath)
 	if base == "" {
@@ -24,30 +23,34 @@ func StagingRoot() (string, error) {
 	return filepath.Join(absolute, webUploadDir), nil
 }
 
-// StagingDir returns the isolated directory for one web upload task.
-func StagingDir(taskID string) (string, error) {
+func StagingDir(root, taskID string) (string, error) {
 	if err := validateStagingID(taskID); err != nil {
 		return "", err
 	}
-	root, err := StagingRoot()
-	if err != nil {
-		return "", err
+	// Records created before the staging root was persisted use the current root.
+	if root == "" {
+		var err error
+		root, err = StagingRoot()
+		if err != nil {
+			return "", err
+		}
+	}
+	if !filepath.IsAbs(root) || filepath.Base(filepath.Clean(root)) != webUploadDir {
+		return "", fmt.Errorf("invalid upload staging root %q", root)
 	}
 	return filepath.Join(root, taskID), nil
 }
 
-// StagingPayloadPath returns the completed payload path for one upload task.
-func StagingPayloadPath(taskID string) (string, error) {
-	dir, err := StagingDir(taskID)
+func StagingPayloadPath(root, taskID string) (string, error) {
+	dir, err := StagingDir(root, taskID)
 	if err != nil {
 		return "", err
 	}
 	return filepath.Join(dir, "payload"), nil
 }
 
-// RemoveStaging deletes all staged data for one upload task.
-func RemoveStaging(taskID string) error {
-	dir, err := StagingDir(taskID)
+func RemoveStaging(root, taskID string) error {
+	dir, err := StagingDir(root, taskID)
 	if err != nil {
 		return err
 	}

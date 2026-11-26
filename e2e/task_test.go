@@ -14,10 +14,16 @@ import (
 )
 
 type taskInfo struct {
-	TaskID string `json:"task_id"`
-	Type   string `json:"type"`
-	Status string `json:"status"`
-	Items  []struct {
+	TaskID   string `json:"task_id"`
+	Type     string `json:"type"`
+	Status   string `json:"status"`
+	Path     string `json:"path"`
+	Progress *struct {
+		Percent         float64 `json:"percent"`
+		TotalFiles      int     `json:"total_files"`
+		DownloadedFiles int     `json:"downloaded_files"`
+	} `json:"progress"`
+	Items []struct {
 		Name   string `json:"name"`
 		Path   string `json:"path"`
 		Status string `json:"status"`
@@ -61,8 +67,27 @@ func TestUploadTask(t *testing.T) {
 	if string(got) != string(content) {
 		t.Fatalf("uploaded content = %q, want %q", got, content)
 	}
-	if status := client.do(http.MethodDelete, "/api/v1/tasks/"+created.TaskID, nil, true, nil); status != http.StatusNoContent {
-		t.Fatalf("delete upload task = %d", status)
+	var second struct {
+		TaskID string `json:"task_id"`
+	}
+	if status := client.doRaw(http.MethodPost, "/api/v1/uploads?"+query.Encode(), nil, "application/octet-stream", true, &second); status != http.StatusCreated {
+		t.Fatalf("upload empty conflicting file = %d, want 201", status)
+	}
+	secondInfo := waitForTask(t, client, second.TaskID)
+	wantPath := "e2e-upload/uploaded_1.txt"
+	if secondInfo.Status != "completed" || secondInfo.Path != wantPath || len(secondInfo.Items) != 1 || secondInfo.Items[0].Path != wantPath {
+		t.Fatalf("conflicting upload result = %+v, want %q", secondInfo, wantPath)
+	}
+	if p := secondInfo.Progress; p == nil || p.Percent != 100 || p.DownloadedFiles != 1 || p.TotalFiles != 1 {
+		t.Fatalf("empty upload progress = %+v", p)
+	}
+	if file, err := os.Stat(filepath.Join(dataDir, "downloads", filepath.FromSlash(wantPath))); err != nil || file.Size() != 0 {
+		t.Fatalf("empty conflicting upload = %v, %v", file, err)
+	}
+	for _, id := range []string{created.TaskID, second.TaskID} {
+		if status := client.do(http.MethodDelete, "/api/v1/tasks/"+id, nil, true, nil); status != http.StatusNoContent {
+			t.Fatalf("delete upload task %s = %d", id, status)
+		}
 	}
 }
 

@@ -3,17 +3,19 @@ package queue
 import (
 	"container/list"
 	"context"
+	"sync"
 	"time"
 )
 
 type Task[T any] struct {
-	ID      string
-	Title   string
-	Data    T
-	ctx     context.Context
-	cancel  context.CancelFunc
-	created time.Time
-	element *list.Element
+	ID        string
+	Title     string
+	Data      T
+	ctx       context.Context
+	cancel    context.CancelFunc
+	created   time.Time
+	element   *list.Element
+	exclusive sync.Mutex
 }
 
 // Read-only info about a task
@@ -51,4 +53,10 @@ func (t *Task[T]) Cancel() {
 
 func (t *Task[T]) Context() context.Context {
 	return t.ctx
+}
+
+func (t *Task[T]) RunExclusive(fn func() error) error {
+	t.exclusive.Lock()
+	defer t.exclusive.Unlock()
+	return fn()
 }

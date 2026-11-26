@@ -5,11 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"sync/atomic"
 	"time"
-
-	"github.com/charmbracelet/log"
 
 	"github.com/krau/SaveAny-Bot/common/upload"
 	"github.com/krau/SaveAny-Bot/config"
@@ -19,16 +16,10 @@ import (
 const progressInterval = 200 * time.Millisecond
 
 func (t *Task) Execute(ctx context.Context) (retErr error) {
-	defer func() {
-		t.setResult(retErr)
-		if retErr != nil && !isCancelled(retErr) {
-			if err := upload.RemoveStaging(t.ID); err != nil {
-				log.FromContext(ctx).Warnf("Failed to remove failed staged upload %s: %v", t.ID, err)
-			}
-		}
-	}()
+	var actualPath string
+	defer func() { t.setResult(ctx, actualPath, retErr) }()
 
-	sourcePath, err := upload.StagingPayloadPath(t.ID)
+	sourcePath, err := upload.StagingPayloadPath(t.stagingRoot, t.ID)
 	if err != nil {
 		return err
 	}
@@ -39,10 +30,9 @@ func (t *Task) Execute(ctx context.Context) (retErr error) {
 	if !info.Mode().IsRegular() {
 		return errors.New("staged upload is not a regular file")
 	}
-	if t.Size > 0 && info.Size() != t.Size {
+	if info.Size() != t.Size {
 		return fmt.Errorf("staged upload size is %d bytes, expected %d", info.Size(), t.Size)
 	}
-	t.Size = info.Size()
 
 	taskevent.Emit(ctx, taskevent.Event{
 		TaskID:     t.ID,
@@ -62,48 +52,34 @@ func (t *Task) Execute(ctx context.Context) (retErr error) {
 			return
 		}
 		if lastEmit.CompareAndSwap(last, now) {
-			emitProgress(ctx, t.ID, total, uploaded)
+			emitProgress(ctx, t.ID, total, uploaded, 0)
 		}
 	}
 
-	targetPath := path.Join(t.Path, t.Name)
-	err = upload.SaveFile(ctx, sourcePath, targetPath, upload.Options{
-		Storage:    t.Storage,
-		Overwrite:  t.Overwrite,
-		Retries:    max(config.C().Retry, 1),
-		RetryDelay: 3 * time.Second,
-		OnProgress: onProgress,
+	actualPath, err = upload.SaveFileWithPath(ctx, sourcePath, t.StoragePath(), upload.Options{
+		Storage:       t.Storage,
+		Overwrite:     t.Overwrite,
+		Retries:       max(config.C().Retry, 1),
+		RetryDelay:    3 * time.Second,
+		OnProgress:    onProgress,
+		RequireUpload: true,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload staged file: %w", err)
 	}
 
 	t.uploaded.Store(t.Size)
-	emitProgress(ctx, t.ID, t.Size, t.Size)
-	if err := upload.RemoveStaging(t.ID); err != nil {
-		log.FromContext(ctx).Warnf("Failed to remove staged upload %s: %v", t.ID, err)
-	}
+	emitProgress(ctx, t.ID, t.Size, t.Size, 1)
 	return nil
 }
 
-func emitProgress(ctx context.Context, taskID string, total, uploaded int64) {
+func emitProgress(ctx context.Context, taskID string, total, uploaded int64, completedFiles int) {
 	taskevent.Emit(ctx, taskevent.Event{
 		TaskID:          taskID,
 		Phase:           taskevent.PhaseProgress,
 		TotalBytes:      total,
 		DownloadedBytes: uploaded,
 		TotalFiles:      1,
-		DownloadedFiles: boolToInt(uploaded >= total && total > 0),
+		DownloadedFiles: completedFiles,
 	})
-}
-
-func boolToInt(value bool) int {
-	if value {
-		return 1
-	}
-	return 0
-}
-
-func isCancelled(err error) bool {
-	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }

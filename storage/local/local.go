@@ -83,6 +83,9 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) error
 // SaveWithPath saves a file and returns its actual storage-relative path after
 // conflict resolution.
 func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	l.logger.Infof("Saving file to %s", storagePath)
 	clean, err := l.cleanStoragePath(storagePath)
 	if err != nil {
@@ -122,7 +125,7 @@ func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath strin
 			}
 		}
 	}()
-	if _, err := io.Copy(tempFile, r); err != nil {
+	if _, err := io.Copy(tempFile, contextReader{ctx, r}); err != nil {
 		return "", errors.Join(err, tempFile.Close())
 	}
 	if err := tempFile.Chmod(0o644); err != nil {
@@ -132,7 +135,9 @@ func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath strin
 		return "", err
 	}
 	if !overwrite {
-		if err := l.publishNoReplace(root, tempPath, clean, root.Link); err != nil {
+		if err := storagetypes.Publish(ctx, func() error {
+			return l.publishNoReplace(root, tempPath, clean, root.Link)
+		}); err != nil {
 			return "", err
 		}
 		if err := root.Remove(tempPath); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -141,11 +146,23 @@ func (l *Local) SaveWithPath(ctx context.Context, r io.Reader, storagePath strin
 		removeTemp = false
 		return clean, nil
 	}
-	if err := root.Rename(tempPath, clean); err != nil {
+	if err := storagetypes.Publish(ctx, func() error { return root.Rename(tempPath, clean) }); err != nil {
 		return "", err
 	}
 	removeTemp = false
 	return clean, nil
+}
+
+type contextReader struct {
+	ctx context.Context
+	r   io.Reader
+}
+
+func (r contextReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.r.Read(p)
 }
 
 func (l *Local) publishNoReplace(root *os.Root, tempPath, storagePath string, link func(string, string) error) error {
